@@ -118,7 +118,6 @@ const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
-const ambientBg = document.getElementById("ambientBg");
 const recentPulls = document.getElementById("recentPulls");
 const recentPullsList = document.getElementById("recentPullsList");
 const payingWithBadge = document.getElementById("payingWithBadge");
@@ -313,23 +312,6 @@ function addOwnedItem(prize) {
 function releaseOwnedItem(item) {
   if (item.listingId) market.removeListing(item.listingId);
   player.removeFromInventory(item.id);
-}
-
-// ---- Ambient background --------------------------------------------------
-
-function buildAmbientParticles() {
-  const count = 16;
-  for (let i = 0; i < count; i++) {
-    const dot = document.createElement("span");
-    dot.className = "ambient-dot";
-    dot.style.left = `${Math.random() * 100}%`;
-    dot.style.setProperty("--size", `${2 + Math.random() * 4}px`);
-    dot.style.setProperty("--o", `${0.08 + Math.random() * 0.18}`);
-    dot.style.setProperty("--dur", `${18 + Math.random() * 22}s`);
-    dot.style.setProperty("--delay", `${-Math.random() * 30}s`);
-    dot.style.setProperty("--drift", `${Math.random() * 80 - 40}px`);
-    ambientBg.appendChild(dot);
-  }
 }
 
 // ---- Wallet: Credits + Cash (USDC) balances --------------------------
@@ -2249,7 +2231,6 @@ const profileParam = new URLSearchParams(location.search).get("profile");
 if (profileParam) {
   renderPublicProfile(profileParam);
 } else {
-  buildAmbientParticles();
   renderIdentity();
   seedSimulatedPulls();
   renderCategories();
