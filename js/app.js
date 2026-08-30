@@ -7,6 +7,7 @@ import * as player from "./player.js";
 import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmbient } from "./sound.js";
 import { ICONS } from "./icons.js";
+import * as recorder from "./recorder.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -84,6 +85,7 @@ let roundLocked = false;
 let viewers = [null, null, null];
 let reelCellWidth = 0;
 let toastTimer = null;
+let currentRecording = null; // the startRecording() promise for this round, or null
 
 // ---- DOM refs -----------------------------------------------------------
 
@@ -103,6 +105,8 @@ const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
 const streakBadge = document.getElementById("streakBadge");
 const multiplierBadge = document.getElementById("multiplierBadge");
+const shareBtn = document.getElementById("shareBtn");
+const shareBtnLabel = document.getElementById("shareBtnLabel");
 const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
@@ -152,6 +156,8 @@ const myOffersList = document.getElementById("myOffersList");
 const openingsFilter = document.getElementById("openingsFilter");
 const openingsList = document.getElementById("openingsList");
 const shippedList = document.getElementById("shippedList");
+const clipsGrid = document.getElementById("clipsGrid");
+const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
 const referralPanel = document.getElementById("referralPanel");
 const streakDaysValue = document.getElementById("streakDaysValue");
@@ -640,6 +646,11 @@ async function startRound(key, currency) {
 
   showScreen(screenGame);
 
+  // Kicked off (not awaited) so a pending share-permission prompt never
+  // blocks the reel/box animation — recording starts whenever the browser
+  // resolves it, comfortably ahead of the player picking a box.
+  currentRecording = recorder.startRecording();
+
   const snapshotUrl = await boxSnapshotPromise;
   buildReel(snapshotUrl);
   await spinReel();
@@ -738,6 +749,9 @@ function openSlot(index, { isYours, revealCard = true }) {
 // Only ever called for the crate the player picked.
 
 async function showPrizeModal(prize, { streak, multiplier } = {}) {
+  shareBtn.classList.add("hidden");
+  shareBtn.disabled = true;
+
   const meta = RARITY_META[prize.rarity];
   prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
@@ -757,7 +771,12 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
 
   if (multiplier !== null && multiplier !== undefined) {
-    multiplierBadge.textContent = `${multiplier}x crate price`;
+    const positive = multiplier > 1;
+    const arrow = positive
+      ? `<svg class="multiplier-badge-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
+      : "";
+    multiplierBadge.innerHTML = `${arrow}${multiplier}x crate price`;
+    multiplierBadge.classList.toggle("positive", positive);
     multiplierBadge.classList.remove("hidden");
   } else {
     multiplierBadge.classList.add("hidden");
@@ -782,6 +801,39 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
   prizeModal.classList.remove("revealing");
+  finalizeRecording(prize); // not awaited — never let a pending share prompt hold up the UI
+}
+
+// Stops the round's recording (started back in startRound) a beat after
+// the reveal settles, so the clip's last frame is the resolved prize card
+// rather than cutting off mid-animation. Resolves the Share button's
+// state; if recording never started (denied/unsupported), Share stays
+// hidden for this pull.
+async function finalizeRecording(prize) {
+  const pending = currentRecording;
+  currentRecording = null;
+  if (!pending) return;
+
+  const started = await pending;
+  if (!started) return;
+
+  shareBtnLabel.textContent = "Preparing…";
+  shareBtn.classList.remove("hidden");
+
+  await new Promise((r) => setTimeout(r, 600));
+  const clip = await recorder.stopRecording(prize, currentCategoryKey);
+  if (!clip) {
+    shareBtn.classList.add("hidden");
+    return;
+  }
+
+  shareBtnLabel.textContent = "Share";
+  shareBtn.disabled = false;
+  shareBtn.onclick = () => {
+    playClick();
+    recorder.shareClip(clip);
+  };
+  if (screenAccount.classList.contains("active")) renderClips();
 }
 
 function hidePrizeModal() {
@@ -1303,7 +1355,40 @@ function renderAccount() {
   renderLeaderboard();
   renderReferralPanel();
   renderStreaks();
+  renderClips();
 }
+
+function renderClips() {
+  const clips = recorder.getClips();
+  clipsCount.textContent = clips.length;
+  clipsGrid.innerHTML = clips.length
+    ? clips
+        .map(
+          (c) => `
+          <div class="clip-card">
+            <video src="${c.url}" muted loop playsinline controls preload="metadata"></video>
+            <div class="clip-card-body">
+              <span class="clip-card-name">${c.name}</span>
+              <div class="clip-card-actions">
+                <button class="clip-card-btn" data-clip-action="download" data-clip="${c.id}">Download</button>
+                <button class="clip-card-btn" data-clip-action="share" data-clip="${c.id}">Share</button>
+              </div>
+            </div>
+          </div>`
+        )
+        .join("")
+    : `<div class="market-empty">Open a crate and pick Share on the reveal to start collecting clips.</div>`;
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-clip-action]");
+  if (!btn) return;
+  const clip = recorder.getClip(btn.dataset.clip);
+  if (!clip) return;
+  playClick();
+  if (btn.dataset.clipAction === "download") recorder.downloadClip(clip);
+  else recorder.shareClip(clip);
+});
 
 let openingsFilterValue = "all";
 function renderOpeningHistory() {

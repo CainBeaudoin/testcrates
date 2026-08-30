@@ -1694,12 +1694,14 @@ body {
 .tier-badge-silver { color: #c7ccd6; background: rgba(199, 204, 214, 0.14); }
 .tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
 
-/* --- Four exits --- */
+/* --- Reveal exits: Cash Out / Keep --- */
 
 .exits-modal-card { max-width: 340px; }
 
 .multiplier-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin: 8px 0 0;
   font-family: inherit;
   font-size: 0.78rem;
@@ -1707,6 +1709,8 @@ body {
   color: var(--text);
   letter-spacing: 0.5px;
 }
+.multiplier-badge.positive { color: #4ade80; }
+.multiplier-badge-arrow { width: 12px; height: 12px; }
 
 .exits-grid {
   display: grid;
@@ -1719,6 +1723,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   padding: 12px 8px;
   background: transparent;
@@ -1726,6 +1731,7 @@ body {
   border-radius: 4px;
   color: var(--text);
   cursor: pointer;
+  text-align: center;
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 .exit-btn:hover { transform: translateY(-2px); border-color: var(--text); }
@@ -1738,6 +1744,7 @@ body {
 .exit-btn-sub {
   font-size: 0.6rem;
   color: var(--text-faint);
+  text-align: center;
 }
 .exit-btn-primary {
   background: var(--text);
@@ -1746,6 +1753,29 @@ body {
 }
 .exit-btn-primary .exit-btn-sub { color: rgba(0, 0, 0, 0.55); }
 .exit-btn-primary:hover { background: var(--text); opacity: 0.9; }
+
+/* --- Share (records the box-select-to-reveal moment) --- */
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.share-btn:hover { border-color: var(--line-strong); color: var(--text); }
+.share-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* --- Payment error --- */
 
@@ -2110,5 +2140,61 @@ body {
 .streak-tile.level-3 { background: rgba(139, 107, 242, 0.66); border-color: rgba(139, 107, 242, 0.75); color: var(--text); }
 .streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 .streak-tile.today { outline: 2px solid var(--text); outline-offset: 1px; }
+
+/* --- Clips: recorded pull videos (session-only) --- */
+
+.clips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.clip-card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.clip-card video {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  display: block;
+  background: #000;
+  object-fit: cover;
+}
+
+.clip-card-body { padding: 10px 12px 12px; }
+
+.clip-card-name {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.clip-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.clip-card-btn {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.clip-card-btn:hover { background: var(--text); color: #000; }
 
 .hidden { display: none !important; }
