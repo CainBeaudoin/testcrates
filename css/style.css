@@ -1657,6 +1657,7 @@ body {
 .tier-badge {
   display: inline-block;
   font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -1664,6 +1665,9 @@ body {
   border-radius: 999px;
   border: 1px solid currentColor;
 }
+.tier-badge-bronze { color: #d0895a; background: rgba(208, 137, 90, 0.14); }
+.tier-badge-silver { color: #c7ccd6; background: rgba(199, 204, 214, 0.14); }
+.tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
 
 /* --- Four exits --- */
 

@@ -15,21 +15,21 @@ import { ICONS } from "./icons.js";
 
 const CATEGORIES = {
   hundred: {
-    label: "$100 Tier",
+    label: "$100",
     badge: "Bronze",
     price: 100,
     description: "3 crates, one pull each. Odds are set by the pool below.",
     pool: HUNDRED_POOL,
   },
   twoFifty: {
-    label: "$250 Tier",
+    label: "$250",
     badge: "Silver",
     price: 250,
     description: "Same odds, a step up in stock — 3 crates, one pull each.",
     pool: TWO_FIFTY_POOL,
   },
   thousand: {
-    label: "$1000 Tier",
+    label: "$1000",
     badge: "Gold",
     price: 1000,
     description: "The grail tier. 3 crates, one pull each.",
@@ -382,7 +382,7 @@ function renderCategories() {
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
-      <span class="tier-badge">${cat.badge}</span>
+      <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
       <h3>${cat.label}</h3>
       <p>${cat.description}</p>
       <span class="cta">Tap to begin — $${cat.price.toLocaleString()}</span>
@@ -840,8 +840,9 @@ amountInput.addEventListener("keydown", (e) => {
 
 // ---- Shared: rendering a market item card ---------------------------------
 
+// Rarity only mattered during the open — it's deliberately left off
+// marketplace listings (see the .market-sub note on the screen itself).
 function marketItemCardHTML(listing) {
-  const meta = RARITY_META[listing.rarity];
   const fmv = market.fmvRating(listing);
   const priceOrOffer =
     listing.price != null
@@ -849,10 +850,9 @@ function marketItemCardHTML(listing) {
       : `<span class="market-item-offer-only">Offer only</span>`;
   const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
   return `
-    <div class="market-item" data-listing="${listing.id}" style="--rarity-color:${meta.color}">
+    <div class="market-item" data-listing="${listing.id}">
       <div class="market-item-media">
         <img src="${listing.image}" alt="">
-        <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
         ${fmvHTML}
       </div>
       <div class="market-item-body">
