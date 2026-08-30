@@ -489,6 +489,13 @@ body {
   box-shadow: var(--glow);
 }
 
+.category-box-canvas {
+  display: block;
+  width: 110px;
+  height: 110px;
+  margin: 10px auto 4px;
+}
+
 .category-card h3 {
   margin: 0 0 8px;
   font-size: 1.5rem;

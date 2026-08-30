@@ -19,6 +19,34 @@ function loadModel() {
 // it's already cached by the time a round actually needs it.
 loadModel().catch(() => {});
 
+// Bronze/Silver/Gold "skins" — same hex family as the tier badges elsewhere
+// in the UI. Replaces the model's own branded texture with a flat metallic
+// tint per tier, rather than multiplying a color over it (multiplying a
+// grayscale tint like silver over the existing orange-toned texture reads
+// muddy, not metallic).
+const TIER_SKINS = {
+  bronze: { color: 0xd0895a, metalness: 0.55, roughness: 0.42 },
+  silver: { color: 0xc7ccd6, metalness: 0.75, roughness: 0.28 },
+  gold: { color: 0xf0c14b, metalness: 0.75, roughness: 0.28 },
+};
+
+// Materials are shared by reference across clone(true) instances, so this
+// clones each mesh's material before tinting it — otherwise skinning one
+// box would repaint every other box sharing that base model.
+function applyTierSkin(root, tierKey) {
+  const skin = TIER_SKINS[tierKey];
+  if (!skin) return;
+  root.traverse((node) => {
+    if (!node.isMesh || !node.material) return;
+    const mat = node.material.clone();
+    mat.map = null;
+    mat.color.setHex(skin.color);
+    mat.metalness = skin.metalness;
+    mat.roughness = skin.roughness;
+    node.material = mat;
+  });
+}
+
 function easeOutBack(t) {
   const c1 = 1.70158;
   const c3 = c1 + 1;
@@ -100,45 +128,55 @@ function configureRenderer(renderer) {
   renderer.toneMappingExposure = 1.15;
 }
 
-let snapshotPromise = null;
+const snapshotPromises = new Map(); // tierKey (or "" for unskinned) -> Promise<dataURL>
 /**
  * Renders one closed, front-facing box offscreen and returns a PNG data URL.
  * Used to paint the scrolling reel with the *exact* same box/angle/lighting
- * that the live 3D viewers use, so landing on the 3 slots feels like the
- * same boxes coming to a stop rather than a swap to different artwork.
+ * (and, now, tier skin) that the live 3D viewers use, so landing on the 3
+ * slots feels like the same boxes coming to a stop rather than a swap to
+ * different artwork. Cached per tier.
  */
-export function getBoxSnapshot() {
-  if (!snapshotPromise) {
-    snapshotPromise = loadModel().then((baseModel) => {
-      const size = 320;
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      configureRenderer(renderer);
-      renderer.setSize(size, size, false);
+export function getBoxSnapshot(tierKey = "") {
+  if (!snapshotPromises.has(tierKey)) {
+    snapshotPromises.set(
+      tierKey,
+      loadModel().then((baseModel) => {
+        const size = 320;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        configureRenderer(renderer);
+        renderer.setSize(size, size, false);
 
-      const root = baseModel.clone(true);
-      const { scene, camera } = buildRig(root);
-      camera.aspect = 1;
-      camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
+        const root = baseModel.clone(true);
+        applyTierSkin(root, tierKey);
+        const { scene, camera } = buildRig(root);
+        camera.aspect = 1;
+        camera.updateProjectionMatrix();
+        renderer.render(scene, camera);
 
-      const dataUrl = canvas.toDataURL("image/png");
-      renderer.dispose();
-      return dataUrl;
-    });
+        const dataUrl = canvas.toDataURL("image/png");
+        renderer.dispose();
+        return dataUrl;
+      })
+    );
   }
-  return snapshotPromise;
+  return snapshotPromises.get(tierKey);
 }
 
 /**
- * Mounts one interactive, self-rotating box on `canvas`.
+ * Mounts one interactive, self-rotating box on `canvas`, optionally skinned
+ * to a tier ("bronze"/"silver"/"gold"). A box whose `.open()` is never
+ * called just idles and spins forever — that's how the decorative,
+ * always-closed tier boxes on the category cards are built, not a separate
+ * component.
  * Returns a small controller: { setPaused, open, reset, dispose }.
  */
-export async function createBoxViewer(canvas) {
+export async function createBoxViewer(canvas, tierKey = "") {
   const baseModel = await loadModel();
   const root = baseModel.clone(true);
+  applyTierSkin(root, tierKey);
   const { scene, camera, group, lid } = buildRig(root);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });

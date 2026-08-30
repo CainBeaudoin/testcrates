@@ -72,8 +72,6 @@ const REEL_DURATION_MS = 2400;
 const REVEAL_STEP_MS = 950;
 const MODAL_DELAY_MS = 650;
 
-const boxSnapshotPromise = getBoxSnapshot();
-
 // ---- State -----------------------------------------------------------
 
 let currentCategoryKey = null;
@@ -618,8 +616,12 @@ function buildPityHTML(tierKey) {
     </div>`;
 }
 
+let categoryBoxViewers = [];
+
 function renderCategories() {
   categoryList.innerHTML = "";
+  categoryBoxViewers.forEach((v) => v.dispose());
+  categoryBoxViewers = [];
 
   Object.entries(CATEGORIES).forEach(([key, cat]) => {
     const wrap = document.createElement("div");
@@ -629,6 +631,7 @@ function renderCategories() {
     card.className = "category-card";
     card.innerHTML = `
       <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
+      <canvas class="category-box-canvas"></canvas>
       <h3>${cat.label}</h3>
       ${buildPityHTML(key)}
     `;
@@ -648,6 +651,11 @@ function renderCategories() {
     wrap.appendChild(card);
     wrap.appendChild(prizePanel);
     categoryList.appendChild(wrap);
+
+    // Decorative only — idles and spins forever, .open() is never called on it.
+    createBoxViewer(card.querySelector(".category-box-canvas"), cat.badge.toLowerCase()).then((viewer) => {
+      categoryBoxViewers.push(viewer);
+    });
   });
 
   renderRecentPulls();
@@ -755,8 +763,9 @@ function resetSlotsUI() {
 }
 
 async function mountViewers() {
+  const skin = CATEGORIES[currentCategoryKey].badge.toLowerCase();
   const canvases = slots.map((s) => s.querySelector(".box-canvas"));
-  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c)));
+  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin)));
   mounted.forEach((viewer, i) => {
     viewers[i] = viewer;
     const slot = slots[i];
@@ -865,7 +874,7 @@ async function startRound(key, currency) {
   // resolves it, comfortably ahead of the player picking a box.
   currentRecording = recorder.startRecording();
 
-  const snapshotUrl = await boxSnapshotPromise;
+  const snapshotUrl = await getBoxSnapshot(cat.badge.toLowerCase());
   buildReel(snapshotUrl);
   await spinReel();
 
