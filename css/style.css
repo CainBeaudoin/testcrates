@@ -10,8 +10,8 @@
   --glow: 0 0 40px rgba(255, 255, 255, 0.12);
   /* Dense terminal-style shell: fixed icon rail + slim topbar of stat
      pills, in place of the old centered hero header. */
-  --accent: #8b6bf2;
-  --accent-dim: rgba(139, 107, 242, 0.35);
+  --accent: #e6e6eb;
+  --accent-dim: rgba(230, 230, 235, 0.16);
   --rail-w: 76px;
   --topbar-h: 60px;
   --surface-1: #0d0d10;
@@ -92,7 +92,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--accent), #4a3a8f);
+  background: linear-gradient(145deg, var(--accent), #38383e);
   color: #fff;
   font-weight: 800;
   font-size: 0.85rem;
@@ -130,8 +130,8 @@ body {
 .nav-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 .nav-tab.active {
   background: var(--accent-dim);
-  border-color: rgba(139, 107, 242, 0.5);
-  color: #cbb9ff;
+  border-color: rgba(230, 230, 235, 0.5);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -189,22 +189,11 @@ body {
   gap: 9px;
   flex: 0 0 auto;
 }
-.brand-logo { flex: 0 0 auto; }
 .brand-name {
   font-size: 1.15rem;
   font-weight: 900;
   letter-spacing: 0.5px;
   color: var(--text);
-}
-.brand-beta {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 2px 7px;
-  border-radius: 999px;
 }
 
 .topbar-stats {
@@ -528,7 +517,7 @@ body {
 }
 .pity-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #cbb9ff);
+  background: linear-gradient(90deg, var(--accent), var(--accent));
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -638,6 +627,8 @@ body {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .recent-pull-item:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+.recent-pull-item.static { cursor: default; }
+.recent-pull-item.static:hover { transform: none; border-color: var(--line); }
 
 .recent-pull-item img {
   width: 64px;
@@ -1300,9 +1291,9 @@ body {
 .market-chip:hover { border-color: var(--line-strong); color: var(--text); }
 .market-chip.active {
   background: var(--accent-dim);
-  color: #cbb9ff;
+  color: var(--accent);
   font-weight: 700;
-  border-color: rgba(139, 107, 242, 0.5);
+  border-color: rgba(230, 230, 235, 0.5);
 }
 
 .market-sort {
@@ -1492,15 +1483,21 @@ body {
   gap: 6px;
   padding: 7px 14px;
   background: var(--accent-dim);
-  border: 1px solid rgba(139, 107, 242, 0.5);
+  border: 1px solid rgba(230, 230, 235, 0.5);
   border-radius: 999px;
-  color: #cbb9ff;
+  color: var(--accent);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
 }
-.referral-link-btn:hover { background: rgba(139, 107, 242, 0.5); }
+.referral-link-btn:hover { background: rgba(230, 230, 235, 0.5); }
+.profile-link-btn {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text-dim);
+}
+.profile-link-btn:hover { background: var(--surface-2); border-color: var(--line-strong); color: var(--text); }
 
 .account-wallet-card {
   background: var(--surface-1);
@@ -1546,7 +1543,7 @@ body {
   transition: background 0.15s ease, color 0.15s ease;
 }
 .account-nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
-.account-nav-item.active { background: var(--accent-dim); color: #cbb9ff; }
+.account-nav-item.active { background: var(--accent-dim); color: var(--accent); }
 
 .account-content {
   flex: 1;
@@ -2039,7 +2036,10 @@ body {
   border: 1px solid var(--line);
   border-radius: 6px;
   font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
 }
+.leaderboard-row:hover { border-color: var(--line-strong); }
 .leaderboard-row.you {
   border-color: var(--accent);
   background: var(--accent-dim);
@@ -2229,10 +2229,10 @@ body {
   border: 1px solid var(--line);
 }
 .streak-tile.empty { background: transparent; border-color: transparent; }
-.streak-tile.level-1 { background: rgba(139, 107, 242, 0.22); border-color: rgba(139, 107, 242, 0.3); color: var(--text-dim); }
-.streak-tile.level-2 { background: rgba(139, 107, 242, 0.42); border-color: rgba(139, 107, 242, 0.5); color: var(--text); }
-.streak-tile.level-3 { background: rgba(139, 107, 242, 0.66); border-color: rgba(139, 107, 242, 0.75); color: var(--text); }
-.streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.streak-tile.level-1 { background: rgba(230, 230, 235, 0.22); border-color: rgba(230, 230, 235, 0.3); color: var(--text-dim); }
+.streak-tile.level-2 { background: rgba(230, 230, 235, 0.42); border-color: rgba(230, 230, 235, 0.5); color: var(--text); }
+.streak-tile.level-3 { background: rgba(230, 230, 235, 0.66); border-color: rgba(230, 230, 235, 0.75); color: var(--text); }
+.streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 .streak-tile.today { outline: 2px solid var(--text); outline-offset: 1px; }
 
 /* --- Clips: recorded pull videos (session-only) --- */
@@ -2290,5 +2290,162 @@ body {
   cursor: pointer;
 }
 .clip-card-btn:hover { background: var(--text); color: #000; }
+
+/* --- Public shareable profile --- */
+
+.public-profile {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--bg);
+}
+
+.public-profile-card {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 36px 30px;
+}
+
+.public-profile-card .avatar-lg { margin: 0 auto 16px; width: 72px; height: 72px; font-size: 1.4rem; }
+
+.public-profile-card h2 {
+  margin: 0 0 24px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.public-profile-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.public-profile-stats > div { background: var(--surface-2); padding: 14px; }
+.public-profile-stats dt {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
+.public-profile-stats dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-profile-subhead {
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.public-profile-card .recent-pulls-list { justify-content: center; margin-bottom: 26px; }
+
+.public-profile-back { display: block; text-decoration: none; }
+
+/* --- Add Funds: simulated crypto deposit / card / Apple Pay --- */
+
+.add-funds-modal-card { max-width: 380px; text-align: left; }
+.add-funds-modal-card .payment-modal-title { text-align: center; margin-bottom: 16px; }
+
+.add-funds-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 4px;
+}
+.add-funds-tab {
+  flex: 1;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.add-funds-tab.active { background: var(--surface-1); color: var(--text); }
+
+.deposit-address-box {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.deposit-address-label {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+.deposit-address-label b { color: var(--text-dim); }
+.deposit-address-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deposit-address {
+  flex: 1;
+  min-width: 0;
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deposit-copy-btn {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.deposit-copy-btn:hover { background: var(--text); color: #000; }
+
+.add-funds-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.add-funds-note {
+  font-size: 0.64rem;
+  line-height: 1.5;
+  color: var(--text-faint);
+  margin: 14px 0 18px;
+}
+
+/* --- Credit-earned notifications --- */
+
+.credits-earned-amount { color: #4ade80; font-weight: 700; }
 
 .hidden { display: none !important; }

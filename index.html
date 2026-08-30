@@ -51,13 +51,7 @@
   <div class="shell-main">
     <header class="topbar">
       <div class="topbar-brand">
-        <svg class="brand-logo" viewBox="0 0 100 100" width="26" height="26" aria-hidden="true">
-          <polygon points="50,6 92,28 92,72 50,94 8,72 8,28" fill="none" stroke="#fff" stroke-width="6"/>
-          <line x1="50" y1="6" x2="50" y2="94" stroke="#fff" stroke-width="5"/>
-          <text x="29" y="58" font-size="15" font-weight="800" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">WIN</text>
-        </svg>
         <span class="brand-name">CHOSEN</span>
-        <span class="brand-beta">Beta</span>
       </div>
       <div id="walletBar" class="topbar-stats">
         <span class="stat-pill" id="streakStat" title="Rare+ pulls in a row">
@@ -191,6 +185,10 @@
               <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
               Copy Referral Link
             </button>
+            <button id="profileLinkBtn" class="referral-link-btn profile-link-btn">
+              <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
+              Copy Profile Link
+            </button>
           </div>
 
           <div class="account-wallet-card">
@@ -316,6 +314,24 @@
         <a href="https://odto.com/collections/footwear" target="_blank" rel="noopener">odto.com</a>.
       </p>
     </footer>
+  </div>
+</div>
+
+<!-- Public shareable profile — shown standalone when the URL carries
+     ?profile=<username>, in place of the normal app shell. -->
+<div id="publicProfileScreen" class="public-profile hidden">
+  <div class="public-profile-card">
+    <span class="avatar-circle avatar-lg" id="profileAvatar"></span>
+    <h2 id="profileUsername"></h2>
+    <div class="public-profile-stats">
+      <div><dt>XP</dt><dd id="profileXp"></dd></div>
+      <div><dt>Biggest Win</dt><dd id="profileBestName"></dd></div>
+    </div>
+
+    <h3 class="public-profile-subhead">Recent Pulls</h3>
+    <div id="profileRecentPulls" class="recent-pulls-list"></div>
+
+    <a href="?" class="modal-btn modal-btn-solid public-profile-back">Play Chosen</a>
   </div>
 </div>
 
@@ -450,6 +466,52 @@
     <p class="fairness-note">This is a client-side demonstration of the commit-reveal pattern — there's no backend server here to distrust, so it proves the reveal matches what was generated at round start, not a cryptographic guarantee against a live server.</p>
 
     <button id="fairnessCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Credits earned notifications -->
+<div id="creditsEarnedModal" class="prize-modal hidden">
+  <div class="prize-modal-card listing-modal-card">
+    <h3 class="payment-modal-title">Credits Earned</h3>
+    <p class="payment-modal-hint">A bit of cashback lands in Credits on every crate purchase — here's your recent history.</p>
+    <div id="creditsEarnedList" class="openings-list"></div>
+    <button id="creditsEarnedCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Add funds: simulated crypto deposit or card/Apple Pay -->
+<div id="addFundsModal" class="prize-modal hidden">
+  <div class="prize-modal-card add-funds-modal-card">
+    <h3 class="payment-modal-title">Add Funds</h3>
+    <div class="add-funds-tabs">
+      <button class="add-funds-tab active" data-fund-tab="crypto">Crypto</button>
+      <button class="add-funds-tab" data-fund-tab="card">Card / Apple Pay</button>
+    </div>
+
+    <div class="add-funds-panel" data-fund-panel="crypto">
+      <div id="chainFilter" class="market-filter-chips"></div>
+      <div class="deposit-address-box">
+        <span class="deposit-address-label">Send USDC on <b id="depositChainName"></b> to</span>
+        <div class="deposit-address-row">
+          <span id="depositAddress" class="deposit-address"></span>
+          <button id="depositAddressCopyBtn" class="deposit-copy-btn">Copy</button>
+        </div>
+      </div>
+      <input id="depositAmountInput" class="amount-input" type="number" min="1" step="1" placeholder="Amount sent (USDC)">
+      <button id="depositConfirmBtn" class="modal-btn modal-btn-solid">Simulate Send</button>
+      <p class="add-funds-note">Demo only — no real blockchain transaction happens. Confirming credits your USDC balance directly.</p>
+    </div>
+
+    <div class="add-funds-panel hidden" data-fund-panel="card">
+      <input id="cardAmountInput" class="amount-input" type="number" min="1" step="1" placeholder="Amount">
+      <div class="add-funds-card-actions">
+        <button id="applePayBtn" class="modal-btn modal-btn-solid">Apple Pay (Demo)</button>
+        <button id="cardPayBtn" class="modal-btn modal-btn-outline">Card (Demo)</button>
+      </div>
+      <p class="add-funds-note">Demo only — no real payment is processed, and no card details are collected anywhere in this flow.</p>
+    </div>
+
+    <button id="addFundsCloseBtn" class="back-btn listing-close-btn">Cancel</button>
   </div>
 </div>
 

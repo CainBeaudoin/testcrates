@@ -150,6 +150,13 @@ const marketSort = document.getElementById("marketSort");
 const usernameBtn = document.getElementById("usernameBtn");
 const accountAvatar = document.getElementById("accountAvatar");
 const referralLinkBtn = document.getElementById("referralLinkBtn");
+const profileLinkBtn = document.getElementById("profileLinkBtn");
+const publicProfileScreen = document.getElementById("publicProfileScreen");
+const profileAvatar = document.getElementById("profileAvatar");
+const profileUsername = document.getElementById("profileUsername");
+const profileXp = document.getElementById("profileXp");
+const profileBestName = document.getElementById("profileBestName");
+const profileRecentPulls = document.getElementById("profileRecentPulls");
 const sideCredits = document.getElementById("sideCredits");
 const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
@@ -183,6 +190,20 @@ const topUsername = document.getElementById("topUsername");
 const avatarBtn = document.getElementById("avatarBtn");
 const notifBtn = document.getElementById("notifBtn");
 const notifBadge = document.getElementById("notifBadge");
+const creditsEarnedModal = document.getElementById("creditsEarnedModal");
+const creditsEarnedList = document.getElementById("creditsEarnedList");
+const creditsEarnedCloseBtn = document.getElementById("creditsEarnedCloseBtn");
+const addFundsModal = document.getElementById("addFundsModal");
+const chainFilter = document.getElementById("chainFilter");
+const depositChainName = document.getElementById("depositChainName");
+const depositAddress = document.getElementById("depositAddress");
+const depositAddressCopyBtn = document.getElementById("depositAddressCopyBtn");
+const depositAmountInput = document.getElementById("depositAmountInput");
+const depositConfirmBtn = document.getElementById("depositConfirmBtn");
+const cardAmountInput = document.getElementById("cardAmountInput");
+const applePayBtn = document.getElementById("applePayBtn");
+const cardPayBtn = document.getElementById("cardPayBtn");
+const addFundsCloseBtn = document.getElementById("addFundsCloseBtn");
 const streakRing = document.getElementById("streakRing");
 const streakValue = document.getElementById("streakValue");
 const referralRing = document.getElementById("referralRing");
@@ -337,13 +358,119 @@ function showWalletToast(amount, currency) {
   showToast(text, currency === "cash" ? ICONS.cash : ICONS.bell);
 }
 
-addFundsBtn.addEventListener("click", async () => {
+// ---- Add Funds: simulated crypto deposit + card/Apple Pay -----------------
+// Everything here is a local demo — no real chain, gateway, or card
+// collection exists. Confirming just credits the Cash balance directly.
+
+const DEMO_CHAINS = [
+  { key: "solana", label: "Solana" },
+  { key: "ethereum", label: "Ethereum" },
+  { key: "base", label: "Base" },
+  { key: "bsc", label: "BSC" },
+  { key: "tron", label: "Tron" },
+  { key: "robinhood", label: "Robinhood Chain" },
+];
+
+function fakeDepositAddress(chainKey) {
+  const seed = `${player.getUsername()}:${chainKey}`;
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const hex = (n) => (n >>> 0).toString(16).padStart(8, "0");
+  const body = hex(h) + hex(h * 2654435761) + hex(h * 40503) + hex(h * 2246822519);
+  if (chainKey === "solana") return body.slice(0, 44);
+  if (chainKey === "tron") return `T${body.slice(0, 33)}`;
+  if (chainKey === "robinhood") return `rh${body.slice(0, 40)}`;
+  return `0x${body.slice(0, 40)}`;
+}
+
+let selectedChain = "solana";
+
+function renderChainFilter() {
+  chainFilter.innerHTML = DEMO_CHAINS.map(
+    (c) => `<button class="market-chip${c.key === selectedChain ? " active" : ""}" data-chain="${c.key}">${c.label}</button>`
+  ).join("");
+  chainFilter.querySelectorAll(".market-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      playClick();
+      selectedChain = chip.dataset.chain;
+      renderChainFilter();
+      renderDepositAddress();
+    });
+  });
+}
+
+function renderDepositAddress() {
+  const chain = DEMO_CHAINS.find((c) => c.key === selectedChain);
+  depositChainName.textContent = chain.label;
+  depositAddress.textContent = fakeDepositAddress(selectedChain);
+}
+
+function openAddFundsModal() {
+  if (chainFilter.children.length === 0) renderChainFilter();
+  renderDepositAddress();
+  depositAmountInput.value = "";
+  cardAmountInput.value = "";
+  addFundsModal.classList.remove("hidden");
+  requestAnimationFrame(() => addFundsModal.classList.add("visible"));
+}
+function closeAddFundsModal() {
+  addFundsModal.classList.remove("visible");
+  setTimeout(() => addFundsModal.classList.add("hidden"), 250);
+}
+
+addFundsBtn.addEventListener("click", () => {
   playClick();
-  const amount = await promptAmount("Add Demo Funds", "A local top-up for testing — not a real deposit.", 500);
-  if (!amount) return;
+  openAddFundsModal();
+});
+addFundsCloseBtn.addEventListener("click", () => {
+  playClick();
+  closeAddFundsModal();
+});
+
+document.querySelectorAll(".add-funds-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    playClick();
+    document.querySelectorAll(".add-funds-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll(".add-funds-panel").forEach((p) => p.classList.toggle("hidden", p.dataset.fundPanel !== tab.dataset.fundTab));
+  });
+});
+
+depositAddressCopyBtn.addEventListener("click", async () => {
+  playClick();
+  try {
+    await navigator.clipboard.writeText(depositAddress.textContent);
+    showToast("Address copied", ICONS.bell);
+  } catch {
+    // clipboard unavailable — the address is still visible to copy by hand
+  }
+});
+
+async function simulateDeposit(amount, btn) {
+  if (!amount || amount <= 0) return;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Confirming…";
+  await new Promise((r) => setTimeout(r, 1100));
   player.addDemoFunds(amount);
   renderWallet({ pulse: "cash" });
   showWalletToast(amount, "cash");
+  btn.disabled = false;
+  btn.textContent = originalText;
+  closeAddFundsModal();
+}
+
+depositConfirmBtn.addEventListener("click", () => {
+  playClick();
+  simulateDeposit(Math.round(Number(depositAmountInput.value)), depositConfirmBtn);
+});
+applePayBtn.addEventListener("click", () => {
+  playClick();
+  simulateDeposit(Math.round(Number(cardAmountInput.value)), applePayBtn);
+});
+cardPayBtn.addEventListener("click", () => {
+  playClick();
+  simulateDeposit(Math.round(Number(cardAmountInput.value)), cardPayBtn);
 });
 
 function updatePayingWithBadge() {
@@ -560,6 +687,7 @@ function tryPurchase(currency) {
     return;
   }
   player.addCredits(result.rebate);
+  player.logCreditEarned(result.rebate, key);
   renderWallet({ pulse: currency });
   showWalletToast(result.rebate, "credits");
   closePaymentPicker();
@@ -1366,8 +1494,32 @@ avatarBtn.addEventListener("click", () => {
 });
 
 notifBtn.addEventListener("click", () => {
-  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
-  document.querySelector('.account-nav-item[data-section="offers"]')?.click();
+  playClick();
+  openCreditsEarnedModal();
+});
+
+function openCreditsEarnedModal() {
+  const events = player.getCreditEvents();
+  creditsEarnedList.innerHTML = events.length
+    ? events
+        .map((e) => {
+          const cat = CATEGORIES[e.tierKey];
+          return `
+          <div class="opening-row">
+            <span class="opening-row-name">${cat ? cat.label : "Crate"} purchase</span>
+            <span class="opening-row-mult credits-earned-amount">+${e.amount.toLocaleString()} cr</span>
+          </div>`;
+        })
+        .join("")
+    : `<div class="offers-empty">Open a crate to start earning cashback credits.</div>`;
+
+  creditsEarnedModal.classList.remove("hidden");
+  requestAnimationFrame(() => creditsEarnedModal.classList.add("visible"));
+}
+creditsEarnedCloseBtn.addEventListener("click", () => {
+  playClick();
+  creditsEarnedModal.classList.remove("visible");
+  setTimeout(() => creditsEarnedModal.classList.add("hidden"), 250);
 });
 
 referralLinkBtn.addEventListener("click", async () => {
@@ -1379,6 +1531,73 @@ referralLinkBtn.addEventListener("click", async () => {
   }
   playClick();
   showToast("Referral link copied", ICONS.bell);
+});
+
+// ---- Public shareable profile ---------------------------------------------
+// A read-only page at ?profile=<username>, standing in for the app shell
+// entirely. For the real player it's built from real data; for anyone else
+// (the same simulated cast used by the marketplace/leaderboard/recent-pulls
+// feed) it's generated deterministically from their username, so the same
+// link shows the same "profile" on every visit rather than reshuffling.
+
+function seededRandom(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return function next() {
+    h = (h * 1664525 + 1013904223) >>> 0;
+    return h / 4294967296;
+  };
+}
+
+function getProfileData(username) {
+  if (username === player.getUsername()) {
+    const history = player.getHistory();
+    return {
+      username,
+      xp: player.getXp(),
+      bestName: history.length ? [...history].sort((a, b) => b.price - a.price)[0].name : "—",
+      recentPulls: history.slice(0, 8),
+    };
+  }
+
+  const leader = FAKE_LEADERS.find((l) => l.username === username);
+  const rand = seededRandom(username);
+  const xp = leader ? leader.xp : Math.floor(500 + rand() * 20000);
+  const tierKeys = Object.keys(CATEGORIES);
+  const recentPulls = Array.from({ length: 8 }, () => {
+    const tierKey = tierKeys[Math.floor(rand() * tierKeys.length)];
+    const prize = CATEGORIES[tierKey].pool[Math.floor(rand() * CATEGORIES[tierKey].pool.length)];
+    return prize;
+  });
+  const bestName = [...recentPulls].sort((a, b) => b.price - a.price)[0]?.name ?? "—";
+  return { username, xp, bestName, recentPulls };
+}
+
+function renderPublicProfile(username) {
+  const data = getProfileData(username);
+  const { background, initial } = avatarStyle(username);
+  profileAvatar.style.background = background;
+  profileAvatar.textContent = initial;
+  profileUsername.textContent = username;
+  profileXp.textContent = data.xp.toLocaleString();
+  profileBestName.textContent = data.bestName;
+  profileRecentPulls.innerHTML = data.recentPulls.length
+    ? data.recentPulls.map((p) => `<div class="recent-pull-item static"><img src="${p.image}" alt=""><span class="recent-pull-price">$${p.price.toLocaleString()}</span></div>`).join("")
+    : `<div class="market-empty">No pulls yet.</div>`;
+
+  document.querySelector(".shell").classList.add("hidden");
+  publicProfileScreen.classList.remove("hidden");
+}
+
+profileLinkBtn.addEventListener("click", async () => {
+  const link = `${location.origin}${location.pathname}?profile=${encodeURIComponent(player.getUsername())}`;
+  try {
+    await navigator.clipboard.writeText(link);
+  } catch {
+    // clipboard API unavailable — nothing more we can do client-side
+  }
+  playClick();
+  showToast("Profile link copied", ICONS.bell);
 });
 
 // Streak + referral-share rings and the notification badge live in the
@@ -1393,9 +1612,9 @@ function renderHeaderStats() {
   referralValue.textContent = `${Math.round(referral.share * 100)}%`;
   referralRing.style.setProperty("--pct", Math.round(referral.progress * 100));
 
-  const pending = market.getIncomingOffers().length;
-  notifBadge.textContent = pending;
-  notifBadge.classList.toggle("hidden", pending === 0);
+  const earned = player.getCreditEvents().length;
+  notifBadge.textContent = earned;
+  notifBadge.classList.toggle("hidden", earned === 0);
 }
 
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you
@@ -1683,13 +1902,18 @@ function renderLeaderboard() {
   leaderboardList.innerHTML = rows
     .map(
       (r, i) => `
-      <div class="leaderboard-row ${r.isPlayer ? "you" : ""}">
+      <div class="leaderboard-row ${r.isPlayer ? "you" : ""}" data-username="${r.username}">
         <span class="leaderboard-rank">#${i + 1}</span>
         <span class="leaderboard-name">${r.isPlayer ? "You" : r.username}</span>
         <span class="leaderboard-xp">${r.xp.toLocaleString()} XP</span>
       </div>`
     )
     .join("");
+  leaderboardList.querySelectorAll(".leaderboard-row").forEach((el) => {
+    el.addEventListener("click", () => {
+      location.search = `?profile=${encodeURIComponent(el.dataset.username)}`;
+    });
+  });
 }
 
 function renderReferralPanel() {
@@ -1865,8 +2089,13 @@ document.addEventListener("click", (e) => {
   }
 });
 
-buildAmbientParticles();
-renderIdentity();
-seedSimulatedPulls();
-renderCategories();
-setInterval(tickSimulatedPulls, 4000);
+const profileParam = new URLSearchParams(location.search).get("profile");
+if (profileParam) {
+  renderPublicProfile(profileParam);
+} else {
+  buildAmbientParticles();
+  renderIdentity();
+  seedSimulatedPulls();
+  renderCategories();
+  setInterval(tickSimulatedPulls, 4000);
+}

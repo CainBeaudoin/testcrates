@@ -81,6 +81,7 @@ function defaultState() {
     shipped: [], // items claimed physically: {id, name, rarity, price, image, shippedAt}
     cashedOut: [], // liquidated items: {id, name, rarity, price, image, amount, currency, ts}
     transfers: [], // items sent to another account: {id, name, rarity, price, image, toUsername, ts}
+    creditEvents: [], // cashback rebate notifications: {amount, tierKey, ts}
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
   };
@@ -521,4 +522,16 @@ export function transferItem(item, toUsername) {
 
 export function getTransfers() {
   return state.transfers;
+}
+
+// ---- Credit-earned notifications -------------------------------------
+
+export function logCreditEarned(amount, tierKey) {
+  state.creditEvents.unshift({ amount, tierKey, ts: Date.now() });
+  state.creditEvents = state.creditEvents.slice(0, 50);
+  save();
+}
+
+export function getCreditEvents() {
+  return state.creditEvents;
 }
