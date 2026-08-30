@@ -85,6 +85,7 @@ let roundLocked = false;
 let viewers = [null, null, null];
 let reelCellWidth = 0;
 let toastTimer = null;
+let currentFairness = null; // {hash, nonce} for the active round's commit-reveal disclosure
 let currentRecording = null; // the startRecording() promise for this round, or null
 
 // ---- DOM refs -----------------------------------------------------------
@@ -115,6 +116,13 @@ const ambientBg = document.getElementById("ambientBg");
 const recentPulls = document.getElementById("recentPulls");
 const recentPullsList = document.getElementById("recentPullsList");
 const payingWithBadge = document.getElementById("payingWithBadge");
+const fairnessBadge = document.getElementById("fairnessBadge");
+const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
+const fairnessModal = document.getElementById("fairnessModal");
+const fairnessHashValue = document.getElementById("fairnessHashValue");
+const fairnessRecomputedValue = document.getElementById("fairnessRecomputedValue");
+const fairnessStatus = document.getElementById("fairnessStatus");
+const fairnessCloseBtn = document.getElementById("fairnessCloseBtn");
 const walletCredits = document.getElementById("walletCredits");
 const walletCash = document.getElementById("walletCash");
 const addFundsBtn = document.getElementById("addFundsBtn");
@@ -133,6 +141,7 @@ const screenAccount = document.getElementById("screen-account");
 const marketGrid = document.getElementById("marketGrid");
 const marketCount = document.getElementById("marketCount");
 const marketBrandFilter = document.getElementById("marketBrandFilter");
+const marketSizeFilter = document.getElementById("marketSizeFilter");
 const marketFmvFilter = document.getElementById("marketFmvFilter");
 const marketListedOnly = document.getElementById("marketListedOnly");
 const marketPriceMin = document.getElementById("marketPriceMin");
@@ -636,6 +645,66 @@ async function mountViewers() {
   });
 }
 
+async function computeHash(str) {
+  const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function fairnessPayload(prizes) {
+  return prizes.map((p) => p.name).join("|");
+}
+
+// Hashes all three crates' contents the instant the round starts — before
+// any pick — so revealing them later can be checked against a number that
+// existed beforehand. See the fairness modal's own disclosure text for
+// what this does and doesn't prove without a real backend.
+async function commitFairness(prizes) {
+  currentFairness = null;
+  fairnessBadge.classList.add("hidden");
+  if (!crypto.subtle) return; // insecure context (non-HTTPS, non-localhost) — skip quietly
+
+  const nonce = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  const hash = await computeHash(fairnessPayload(prizes) + nonce);
+  currentFairness = { hash, nonce };
+  fairnessBadgeLabel.textContent = "Fairness";
+  fairnessBadge.classList.remove("verified");
+  fairnessBadge.classList.remove("hidden");
+}
+
+async function openFairnessModal() {
+  if (!currentFairness) return;
+  fairnessHashValue.textContent = currentFairness.hash;
+
+  const allRevealed = boxPrizes.every((_, i) => slots[i].classList.contains("open"));
+  if (allRevealed) {
+    const recomputed = await computeHash(fairnessPayload(boxPrizes) + currentFairness.nonce);
+    fairnessRecomputedValue.textContent = recomputed;
+    const verified = recomputed === currentFairness.hash;
+    fairnessStatus.textContent = verified ? "Verified — matches the committed hash" : "Mismatch — this should never happen";
+    fairnessStatus.className = `fairness-status ${verified ? "verified" : "pending"}`;
+    if (verified) {
+      fairnessBadgeLabel.textContent = "Verified";
+      fairnessBadge.classList.add("verified");
+    }
+  } else {
+    fairnessRecomputedValue.textContent = "—";
+    fairnessStatus.textContent = "Reveal all three crates to verify";
+    fairnessStatus.className = "fairness-status pending";
+  }
+
+  fairnessModal.classList.remove("hidden");
+  requestAnimationFrame(() => fairnessModal.classList.add("visible"));
+}
+fairnessBadge.addEventListener("click", () => {
+  playClick();
+  openFairnessModal();
+});
+fairnessCloseBtn.addEventListener("click", () => {
+  playClick();
+  fairnessModal.classList.remove("visible");
+  setTimeout(() => fairnessModal.classList.add("hidden"), 250);
+});
+
 async function startRound(key, currency) {
   currentCategoryKey = key;
   roundCurrency = currency;
@@ -643,8 +712,13 @@ async function startRound(key, currency) {
 
   boxPrizes = [weightedPick(cat.pool), weightedPick(cat.pool), weightedPick(cat.pool)];
   boxPrizes = player.applyPity(key, boxPrizes, cat.pool);
+  // Duplicate-guard runs here, for all three, rather than only on whichever
+  // box gets picked — final contents have to be locked in before the
+  // fairness commitment below, or the hash couldn't be trusted.
+  boxPrizes = boxPrizes.map((p) => player.rerollIfDuplicate(key, p, cat.pool));
   selectedIndex = null;
   roundLocked = false;
+  commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
 
   gameTierLabel.textContent = cat.label;
   updatePayingWithBadge();
@@ -686,13 +760,9 @@ function onPick(index) {
     if (viewers[i]) viewers[i].setPaused(true);
   });
 
-  const cat = CATEGORIES[currentCategoryKey];
-  // "The algorithm must not hand a user the same item consecutively" — only
-  // applied to the crate the player actually picked.
-  const finalPrize = player.rerollIfDuplicate(currentCategoryKey, boxPrizes[index], cat.pool);
-  boxPrizes[index] = finalPrize;
+  const finalPrize = boxPrizes[index]; // duplicate-guard already resolved at round start, see startRound
 
-  const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, cat.price);
+  const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, CATEGORIES[currentCategoryKey].price);
 
   helperText.textContent = "Opening your crate…";
   openSlot(index, { isYours: true, revealCard: false });
@@ -729,10 +799,22 @@ function revealOthers() {
         setTimeout(() => {
           helperText.classList.add("hidden");
           playAgainBtn.classList.remove("hidden");
+          verifyFairnessQuietly();
         }, 400);
       }
     }, REVEAL_STEP_MS * step);
   });
+}
+
+// Marks the badge verified as soon as all three are revealed, without
+// requiring the player to open the modal first.
+async function verifyFairnessQuietly() {
+  if (!currentFairness) return;
+  const recomputed = await computeHash(fairnessPayload(boxPrizes) + currentFairness.nonce);
+  if (recomputed === currentFairness.hash) {
+    fairnessBadgeLabel.textContent = "Verified";
+    fairnessBadge.classList.add("verified");
+  }
 }
 
 function openSlot(index, { isYours, revealCard = true }) {
@@ -977,10 +1059,12 @@ function marketItemCardHTML(listing) {
       ? `<span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>`
       : `<span class="market-item-offer-only">Offer only</span>`;
   const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
+  const sizeHTML = listing.size ? `<span class="market-item-size">US ${listing.size}</span>` : "";
   return `
     <div class="market-item" data-listing="${listing.id}">
       <div class="market-item-media">
         <img src="${listing.image}" alt="">
+        ${sizeHTML}
         ${fmvHTML}
       </div>
       <div class="market-item-body">
@@ -1033,6 +1117,7 @@ function offerRowHTML(offer, { showActions } = {}) {
 // price range are, mirroring the scope's filter set.
 
 let marketBrandValue = "all";
+let marketSizeValue = "all";
 let marketFmvValue = "all";
 
 function renderMarketplace() {
@@ -1048,6 +1133,20 @@ function renderMarketplace() {
         playClick();
         marketBrandValue = chip.dataset.brand;
         marketBrandFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        renderMarketGrid();
+      });
+    });
+
+    const sizes = ["all", ...market.SIZES];
+    marketSizeFilter.innerHTML = sizes
+      .map((s) => `<button class="market-chip${s === "all" ? " active" : ""}" data-size="${s}">${s === "all" ? "All Sizes" : `US ${s}`}</button>`)
+      .join("");
+    marketSizeFilter.querySelectorAll(".market-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        playClick();
+        marketSizeValue = chip.dataset.size;
+        marketSizeFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
         chip.classList.add("active");
         renderMarketGrid();
       });
@@ -1081,6 +1180,7 @@ function renderMarketGrid() {
   marketCount.textContent = listings.length;
 
   if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
+  if (marketSizeValue !== "all") listings = listings.filter((l) => l.size === marketSizeValue);
   if (marketFmvValue !== "all") listings = listings.filter((l) => market.fmvRating(l)?.key === marketFmvValue);
   if (marketListedOnly.checked) listings = listings.filter((l) => l.price != null);
 

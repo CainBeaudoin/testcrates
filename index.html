@@ -99,7 +99,13 @@
     <section id="screen-game" class="screen">
       <div class="game-top-bar">
         <button id="backBtn" class="back-btn">&larr; Change tier</button>
-        <span id="payingWithBadge" class="paying-with-badge hidden"></span>
+        <div class="game-top-bar-right">
+          <span id="payingWithBadge" class="paying-with-badge hidden"></span>
+          <button id="fairnessBadge" class="fairness-badge hidden">
+            <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/></svg>
+            <span id="fairnessBadgeLabel">Fairness</span>
+          </button>
+        </div>
       </div>
       <h2 class="screen-title" id="gameTierLabel"></h2>
 
@@ -153,9 +159,9 @@
     <!-- SCREEN 3: marketplace -->
     <section id="screen-marketplace" class="screen">
       <h2 class="screen-title">Marketplace <span class="count-badge" id="marketCount">0</span></h2>
-      <p class="market-sub">Rarity is relative to the crate it came from, so it's not a browse filter here — it mattered during the open.</p>
       <div class="market-toolbar">
         <div id="marketBrandFilter" class="market-filter-chips"></div>
+        <div id="marketSizeFilter" class="market-filter-chips"></div>
         <div id="marketFmvFilter" class="market-filter-chips"></div>
         <label class="market-listed-toggle">
           <input type="checkbox" id="marketListedOnly"> Listed only
@@ -421,6 +427,29 @@
     </div>
 
     <button id="itemDetailCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Fairness disclosure: commit-before-pick, verify-after-reveal -->
+<div id="fairnessModal" class="prize-modal hidden">
+  <div class="prize-modal-card fairness-modal-card">
+    <h3 class="payment-modal-title">Provably Fair</h3>
+    <p class="payment-modal-hint">All three crates' contents were generated and hashed the moment this round started — before you picked. Reveal all three to check the hash still matches.</p>
+
+    <div class="fairness-row">
+      <span class="fairness-row-label">Committed hash</span>
+      <span class="fairness-row-value" id="fairnessHashValue"></span>
+    </div>
+    <div class="fairness-row">
+      <span class="fairness-row-label">Recomputed from reveal</span>
+      <span class="fairness-row-value" id="fairnessRecomputedValue">—</span>
+    </div>
+
+    <div id="fairnessStatus" class="fairness-status pending">Reveal all three crates to verify</div>
+
+    <p class="fairness-note">This is a client-side demonstration of the commit-reveal pattern — there's no backend server here to distrust, so it proves the reveal matches what was generated at round start, not a cryptographic guarantee against a live server.</p>
+
+    <button id="fairnessCloseBtn" class="back-btn listing-close-btn">Close</button>
   </div>
 </div>
 

@@ -19,6 +19,18 @@ function uid() {
   return `m${Date.now().toString(36)}${uidCounter.toString(36)}`;
 }
 
+// No size data exists in the scraped catalog, so each listing gets a
+// deterministic synthetic US size (same item name always maps to the same
+// size) — enough to power a real Size filter without pretending it's real
+// inventory data.
+export const SIZES = ["7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "13"];
+
+function sizeForItem(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return SIZES[h % SIZES.length];
+}
+
 function defaultState() {
   return {
     seeded: false,
@@ -67,6 +79,7 @@ export function ensureSeeded(catalog) {
       image: item.image,
       catalogPrice: item.price,
       price,
+      size: sizeForItem(item.name),
       seller: FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)],
       isPlayer: false,
       itemId: null,
@@ -85,6 +98,7 @@ export function ensureSeeded(catalog) {
       image: item.image,
       catalogPrice: item.price,
       price: null,
+      size: sizeForItem(item.name),
       seller: FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)],
       isPlayer: false,
       itemId: null,
@@ -114,6 +128,7 @@ export function createListing({ item, price = null, seller }) {
     image: item.image,
     catalogPrice: item.price,
     price,
+    size: sizeForItem(item.name),
     seller,
     isPlayer: true,
     itemId: item.id,

@@ -365,6 +365,12 @@ body {
 }
 .game-top-bar .back-btn { margin-bottom: 0; }
 
+.game-top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .paying-with-badge {
   font-size: 0.72rem;
   color: var(--text-dim);
@@ -372,6 +378,64 @@ body {
   padding: 5px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
+}
+
+.fairness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+  padding: 5px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.fairness-badge:hover { border-color: var(--line-strong); color: var(--text); }
+.fairness-badge.verified { color: #4ade80; border-color: rgba(74, 222, 128, 0.4); }
+
+.fairness-modal-card { max-width: 380px; text-align: left; }
+.fairness-modal-card .payment-modal-title { text-align: center; }
+.fairness-modal-card .payment-modal-hint { text-align: center; }
+
+.fairness-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fairness-row-label {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.fairness-row-value {
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.fairness-status {
+  margin: 14px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+.fairness-status.pending { background: var(--surface-2); color: var(--text-faint); }
+.fairness-status.verified { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+
+.fairness-note {
+  font-size: 0.66rem;
+  line-height: 1.5;
+  color: var(--text-faint);
+  margin-bottom: 18px;
 }
 
 /* --- Credit-earned toast --- */
@@ -1293,7 +1357,8 @@ body {
 }
 
 .market-item-rarity,
-.market-item-fmv {
+.market-item-fmv,
+.market-item-size {
   position: absolute;
   top: 8px;
   left: 8px;
@@ -1308,6 +1373,7 @@ body {
   border: 1px solid currentColor;
 }
 .market-item-fmv { left: auto; right: 8px; }
+.market-item-size { color: var(--text-dim); }
 
 .market-item-body {
   padding: 10px 12px 12px;
@@ -1827,15 +1893,6 @@ body {
 }
 
 /* --- Marketplace filter rework --- */
-
-.market-sub {
-  max-width: 700px;
-  margin: -10px auto 20px;
-  text-align: center;
-  font-size: 0.72rem;
-  color: var(--text-faint);
-  line-height: 1.5;
-}
 
 .market-listed-toggle {
   display: flex;
