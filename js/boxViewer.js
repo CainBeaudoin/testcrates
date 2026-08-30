@@ -9,6 +9,12 @@ const OPEN_DURATION_MS = 700;
 const IDLE_SPEED = 0.45; // rad/s
 const FACE_SPEED = 7; // rad/s easing back to forward-facing (0) on hover/open
 
+// The Stocks tier's "pack" — a generic printer, no lid to open. Same rig,
+// same idle-spin, same everything except the reveal: instead of a hinge,
+// a procedural sheet of "paper" feeds out of it (see buildPaperSheet).
+const PRINTER_MODEL_URL = "assets/models/printer/scene.gltf";
+const PRINT_DURATION_MS = 1000;
+
 let modelPromise = null;
 function loadModel() {
   if (!modelPromise) {
@@ -19,6 +25,19 @@ function loadModel() {
 // Kick off the (small, ~1.4MB) download as soon as this module is imported so
 // it's already cached by the time a round actually needs it.
 loadModel().catch(() => {});
+
+let printerModelPromise = null;
+function loadPrinterModel() {
+  if (!printerModelPromise) {
+    printerModelPromise = new GLTFLoader().loadAsync(PRINTER_MODEL_URL).then((gltf) => gltf.scene);
+  }
+  return printerModelPromise;
+}
+loadPrinterModel().catch(() => {});
+
+function loadModelFor(kind) {
+  return kind === "printer" ? loadPrinterModel() : loadModel();
+}
 
 // Bronze/Silver/Gold "skins" — same hex family as the tier badges elsewhere
 // in the UI. Replaces the model's own branded texture with a flat metallic
@@ -102,7 +121,9 @@ function makeShadowTexture() {
 
 // Shared scene/camera/lighting setup so the reel snapshot and the live,
 // interactive viewers are pixel-for-pixel the same shot — that's what makes
-// the reel-to-slot handoff read as the same box rather than a swap.
+// the reel-to-slot handoff read as the same box rather than a swap. Works
+// for any single loaded model (box or printer) since it only reasons about
+// the model's own bounding box.
 function buildRig(root) {
   const lid = root.getObjectByName(LID_NODE_NAME);
 
@@ -111,15 +132,25 @@ function buildRig(root) {
   box.getSize(size);
   const center = new THREE.Vector3();
   box.getCenter(center);
-  // Framing has to fit the box's worst-case silhouette while it's idly
+  // Framing has to fit the model's worst-case silhouette while it's idly
   // spinning around Y, not just its resting front-on footprint — a
-  // rectangular box rotated to its diagonal projects wider than either
+  // rectangular object rotated to its diagonal projects wider than either
   // side alone, which is what was clipping the corners mid-spin.
   const horizontalDiagonal = Math.hypot(size.x, size.z);
   const scale = 1.7 / Math.max(horizontalDiagonal, size.y);
 
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
+  // Normalized (post-scale, post-center) bounds — lets a caller (the paper
+  // sheet, for the printer) position itself relative to the model's real
+  // size instead of a guessed constant.
+  const bounds = {
+    minY: box.min.y * scale - center.y * scale,
+    maxY: box.max.y * scale - center.y * scale,
+    maxZ: box.max.z * scale - center.z * scale,
+    width: size.x * scale,
+  };
 
   const group = new THREE.Group();
   group.add(root);
@@ -148,7 +179,58 @@ function buildRig(root) {
   rim.position.set(-1.5, 2.2, -3);
   scene.add(ambient, key, fill, rim);
 
-  return { scene, camera, group, lid };
+  return { scene, camera, group, lid, bounds };
+}
+
+// A procedural sheet of "paper" for the printer — sized and positioned off
+// the printer's own (normalized) bounds so it roughly lines up with the
+// top of the model regardless of that model's exact proportions. Parked
+// mostly inside the printer's silhouette (so the body occludes it) and
+// slid up-and-forward on print(), rather than needing a real output-slot
+// node baked into the source model.
+function buildPaperSheet(bounds) {
+  const width = Math.max(0.5, bounds.width * 0.46);
+  const height = width * 1.3;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = Math.round(256 * (height / width));
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#f4f2ec";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "rgba(30,30,30,0.55)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 5; i++) {
+    const y = canvas.height * (0.16 + i * 0.09);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width * 0.14, y);
+    ctx.lineTo(canvas.width * (0.5 + (i % 2) * 0.3), y);
+    ctx.stroke();
+  }
+  // A little sparkline, since it's meant to read as a printed stock report.
+  ctx.strokeStyle = "#4ade80";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  const py = canvas.height * 0.72;
+  ctx.moveTo(canvas.width * 0.14, py + 14);
+  ctx.lineTo(canvas.width * 0.3, py - 4);
+  ctx.lineTo(canvas.width * 0.46, py + 8);
+  ctx.lineTo(canvas.width * 0.62, py - 18);
+  ctx.lineTo(canvas.width * 0.8, py - 30);
+  ctx.stroke();
+  const texture = new THREE.CanvasTexture(canvas);
+
+  const sheet = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0, side: THREE.DoubleSide })
+  );
+
+  const parkedY = bounds.minY + (bounds.maxY - bounds.minY) * 0.72;
+  const printedY = parkedY + height * 0.62;
+  sheet.position.set(0, parkedY, bounds.maxZ * 0.35);
+  sheet.rotation.x = -0.3;
+
+  return { sheet, parkedY, printedY };
 }
 
 function configureRenderer(renderer) {
@@ -158,19 +240,20 @@ function configureRenderer(renderer) {
   renderer.toneMappingExposure = 1.7;
 }
 
-const snapshotPromises = new Map(); // tierKey (or "" for unskinned) -> Promise<dataURL>
+const snapshotPromises = new Map(); // "kind:tierKey" -> Promise<dataURL>
 /**
- * Renders one closed, front-facing box offscreen and returns a PNG data URL.
- * Used to paint the scrolling reel with the *exact* same box/angle/lighting
- * (and, now, tier skin) that the live 3D viewers use, so landing on the 3
- * slots feels like the same boxes coming to a stop rather than a swap to
- * different artwork. Cached per tier.
+ * Renders one closed, front-facing box (or printer) offscreen and returns a
+ * PNG data URL. Used to paint the scrolling reel with the *exact* same
+ * model/angle/lighting (and, for boxes, tier skin) that the live 3D viewers
+ * use, so landing on the 3 slots feels like the same prop coming to a stop
+ * rather than a swap to different artwork. Cached per tier/kind.
  */
-export function getBoxSnapshot(tierKey = "") {
-  if (!snapshotPromises.has(tierKey)) {
+export function getBoxSnapshot(tierKey = "", kind = "box") {
+  const cacheKey = `${kind}:${tierKey}`;
+  if (!snapshotPromises.has(cacheKey)) {
     snapshotPromises.set(
-      tierKey,
-      loadModel().then((baseModel) => {
+      cacheKey,
+      loadModelFor(kind).then((baseModel) => {
         const size = 320;
         const canvas = document.createElement("canvas");
         canvas.width = size;
@@ -180,7 +263,10 @@ export function getBoxSnapshot(tierKey = "") {
         renderer.setSize(size, size, false);
 
         const root = baseModel.clone(true);
-        applyTierSkin(root, tierKey);
+        if (kind === "box") applyTierSkin(root, tierKey);
+        // Snapshot always represents the closed/idle state (same as the
+        // box's lid never being open in it) — the paper sheet doesn't need
+        // to exist in this scene at all.
         const { scene, camera } = buildRig(root);
         applyStudioEnvironment(scene, renderer);
         camera.aspect = 1;
@@ -193,22 +279,32 @@ export function getBoxSnapshot(tierKey = "") {
       })
     );
   }
-  return snapshotPromises.get(tierKey);
+  return snapshotPromises.get(cacheKey);
 }
 
 /**
- * Mounts one interactive, self-rotating box on `canvas`, optionally skinned
- * to a tier ("bronze"/"silver"/"gold"). A box whose `.open()` is never
- * called just idles and spins forever — that's how the decorative,
- * always-closed tier boxes on the category cards are built, not a separate
- * component.
+ * Mounts one interactive, self-rotating prop on `canvas` — a box (optionally
+ * skinned to a tier: "bronze"/"silver"/"gold") or, for kind:"printer", the
+ * Stocks tier's printer. Same idle-spin/hover/facing dynamics either way;
+ * only what happens on open() differs — a box's lid hinges open, the
+ * printer instead feeds a sheet of "paper" out (no lid to open). A prop
+ * whose .open() is never called just idles and spins forever — that's how
+ * the decorative, always-closed tier props on the category cards are
+ * built, not a separate component.
  * Returns a small controller: { setPaused, open, reset, dispose }.
  */
-export async function createBoxViewer(canvas, tierKey = "") {
-  const baseModel = await loadModel();
+export async function createBoxViewer(canvas, tierKey = "", kind = "box") {
+  const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
-  applyTierSkin(root, tierKey);
-  const { scene, camera, group, lid } = buildRig(root);
+  if (kind === "box") applyTierSkin(root, tierKey);
+  const { scene, camera, group, lid, bounds } = buildRig(root);
+
+  let paper = null;
+  if (kind === "printer") {
+    paper = buildPaperSheet(bounds);
+    paper.sheet.visible = false;
+    group.add(paper.sheet);
+  }
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   configureRenderer(renderer);
@@ -233,6 +329,7 @@ export async function createBoxViewer(canvas, tierKey = "") {
   let openProgress = 0; // 0 closed -> 1 open, latched once finished
   let running = true;
   let lastT = performance.now();
+  const openDuration = kind === "printer" ? PRINT_DURATION_MS : OPEN_DURATION_MS;
 
   function easeTowardZero(dt, speedMul) {
     const current = angleToZero(group.rotation.y);
@@ -247,14 +344,20 @@ export async function createBoxViewer(canvas, tierKey = "") {
     lastT = t;
 
     if (opening) {
-      // Always finish the turn to forward-facing while the lid opens, so
-      // every box opens the same way no matter what angle it was spinning
-      // at when it was picked.
+      // Always finish the turn to forward-facing while it opens, so every
+      // pick plays out the same way no matter what angle it was spinning
+      // at when it was chosen.
       easeTowardZero(dt, 1.6);
       const elapsed = t - openStartTime;
-      const p = Math.min(elapsed / OPEN_DURATION_MS, 1);
-      openProgress = easeOutBack(p);
-      if (lid) lid.rotation.x = THREE.MathUtils.degToRad(LID_OPEN_DEG) * openProgress;
+      const p = Math.min(elapsed / openDuration, 1);
+      if (kind === "printer") {
+        const eased = 1 - Math.pow(1 - p, 3);
+        openProgress = eased;
+        paper.sheet.position.y = paper.parkedY + (paper.printedY - paper.parkedY) * eased;
+      } else {
+        openProgress = easeOutBack(p);
+        if (lid) lid.rotation.x = THREE.MathUtils.degToRad(LID_OPEN_DEG) * openProgress;
+      }
       if (p >= 1) {
         opening = false;
         openProgress = 1;
@@ -286,6 +389,7 @@ export async function createBoxViewer(canvas, tierKey = "") {
       opening = true;
       facing = false;
       openStartTime = performance.now();
+      if (paper) paper.sheet.visible = true;
     },
     reset() {
       opening = false;
@@ -293,6 +397,10 @@ export async function createBoxViewer(canvas, tierKey = "") {
       openProgress = 0;
       group.rotation.y = 0;
       if (lid) lid.rotation.x = 0;
+      if (paper) {
+        paper.sheet.visible = false;
+        paper.sheet.position.y = paper.parkedY;
+      }
     },
     dispose() {
       running = false;

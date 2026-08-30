@@ -23,7 +23,8 @@ const CATEGORIES = {
     pool: STOCKS_POOL,
     categoryIcon: "stock",
     categoryLabel: "Stocks",
-    poweredBy: null, // no real partner behind this one — caption is skipped
+    poweredBy: "Robinhood Chain",
+    boxKind: "printer", // generic printer model, not the shoe box
   },
   hundred: {
     label: "$100",
@@ -768,7 +769,7 @@ function renderCategories() {
     categoryList.appendChild(wrap);
 
     // Decorative only — idles and spins forever, .open() is never called on it.
-    createBoxViewer(card.querySelector(".category-box-canvas"), cat.badge.toLowerCase()).then((viewer) => {
+    createBoxViewer(card.querySelector(".category-box-canvas"), cat.badge.toLowerCase(), cat.boxKind ?? "box").then((viewer) => {
       categoryBoxViewers.push(viewer);
     });
   });
@@ -888,9 +889,11 @@ function resetSlotsUI() {
 }
 
 async function mountViewers() {
-  const skin = CATEGORIES[currentCategoryKey].badge.toLowerCase();
+  const cat = CATEGORIES[currentCategoryKey];
+  const skin = cat.badge.toLowerCase();
+  const kind = cat.boxKind ?? "box";
   const canvases = slots.map((s) => s.querySelector(".box-canvas"));
-  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin)));
+  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind)));
   mounted.forEach((viewer, i) => {
     viewers[i] = viewer;
     const slot = slots[i];
@@ -999,7 +1002,7 @@ async function startRound(key, currency) {
   // resolves it, comfortably ahead of the player picking a box.
   currentRecording = recorder.startRecording();
 
-  const snapshotUrl = await getBoxSnapshot(cat.badge.toLowerCase());
+  const snapshotUrl = await getBoxSnapshot(cat.badge.toLowerCase(), cat.boxKind ?? "box");
   buildReel(snapshotUrl);
   await spinReel();
 
