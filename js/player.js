@@ -20,10 +20,10 @@ export const ARCHIVAL_DAYS = 365;
 export const BIG_PULL_MULTIPLIER = 5; // pinned permanently in opening history at/above this
 export const OPENING_HISTORY_ROLLING = 10; // non-pinned entries kept
 
-// Purchase rebate ("cashback notification"): a small Credits rebate lands
-// automatically on every crate purchase, scaling with tier. Rate to be set
-// by a real margin engine per the scope — these are placeholder V1 numbers.
-export const CASHBACK_RATES = { hundred: 0.02, twoFifty: 0.03, thousand: 0.04 };
+// Purchase rebate ("cashback notification"): a Credits rebate lands
+// automatically on every crate purchase — 5 credits per $100 spent, flat
+// across all tiers ($100 → 5, $250 → 12.5, $1000 → 50).
+export const CASHBACK_RATE = 0.05;
 
 // Referral ladder from the scope doc, denominated in lifetime crate volume.
 export const REFERRAL_BASE = 0.2; // sign-up 10% + link 5% + X-verify 5%
@@ -265,13 +265,12 @@ export function addDemoFunds(amount) {
 // Deducts the crate's cost and records volume/XP immediately. The cashback
 // rebate is only *computed* here — app.js credits it (via addCredits)
 // separately, timed to land while the reveal is on screen, per the scope.
-export function purchaseCrate(tierKey, tierPrice, currency) {
+export function purchaseCrate(tierPrice, currency) {
   if (!spend(currency, tierPrice)) return null;
   state.lifetimeVolume += tierPrice;
   const xp = tierPrice; // 1 XP per $1 of volume
   state.xp += xp;
-  const rebateRate = CASHBACK_RATES[tierKey] ?? 0.02;
-  const rebate = Math.round(tierPrice * rebateRate * 100) / 100;
+  const rebate = Math.round(tierPrice * CASHBACK_RATE * 100) / 100;
   save();
   return { rebate, xp };
 }

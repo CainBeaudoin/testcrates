@@ -78,7 +78,6 @@ const boxSnapshotPromise = getBoxSnapshot();
 let currentCategoryKey = null;
 let pendingCategoryKey = null;
 let roundCurrency = null; // "credits" | "cash"
-let pendingRebate = 0; // computed at purchase, credited when the reveal starts
 let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
@@ -521,14 +520,15 @@ function closePaymentPicker() {
 function tryPurchase(currency) {
   const key = pendingCategoryKey;
   const cat = CATEGORIES[key];
-  const result = player.purchaseCrate(key, cat.price, currency);
+  const result = player.purchaseCrate(cat.price, currency);
   if (!result) {
     paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for the ${cat.label} — try Add Funds.`;
     paymentError.classList.remove("hidden");
     return;
   }
-  pendingRebate = result.rebate;
+  player.addCredits(result.rebate);
   renderWallet({ pulse: currency });
+  showWalletToast(result.rebate, "credits");
   closePaymentPicker();
   startRound(key, currency);
 }
@@ -772,15 +772,6 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   requestAnimationFrame(() => prizeModal.classList.add("visible"));
 
   vibrate(prize.rarity);
-
-  // Cashback rebate notification — lands while the reveal is still on
-  // screen, not tied to which exit the player eventually picks.
-  if (pendingRebate > 0) {
-    player.addCredits(pendingRebate);
-    renderWallet({ pulse: "credits" });
-    showWalletToast(pendingRebate, "credits");
-    pendingRebate = 0;
-  }
 
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
