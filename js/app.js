@@ -225,6 +225,10 @@ const listingBuyBtn = document.getElementById("listingBuyBtn");
 const listingUnlistBtn = document.getElementById("listingUnlistBtn");
 const listingOffersList = document.getElementById("listingOffersList");
 const listingCloseBtn = document.getElementById("listingCloseBtn");
+const listingMarketValue = document.getElementById("listingMarketValue");
+const listingChart = document.getElementById("listingChart");
+const listingPrevBtn = document.getElementById("listingPrevBtn");
+const listingNextBtn = document.getElementById("listingNextBtn");
 const pullDetailModal = document.getElementById("pullDetailModal");
 const pullDetailRarity = document.getElementById("pullDetailRarity");
 const pullDetailImage = document.getElementById("pullDetailImage");
@@ -1449,8 +1453,9 @@ function renderMarketGrid() {
     ? listings.map(marketItemCardHTML).join("")
     : `<div class="market-empty">No listings match these filters.</div>`;
 
+  const marketGridIds = listings.map((l) => l.id);
   marketGrid.querySelectorAll(".market-item").forEach((el) => {
-    el.addEventListener("click", () => openListingModal(el.dataset.listing));
+    el.addEventListener("click", () => openListingModal(el.dataset.listing, marketGridIds));
   });
 }
 marketSort.addEventListener("change", renderMarketGrid);
@@ -1463,11 +1468,25 @@ marketListedOnly.addEventListener("change", () => {
 // ---- Listing detail modal --------------------------------------------
 
 let openListingId = null;
+let listingNavIds = []; // the grid's current order, so arrows step through what was actually on screen
+let listingNavIndex = -1;
 
-function openListingModal(id) {
+// `navIds` is the full ordered list of listing ids from whichever grid was
+// clicked (marketplace or My Listings) — omit it and the arrows just hide.
+function openListingModal(id, navIds = null) {
   const listing = market.getListing(id);
   if (!listing) return;
   openListingId = listing.id;
+
+  if (navIds) listingNavIds = navIds;
+  listingNavIndex = listingNavIds.indexOf(id);
+
+  const hasNav = listingNavIds.length > 1 && listingNavIndex !== -1;
+  listingPrevBtn.classList.toggle("hidden", !hasNav);
+  listingNextBtn.classList.toggle("hidden", !hasNav);
+  listingPrevBtn.disabled = hasNav && listingNavIndex === 0;
+  listingNextBtn.disabled = hasNav && listingNavIndex === listingNavIds.length - 1;
+
   const meta = RARITY_META[listing.rarity];
 
   listingModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
@@ -1480,6 +1499,11 @@ function openListingModal(id) {
   listingPrice.textContent = listing.price != null ? `$${listing.price.toLocaleString()}` : "Offer only";
   listingSeller.innerHTML = listing.isPlayer ? "Held by <b>you</b>" : `Held by <b>${listing.seller}</b>`;
 
+  // Simulated market data — every listing gets this, not just ones the
+  // player owns, same deterministic day-by-day model the vault uses.
+  listingMarketValue.textContent = `$${market.currentListingValue(listing).toLocaleString()}`;
+  listingChart.innerHTML = buildPriceChartSVG(market.listingPriceHistory(listing));
+
   listingActions.classList.toggle("hidden", listing.isPlayer);
   listingBuyBtn.classList.toggle("hidden", listing.price == null);
   listingUnlistBtn.classList.toggle("hidden", !listing.isPlayer);
@@ -1490,6 +1514,17 @@ function openListingModal(id) {
   listingModal.classList.remove("hidden");
   requestAnimationFrame(() => listingModal.classList.add("visible"));
 }
+
+listingPrevBtn.addEventListener("click", () => {
+  if (listingNavIndex <= 0) return;
+  playClick();
+  openListingModal(listingNavIds[listingNavIndex - 1]);
+});
+listingNextBtn.addEventListener("click", () => {
+  if (listingNavIndex === -1 || listingNavIndex >= listingNavIds.length - 1) return;
+  playClick();
+  openListingModal(listingNavIds[listingNavIndex + 1]);
+});
 
 function renderListingOffers(listingId) {
   const offers = market.getOffersForListing(listingId);
@@ -1857,8 +1892,9 @@ function renderAccount() {
   myListingsGrid.innerHTML = myListings.length
     ? myListings.map(marketItemCardHTML).join("")
     : `<div class="market-empty">You haven't listed anything yet.</div>`;
+  const myListingIds = myListings.map((l) => l.id);
   myListingsGrid.querySelectorAll(".market-item").forEach((el) => {
-    el.addEventListener("click", () => openListingModal(el.dataset.listing));
+    el.addEventListener("click", () => openListingModal(el.dataset.listing, myListingIds));
   });
 
   const inventory = player.getInventory();

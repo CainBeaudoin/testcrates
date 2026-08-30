@@ -153,6 +153,43 @@ export function removeListing(id) {
   save();
 }
 
+// ---- Simulated live market value -----------------------------------------
+// Same deterministic-per-day approach as the vault's currentMarketValue
+// (see player.js) — every listing, not just ones the player owns, gets a
+// live-looking comp value and a 30-day price-action chart. Duplicated
+// rather than imported from player.js: a market listing has no owner-
+// specific concepts (acquiredAt, archival clock) to reconcile with.
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return h;
+}
+
+function valueOnDate(listing, date) {
+  const dayKey = date.toISOString().slice(0, 10);
+  const h = hashString(`${listing.id}:${dayKey}`);
+  const wobble = ((h % 3000) / 3000) * 0.3 - 0.15; // -15%..+15%
+  return Math.max(1, Math.round(listing.catalogPrice * (1 + wobble)));
+}
+
+export function currentListingValue(listing) {
+  return valueOnDate(listing, new Date());
+}
+
+export function listingPriceHistory(listing, days = 30) {
+  const now = new Date();
+  const points = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    points.push({ date: date.toISOString().slice(0, 10), value: valueOnDate(listing, date) });
+  }
+  return points;
+}
+
 // ---- Fair Market Value badge --------------------------------------------
 // Scores an asking price against the item's catalog/comp value. Band
 // thresholds are placeholder V1 numbers (the scope leaves them open).

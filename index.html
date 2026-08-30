@@ -436,12 +436,25 @@
 
 <!-- Marketplace listing detail -->
 <div id="listingModal" class="prize-modal hidden">
+  <button id="listingPrevBtn" class="listing-nav-arrow listing-nav-prev" aria-label="Previous item">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
   <div class="prize-modal-card listing-modal-card">
     <span class="prize-modal-rarity" id="listingRarity"></span>
     <img class="prize-modal-image" id="listingImage" alt="">
     <h3 class="prize-modal-name" id="listingName"></h3>
     <p class="prize-modal-price" id="listingPrice"></p>
     <p class="listing-seller" id="listingSeller"></p>
+
+    <div class="listing-market-data">
+      <div class="listing-market-value-row">
+        <span>Simulated Market Value</span>
+        <span class="listing-market-value" id="listingMarketValue"></span>
+      </div>
+      <div id="listingChart" class="price-chart"></div>
+      <span class="price-chart-caption">Simulated price action — last 30 days</span>
+    </div>
+
     <div class="prize-modal-actions" id="listingActions">
       <button id="listingOfferBtn" class="modal-btn modal-btn-outline">Make Offer</button>
       <button id="listingBuyBtn" class="modal-btn modal-btn-solid">Buy Now</button>
@@ -453,6 +466,9 @@
     </div>
     <button id="listingCloseBtn" class="back-btn listing-close-btn">Close</button>
   </div>
+  <button id="listingNextBtn" class="listing-nav-arrow listing-nav-next" aria-label="Next item">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
 </div>
 
 <!-- Recent pull detail -->
