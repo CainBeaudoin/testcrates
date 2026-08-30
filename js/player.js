@@ -25,6 +25,11 @@ export const OPENING_HISTORY_ROLLING = 10; // non-pinned entries kept
 // across all tiers ($100 → 5, $250 → 12.5, $1000 → 50).
 export const CASHBACK_RATE = 0.05;
 
+// Daily play streak: opening at least one crate (any tier — Bronze/$100
+// already is the minimum) on RAFFLE_STREAK_DAYS consecutive calendar days
+// enters that week's raffle.
+export const RAFFLE_STREAK_DAYS = 7;
+
 // Referral ladder from the scope doc, denominated in lifetime crate volume.
 export const REFERRAL_BASE = 0.2; // sign-up 10% + link 5% + X-verify 5%
 export const REFERRAL_TIERS = [
@@ -48,6 +53,12 @@ function rank(rarity) {
   return RARITY_ORDER.indexOf(rarity);
 }
 
+// Local calendar date (not UTC) so a day boundary lines up with the
+// player's own midnight, not an arbitrary timezone.
+function dateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 let uidCounter = 0;
 function uid() {
   uidCounter += 1;
@@ -61,6 +72,7 @@ function defaultState() {
     bigPulls: [], // multiplier >= BIG_PULL_MULTIPLIER, never evicted
     lastPulledByTier: {}, // { [tierKey]: name } — duplicate-pull guard
     streak: 0,
+    dailyActivity: {}, // { "YYYY-MM-DD": crates opened that day } — powers the streak calendar
     pity: {},
     // A starting demo balance so the platform is usable immediately —
     // clearly local/simulated, not a real deposit (see addDemoFunds).
@@ -175,8 +187,42 @@ export function recordPick(prize, tierKey, tierPrice) {
 
   state.streak = rank(prize.rarity) >= rank("rare") ? state.streak + 1 : 0;
 
+  const today = dateKey(new Date());
+  state.dailyActivity[today] = (state.dailyActivity[today] ?? 0) + 1;
+
   save();
   return { streak: state.streak, multiplier };
+}
+
+export function getDailyActivity() {
+  return { ...state.dailyActivity };
+}
+
+// Consecutive calendar days (ending today or yesterday — today doesn't
+// break an in-progress streak before it's played) with at least one crate
+// opened. Computed from the activity log rather than a separate counter,
+// so it can't drift out of sync with it.
+export function getDailyStreak() {
+  const activeDays = Object.keys(state.dailyActivity)
+    .filter((d) => state.dailyActivity[d] > 0)
+    .sort()
+    .reverse();
+  if (activeDays.length === 0) return 0;
+
+  const cursor = new Date();
+  const todayKey = dateKey(cursor);
+  if (activeDays[0] !== todayKey) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (activeDays[0] !== dateKey(cursor)) return 0; // most recent activity was 2+ days ago — broken
+  }
+
+  let streak = 0;
+  for (const d of activeDays) {
+    if (dateKey(cursor) !== d) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
 export function getHistory() {

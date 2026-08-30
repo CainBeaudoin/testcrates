@@ -154,6 +154,12 @@ const openingsList = document.getElementById("openingsList");
 const shippedList = document.getElementById("shippedList");
 const leaderboardList = document.getElementById("leaderboardList");
 const referralPanel = document.getElementById("referralPanel");
+const streakDaysValue = document.getElementById("streakDaysValue");
+const streakGoalInline = document.getElementById("streakGoalInline");
+const streakRaffleBadge = document.getElementById("streakRaffleBadge");
+const streakRafflePrize = document.getElementById("streakRafflePrize");
+const streakMonthLabel = document.getElementById("streakMonthLabel");
+const streakCalendar = document.getElementById("streakCalendar");
 const topAvatar = document.getElementById("topAvatar");
 const topUsername = document.getElementById("topUsername");
 const avatarBtn = document.getElementById("avatarBtn");
@@ -1296,6 +1302,7 @@ function renderAccount() {
   renderShipped();
   renderLeaderboard();
   renderReferralPanel();
+  renderStreaks();
 }
 
 let openingsFilterValue = "all";
@@ -1402,6 +1409,62 @@ function renderReferralPanel() {
       </tbody>
     </table>
   `;
+}
+
+// Deterministic per-week pick from the grail tier, so the raffle prize is
+// stable all week and only changes once the next week starts — no backend
+// needed to "populate" it on a schedule.
+function getWeeklyRafflePrize() {
+  const weekIndex = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+  let h = 0;
+  const s = `raffle-${weekIndex}`;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return THOUSAND_POOL[h % THOUSAND_POOL.length];
+}
+
+function renderStreaks() {
+  const streak = player.getDailyStreak();
+  const qualified = streak >= player.RAFFLE_STREAK_DAYS;
+  streakDaysValue.textContent = streak;
+  streakGoalInline.textContent = player.RAFFLE_STREAK_DAYS;
+  streakRaffleBadge.textContent = qualified
+    ? "Entered in this week's raffle"
+    : `${player.RAFFLE_STREAK_DAYS - streak} more day${player.RAFFLE_STREAK_DAYS - streak === 1 ? "" : "s"} to qualify`;
+  streakRaffleBadge.className = `streak-raffle-badge ${qualified ? "qualified" : "pending"}`;
+
+  const prize = getWeeklyRafflePrize();
+  streakRafflePrize.innerHTML = `
+    <img src="${prize.image}" alt="">
+    <div class="streak-raffle-prize-info">
+      <span class="streak-raffle-prize-name">${prize.name}</span>
+      <span class="streak-raffle-prize-value">$${prize.price.toLocaleString()} value — drawn from this week's streak qualifiers</span>
+    </div>
+  `;
+
+  renderStreakCalendar();
+}
+
+function renderStreakCalendar() {
+  const activity = player.getDailyActivity();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const todayKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  streakMonthLabel.textContent = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  let html = "";
+  for (let i = 0; i < firstWeekday; i++) html += `<span class="streak-tile empty"></span>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const count = activity[key] ?? 0;
+    const level = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 6 ? 3 : 4;
+    const isToday = key === todayKey;
+    html += `<span class="streak-tile level-${level} ${isToday ? "today" : ""}" title="${key}: ${count} crate${count === 1 ? "" : "s"} opened">${day}</span>`;
+  }
+  streakCalendar.innerHTML = html;
 }
 
 // Delegated: offer actions + inventory item actions (both lists re-render often)

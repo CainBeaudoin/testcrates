@@ -1985,4 +1985,130 @@ body {
 }
 .referral-table td:first-child { color: var(--text); font-weight: 700; }
 
+/* --- Streaks: daily-play calendar + weekly raffle -------------------- */
+
+.streak-summary {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 18px 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.streak-count-block {
+  flex: 0 0 auto;
+  text-align: center;
+  padding-right: 20px;
+  border-right: 1px solid var(--line);
+}
+.streak-count-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+.streak-count-label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.streak-explainer {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.streak-explainer b { color: var(--text); }
+
+.streak-raffle-badge {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.streak-raffle-badge.qualified { color: #4ade80; background: rgba(74, 222, 128, 0.14); border: 1px solid rgba(74, 222, 128, 0.4); }
+.streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: 1px solid var(--line); }
+
+.streak-raffle-prize {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.streak-raffle-prize img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+.streak-raffle-prize-info { flex: 1; min-width: 0; }
+.streak-raffle-prize-name {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.streak-raffle-prize-value {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  margin-top: 3px;
+}
+
+.streak-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  max-width: 420px;
+  margin-bottom: 6px;
+}
+.streak-calendar-weekdays span {
+  text-align: center;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+
+.streak-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  max-width: 420px;
+}
+
+.streak-tile {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  color: var(--text-faint);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.streak-tile.empty { background: transparent; border-color: transparent; }
+.streak-tile.level-1 { background: rgba(139, 107, 242, 0.22); border-color: rgba(139, 107, 242, 0.3); color: var(--text-dim); }
+.streak-tile.level-2 { background: rgba(139, 107, 242, 0.42); border-color: rgba(139, 107, 242, 0.5); color: var(--text); }
+.streak-tile.level-3 { background: rgba(139, 107, 242, 0.66); border-color: rgba(139, 107, 242, 0.75); color: var(--text); }
+.streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.streak-tile.today { outline: 2px solid var(--text); outline-offset: 1px; }
+
 .hidden { display: none !important; }
