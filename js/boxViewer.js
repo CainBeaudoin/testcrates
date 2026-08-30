@@ -51,7 +51,7 @@ function applyTierSkin(root, tierKey) {
     // its surroundings rather than being lit head-on — envMapIntensity is
     // the direct lever for "the metal actually looks bright," moreso than
     // the scene's own lights.
-    mat.envMapIntensity = 2.2;
+    mat.envMapIntensity = 3.2;
     node.material = mat;
   });
 }
@@ -136,12 +136,12 @@ function buildRig(root) {
   camera.position.set(0, 0.85, 3.3);
   camera.lookAt(0, 0.05, 0);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.9);
-  const key = new THREE.DirectionalLight(0xffffff, 1.9);
+  const ambient = new THREE.AmbientLight(0xffffff, 1.3);
+  const key = new THREE.DirectionalLight(0xffffff, 2.6);
   key.position.set(2.5, 4, 3);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.9);
   fill.position.set(-3, 1.2, -1.5);
-  const rim = new THREE.DirectionalLight(0xffffff, 1.1);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.6);
   rim.position.set(-1.5, 2.2, -3);
   scene.add(ambient, key, fill, rim);
 
@@ -152,7 +152,7 @@ function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
+  renderer.toneMappingExposure = 1.7;
 }
 
 const snapshotPromises = new Map(); // tierKey (or "" for unskinned) -> Promise<dataURL>

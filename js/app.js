@@ -20,20 +20,25 @@ const CATEGORIES = {
     badge: "Bronze",
     price: 100,
     pool: HUNDRED_POOL,
+    categoryIcon: "sneaker", // swap per-tier if a pool ever isn't sneakers
   },
   twoFifty: {
     label: "$250",
     badge: "Silver",
     price: 250,
     pool: TWO_FIFTY_POOL,
+    categoryIcon: "sneaker",
   },
   thousand: {
     label: "$1000",
     badge: "Gold",
     price: 1000,
     pool: THOUSAND_POOL,
+    categoryIcon: "sneaker",
   },
 };
+
+const MAX_BATCH_QTY = 8;
 
 const RARITY_RANK_ASC = ["common", "uncommon", "rare", "epic", "legendary"];
 function rankOf(rarity) {
@@ -77,6 +82,9 @@ const MODAL_DELAY_MS = 650;
 let currentCategoryKey = null;
 let pendingCategoryKey = null;
 let roundCurrency = null; // "credits" | "cash"
+let batchTotal = 1; // how many crates this purchase covers
+let batchIndex = 1; // which one is currently playing
+let batchRemaining = 0; // still to auto-chain after this one
 let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
@@ -617,6 +625,7 @@ function buildPityHTML(tierKey) {
 }
 
 let categoryBoxViewers = [];
+const batchQuantities = { hundred: 1, twoFifty: 1, thousand: 1 };
 
 function renderCategories() {
   categoryList.innerHTML = "";
@@ -630,16 +639,50 @@ function renderCategories() {
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
-      <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
+      <span class="category-icon-badge" title="Sneakers">${ICONS[cat.categoryIcon]}</span>
       <canvas class="category-box-canvas"></canvas>
-      <h3>${cat.label}</h3>
+      <div class="category-tier-line">
+        <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>
+        <span class="category-tier-price">${cat.label}</span>
+      </div>
       ${buildPityHTML(key)}
+      <div class="category-qty">
+        <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
+        <span class="qty-value">${batchQuantities[key]}</span>
+        <button class="qty-btn" data-qty-action="plus" aria-label="More">+</button>
+        <button class="qty-max-btn" data-qty-action="max">Max</button>
+      </div>
+      <button class="category-open-btn">Open</button>
     `;
-    card.addEventListener("click", () => {
-      playClick();
-      openPaymentPicker(key);
-    });
     card.addEventListener("mouseenter", playHover);
+
+    const qtyValueEl = card.querySelector(".qty-value");
+    const maxBtn = card.querySelector('[data-qty-action="max"]');
+    function refreshQty() {
+      qtyValueEl.textContent = batchQuantities[key];
+      maxBtn.classList.toggle("active", batchQuantities[key] === MAX_BATCH_QTY);
+    }
+    refreshQty();
+
+    card.querySelector('[data-qty-action="minus"]').addEventListener("click", () => {
+      playClick();
+      batchQuantities[key] = Math.max(1, batchQuantities[key] - 1);
+      refreshQty();
+    });
+    card.querySelector('[data-qty-action="plus"]').addEventListener("click", () => {
+      playClick();
+      batchQuantities[key] = Math.min(MAX_BATCH_QTY, batchQuantities[key] + 1);
+      refreshQty();
+    });
+    maxBtn.addEventListener("click", () => {
+      playClick();
+      batchQuantities[key] = MAX_BATCH_QTY;
+      refreshQty();
+    });
+    card.querySelector(".category-open-btn").addEventListener("click", () => {
+      playClick();
+      openPaymentPicker(key, batchQuantities[key]);
+    });
 
     const prizePanel = document.createElement("div");
     prizePanel.className = "prize-dropdown";
@@ -664,16 +707,20 @@ function renderCategories() {
 
 // ---- Payment method picker ---------------------------------------------
 
-function openPaymentPicker(key) {
+let pendingQuantity = 1;
+
+function openPaymentPicker(key, quantity = 1) {
   pendingCategoryKey = key;
+  pendingQuantity = quantity;
   const cat = CATEGORIES[key];
   const wallet = player.getWallet();
+  const totalCost = cat.price * quantity;
 
-  paymentTierLabel.textContent = cat.label;
+  paymentTierLabel.textContent = quantity > 1 ? `${quantity}× ${cat.label}` : cat.label;
   payWithCreditsBalance.textContent = `${wallet.credits.toLocaleString()} available`;
   payWithCashBalance.textContent = `$${wallet.cash.toLocaleString()} available`;
-  payWithCredits.classList.toggle("insufficient", wallet.credits < cat.price);
-  payWithCash.classList.toggle("insufficient", wallet.cash < cat.price);
+  payWithCredits.classList.toggle("insufficient", wallet.credits < totalCost);
+  payWithCash.classList.toggle("insufficient", wallet.cash < totalCost);
   paymentError.classList.add("hidden");
 
   paymentModal.classList.remove("hidden");
@@ -687,10 +734,13 @@ function closePaymentPicker() {
 
 function tryPurchase(currency) {
   const key = pendingCategoryKey;
+  const qty = pendingQuantity;
   const cat = CATEGORIES[key];
-  const result = player.purchaseCrate(cat.price, currency);
+  const totalCost = cat.price * qty;
+  const result = player.purchaseCrate(totalCost, currency);
   if (!result) {
-    paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for the ${cat.label} — try Add Funds.`;
+    const label = qty > 1 ? `${qty}× ${cat.label}` : cat.label;
+    paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label} — try Add Funds.`;
     paymentError.classList.remove("hidden");
     return;
   }
@@ -699,6 +749,9 @@ function tryPurchase(currency) {
   renderWallet({ pulse: currency });
   showWalletToast(result.rebate, "credits");
   closePaymentPicker();
+  batchTotal = qty;
+  batchIndex = 1;
+  batchRemaining = qty - 1;
   startRound(key, currency);
 }
 payWithCredits.addEventListener("click", () => {
@@ -857,7 +910,7 @@ async function startRound(key, currency) {
   roundLocked = false;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
 
-  gameTierLabel.textContent = cat.label;
+  gameTierLabel.textContent = batchTotal > 1 ? `${cat.label} — Crate ${batchIndex} of ${batchTotal}` : cat.label;
   updatePayingWithBadge();
   resetSlotsUI();
   disposeViewers();
@@ -934,9 +987,18 @@ function revealOthers() {
 
       if (step === others.length - 1) {
         setTimeout(() => {
-          helperText.classList.add("hidden");
-          playAgainBtn.classList.remove("hidden");
           verifyFairnessQuietly();
+          if (batchRemaining > 0) {
+            // Already paid for as one lump sum in tryPurchase — auto-chain
+            // straight into the next crate rather than waiting on "Open Again".
+            batchRemaining -= 1;
+            batchIndex += 1;
+            helperText.textContent = `Next crate — ${batchIndex} of ${batchTotal}…`;
+            setTimeout(() => startRound(currentCategoryKey, roundCurrency), 1300);
+          } else {
+            helperText.classList.add("hidden");
+            playAgainBtn.classList.remove("hidden");
+          }
         }, 400);
       }
     }, REVEAL_STEP_MS * step);
