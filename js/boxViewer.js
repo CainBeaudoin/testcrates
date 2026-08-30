@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const MODEL_URL = "assets/models/nike_shoe_box/scene.gltf";
 const LID_NODE_NAME = "Plane_Plane_002_Material_001"; // hinge pivot baked into the source animation
@@ -23,11 +24,14 @@ loadModel().catch(() => {});
 // in the UI. Replaces the model's own branded texture with a flat metallic
 // tint per tier, rather than multiplying a color over it (multiplying a
 // grayscale tint like silver over the existing orange-toned texture reads
-// muddy, not metallic).
+// muddy, not metallic). High metalness + low roughness for a genuine
+// mirror-like/chrome look — needs a real environment map to reflect
+// (see applyStudioEnvironment), or a metal this shiny just reads as flat
+// black with no light source to bounce.
 const TIER_SKINS = {
-  bronze: { color: 0xd0895a, metalness: 0.55, roughness: 0.42 },
-  silver: { color: 0xc7ccd6, metalness: 0.75, roughness: 0.28 },
-  gold: { color: 0xf0c14b, metalness: 0.75, roughness: 0.28 },
+  bronze: { color: 0xd0895a, metalness: 1, roughness: 0.22 },
+  silver: { color: 0xc7ccd6, metalness: 1, roughness: 0.1 },
+  gold: { color: 0xf0c14b, metalness: 1, roughness: 0.14 },
 };
 
 // Materials are shared by reference across clone(true) instances, so this
@@ -45,6 +49,19 @@ function applyTierSkin(root, tierKey) {
     mat.roughness = skin.roughness;
     node.material = mat;
   });
+}
+
+// A metallic material reflects its surroundings rather than being lit
+// directly, so without an environment map it just looks flat and dark no
+// matter how high metalness goes. RoomEnvironment is three.js's built-in
+// procedural studio backdrop — built once per renderer (PMREM output is
+// tied to the GL context that generated it, and each box viewer owns its
+// own renderer/canvas) and cached so repeat calls on the same renderer are
+// free.
+function applyStudioEnvironment(scene, renderer) {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
 }
 
 function easeOutBack(t) {
@@ -152,6 +169,7 @@ export function getBoxSnapshot(tierKey = "") {
         const root = baseModel.clone(true);
         applyTierSkin(root, tierKey);
         const { scene, camera } = buildRig(root);
+        applyStudioEnvironment(scene, renderer);
         camera.aspect = 1;
         camera.updateProjectionMatrix();
         renderer.render(scene, camera);
@@ -181,6 +199,7 @@ export async function createBoxViewer(canvas, tierKey = "") {
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   configureRenderer(renderer);
+  applyStudioEnvironment(scene, renderer);
 
   function resize() {
     const w = canvas.clientWidth;

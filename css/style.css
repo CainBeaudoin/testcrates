@@ -692,7 +692,10 @@ body {
   width: 100%;
   max-width: 600px;
   height: 190px;
-  margin: 10px auto 36px;
+  /* Top margin matches .box-row's top padding below, so the boxes sit at
+     the same height whether the reel is spinning or has handed off to the
+     picked/revealed boxes — no vertical jump on the cut between them. */
+  margin: 84px auto 36px;
   overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--line);
