@@ -53,8 +53,8 @@ const slots = Array.from(document.querySelectorAll(".box-slot"));
 const helperText = document.getElementById("helperText");
 const playAgainBtn = document.getElementById("playAgainBtn");
 const prizeModal = document.getElementById("prizeModal");
-const prizeModalCard = prizeModal.querySelector(".prize-modal-card");
 const revealFxEl = prizeModal.querySelector(".reveal-fx");
+const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
 const cashBackBtn = document.getElementById("cashBackBtn");
 const keepBtn = document.getElementById("keepBtn");
 
@@ -252,9 +252,15 @@ function onPick(index) {
   });
 
   helperText.textContent = "Opening your crate…";
-  openSlot(index, { isYours: true });
+  // Lid opens now, but the box's own price card stays hidden — it reveals
+  // in lockstep with the modal, once the fullscreen FX finishes, so the
+  // prize is never shown before the reveal animation has played out.
+  openSlot(index, { isYours: true, revealCard: false });
 
-  setTimeout(() => showPrizeModal(boxPrizes[index]), MODAL_DELAY_MS);
+  setTimeout(async () => {
+    await showPrizeModal(boxPrizes[index]);
+    slots[index].classList.add("open");
+  }, MODAL_DELAY_MS);
 }
 
 function revealOthers() {
@@ -275,7 +281,7 @@ function revealOthers() {
   });
 }
 
-function openSlot(index, { isYours }) {
+function openSlot(index, { isYours, revealCard = true }) {
   const slot = slots[index];
   const prize = boxPrizes[index];
   const meta = RARITY_META[prize.rarity];
@@ -293,7 +299,7 @@ function openSlot(index, { isYours }) {
   slot.querySelector(".price-card-price").textContent = formatPrice(prize);
   slot.querySelector(".box-caption").textContent = isYours ? "Your Crate" : "Unpicked";
   slot.classList.toggle("you", isYours);
-  slot.classList.add("open");
+  if (revealCard) slot.classList.add("open");
   if (viewers[index]) viewers[index].open();
 }
 
@@ -303,12 +309,15 @@ function openSlot(index, { isYours }) {
 
 async function showPrizeModal(prize) {
   const meta = RARITY_META[prize.rarity];
-  prizeModalCard.style.setProperty("--rarity-color", meta.color);
+  prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+  revealFxEl.style.setProperty("--rarity-color", meta.color);
 
   const rarityEl = prizeModal.querySelector(".prize-modal-rarity");
   rarityEl.textContent = meta.label;
   rarityEl.style.color = meta.color;
   rarityEl.style.borderColor = meta.color;
+
+  revealBannerEl.textContent = meta.label;
 
   const imgEl = prizeModal.querySelector(".prize-modal-image");
   imgEl.src = prize.image;
@@ -317,19 +326,24 @@ async function showPrizeModal(prize) {
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
 
-  // Content stays hidden behind the vortex/particle reveal until it finishes.
-  prizeModalCard.classList.add("revealing");
+  // The whole card — image, name, price — stays hidden behind the
+  // fullscreen vortex/particle reveal until it finishes, so the prize is
+  // never shown before the reveal animation has played out.
+  prizeModal.classList.add("revealing");
   prizeModal.classList.remove("hidden");
   requestAnimationFrame(() => prizeModal.classList.add("visible"));
 
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
-  prizeModalCard.classList.remove("revealing");
+  prizeModal.classList.remove("revealing");
 }
 
 function hidePrizeModal() {
-  prizeModal.classList.remove("visible");
-  setTimeout(() => prizeModal.classList.add("hidden"), 300);
+  prizeModal.classList.remove("visible", "revealing");
+  setTimeout(() => {
+    prizeModal.classList.add("hidden");
+    revealFxEl.innerHTML = "";
+  }, 300);
 }
 
 // ---- Wire up events -----------------------------------------------------

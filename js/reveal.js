@@ -32,11 +32,14 @@ export function fxDuration(rarity) {
 }
 
 function buildParticles(container, count, big) {
+  // Scale travel distance off the viewport so the swirl reads as a
+  // fullscreen, immersive effect rather than something boxed into a card.
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
   for (let i = 0; i < count; i++) {
     const p = document.createElement("span");
     p.className = "reveal-particle";
     const angle = (360 / count) * i + (Math.random() * 14 - 7);
-    const dist = 90 + Math.random() * 70;
+    const dist = vmin * (0.16 + Math.random() * 0.16);
     const delay = Math.random() * 0.25;
     const size = big ? 3 + Math.random() * 5 : 2 + Math.random() * 3;
     p.style.setProperty("--angle", `${angle}deg`);
