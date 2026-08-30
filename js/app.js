@@ -1615,8 +1615,11 @@ function resolveBotOnMyOffer(offerId) {
 
 // ---- Account screen ---------------------------------------------------
 
-// Deterministic per-username gradient + initial, so "avatars" are stable
-// without needing an image upload flow.
+const DEFAULT_AVATAR_URL = "assets/avatars/default.png";
+
+// Deterministic per-username gradient + initial for the simulated cast —
+// the player themself gets the real default avatar image instead (see
+// renderAvatarInto).
 function avatarStyle(username) {
   let h = 0;
   for (let i = 0; i < username.length; i++) h = (h * 31 + username.charCodeAt(i)) >>> 0;
@@ -1628,13 +1631,20 @@ function avatarStyle(username) {
   };
 }
 
-function renderIdentity() {
-  const username = player.getUsername();
-  const { background, initial } = avatarStyle(username);
-  [topAvatar, accountAvatar].forEach((el) => {
+function renderAvatarInto(el, username) {
+  if (username === player.getUsername()) {
+    el.style.background = "none";
+    el.innerHTML = `<img src="${DEFAULT_AVATAR_URL}" alt="${username}">`;
+  } else {
+    const { background, initial } = avatarStyle(username);
     el.style.background = background;
     el.textContent = initial;
-  });
+  }
+}
+
+function renderIdentity() {
+  const username = player.getUsername();
+  [topAvatar, accountAvatar].forEach((el) => renderAvatarInto(el, username));
   topUsername.textContent = username;
   usernameBtn.textContent = username;
 }
@@ -1745,9 +1755,7 @@ function getProfileData(username) {
 
 function renderPublicProfile(username) {
   const data = getProfileData(username);
-  const { background, initial } = avatarStyle(username);
-  profileAvatar.style.background = background;
-  profileAvatar.textContent = initial;
+  renderAvatarInto(profileAvatar, username);
   profileUsername.textContent = username;
   profileXp.textContent = data.xp.toLocaleString();
   profileBestName.textContent = data.bestName;
