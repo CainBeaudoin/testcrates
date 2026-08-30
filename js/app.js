@@ -134,6 +134,7 @@ const payWithCashBalance = document.getElementById("payWithCashBalance");
 const paymentCancelBtn = document.getElementById("paymentCancelBtn");
 const screenAccount = document.getElementById("screen-account");
 const marketGrid = document.getElementById("marketGrid");
+const marketCount = document.getElementById("marketCount");
 const marketBrandFilter = document.getElementById("marketBrandFilter");
 const marketFmvFilter = document.getElementById("marketFmvFilter");
 const marketListedOnly = document.getElementById("marketListedOnly");
@@ -141,7 +142,16 @@ const marketPriceMin = document.getElementById("marketPriceMin");
 const marketPriceMax = document.getElementById("marketPriceMax");
 const marketSort = document.getElementById("marketSort");
 const usernameBtn = document.getElementById("usernameBtn");
-const accountSummary = document.getElementById("accountSummary");
+const accountAvatar = document.getElementById("accountAvatar");
+const referralLinkBtn = document.getElementById("referralLinkBtn");
+const sideCredits = document.getElementById("sideCredits");
+const sideCash = document.getElementById("sideCash");
+const sideXp = document.getElementById("sideXp");
+const sideVolume = document.getElementById("sideVolume");
+const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item"));
+const accountSections = Array.from(document.querySelectorAll(".account-section"));
+const vaultCount = document.getElementById("vaultCount");
+const listingsCount = document.getElementById("listingsCount");
 const incomingOffersList = document.getElementById("incomingOffersList");
 const myListingsGrid = document.getElementById("myListingsGrid");
 const inventoryGrid = document.getElementById("inventoryGrid");
@@ -151,6 +161,15 @@ const openingsList = document.getElementById("openingsList");
 const shippedList = document.getElementById("shippedList");
 const leaderboardList = document.getElementById("leaderboardList");
 const referralPanel = document.getElementById("referralPanel");
+const topAvatar = document.getElementById("topAvatar");
+const topUsername = document.getElementById("topUsername");
+const avatarBtn = document.getElementById("avatarBtn");
+const notifBtn = document.getElementById("notifBtn");
+const notifBadge = document.getElementById("notifBadge");
+const streakRing = document.getElementById("streakRing");
+const streakValue = document.getElementById("streakValue");
+const referralRing = document.getElementById("referralRing");
+const referralValue = document.getElementById("referralValue");
 const listingModal = document.getElementById("listingModal");
 const listingRarity = document.getElementById("listingRarity");
 const listingImage = document.getElementById("listingImage");
@@ -262,13 +281,13 @@ function renderWallet({ pulse } = {}) {
     el.classList.add("pulse");
     setTimeout(() => el.classList.remove("pulse"), 500);
   }
+  renderHeaderStats();
 }
 
-function showWalletToast(amount, currency) {
+function showToast(text, iconSvg) {
   clearTimeout(toastTimer);
-  creditToastIcon.innerHTML = currency === "cash" ? ICONS.cash : ICONS.bell;
-  creditToastText.textContent =
-    currency === "cash" ? `+$${amount.toLocaleString()} Cash Added` : `+${amount.toLocaleString()} Credits Added`;
+  creditToastIcon.innerHTML = iconSvg;
+  creditToastText.textContent = text;
   creditToast.classList.remove("hidden");
   requestAnimationFrame(() => creditToast.classList.add("show"));
   playDing();
@@ -276,6 +295,11 @@ function showWalletToast(amount, currency) {
     creditToast.classList.remove("show");
     setTimeout(() => creditToast.classList.add("hidden"), 300);
   }, 1800);
+}
+
+function showWalletToast(amount, currency) {
+  const text = currency === "cash" ? `+$${amount.toLocaleString()} Cash Added` : `+${amount.toLocaleString()} Credits Added`;
+  showToast(text, currency === "cash" ? ICONS.cash : ICONS.bell);
 }
 
 addFundsBtn.addEventListener("click", async () => {
@@ -783,6 +807,17 @@ navTabs.forEach((tab) => {
   });
 });
 
+// ---- Account sidebar sub-nav (Vault / Listings / Offers / History / …) ---
+
+accountNavItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    playClick();
+    accountNavItems.forEach((i) => i.classList.remove("active"));
+    item.classList.add("active");
+    accountSections.forEach((s) => s.classList.toggle("active", s.dataset.section === item.dataset.section));
+  });
+});
+
 // ---- Generic amount prompt ------------------------------------------------
 
 let amountResolver = null;
@@ -826,16 +861,24 @@ function marketItemCardHTML(listing) {
   const fmv = market.fmvRating(listing);
   const priceOrOffer =
     listing.price != null
-      ? `<span class="market-item-price">$${listing.price.toLocaleString()}</span>`
+      ? `<span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>`
       : `<span class="market-item-offer-only">Offer only</span>`;
   const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
   return `
     <div class="market-item" data-listing="${listing.id}" style="--rarity-color:${meta.color}">
-      <img src="${listing.image}" alt="">
-      ${fmvHTML}
-      <span class="market-item-name">${listing.name}</span>
-      ${priceOrOffer}
-      <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+      <div class="market-item-media">
+        <img src="${listing.image}" alt="">
+        <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+        ${fmvHTML}
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${listing.name}</span>
+        <div class="market-item-divider"></div>
+        <div class="market-item-foot">
+          ${priceOrOffer}
+          <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -923,6 +966,7 @@ function renderMarketplace() {
 
 function renderMarketGrid() {
   let listings = market.getListings();
+  marketCount.textContent = listings.length;
 
   if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
   if (marketFmvValue !== "all") listings = listings.filter((l) => market.fmvRating(l)?.key === marketFmvValue);
@@ -1073,22 +1117,73 @@ function resolveBotOnMyOffer(offerId) {
 
 // ---- Account screen ---------------------------------------------------
 
+// Deterministic per-username gradient + initial, so "avatars" are stable
+// without needing an image upload flow.
+function avatarStyle(username) {
+  let h = 0;
+  for (let i = 0; i < username.length; i++) h = (h * 31 + username.charCodeAt(i)) >>> 0;
+  const h1 = h % 360;
+  const h2 = (h1 + 55) % 360;
+  return {
+    background: `linear-gradient(135deg, hsl(${h1},70%,48%), hsl(${h2},70%,32%))`,
+    initial: username.charAt(0).toUpperCase(),
+  };
+}
+
+function renderIdentity() {
+  const username = player.getUsername();
+  const { background, initial } = avatarStyle(username);
+  [topAvatar, accountAvatar].forEach((el) => {
+    el.style.background = background;
+    el.textContent = initial;
+  });
+  topUsername.textContent = username;
+  usernameBtn.textContent = username;
+}
+
 usernameBtn.addEventListener("click", async () => {
   const name = prompt("Choose a username", player.getUsername());
   if (name) {
     player.setUsername(name);
-    usernameBtn.textContent = player.getUsername();
+    renderIdentity();
   }
 });
 
-function renderAccountSummary() {
+avatarBtn.addEventListener("click", () => {
+  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+});
+
+notifBtn.addEventListener("click", () => {
+  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+  document.querySelector('.account-nav-item[data-section="offers"]')?.click();
+});
+
+referralLinkBtn.addEventListener("click", async () => {
+  const link = `${location.origin}${location.pathname}?ref=${encodeURIComponent(player.getUsername())}`;
+  try {
+    await navigator.clipboard.writeText(link);
+  } catch {
+    // clipboard API unavailable — the link is still shown in the toast
+  }
+  playClick();
+  showToast("Referral link copied", ICONS.bell);
+});
+
+// Streak + referral-share rings and the notification badge live in the
+// topbar, visible from every screen — refreshed alongside the wallet and
+// whenever the account screen (offers) changes.
+function renderHeaderStats() {
+  const streak = player.getStreak();
+  streakValue.textContent = streak;
+  streakRing.style.setProperty("--pct", Math.min(100, (streak / 5) * 100));
+
   const referral = player.getReferralTier();
-  accountSummary.innerHTML = `
-    <div class="account-summary-cell"><dt>Lifetime Volume</dt><dd>$${player.getLifetimeVolume().toLocaleString()}</dd></div>
-    <div class="account-summary-cell"><dt>XP</dt><dd>${player.getXp().toLocaleString()}</dd></div>
-    <div class="account-summary-cell"><dt>Win Streak</dt><dd>${player.getStreak()}</dd></div>
-    <div class="account-summary-cell"><dt>Referral Share</dt><dd>${Math.round(referral.share * 100)}%</dd></div>
-  `;
+  referralValue.textContent = `${Math.round(referral.share * 100)}%`;
+  referralRing.style.setProperty("--pct", Math.round(referral.progress * 100));
+
+  const pending = market.getIncomingOffers().length;
+  notifBadge.textContent = pending;
+  notifBadge.classList.toggle("hidden", pending === 0);
 }
 
 function inventoryItemHTML(item) {
@@ -1102,25 +1197,34 @@ function inventoryItemHTML(item) {
   const isListed = listing && listing.price != null;
 
   return `
-    <div class="market-item" style="--rarity-color:${meta.color}">
-      <img src="${item.image}" alt="">
-      <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
-      <span class="market-item-name">${item.name}</span>
-      <span class="item-archival ${archivalClass}">${archivalText}</span>
-      <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
-      <div class="item-actions">
-        <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
-        <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
-        <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
+    <div class="market-item static" style="--rarity-color:${meta.color}">
+      <div class="market-item-media">
+        <img src="${item.image}" alt="">
+        <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${item.name}</span>
+        <span class="item-archival ${archivalClass}">${archivalText}</span>
+        <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
+        <div class="market-item-divider"></div>
+        <div class="item-actions">
+          <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
+          <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
+          <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
+        </div>
       </div>
     </div>`;
 }
 
 function renderAccount() {
-  usernameBtn.textContent = player.getUsername();
-  renderAccountSummary();
+  renderIdentity();
+  sideCredits.textContent = player.getWallet().credits.toLocaleString();
+  sideCash.textContent = `$${player.getWallet().cash.toLocaleString()}`;
+  sideXp.textContent = player.getXp().toLocaleString();
+  sideVolume.textContent = `$${player.getLifetimeVolume().toLocaleString()}`;
 
   market.maybeSpawnIncomingOffer();
+  renderHeaderStats();
 
   const incoming = market.getIncomingOffers();
   incomingOffersList.innerHTML = incoming.length
@@ -1128,6 +1232,7 @@ function renderAccount() {
     : `<div class="offers-empty">No incoming offers right now.</div>`;
 
   const myListings = market.getListings().filter((l) => l.isPlayer && l.price != null);
+  listingsCount.textContent = myListings.length;
   myListingsGrid.innerHTML = myListings.length
     ? myListings.map(marketItemCardHTML).join("")
     : `<div class="market-empty">You haven't listed anything yet.</div>`;
@@ -1136,6 +1241,7 @@ function renderAccount() {
   });
 
   const inventory = player.getInventory();
+  vaultCount.textContent = inventory.length;
   inventoryGrid.innerHTML = inventory.length
     ? inventory.map(inventoryItemHTML).join("")
     : `<div class="market-empty">Keep, Ship or List a prize from a crate reveal to see it here.</div>`;
@@ -1200,11 +1306,18 @@ function renderShipped() {
         .map((item) => {
           const meta = RARITY_META[item.rarity];
           return `
-            <div class="market-item" style="--rarity-color:${meta.color}">
-              <img src="${item.image}" alt="">
-              <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
-              <span class="market-item-name">${item.name}</span>
-              <span class="market-item-price">$${item.price.toLocaleString()}</span>
+            <div class="market-item static" style="--rarity-color:${meta.color}">
+              <div class="market-item-media">
+                <img src="${item.image}" alt="">
+                <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+              </div>
+              <div class="market-item-body">
+                <span class="market-item-name">${item.name}</span>
+                <div class="market-item-divider"></div>
+                <div class="market-item-foot">
+                  <span class="market-item-price">${ICONS.cash}${item.price.toLocaleString()}</span>
+                </div>
+              </div>
             </div>`;
         })
         .join("")
@@ -1343,4 +1456,5 @@ function onFirstGesture() {
 document.addEventListener("pointerdown", onFirstGesture);
 
 buildAmbientParticles();
+renderIdentity();
 renderCategories();

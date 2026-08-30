@@ -18,39 +18,61 @@
 
 <div id="ambientBg" class="ambient-bg" aria-hidden="true"></div>
 
-<div class="app">
-  <header class="app-header">
-    <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
-      <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-      <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-    </button>
-    <p class="eyebrow">Gotcha Platform</p>
-    <h1>GOTCHA MACHINE</h1>
-    <div id="walletBar" class="wallet-bar">
-      <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Credits: <b id="walletCredits">0</b></span>
-      <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> USDC: <b id="walletCash">$0</b></span>
-      <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
-        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Funds
-      </button>
-    </div>
-
-    <nav id="mainNav" class="main-nav">
+<div class="shell">
+  <nav id="mainNav" class="rail">
+    <div class="rail-logo">GM</div>
+    <div class="rail-nav">
       <button class="nav-tab active" data-nav="screen-category">
-        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
         Boxes
       </button>
       <button class="nav-tab" data-nav="screen-marketplace">
-        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
-        Marketplace
+        <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
+        Market
       </button>
       <button class="nav-tab" data-nav="screen-account">
-        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
+        <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
         Account
       </button>
-    </nav>
-  </header>
+    </div>
+    <div class="rail-bottom">
+      <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
+        <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      </button>
+    </div>
+  </nav>
 
-  <main>
+  <div class="shell-main">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-name">GOTCHA MACHINE</span>
+        <span class="brand-beta">Beta</span>
+      </div>
+      <div id="walletBar" class="topbar-stats">
+        <span class="stat-pill" id="streakStat" title="Rare+ pulls in a row">
+          <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
+        </span>
+        <span class="stat-pill" id="referralStat" title="Referral share, from lifetime crate volume">
+          <span class="ring" id="referralRing"></span> Referral <b id="referralValue">20%</b>
+        </span>
+        <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></span>
+        <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b></span>
+        <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button id="notifBtn" class="notif-btn" title="Incoming offers">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notifBadge" class="notif-badge hidden">0</span>
+        </button>
+        <button id="avatarBtn" class="avatar-btn">
+          <span class="avatar-circle" id="topAvatar"></span>
+          <span id="topUsername"></span>
+        </button>
+      </div>
+    </header>
+
+    <main>
 
     <!-- SCREEN 1: category select -->
     <section id="screen-category" class="screen active">
@@ -124,7 +146,7 @@
 
     <!-- SCREEN 3: marketplace -->
     <section id="screen-marketplace" class="screen">
-      <h2 class="screen-title">Marketplace</h2>
+      <h2 class="screen-title">Marketplace <span class="count-badge" id="marketCount">0</span></h2>
       <p class="market-sub">Rarity is relative to the crate it came from, so it's not a browse filter here — it mattered during the open.</p>
       <div class="market-toolbar">
         <div id="marketBrandFilter" class="market-filter-chips"></div>
@@ -148,67 +170,97 @@
 
     <!-- SCREEN 4: account -->
     <section id="screen-account" class="screen">
-      <div class="account-header">
-        <h2 class="screen-title account-title">Account</h2>
-        <button id="usernameBtn" class="username-btn"></button>
-      </div>
+      <div class="account-shell">
+        <aside class="account-sidebar">
+          <div class="account-avatar-block">
+            <span class="avatar-circle avatar-lg" id="accountAvatar"></span>
+            <button id="usernameBtn" class="account-username-btn"></button>
+            <button id="referralLinkBtn" class="referral-link-btn">
+              <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
+              Copy Referral Link
+            </button>
+          </div>
 
-      <div class="account-summary" id="accountSummary"></div>
+          <div class="account-wallet-card">
+            <div class="wallet-card-row"><span>Credits</span><b id="sideCredits">0</b></div>
+            <div class="wallet-card-row"><span>USDC</span><b id="sideCash">$0</b></div>
+            <div class="wallet-card-divider"></div>
+            <div class="wallet-card-row"><span>XP</span><b id="sideXp">0</b></div>
+            <div class="wallet-card-row"><span>Lifetime Volume</span><b id="sideVolume">$0</b></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">Incoming Offers</h3>
-        <div id="incomingOffersList" class="offers-list"></div>
-      </div>
+          <nav class="account-nav">
+            <button class="account-nav-item active" data-section="vault">Vault</button>
+            <button class="account-nav-item" data-section="listings">Listings</button>
+            <button class="account-nav-item" data-section="offers">Offers</button>
+            <button class="account-nav-item" data-section="history">History</button>
+            <button class="account-nav-item" data-section="shipped">Shipped</button>
+            <button class="account-nav-item" data-section="leaderboard">Leaderboard</button>
+            <button class="account-nav-item" data-section="referral">Referral</button>
+          </nav>
+        </aside>
 
-      <div class="account-block">
-        <h3 class="account-block-title">My Listings</h3>
-        <div id="myListingsGrid" class="market-grid"></div>
-      </div>
+        <div class="account-content">
+          <div class="account-section active" data-section="vault">
+            <div class="account-section-header">
+              <h3>My Items <span class="count-badge" id="vaultCount">0</span></h3>
+              <span class="account-block-note">Vault · archives at 365 days</span>
+            </div>
+            <div id="inventoryGrid" class="market-grid"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">My Items <span class="account-block-note">Vault · archives at 365 days</span></h3>
-        <div id="inventoryGrid" class="market-grid"></div>
-      </div>
+          <div class="account-section" data-section="listings">
+            <div class="account-section-header"><h3>My Listings <span class="count-badge" id="listingsCount">0</span></h3></div>
+            <div id="myListingsGrid" class="market-grid"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">My Offers Sent</h3>
-        <div id="myOffersList" class="offers-list"></div>
-      </div>
+          <div class="account-section" data-section="offers">
+            <div class="account-section-header"><h3>Incoming Offers</h3></div>
+            <div id="incomingOffersList" class="offers-list"></div>
+            <div class="account-section-header"><h3>Sent Offers</h3></div>
+            <div id="myOffersList" class="offers-list"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">Opening History <span class="account-block-note">5x+ pulls pinned</span></h3>
-        <div id="openingsFilter" class="market-filter-chips"></div>
-        <div id="openingsList" class="openings-list"></div>
-      </div>
+          <div class="account-section" data-section="history">
+            <div class="account-section-header">
+              <h3>Opening History</h3>
+              <span class="account-block-note">5x+ pulls pinned</span>
+            </div>
+            <div id="openingsFilter" class="market-filter-chips"></div>
+            <div id="openingsList" class="openings-list"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">Shipped</h3>
-        <div id="shippedList" class="market-grid"></div>
-      </div>
+          <div class="account-section" data-section="shipped">
+            <div class="account-section-header"><h3>Shipped</h3></div>
+            <div id="shippedList" class="market-grid"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">Leaderboard</h3>
-        <div id="leaderboardList" class="leaderboard-list"></div>
-      </div>
+          <div class="account-section" data-section="leaderboard">
+            <div class="account-section-header"><h3>Leaderboard</h3></div>
+            <div id="leaderboardList" class="leaderboard-list"></div>
+          </div>
 
-      <div class="account-block">
-        <h3 class="account-block-title">Referral Program</h3>
-        <div id="referralPanel" class="referral-panel"></div>
+          <div class="account-section" data-section="referral">
+            <div class="account-section-header"><h3>Referral Program</h3></div>
+            <div id="referralPanel" class="referral-panel"></div>
+          </div>
+        </div>
       </div>
     </section>
 
-  </main>
+    </main>
 
-  <footer class="app-footer">
-    <p>
-      3D "Nike Shoe Box" by
-      <a href="https://sketchfab.com/samplemem" target="_blank" rel="noopener">samplemem</a>,
-      licensed
-      <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
-      Prize catalog images from
-      <a href="https://odto.com/collections/footwear" target="_blank" rel="noopener">odto.com</a>.
-    </p>
-  </footer>
+    <footer class="app-footer">
+      <p>
+        3D "Nike Shoe Box" by
+        <a href="https://sketchfab.com/samplemem" target="_blank" rel="noopener">samplemem</a>,
+        licensed
+        <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+        Prize catalog images from
+        <a href="https://odto.com/collections/footwear" target="_blank" rel="noopener">odto.com</a>.
+      </p>
+    </footer>
+  </div>
 </div>
 
 <!-- Won-prize hero modal -->
