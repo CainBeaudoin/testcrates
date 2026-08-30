@@ -39,15 +39,7 @@ export const REFERRAL_TIERS = [
   { volume: 2000000, share: 0.4 },
 ];
 
-const ADJECTIVES = ["Silent", "Crimson", "Golden", "Shadow", "Neon", "Frozen", "Rapid", "Lunar", "Iron", "Velvet"];
-const NOUNS = ["Falcon", "Voyager", "Wolf", "Phantom", "Rider", "Comet", "Hunter", "Nomad", "Viper", "Ranger"];
-
-function randomUsername() {
-  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${adj}${noun}${num}`;
-}
+const DEFAULT_USERNAME = "ODCain";
 
 function rank(rarity) {
   return RARITY_ORDER.indexOf(rarity);
@@ -67,7 +59,7 @@ function uid() {
 
 function defaultState() {
   return {
-    username: randomUsername(),
+    username: DEFAULT_USERNAME,
     history: [], // most-recent-first, capped: {name, rarity, price, image, multiplier, ts}
     bigPulls: [], // multiplier >= BIG_PULL_MULTIPLIER, never evicted
     lastPulledByTier: {}, // { [tierKey]: name } — duplicate-pull guard
