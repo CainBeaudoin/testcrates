@@ -185,14 +185,15 @@ body {
 
 .topbar-brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 9px;
   flex: 0 0 auto;
 }
+.brand-logo { flex: 0 0 auto; }
 .brand-name {
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 1px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
   color: var(--text);
 }
 .brand-beta {
