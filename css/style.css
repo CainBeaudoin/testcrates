@@ -760,8 +760,9 @@ body {
    a simulated cast, same pattern as the marketplace/leaderboard) --- */
 
 .recent-pulls {
-  max-width: 900px;
-  margin: 44px auto 0;
+  /* Full width of the tier-card row (Bronze through Gold), not a narrower
+     centered strip — no max-width of its own. */
+  margin: 44px 0 0;
 }
 
 .recent-pulls h3 {
@@ -776,18 +777,18 @@ body {
 
 .recent-pulls-list {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   overflow-x: auto;
-  padding: 4px 2px 10px;
+  padding: 4px 2px 12px;
 }
 
 .recent-pull-item {
   flex: 0 0 auto;
-  width: 108px;
-  padding: 10px 10px 12px;
+  width: 168px;
+  padding: 16px 16px 18px;
   background: var(--surface-1);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   text-align: center;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -797,32 +798,32 @@ body {
 .recent-pull-item.static:hover { transform: none; border-color: var(--line); }
 
 .recent-pull-item img {
-  width: 64px;
-  height: 64px;
+  width: 104px;
+  height: 104px;
   object-fit: contain;
   background: #000;
-  border-radius: 4px;
-  margin: 0 auto 8px;
+  border-radius: 6px;
+  margin: 0 auto 12px;
   display: block;
 }
 
 .recent-pull-price {
   display: block;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 9px;
 }
 
 .recent-pull-item .tier-badge {
-  margin-bottom: 6px;
-  font-size: 0.52rem;
-  padding: 2px 8px;
+  margin-bottom: 9px;
+  font-size: 0.62rem;
+  padding: 3px 10px;
 }
 
 .recent-pull-user {
   display: block;
-  font-size: 0.58rem;
+  font-size: 0.66rem;
   color: var(--text-faint);
   white-space: nowrap;
   overflow: hidden;
