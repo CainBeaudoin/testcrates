@@ -440,9 +440,12 @@ body {
 
 .category-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
+}
+@media (max-width: 900px) {
+  .category-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .category-wrap {
@@ -510,6 +513,7 @@ body {
 .category-tier-name.tier-name-bronze { color: #d0895a; }
 .category-tier-name.tier-name-silver { color: #c7ccd6; }
 .category-tier-name.tier-name-gold { color: #f0c14b; }
+.category-tier-name.tier-name-stocks { color: #4ade80; }
 
 .category-tier-price {
   font-size: 1.05rem;
@@ -524,6 +528,12 @@ body {
   letter-spacing: 0.5px;
   color: var(--text-faint);
   margin-bottom: 10px;
+}
+/* Keeps cards without a "Powered by" line the same height as ones with it,
+   so the tier row stays aligned. */
+.category-powered-by-spacer {
+  display: block;
+  height: 21px;
 }
 
 .category-qty {
@@ -2107,6 +2117,7 @@ body {
 .tier-badge-bronze { color: #d0895a; background: rgba(208, 137, 90, 0.14); }
 .tier-badge-silver { color: #c7ccd6; background: rgba(199, 204, 214, 0.14); }
 .tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
+.tier-badge-stocks { color: #4ade80; background: rgba(74, 222, 128, 0.14); }
 
 /* --- Reveal exits: Cash Out / Keep --- */
 

@@ -366,6 +366,7 @@ export function addToInventory(prize) {
     rarity: prize.rarity,
     price: prize.price,
     image: prize.image,
+    category: prize.category, // undefined for sneakers (the implicit default) — see market.js sizeFor
     acquiredAt: Date.now(),
     listingId: null,
   };

@@ -31,6 +31,13 @@ function sizeForItem(name) {
   return SIZES[h % SIZES.length];
 }
 
+// A share of stock doesn't have a shoe size — only assign one for
+// categories that actually wear one (sneakers, the implicit default for
+// items predating the category field).
+function sizeFor(item) {
+  return item.category === "stocks" ? null : sizeForItem(item.name);
+}
+
 function defaultState() {
   return {
     seeded: false,
@@ -79,7 +86,8 @@ export function ensureSeeded(catalog) {
       image: item.image,
       catalogPrice: item.price,
       price,
-      size: sizeForItem(item.name),
+      size: sizeFor(item),
+      category: item.category,
       seller: FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)],
       isPlayer: false,
       itemId: null,
@@ -98,7 +106,8 @@ export function ensureSeeded(catalog) {
       image: item.image,
       catalogPrice: item.price,
       price: null,
-      size: sizeForItem(item.name),
+      size: sizeFor(item),
+      category: item.category,
       seller: FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)],
       isPlayer: false,
       itemId: null,
@@ -128,7 +137,8 @@ export function createListing({ item, price = null, seller }) {
     image: item.image,
     catalogPrice: item.price,
     price,
-    size: sizeForItem(item.name),
+    size: sizeFor(item),
+    category: item.category,
     seller,
     isPlayer: true,
     itemId: item.id,

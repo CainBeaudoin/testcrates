@@ -31,4 +31,6 @@ export const ICONS = {
   dice: svg(
     `<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/>`
   ),
+  // Category glyph for the Stocks tier — a simple trending-up chart.
+  stock: svg(`<polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/>`),
 };

@@ -2,6 +2,7 @@ import { createBoxViewer, getBoxSnapshot } from "./boxViewer.js";
 import { PRIZE_POOL as HUNDRED_POOL, RARITY_META } from "./prizeData.js";
 import { PRIZE_POOL as TWO_FIFTY_POOL } from "./prizeData250.js";
 import { PRIZE_POOL as THOUSAND_POOL } from "./prizeData1000.js";
+import { PRIZE_POOL as STOCKS_POOL } from "./prizeDataStocks.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
@@ -15,12 +16,23 @@ import * as recorder from "./recorder.js";
 // crate costs its tier price, paid from whichever balance you choose.
 
 const CATEGORIES = {
+  stocks: {
+    label: "$25",
+    badge: "Stocks",
+    price: 25,
+    pool: STOCKS_POOL,
+    categoryIcon: "stock",
+    categoryLabel: "Stocks",
+    poweredBy: null, // no real partner behind this one — caption is skipped
+  },
   hundred: {
     label: "$100",
     badge: "Bronze",
     price: 100,
     pool: HUNDRED_POOL,
     categoryIcon: "sneaker", // swap per-tier if a pool ever isn't sneakers
+    categoryLabel: "Sneakers",
+    poweredBy: "ODTO",
   },
   twoFifty: {
     label: "$250",
@@ -28,6 +40,8 @@ const CATEGORIES = {
     price: 250,
     pool: TWO_FIFTY_POOL,
     categoryIcon: "sneaker",
+    categoryLabel: "Sneakers",
+    poweredBy: "ODTO",
   },
   thousand: {
     label: "$1000",
@@ -35,6 +49,8 @@ const CATEGORIES = {
     price: 1000,
     pool: THOUSAND_POOL,
     categoryIcon: "sneaker",
+    categoryLabel: "Sneakers",
+    poweredBy: "ODTO",
   },
 };
 
@@ -47,7 +63,7 @@ function rankOf(rarity) {
 const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
 
 // Full catalog across all tiers, used to seed simulated marketplace listings.
-const ALL_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
+const ALL_CATALOG = [...STOCKS_POOL, ...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
@@ -682,13 +698,13 @@ function renderCategories() {
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
-      <span class="category-icon-badge" title="Sneakers">${ICONS[cat.categoryIcon]}</span>
+      <span class="category-icon-badge" title="${cat.categoryLabel}">${ICONS[cat.categoryIcon]}</span>
       <canvas class="category-box-canvas"></canvas>
       <div class="category-tier-line">
         <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>
         <span class="category-tier-price">${cat.label}</span>
       </div>
-      <span class="category-powered-by">Powered by ODTO</span>
+      ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${cat.poweredBy}</span>` : `<span class="category-powered-by-spacer"></span>`}
       ${buildPityHTML(key)}
       <div class="category-qty">
         <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
@@ -1553,7 +1569,7 @@ listingBuyBtn.addEventListener("click", () => {
     return;
   }
   playClick();
-  addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+  addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image, category: listing.category });
   market.removeListing(listing.id);
   renderWallet({ pulse: "cash" });
   closeListingModal();
@@ -1598,7 +1614,7 @@ function resolveBotOnMyOffer(offerId) {
   const decision = market.botDecision(offer.amount, reference);
   if (decision.status === "accepted") {
     if (player.spendCash(offer.amount)) {
-      addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+      addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image, category: listing.category });
       market.removeListing(listing.id);
       market.updateOffer(offerId, { status: "accepted" });
       renderWallet({ pulse: "cash" });
@@ -2203,7 +2219,7 @@ document.addEventListener("click", (e) => {
       renderAccount();
     } else if (action === "accept-counter") {
       if (player.spendCash(offer.counterAmount) && listing) {
-        addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+        addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image, category: listing.category });
         market.removeListing(listing.id);
         market.updateOffer(offer.id, { status: "accepted" });
         renderWallet({ pulse: "cash" });

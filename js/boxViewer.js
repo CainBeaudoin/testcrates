@@ -32,6 +32,9 @@ const TIER_SKINS = {
   bronze: { color: 0xd0895a, metalness: 1, roughness: 0.22 },
   silver: { color: 0xc7ccd6, metalness: 1, roughness: 0.1 },
   gold: { color: 0xf0c14b, metalness: 1, roughness: 0.14 },
+  // Placeholder for the Stocks tier, reusing the same crate model with a
+  // finance-green skin — a dedicated "pack" model replaces this later.
+  stocks: { color: 0x4ade80, metalness: 1, roughness: 0.18 },
 };
 
 // Materials are shared by reference across clone(true) instances, so this
