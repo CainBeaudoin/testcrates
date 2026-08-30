@@ -1108,6 +1108,8 @@ body {
   line-height: 1.6;
   color: var(--text-faint);
 }
+.app-footer-tagline a { color: var(--text-dim); }
+.app-footer-tagline a:hover { color: var(--text); }
 
 .app-footer-columns {
   display: flex;
@@ -1155,6 +1157,7 @@ body {
   border: 1px solid var(--line);
   color: var(--text-dim);
   cursor: pointer;
+  text-decoration: none;
 }
 .app-footer-social-btn:hover { color: var(--text); border-color: var(--line-strong); }
 
