@@ -30,10 +30,6 @@ export function setMuted(v) {
   muted = v;
   localStorage.setItem(MUTE_KEY, v ? "1" : "0");
   if (masterGain) masterGain.gain.setTargetAtTime(v ? 0 : 1, audioCtx.currentTime, 0.05);
-  if (!v) {
-    stopAmbient();
-    startAmbient();
-  }
 }
 
 export function toggleMuted() {
@@ -146,40 +142,4 @@ export function playPop() {
   const ctx = getCtx();
   if (!ctx) return;
   tone(ctx, { freq: 260, start: ctx.currentTime, duration: 0.1, type: "sine", gain: 0.08, freqEnd: 460 });
-}
-
-// ---- Ambient background hum ----------------------------------------------
-
-let ambientNodes = null;
-
-export function startAmbient() {
-  if (muted || ambientNodes) return;
-  const ctx = getCtx();
-  if (!ctx) return;
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc1.type = "sine";
-  osc2.type = "sine";
-  osc1.frequency.value = 55;
-  osc2.frequency.value = 55.6; // slight detune for a slow beating shimmer
-  g.gain.value = 0;
-  osc1.connect(g);
-  osc2.connect(g);
-  g.connect(masterGain);
-  g.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 2);
-  osc1.start();
-  osc2.start();
-  ambientNodes = { osc1, osc2, g };
-}
-
-export function stopAmbient() {
-  if (!ambientNodes || !audioCtx) return;
-  const { osc1, osc2, g } = ambientNodes;
-  g.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
-  setTimeout(() => {
-    osc1.stop();
-    osc2.stop();
-  }, 800);
-  ambientNodes = null;
 }

@@ -79,6 +79,8 @@ function defaultState() {
     wallet: { credits: 0, cash: 500 },
     inventory: [], // {id, name, rarity, price, image, acquiredAt, listingId}
     shipped: [], // items claimed physically: {id, name, rarity, price, image, shippedAt}
+    cashedOut: [], // liquidated items: {id, name, rarity, price, image, amount, currency, ts}
+    transfers: [], // items sent to another account: {id, name, rarity, price, image, toUsername, ts}
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
   };
@@ -436,11 +438,35 @@ function hashString(s) {
   return h;
 }
 
-export function currentMarketValue(item) {
-  const dayKey = new Date().toISOString().slice(0, 10);
+function valueOnDate(item, date) {
+  const dayKey = date.toISOString().slice(0, 10);
   const h = hashString(`${item.id}:${dayKey}`);
   const wobble = ((h % 3000) / 3000) * 0.3 - 0.15; // -15%..+15%
   return Math.max(1, Math.round(item.price * (1 + wobble)));
+}
+
+// Past the archival clock, the price freezes at exactly what it was on
+// day 365 — recomputed from that fixed date rather than today's, so no
+// extra state needs to be stored to "remember" the frozen number.
+function marketValueAsOfDate(item) {
+  return isArchived(item) ? new Date(item.acquiredAt + ARCHIVAL_DAYS * 24 * 60 * 60 * 1000) : new Date();
+}
+
+export function currentMarketValue(item) {
+  return valueOnDate(item, marketValueAsOfDate(item));
+}
+
+// A simulated daily price series ending on the same date currentMarketValue
+// resolves to (today, or the archival freeze date) — so the chart's last
+// point always matches the number shown everywhere else for this item.
+export function priceHistory(item, days = 30) {
+  const asOf = marketValueAsOfDate(item);
+  const points = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(asOf.getTime() - i * 24 * 60 * 60 * 1000);
+    points.push({ date: date.toISOString().slice(0, 10), value: valueOnDate(item, date) });
+  }
+  return points;
 }
 
 export function cashOutValue(item) {
@@ -463,4 +489,36 @@ export function shipItem(item) {
 
 export function getShipped() {
   return state.shipped;
+}
+
+// ---- Cashed out (liquidated) history --------------------------------------
+
+export function logCashOut({ name, rarity, price, image, amount, currency }) {
+  state.cashedOut.unshift({ id: uid(), name, rarity, price, image, amount, currency, ts: Date.now() });
+  state.cashedOut = state.cashedOut.slice(0, 50);
+  save();
+}
+
+export function getCashedOut() {
+  return state.cashedOut;
+}
+
+// ---- Transfers (send an item to another account) --------------------------
+
+export function transferItem(item, toUsername) {
+  state.transfers.unshift({
+    id: item.id,
+    name: item.name,
+    rarity: item.rarity,
+    price: item.price,
+    image: item.image,
+    toUsername,
+    ts: Date.now(),
+  });
+  state.transfers = state.transfers.slice(0, 50);
+  removeFromInventory(item.id);
+}
+
+export function getTransfers() {
+  return state.transfers;
 }

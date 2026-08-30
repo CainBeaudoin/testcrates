@@ -193,6 +193,7 @@
             <div class="wallet-card-divider"></div>
             <div class="wallet-card-row"><span>XP</span><b id="sideXp">0</b></div>
             <div class="wallet-card-row"><span>Lifetime Volume</span><b id="sideVolume">$0</b></div>
+            <div class="wallet-card-row"><span>Total Item Value</span><b id="sideItemValue" class="positive">$0</b></div>
           </div>
 
           <nav class="account-nav">
@@ -271,11 +272,17 @@
             </div>
             <div id="openingsFilter" class="market-filter-chips"></div>
             <div id="openingsList" class="openings-list"></div>
+
+            <div class="account-section-header"><h3>Cashed Out</h3></div>
+            <div id="cashedOutList" class="openings-list"></div>
           </div>
 
           <div class="account-section" data-section="shipped">
             <div class="account-section-header"><h3>Shipped</h3></div>
             <div id="shippedList" class="market-grid"></div>
+
+            <div class="account-section-header"><h3>Transferred</h3></div>
+            <div id="transfersList" class="openings-list"></div>
           </div>
 
           <div class="account-section" data-section="leaderboard">
@@ -391,6 +398,29 @@
     </div>
     <button id="pullDetailGoBtn" class="modal-btn modal-btn-solid pull-detail-go-btn"></button>
     <button id="pullDetailCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Vault item detail: simulated price-action chart + buyout + offers -->
+<div id="itemDetailModal" class="prize-modal hidden">
+  <div class="prize-modal-card listing-modal-card item-detail-card">
+    <img class="prize-modal-image" id="itemDetailImage" alt="">
+    <h3 class="prize-modal-name" id="itemDetailName"></h3>
+    <p class="prize-modal-price" id="itemDetailValue"></p>
+    <div id="itemDetailChart" class="price-chart"></div>
+    <span class="price-chart-caption">Simulated price action — last 30 days</span>
+
+    <div class="item-detail-offers">
+      <h4>Offers</h4>
+      <div class="offer-row platform-offer">
+        <div class="offer-row-info"><b>Platform Buyout</b><br>Always available, updates daily</div>
+        <span class="offer-row-amount" id="itemDetailBuyout"></span>
+        <button class="offer-btn accept" id="itemDetailBuyoutBtn" data-item-action="cashout">Accept</button>
+      </div>
+      <div id="itemDetailPeerOffers" class="offers-list"></div>
+    </div>
+
+    <button id="itemDetailCloseBtn" class="back-btn listing-close-btn">Close</button>
   </div>
 </div>
 

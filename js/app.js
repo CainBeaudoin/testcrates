@@ -5,7 +5,7 @@ import { PRIZE_POOL as THOUSAND_POOL } from "./prizeData1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
-import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmbient } from "./sound.js";
+import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from "./sound.js";
 import { ICONS } from "./icons.js";
 import * as recorder from "./recorder.js";
 
@@ -145,6 +145,7 @@ const sideCredits = document.getElementById("sideCredits");
 const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
 const sideVolume = document.getElementById("sideVolume");
+const sideItemValue = document.getElementById("sideItemValue");
 const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item"));
 const accountSections = Array.from(document.querySelectorAll(".account-section"));
 const vaultCount = document.getElementById("vaultCount");
@@ -156,6 +157,8 @@ const myOffersList = document.getElementById("myOffersList");
 const openingsFilter = document.getElementById("openingsFilter");
 const openingsList = document.getElementById("openingsList");
 const shippedList = document.getElementById("shippedList");
+const cashedOutList = document.getElementById("cashedOutList");
+const transfersList = document.getElementById("transfersList");
 const clipsGrid = document.getElementById("clipsGrid");
 const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
@@ -196,6 +199,15 @@ const pullDetailTierBadge = document.getElementById("pullDetailTierBadge");
 const pullDetailUser = document.getElementById("pullDetailUser");
 const pullDetailGoBtn = document.getElementById("pullDetailGoBtn");
 const pullDetailCloseBtn = document.getElementById("pullDetailCloseBtn");
+const itemDetailModal = document.getElementById("itemDetailModal");
+const itemDetailImage = document.getElementById("itemDetailImage");
+const itemDetailName = document.getElementById("itemDetailName");
+const itemDetailValue = document.getElementById("itemDetailValue");
+const itemDetailChart = document.getElementById("itemDetailChart");
+const itemDetailBuyout = document.getElementById("itemDetailBuyout");
+const itemDetailBuyoutBtn = document.getElementById("itemDetailBuyoutBtn");
+const itemDetailPeerOffers = document.getElementById("itemDetailPeerOffers");
+const itemDetailCloseBtn = document.getElementById("itemDetailCloseBtn");
 const amountModal = document.getElementById("amountModal");
 const amountModalTitle = document.getElementById("amountModalTitle");
 const amountModalHint = document.getElementById("amountModalHint");
@@ -855,6 +867,7 @@ cashOutBtn.addEventListener("click", () => {
   playClick();
   const amount = Math.round(prize.price * player.CASHOUT_HAIRCUT);
   player.cashBack(amount, roundCurrency);
+  player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
   renderWallet({ pulse: roundCurrency });
   showWalletToast(amount, roundCurrency);
   hidePrizeModal();
@@ -1297,7 +1310,7 @@ function inventoryItemHTML(item) {
   const isListed = listing && listing.price != null;
 
   return `
-    <div class="market-item static">
+    <div class="market-item" data-item="${item.id}">
       <div class="market-item-media">
         <img src="${item.image}" alt="">
       </div>
@@ -1310,9 +1323,77 @@ function inventoryItemHTML(item) {
           <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
           <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
           <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
+          <button class="item-action-btn" data-item-action="send" data-item="${item.id}" ${archived ? "disabled" : ""}>Send</button>
         </div>
       </div>
     </div>`;
+}
+
+function buildPriceChartSVG(history) {
+  const values = history.map((p) => p.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const w = 100;
+  const h = 100;
+  const stepX = w / (values.length - 1);
+  const points = values.map((v, i) => `${(i * stepX).toFixed(2)},${(h - ((v - min) / range) * h).toFixed(2)}`).join(" ");
+  const up = values[values.length - 1] >= values[0];
+  const color = up ? "#4ade80" : "#f87171";
+  return `
+    <svg class="price-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <polygon points="0,${h} ${points} ${w},${h}" fill="${color}" opacity="0.14"></polygon>
+      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>
+    </svg>`;
+}
+
+function openItemDetail(itemId) {
+  const item = player.getInventoryItem(itemId);
+  if (!item) return;
+
+  itemDetailImage.src = item.image;
+  itemDetailImage.alt = item.name;
+  itemDetailName.textContent = item.name;
+  const value = player.currentMarketValue(item);
+  itemDetailValue.textContent = `$${value.toLocaleString()}`;
+  itemDetailChart.innerHTML = buildPriceChartSVG(player.priceHistory(item));
+
+  const buyout = player.cashOutValue(item);
+  itemDetailBuyout.textContent = `$${buyout.toLocaleString()}`;
+  itemDetailBuyoutBtn.dataset.item = item.id;
+
+  const peerOffers = item.listingId ? market.getOffersForListing(item.listingId) : [];
+  itemDetailPeerOffers.innerHTML = peerOffers.length
+    ? peerOffers.map((o) => offerRowHTML(o)).join("")
+    : `<div class="offers-empty">No offers from other users yet.</div>`;
+
+  itemDetailModal.classList.remove("hidden");
+  requestAnimationFrame(() => itemDetailModal.classList.add("visible"));
+}
+
+function closeItemDetail() {
+  itemDetailModal.classList.remove("visible");
+  setTimeout(() => itemDetailModal.classList.add("hidden"), 250);
+}
+itemDetailCloseBtn.addEventListener("click", () => {
+  playClick();
+  closeItemDetail();
+});
+// The Accept button reuses the global data-item-action delegated handler
+// (see the document click listener below) — close the modal once it fires.
+itemDetailBuyoutBtn.addEventListener("click", () => {
+  setTimeout(closeItemDetail, 50);
+});
+
+// Market value of everything the player has ever received — vault items at
+// today's simulated value, shipped/cashed-out items at what they were
+// worth when they left the vault. Deliberately reads as a positive number
+// distinct from Lifetime Volume (what was spent), per the scope doc.
+function getTotalItemValue() {
+  const vaultValue = player.getInventory().reduce((sum, item) => sum + player.currentMarketValue(item), 0);
+  const shippedValue = player.getShipped().reduce((sum, item) => sum + item.price, 0);
+  const cashedValue = player.getCashedOut().reduce((sum, item) => sum + item.price, 0);
+  return vaultValue + shippedValue + cashedValue;
 }
 
 function renderAccount() {
@@ -1321,6 +1402,7 @@ function renderAccount() {
   sideCash.textContent = `$${player.getWallet().cash.toLocaleString()}`;
   sideXp.textContent = player.getXp().toLocaleString();
   sideVolume.textContent = `$${player.getLifetimeVolume().toLocaleString()}`;
+  sideItemValue.textContent = `$${getTotalItemValue().toLocaleString()}`;
 
   market.maybeSpawnIncomingOffer();
   renderHeaderStats();
@@ -1344,6 +1426,12 @@ function renderAccount() {
   inventoryGrid.innerHTML = inventory.length
     ? inventory.map(inventoryItemHTML).join("")
     : `<div class="market-empty">Keep, Ship or List a prize from a crate reveal to see it here.</div>`;
+  inventoryGrid.querySelectorAll(".market-item").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".item-actions")) return;
+      openItemDetail(el.dataset.item);
+    });
+  });
 
   const myOffers = market.getMyOffers();
   myOffersList.innerHTML = myOffers.length
@@ -1351,7 +1439,9 @@ function renderAccount() {
     : `<div class="offers-empty">You haven't made any offers yet.</div>`;
 
   renderOpeningHistory();
+  renderCashedOut();
   renderShipped();
+  renderTransfers();
   renderLeaderboard();
   renderReferralPanel();
   renderStreaks();
@@ -1429,6 +1519,38 @@ function renderOpeningHistory() {
         })
         .join("")
     : `<div class="offers-empty">No openings yet.</div>`;
+}
+
+function renderCashedOut() {
+  const cashedOut = player.getCashedOut();
+  cashedOutList.innerHTML = cashedOut.length
+    ? cashedOut
+        .map(
+          (o) => `
+          <div class="opening-row">
+            <img src="${o.image}" alt="">
+            <span class="opening-row-name">${o.name}</span>
+            <span class="opening-row-mult">${o.currency === "cash" ? "$" : ""}${o.amount.toLocaleString()}${o.currency === "credits" ? " cr" : ""}</span>
+          </div>`
+        )
+        .join("")
+    : `<div class="offers-empty">Nothing cashed out yet.</div>`;
+}
+
+function renderTransfers() {
+  const transfers = player.getTransfers();
+  transfersList.innerHTML = transfers.length
+    ? transfers
+        .map(
+          (t) => `
+          <div class="opening-row">
+            <img src="${t.image}" alt="">
+            <span class="opening-row-name">${t.name}</span>
+            <span class="opening-row-mult">→ ${t.toUsername}</span>
+          </div>`
+        )
+        .join("")
+    : `<div class="offers-empty">Nothing sent yet.</div>`;
 }
 
 function renderShipped() {
@@ -1614,6 +1736,7 @@ document.addEventListener("click", (e) => {
       playClick();
       const amount = player.cashOutValue(item);
       player.addCash(amount);
+      player.logCashOut({ name: item.name, rarity: item.rarity, price: item.price, image: item.image, amount, currency: "cash" });
       releaseOwnedItem(item);
       renderWallet({ pulse: "cash" });
       showWalletToast(amount, "cash");
@@ -1630,16 +1753,17 @@ document.addEventListener("click", (e) => {
         market.updateListing(item.listingId, { price });
         renderAccount();
       });
+    } else if (action === "send") {
+      const toUsername = prompt(`Send ${item.name} to which username?`);
+      if (!toUsername || !toUsername.trim()) return;
+      playClick();
+      if (item.listingId) market.removeListing(item.listingId);
+      player.transferItem(item, toUsername.trim());
+      showToast(`Sent to ${toUsername.trim()}`, ICONS.bell);
+      renderAccount();
     }
   }
 });
-
-// Autoplay policies require a user gesture before any audio can start.
-function onFirstGesture() {
-  startAmbient();
-  document.removeEventListener("pointerdown", onFirstGesture);
-}
-document.addEventListener("pointerdown", onFirstGesture);
 
 buildAmbientParticles();
 renderIdentity();
