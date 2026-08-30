@@ -18,21 +18,18 @@ const CATEGORIES = {
     label: "$100",
     badge: "Bronze",
     price: 100,
-    description: "3 crates, one pull each. Odds are set by the pool below.",
     pool: HUNDRED_POOL,
   },
   twoFifty: {
     label: "$250",
     badge: "Silver",
     price: 250,
-    description: "Same odds, a step up in stock — 3 crates, one pull each.",
     pool: TWO_FIFTY_POOL,
   },
   thousand: {
     label: "$1000",
     badge: "Gold",
     price: 1000,
-    description: "The grail tier. 3 crates, one pull each.",
     pool: THOUSAND_POOL,
   },
 };
@@ -331,31 +328,41 @@ function updatePayingWithBadge() {
 
 // A live-feed illusion of what's being pulled platform-wide, same pattern
 // as the simulated marketplace sellers and leaderboard: a fixed cast of
-// fake usernames pulling real catalog items, generated once per session
-// and blended with the player's own real history by timestamp.
-let simulatedPulls = null;
-function buildSimulatedPulls() {
+// fake usernames pulling real catalog items. Seeded with a backlog at
+// startup, then ticks forward with a fresh pull every few seconds so the
+// feed feels alive, blended with the player's own real history by ts.
+const SIMULATED_PULLS_CAP = 40;
+let simulatedPulls = [];
+
+function generateSimulatedPull(ts) {
   const tierKeys = Object.keys(CATEGORIES);
+  const tierKey = tierKeys[Math.floor(Math.random() * tierKeys.length)];
+  const cat = CATEGORIES[tierKey];
+  const prize = weightedPick(cat.pool);
+  return {
+    name: prize.name,
+    rarity: prize.rarity,
+    price: prize.price,
+    image: prize.image,
+    tierKey,
+    username: market.FAKE_USERNAMES[Math.floor(Math.random() * market.FAKE_USERNAMES.length)],
+    isPlayer: false,
+    ts,
+  };
+}
+
+function seedSimulatedPulls() {
   const now = Date.now();
-  return Array.from({ length: 14 }, () => {
-    const tierKey = tierKeys[Math.floor(Math.random() * tierKeys.length)];
-    const cat = CATEGORIES[tierKey];
-    const prize = weightedPick(cat.pool);
-    return {
-      name: prize.name,
-      rarity: prize.rarity,
-      price: prize.price,
-      image: prize.image,
-      tierKey,
-      username: market.FAKE_USERNAMES[Math.floor(Math.random() * market.FAKE_USERNAMES.length)],
-      isPlayer: false,
-      ts: now - Math.floor(Math.random() * 90 * 60 * 1000),
-    };
-  });
+  simulatedPulls = Array.from({ length: 14 }, () => generateSimulatedPull(now - Math.floor(Math.random() * 90 * 60 * 1000)));
+}
+
+function tickSimulatedPulls() {
+  simulatedPulls.unshift(generateSimulatedPull(Date.now()));
+  simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
+  if (screenCategory.classList.contains("active")) renderRecentPulls();
 }
 
 function renderRecentPulls() {
-  if (!simulatedPulls) simulatedPulls = buildSimulatedPulls();
   const mine = player.getHistory().map((p) => ({ ...p, username: player.getUsername(), isPlayer: true }));
   const feed = [...mine, ...simulatedPulls].sort((a, b) => b.ts - a.ts).slice(0, 16);
 
@@ -466,8 +473,6 @@ function renderCategories() {
     card.innerHTML = `
       <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
       <h3>${cat.label}</h3>
-      <p>${cat.description}</p>
-      <span class="cta">Tap to begin — $${cat.price.toLocaleString()}</span>
       ${buildPityHTML(key)}
     `;
     card.addEventListener("click", () => {
@@ -1520,4 +1525,6 @@ document.addEventListener("pointerdown", onFirstGesture);
 
 buildAmbientParticles();
 renderIdentity();
+seedSimulatedPulls();
 renderCategories();
+setInterval(tickSimulatedPulls, 4000);

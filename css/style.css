@@ -430,12 +430,6 @@ body {
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-/* Push the CTA + pity bar to the same baseline across cards regardless of
-   how many lines the description above it wraps to. */
-.category-card .cta {
-  margin-top: auto;
-}
-
 .category-card:hover {
   transform: translateY(-4px);
   border-color: var(--line-strong);
@@ -449,21 +443,7 @@ body {
   letter-spacing: 1px;
 }
 
-.category-card p {
-  margin: 0 0 14px;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.category-card .cta {
-  font-size: 0.7rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-/* Pity progress, shown under a tier's CTA */
+/* Pity progress, shown under the tier badge/price */
 .pity-bar {
   margin-top: 14px;
   text-align: left;
