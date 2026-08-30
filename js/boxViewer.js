@@ -6,6 +6,7 @@ const LID_NODE_NAME = "Plane_Plane_002_Material_001"; // hinge pivot baked into 
 const LID_OPEN_DEG = -118; // extracted from the model's own open-lid animation clip
 const OPEN_DURATION_MS = 700;
 const IDLE_SPEED = 0.45; // rad/s
+const FACE_SPEED = 7; // rad/s easing back to forward-facing (0) on hover/open
 
 let modelPromise = null;
 function loadModel() {
@@ -24,6 +25,15 @@ function easeOutBack(t) {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
+// Shortest signed distance from `angle` back to 0 (facing forward), so easing
+// always turns the short way round rather than spinning back past a full lap.
+function angleToZero(angle) {
+  let a = angle % (Math.PI * 2);
+  if (a > Math.PI) a -= Math.PI * 2;
+  if (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
 function makeShadowTexture() {
   const size = 256;
   const canvas = document.createElement("canvas");
@@ -37,13 +47,10 @@ function makeShadowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-/**
- * Mounts one interactive, self-rotating box on `canvas`.
- * Returns a small controller: { setPaused, open, reset, dispose }.
- */
-export async function createBoxViewer(canvas) {
-  const baseModel = await loadModel();
-  const root = baseModel.clone(true);
+// Shared scene/camera/lighting setup so the reel snapshot and the live,
+// interactive viewers are pixel-for-pixel the same shot — that's what makes
+// the reel-to-slot handoff read as the same box rather than a swap.
+function buildRig(root) {
   const lid = root.getObjectByName(LID_NODE_NAME);
 
   const box = new THREE.Box3().setFromObject(root);
@@ -83,11 +90,59 @@ export async function createBoxViewer(canvas) {
   rim.position.set(-1.5, 2.2, -3);
   scene.add(ambient, key, fill, rim);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  return { scene, camera, group, lid };
+}
+
+function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
+}
+
+let snapshotPromise = null;
+/**
+ * Renders one closed, front-facing box offscreen and returns a PNG data URL.
+ * Used to paint the scrolling reel with the *exact* same box/angle/lighting
+ * that the live 3D viewers use, so landing on the 3 slots feels like the
+ * same boxes coming to a stop rather than a swap to different artwork.
+ */
+export function getBoxSnapshot() {
+  if (!snapshotPromise) {
+    snapshotPromise = loadModel().then((baseModel) => {
+      const size = 320;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      configureRenderer(renderer);
+      renderer.setSize(size, size, false);
+
+      const root = baseModel.clone(true);
+      const { scene, camera } = buildRig(root);
+      camera.aspect = 1;
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      renderer.dispose();
+      return dataUrl;
+    });
+  }
+  return snapshotPromise;
+}
+
+/**
+ * Mounts one interactive, self-rotating box on `canvas`.
+ * Returns a small controller: { setPaused, open, reset, dispose }.
+ */
+export async function createBoxViewer(canvas) {
+  const baseModel = await loadModel();
+  const root = baseModel.clone(true);
+  const { scene, camera, group, lid } = buildRig(root);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  configureRenderer(renderer);
 
   function resize() {
     const w = canvas.clientWidth;
@@ -102,22 +157,30 @@ export async function createBoxViewer(canvas) {
   resize();
 
   let paused = false;
+  let facing = false; // easing back to forward-facing (0), then holding there
   let opening = false;
   let openStartTime = 0;
   let openProgress = 0; // 0 closed -> 1 open, latched once finished
   let running = true;
   let lastT = performance.now();
 
+  function easeTowardZero(dt, speedMul) {
+    const current = angleToZero(group.rotation.y);
+    if (current === 0) return;
+    const step = Math.min(Math.abs(current), dt * FACE_SPEED * speedMul);
+    group.rotation.y = current - Math.sign(current) * step;
+  }
+
   function frame(t) {
     if (!running) return;
     const dt = Math.min((t - lastT) / 1000, 0.05);
     lastT = t;
 
-    if (!paused && openProgress === 0) {
-      group.rotation.y += dt * IDLE_SPEED;
-    }
-
     if (opening) {
+      // Always finish the turn to forward-facing while the lid opens, so
+      // every box opens the same way no matter what angle it was spinning
+      // at when it was picked.
+      easeTowardZero(dt, 1.6);
       const elapsed = t - openStartTime;
       const p = Math.min(elapsed / OPEN_DURATION_MS, 1);
       openProgress = easeOutBack(p);
@@ -125,6 +188,13 @@ export async function createBoxViewer(canvas) {
       if (p >= 1) {
         opening = false;
         openProgress = 1;
+        group.rotation.y = 0;
+      }
+    } else if (openProgress === 0) {
+      if (facing) {
+        easeTowardZero(dt, 1);
+      } else if (!paused) {
+        group.rotation.y += dt * IDLE_SPEED;
       }
     }
 
@@ -134,18 +204,22 @@ export async function createBoxViewer(canvas) {
   requestAnimationFrame(frame);
 
   return {
-    // Hovering pauses the slow idle spin; never triggers the open animation.
+    // Hovering eases the box back to facing forward and holds it there;
+    // never triggers the open animation on its own.
     setPaused(v) {
       paused = v;
+      facing = v;
     },
     // Only ever called from an explicit click handler.
     open() {
       if (opening || openProgress === 1) return;
       opening = true;
+      facing = false;
       openStartTime = performance.now();
     },
     reset() {
       opening = false;
+      facing = false;
       openProgress = 0;
       group.rotation.y = 0;
       if (lid) lid.rotation.x = 0;

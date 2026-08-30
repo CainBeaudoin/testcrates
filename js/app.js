@@ -1,39 +1,33 @@
-import { createBoxViewer } from "./boxViewer.js";
+import { createBoxViewer, getBoxSnapshot } from "./boxViewer.js";
+import { PRIZE_POOL, RARITY_META } from "./prizeData.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each category has a pool of possible prizes with relative weights.
 // Add more categories here later and a matching card appears automatically
-// on the tier-select screen.
+// on the tier-select screen. The $100 tier's pool is scraped/generated —
+// see js/prizeData.js.
 
 const CATEGORIES = {
   hundred: {
     label: "$100 Tier",
     description: "3 crates, one pull each. Odds are set by the pool below.",
-    pool: [
-      { name: "$25 Store Credit", weight: 40 },
-      { name: "$50 Store Credit", weight: 25 },
-      { name: "$100 Cash", weight: 15 },
-      { name: "$150 Bonus Prize", weight: 10 },
-      { name: "Mystery Bonus", weight: 7 },
-      { name: "$500 Jackpot", weight: 3 },
-    ],
+    pool: PRIZE_POOL,
   },
 };
 
+const RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
+
 // ---- Reel configuration ---------------------------------------------------
 
-const CELL_WIDTH = 200;
 const SLOT_COUNT = 3;
 const TOTAL_CELLS = 18;
 const REEL_DURATION_MS = 2400;
 const REVEAL_STEP_MS = 950;
+const MODAL_DELAY_MS = 650;
 
-const BOX_ICON_SVG = `
-<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  <path d="M6 20 L32 8 L58 20 L32 32 Z" />
-  <path d="M6 20 V44 L32 56 V32 Z" />
-  <path d="M58 20 V44 L32 56" />
-</svg>`;
+// Preload the snapshot as soon as the module loads so it's ready by the
+// time the player picks a tier.
+const boxSnapshotPromise = getBoxSnapshot();
 
 // ---- State -----------------------------------------------------------
 
@@ -42,6 +36,7 @@ let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
 let viewers = [null, null, null];
+let reelCellWidth = 0;
 
 // ---- DOM refs -----------------------------------------------------------
 
@@ -56,6 +51,9 @@ const boxRow = document.getElementById("boxRow");
 const slots = Array.from(document.querySelectorAll(".box-slot"));
 const helperText = document.getElementById("helperText");
 const playAgainBtn = document.getElementById("playAgainBtn");
+const prizeModal = document.getElementById("prizeModal");
+const cashBackBtn = document.getElementById("cashBackBtn");
+const keepBtn = document.getElementById("keepBtn");
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -88,11 +86,39 @@ function disposeViewers() {
   viewers = [null, null, null];
 }
 
+function formatPrice(prize) {
+  return `$${prize.price.toLocaleString()}`;
+}
+
 // ---- Category screen -------------------------------------------------
+
+function buildPrizeListHTML(pool) {
+  const sorted = [...pool].sort((a, b) => {
+    const rarityDiff = RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+    return rarityDiff !== 0 ? rarityDiff : b.price - a.price;
+  });
+  return sorted
+    .map((p) => {
+      const meta = RARITY_META[p.rarity];
+      return `
+        <div class="prize-row">
+          <img src="${p.image}" alt="" loading="lazy">
+          <div class="prize-row-info">
+            <span class="prize-row-name">${p.name}</span>
+            <span class="prize-row-rarity" style="color:${meta.color}">${meta.label}</span>
+          </div>
+          <span class="prize-row-price">$${p.price.toLocaleString()}</span>
+        </div>`;
+    })
+    .join("");
+}
 
 function renderCategories() {
   categoryList.innerHTML = "";
   Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const wrap = document.createElement("div");
+    wrap.className = "category-wrap";
+
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
@@ -101,13 +127,27 @@ function renderCategories() {
       <span class="cta">Tap to begin</span>
     `;
     card.addEventListener("click", () => startRound(key));
-    categoryList.appendChild(card);
+
+    const details = document.createElement("details");
+    details.className = "prize-dropdown";
+    details.innerHTML = `
+      <summary>View Prizes</summary>
+      <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
+    `;
+
+    wrap.appendChild(card);
+    wrap.appendChild(details);
+    categoryList.appendChild(wrap);
   });
 }
 
 // ---- Reel ------------------------------------------------------------
 
-function buildReel() {
+function buildReel(snapshotUrl) {
+  // Match the cell width to the reel's actual rendered width so the landing
+  // cells line up exactly with the 3 slot dividers, at any viewport size.
+  reelCellWidth = reel.clientWidth / SLOT_COUNT;
+
   reelTrack.innerHTML = "";
   reelTrack.style.transition = "none";
   reelTrack.style.transform = "translateX(0)";
@@ -115,7 +155,11 @@ function buildReel() {
   for (let i = 0; i < TOTAL_CELLS; i++) {
     const cell = document.createElement("div");
     cell.className = "reel-cell";
-    cell.innerHTML = BOX_ICON_SVG;
+    cell.style.width = `${reelCellWidth}px`;
+    const img = document.createElement("img");
+    img.src = snapshotUrl;
+    img.alt = "";
+    cell.appendChild(img);
     reelTrack.appendChild(cell);
   }
   // force reflow so the reset above is committed before we animate
@@ -124,7 +168,7 @@ function buildReel() {
 
 function spinReel() {
   return new Promise((resolve) => {
-    const finalX = -(CELL_WIDTH * (TOTAL_CELLS - SLOT_COUNT));
+    const finalX = -(reelCellWidth * (TOTAL_CELLS - SLOT_COUNT));
     reelTrack.classList.add("spinning");
     reelTrack.style.transition = `transform ${REEL_DURATION_MS}ms cubic-bezier(0.13, 0.86, 0.15, 1)`;
     reelTrack.style.transform = `translateX(${finalX}px)`;
@@ -137,7 +181,11 @@ function spinReel() {
 function resetSlotsUI() {
   slots.forEach((slot) => {
     slot.classList.remove("open", "you", "locked");
-    slot.querySelector(".price-card-value").textContent = "";
+    slot.querySelector(".price-card").style.removeProperty("--rarity-color");
+    slot.querySelector(".price-card-rarity").textContent = "";
+    slot.querySelector(".price-card-image").src = "";
+    slot.querySelector(".price-card-name").textContent = "";
+    slot.querySelector(".price-card-price").textContent = "";
     slot.querySelector(".box-caption").textContent = `Crate ${Number(slot.dataset.index) + 1}`;
   });
 }
@@ -178,7 +226,8 @@ async function startRound(key) {
 
   showScreen(screenGame);
 
-  buildReel();
+  const snapshotUrl = await boxSnapshotPromise;
+  buildReel(snapshotUrl);
   await spinReel();
 
   reel.classList.add("hidden");
@@ -202,31 +251,86 @@ function onPick(index) {
   helperText.textContent = "Opening your crate…";
   openSlot(index, { isYours: true });
 
-  const others = shuffledOthers(index, SLOT_COUNT);
+  setTimeout(() => showPrizeModal(boxPrizes[index]), MODAL_DELAY_MS);
+}
+
+function revealOthers() {
+  const others = shuffledOthers(selectedIndex, SLOT_COUNT);
+  helperText.classList.remove("hidden");
+  helperText.textContent = "Here's what you could have won…";
+
   others.forEach((otherIndex, step) => {
     setTimeout(() => {
       openSlot(otherIndex, { isYours: false });
       if (step === others.length - 1) {
-        helperText.classList.add("hidden");
-        playAgainBtn.classList.remove("hidden");
-      } else {
-        helperText.textContent = "Here's what you could have won…";
+        setTimeout(() => {
+          helperText.classList.add("hidden");
+          playAgainBtn.classList.remove("hidden");
+        }, 400);
       }
-    }, REVEAL_STEP_MS * (step + 1));
+    }, REVEAL_STEP_MS * step);
   });
 }
 
 function openSlot(index, { isYours }) {
   const slot = slots[index];
   const prize = boxPrizes[index];
-  slot.querySelector(".price-card-value").textContent = prize.name;
+  const meta = RARITY_META[prize.rarity];
+
+  slot.querySelector(".price-card").style.setProperty("--rarity-color", meta.color);
+  const rarityEl = slot.querySelector(".price-card-rarity");
+  rarityEl.textContent = meta.label;
+  rarityEl.style.color = meta.color;
+
+  const imgEl = slot.querySelector(".price-card-image");
+  imgEl.src = prize.image;
+  imgEl.alt = prize.name;
+
+  slot.querySelector(".price-card-name").textContent = prize.name;
+  slot.querySelector(".price-card-price").textContent = formatPrice(prize);
   slot.querySelector(".box-caption").textContent = isYours ? "Your Crate" : "Unpicked";
   slot.classList.toggle("you", isYours);
   slot.classList.add("open");
   if (viewers[index]) viewers[index].open();
 }
 
+// ---- Won-prize modal -------------------------------------------------
+
+function showPrizeModal(prize) {
+  const meta = RARITY_META[prize.rarity];
+  prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+
+  const rarityEl = prizeModal.querySelector(".prize-modal-rarity");
+  rarityEl.textContent = meta.label;
+  rarityEl.style.color = meta.color;
+  rarityEl.style.borderColor = meta.color;
+
+  const imgEl = prizeModal.querySelector(".prize-modal-image");
+  imgEl.src = prize.image;
+  imgEl.alt = prize.name;
+
+  prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
+  prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
+
+  prizeModal.classList.remove("hidden");
+  requestAnimationFrame(() => prizeModal.classList.add("visible"));
+}
+
+function hidePrizeModal() {
+  prizeModal.classList.remove("visible");
+  setTimeout(() => prizeModal.classList.add("hidden"), 300);
+}
+
 // ---- Wire up events -----------------------------------------------------
+
+cashBackBtn.addEventListener("click", () => {
+  hidePrizeModal();
+  revealOthers();
+});
+keepBtn.addEventListener("click", () => {
+  hidePrizeModal();
+  revealOthers();
+});
 
 playAgainBtn.addEventListener("click", () => startRound(currentCategoryKey));
 backBtn.addEventListener("click", () => {

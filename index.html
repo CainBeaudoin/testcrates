@@ -44,24 +44,39 @@
 
       <div id="boxRow" class="box-row hidden">
         <div class="box-slot" data-index="0">
-          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <div class="price-card">
+            <span class="price-card-rarity"></span>
+            <img class="price-card-image" alt="">
+            <span class="price-card-name"></span>
+            <span class="price-card-price"></span>
+          </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 1</div>
         </div>
         <div class="box-slot" data-index="1">
-          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <div class="price-card">
+            <span class="price-card-rarity"></span>
+            <img class="price-card-image" alt="">
+            <span class="price-card-name"></span>
+            <span class="price-card-price"></span>
+          </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 2</div>
         </div>
         <div class="box-slot" data-index="2">
-          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <div class="price-card">
+            <span class="price-card-rarity"></span>
+            <img class="price-card-image" alt="">
+            <span class="price-card-name"></span>
+            <span class="price-card-price"></span>
+          </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 3</div>
         </div>
       </div>
 
       <p id="helperText" class="helper-text hidden">Tap a crate to open it</p>
-      <button id="playAgainBtn" class="primary-btn hidden">Play Again</button>
+      <button id="playAgainBtn" class="primary-btn hidden">Open Again</button>
     </section>
 
   </main>
@@ -72,8 +87,24 @@
       <a href="https://sketchfab.com/samplemem" target="_blank" rel="noopener">samplemem</a>,
       licensed
       <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+      Prize catalog images from
+      <a href="https://odto.com/collections/footwear" target="_blank" rel="noopener">odto.com</a>.
     </p>
   </footer>
+</div>
+
+<!-- Won-prize hero modal -->
+<div id="prizeModal" class="prize-modal hidden">
+  <div class="prize-modal-card">
+    <span class="prize-modal-rarity"></span>
+    <img class="prize-modal-image" alt="">
+    <h3 class="prize-modal-name"></h3>
+    <p class="prize-modal-price"></p>
+    <div class="prize-modal-actions">
+      <button id="cashBackBtn" class="modal-btn modal-btn-outline">Cash Back</button>
+      <button id="keepBtn" class="modal-btn modal-btn-solid">Keep</button>
+    </div>
+  </div>
 </div>
 
 <script type="module" src="js/app.js"></script>

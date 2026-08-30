@@ -76,12 +76,18 @@ main { flex: 1; }
   justify-content: center;
 }
 
+.category-wrap {
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .category-card {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 30px 34px;
-  width: 230px;
   text-align: center;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -112,6 +118,88 @@ main { flex: 1; }
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+
+.prize-dropdown {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.prize-dropdown summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.prize-dropdown summary::-webkit-details-marker { display: none; }
+.prize-dropdown summary::after {
+  content: "▾";
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  transition: transform 0.2s ease;
+}
+.prize-dropdown[open] summary::after { transform: rotate(180deg); }
+.prize-dropdown summary:hover { color: var(--text); }
+
+.prize-list {
+  max-height: 280px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.prize-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.prize-row:last-child { border-bottom: none; }
+
+.prize-row img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.prize-row-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prize-row-name {
+  font-size: 0.72rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prize-row-rarity {
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.prize-row-price {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  flex: 0 0 auto;
 }
 
 /* --- Game screen --- */
@@ -176,7 +264,6 @@ main { flex: 1; }
 }
 
 .reel-cell {
-  width: 200px;
   height: 100%;
   flex: 0 0 auto;
   display: flex;
@@ -184,14 +271,12 @@ main { flex: 1; }
   justify-content: center;
 }
 
-.reel-cell svg {
-  width: 74px;
-  height: 74px;
-  stroke: var(--text-dim);
-  fill: none;
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
+.reel-cell img {
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 .reel-slot-lines {
@@ -211,8 +296,8 @@ main { flex: 1; }
   display: flex;
   justify-content: center;
   column-gap: 24px;
-  row-gap: 64px;
-  padding: 56px 0 8px;
+  row-gap: 96px;
+  padding: 84px 0 8px;
   flex-wrap: wrap;
 }
 
@@ -255,17 +340,18 @@ main { flex: 1; }
 .box-slot.you .box-caption { color: var(--text); font-weight: 600; }
 
 .price-card {
+  --rarity-color: var(--line-strong);
   position: absolute;
-  top: 6px;
+  top: -6px;
   left: 50%;
   z-index: 3;
-  width: 148px;
-  padding: 12px 10px;
+  width: 168px;
+  padding: 14px 12px;
   background: #000;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--rarity-color);
   border-radius: 4px;
   text-align: center;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), var(--glow);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 22px -4px var(--rarity-color);
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 10px) scale(0.82);
@@ -275,21 +361,37 @@ main { flex: 1; }
 
 .box-slot.open .price-card {
   opacity: 1;
-  transform: translate(-50%, -46px) scale(1);
+  transform: translate(-50%, -66px) scale(1);
 }
 
-.price-card-label {
+.price-card-rarity {
   display: block;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--text-faint);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
-.price-card-value {
+.price-card-image {
   display: block;
-  font-size: 0.95rem;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  margin: 0 auto 8px;
+  background: #000;
+}
+
+.price-card-name {
+  display: block;
+  font-size: 0.66rem;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.price-card-price {
+  display: block;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text);
 }
@@ -327,5 +429,108 @@ main { flex: 1; }
 }
 .app-footer a { color: var(--text-dim); }
 .app-footer a:hover { color: var(--text); }
+
+/* --- Won-prize modal --- */
+
+.prize-modal {
+  --rarity-color: var(--line-strong);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 20px;
+}
+
+.prize-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.prize-modal-card {
+  width: 100%;
+  max-width: 300px;
+  background: #050505;
+  border: 1px solid var(--rarity-color);
+  border-radius: 6px;
+  padding: 36px 32px 30px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px -6px var(--rarity-color);
+  transform: scale(0.85) translateY(8px);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.prize-modal.visible .prize-modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.prize-modal-rarity {
+  display: inline-block;
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+
+.prize-modal-image {
+  display: block;
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  margin: 0 auto 18px;
+  background: #000;
+}
+
+.prize-modal-name {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.prize-modal-price {
+  margin: 0 0 26px;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.prize-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.modal-btn:hover { transform: translateY(-2px); }
+
+.modal-btn-solid {
+  background: var(--text);
+  color: #000;
+  border: none;
+}
+
+.modal-btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+}
 
 .hidden { display: none !important; }

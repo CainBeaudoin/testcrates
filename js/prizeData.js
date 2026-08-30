@@ -1,0 +1,310 @@
+// Auto-generated from a live scrape of https://odto.com/collections/footwear.
+// Prices converted from AED to USD (approx. peg) and bucketed into rarity
+// tiers by price quintile. Re-run the scrape + bucketing if you want to
+// refresh the pool with different stock.
+
+export const RARITY_META = {
+  "common": {
+    "label": "Common",
+    "color": "#B9B9BE"
+  },
+  "uncommon": {
+    "label": "Uncommon",
+    "color": "#4ADE80"
+  },
+  "rare": {
+    "label": "Rare",
+    "color": "#4FA3F7"
+  },
+  "epic": {
+    "label": "Epic",
+    "color": "#B678F2"
+  },
+  "legendary": {
+    "label": "Legendary",
+    "color": "#F2B84B"
+  }
+};
+
+export const PRIZE_POOL = [
+  {
+    name: "Nike Dunk Low WMNS Black White",
+    price: 74,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/nike-dunk-low-wmns-black-white.jpeg",
+  },
+  {
+    name: "Nike Dunk High Black White",
+    price: 88,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/nike-dunk-high-black-white.jpeg",
+  },
+  {
+    name: "Nike Air Force 1 Low White",
+    price: 103,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/nike-air-force-1-low-white.jpeg",
+  },
+  {
+    name: "Yeezy Boost 350 V2 Cmpct Slate Onyx",
+    price: 103,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/yeezy-boost-350-v2-cmpct-slate-onyx.jpeg",
+  },
+  {
+    name: "Nike Dunk Low Black White",
+    price: 118,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/nike-dunk-low-black-white.jpeg",
+  },
+  {
+    name: "Nike Dunk Low WMNS Cacao Wow",
+    price: 132,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/nike-dunk-low-wmns-cacao-wow.jpeg",
+  },
+  {
+    name: "Air Jordan 1 Low '85 Royal",
+    price: 154,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/air-jordan-1-low-85-royal.png",
+  },
+  {
+    name: "Air Jordan 1 High Yellow Toe",
+    price: 161,
+    rarity: "common",
+    weight: 5.0,
+    image: "assets/prizes/air-jordan-1-high-yellow-toe.jpeg",
+  },
+  {
+    name: "Air Jordan 4 Red Cement",
+    price: 176,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/air-jordan-4-red-cement.jpeg",
+  },
+  {
+    name: "Yeezy Slide Slate Grey",
+    price: 184,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/yeezy-slide-slate-grey.jpeg",
+  },
+  {
+    name: "Yeezy Slide Azure",
+    price: 191,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/yeezy-slide-azure.jpeg",
+  },
+  {
+    name: "Air Jordan 1 High UNC Toe",
+    price: 206,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/air-jordan-1-high-unc-toe.jpeg",
+  },
+  {
+    name: "Air Jordan 4 Craft Medium Olive",
+    price: 220,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/air-jordan-4-craft-medium-olive.png",
+  },
+  {
+    name: "Air Jordan 4 RM Sp Nigel Sylvester Driveway Grey",
+    price: 235,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/air-jordan-4-rm-sp-nigel-sylvester-driveway-grey.png",
+  },
+  {
+    name: "Yeezy Boost 350 V2 Bone",
+    price: 257,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/yeezy-boost-350-v2-bone.png",
+  },
+  {
+    name: "Air Jordan 4 Oxidized Green",
+    price: 257,
+    rarity: "uncommon",
+    weight: 3.12,
+    image: "assets/prizes/air-jordan-4-oxidized-green.png",
+  },
+  {
+    name: "Air Jordan 1 Low Mocha",
+    price: 257,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/air-jordan-1-low-mocha.png",
+  },
+  {
+    name: "Nike Air Max 95 Toronto",
+    price: 257,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/nike-air-max-95-toronto.png",
+  },
+  {
+    name: "Nike Air Force 1 Low Supreme White",
+    price: 257,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/nike-air-force-1-low-supreme-white.jpeg",
+  },
+  {
+    name: "Air Jordan 3 Black Cement (2024)",
+    price: 279,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/air-jordan-3-black-cement-2024.png",
+  },
+  {
+    name: "Air Jordan 3 Black Cat (2025)",
+    price: 279,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/air-jordan-3-black-cat-2025.png",
+  },
+  {
+    name: "Air Jordan 4 Fear",
+    price: 279,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/air-jordan-4-fear.png",
+  },
+  {
+    name: "Nike Kobe 9 Elite Low Protro Halo",
+    price: 294,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/nike-kobe-9-elite-low-protro-halo.png",
+  },
+  {
+    name: "Air Jordan 4 Military Blue",
+    price: 308,
+    rarity: "rare",
+    weight: 1.88,
+    image: "assets/prizes/air-jordan-4-military-blue.png",
+  },
+  {
+    name: "Air Jordan 1 Low Travis Scott Canary",
+    price: 308,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-1-low-travis-scott-canary.png",
+  },
+  {
+    name: "Air Jordan 11 Cherry",
+    price: 308,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-11-cherry.jpeg",
+  },
+  {
+    name: "Air Jordan 4 Thunder",
+    price: 330,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-4-thunder.jpeg",
+  },
+  {
+    name: "Air Jordan 4 SB Navy",
+    price: 345,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-4-sb-navy.png",
+  },
+  {
+    name: "Air Jordan 4 Bred Reimagined",
+    price: 352,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-4-bred-reimagined.png",
+  },
+  {
+    name: "Nike Kobe 6 Protro Dodgers",
+    price: 367,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/nike-kobe-6-protro-dodgers.png",
+  },
+  {
+    name: "Air Jordan 4 Undefeated (2025)",
+    price: 404,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-4-undefeated-2025.png",
+  },
+  {
+    name: "Air Jordan 5 Awake NY Black",
+    price: 404,
+    rarity: "epic",
+    weight: 1.5,
+    image: "assets/prizes/air-jordan-5-awake-ny-black.png",
+  },
+  {
+    name: "Air Jordan 4 White Thunder",
+    price: 404,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-4-white-thunder.png",
+  },
+  {
+    name: "Air Jordan 11 Cool Grey",
+    price: 404,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-11-cool-grey.jpeg",
+  },
+  {
+    name: "Air Jordan 1 High Lost And Found",
+    price: 426,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-1-high-lost-and-found.jpeg",
+  },
+  {
+    name: "Air Jordan 3 J Balvin Rio",
+    price: 426,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-3-j-balvin-rio.png",
+  },
+  {
+    name: "Air Jordan 1 Low Travis Scott Velvet Brown",
+    price: 477,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-1-low-travis-scott-velvet-brown.jpg",
+  },
+  {
+    name: "Nike Kobe 6 Protro Italian Camo",
+    price: 492,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/nike-kobe-6-protro-italian-camo.png",
+  },
+  {
+    name: "Air Jordan 4 Nigel Sylvester Brick By Brick",
+    price: 587,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-4-nigel-sylvester-brick-by-brick.png",
+  },
+  {
+    name: "Air Jordan 1 Low Travis Scott Medium Olive",
+    price: 734,
+    rarity: "legendary",
+    weight: 1.0,
+    image: "assets/prizes/air-jordan-1-low-travis-scott-medium-olive.png",
+  },
+];
