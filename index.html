@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gotcha Machine</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="app-header">
+    <h1>🎰 GOTCHA MACHINE</h1>
+    <p class="subtitle">Pick a tier. Spin it up. Grab your crate.</p>
+  </header>
+
+  <main>
+
+    <!-- SCREEN 1: category select -->
+    <section id="screen-category" class="screen active">
+      <h2 class="screen-title">Choose your prize tier</h2>
+      <div id="categoryList" class="category-list"></div>
+    </section>
+
+    <!-- SCREEN 2: spin + boxes + reveal -->
+    <section id="screen-game" class="screen">
+      <button id="backBtn" class="back-btn">&larr; Change tier</button>
+      <h2 class="screen-title" id="gameTierLabel"></h2>
+
+      <div id="spinner" class="spinner">
+        <div class="spinner-ring">
+          <span class="crate">📦</span>
+          <span class="crate">📦</span>
+          <span class="crate">📦</span>
+          <span class="crate">📦</span>
+          <span class="crate">📦</span>
+          <span class="crate">📦</span>
+        </div>
+        <p class="spinner-text">Spinning&hellip;</p>
+      </div>
+
+      <div id="boxRow" class="box-row hidden">
+        <div class="box" data-index="0">
+          <div class="box-inner">
+            <div class="box-face box-front">📦</div>
+            <div class="box-face box-back">
+              <div class="prize-label"></div>
+            </div>
+          </div>
+          <div class="box-caption">Crate 1</div>
+        </div>
+        <div class="box" data-index="1">
+          <div class="box-inner">
+            <div class="box-face box-front">📦</div>
+            <div class="box-face box-back">
+              <div class="prize-label"></div>
+            </div>
+          </div>
+          <div class="box-caption">Crate 2</div>
+        </div>
+        <div class="box" data-index="2">
+          <div class="box-inner">
+            <div class="box-face box-front">📦</div>
+            <div class="box-face box-back">
+              <div class="prize-label"></div>
+            </div>
+          </div>
+          <div class="box-caption">Crate 3</div>
+        </div>
+      </div>
+
+      <p id="helperText" class="helper-text hidden">Tap a crate to pick it</p>
+
+      <button id="openBtn" class="primary-btn hidden">Open</button>
+      <button id="playAgainBtn" class="primary-btn hidden">Play Again</button>
+    </section>
+
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
