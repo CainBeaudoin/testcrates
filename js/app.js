@@ -114,7 +114,6 @@ const listBtn = document.getElementById("listBtn");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const ambientBg = document.getElementById("ambientBg");
-const bestPullStat = document.getElementById("bestPullStat");
 const recentPulls = document.getElementById("recentPulls");
 const recentPullsList = document.getElementById("recentPullsList");
 const payingWithBadge = document.getElementById("payingWithBadge");
@@ -321,19 +320,6 @@ function updatePayingWithBadge() {
   payingWithBadge.classList.remove("hidden");
 }
 
-// ---- Player bar (best pull) ------------------------------------------------
-
-function renderPlayerBar() {
-  const best = player.getBestPull();
-  if (best) {
-    const meta = RARITY_META[best.rarity];
-    bestPullStat.classList.remove("hidden");
-    bestPullStat.innerHTML = `<img src="${best.image}" alt=""> Best Pull: <b style="color:${meta.color}">${best.name}</b>`;
-  } else {
-    bestPullStat.classList.add("hidden");
-  }
-}
-
 function renderRecentPulls() {
   const history = player.getHistory().slice(0, 10);
   if (history.length === 0) {
@@ -420,7 +406,6 @@ function renderCategories() {
     categoryList.appendChild(wrap);
   });
 
-  renderPlayerBar();
   renderRecentPulls();
   renderWallet();
 }
@@ -594,7 +579,6 @@ function onPick(index) {
   boxPrizes[index] = finalPrize;
 
   const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, cat.price);
-  renderPlayerBar();
 
   helperText.textContent = "Opening your crate…";
   openSlot(index, { isYours: true, revealCard: false });

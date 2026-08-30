@@ -60,7 +60,6 @@ function defaultState() {
     history: [], // most-recent-first, capped: {name, rarity, price, image, multiplier, ts}
     bigPulls: [], // multiplier >= BIG_PULL_MULTIPLIER, never evicted
     lastPulledByTier: {}, // { [tierKey]: name } — duplicate-pull guard
-    bestPull: null,
     streak: 0,
     pity: {},
     // A starting demo balance so the platform is usable immediately —
@@ -158,7 +157,7 @@ export function rerollIfDuplicate(tierKey, prize, pool) {
   return weightedPickFrom(alternatives);
 }
 
-// ---- Picks: history, streak, best pull, XP, opening log -----------------
+// ---- Picks: history, streak, XP, opening log -----------------------------
 
 export function recordPick(prize, tierKey, tierPrice) {
   const multiplier = tierPrice ? +(prize.price / tierPrice).toFixed(2) : null;
@@ -176,10 +175,6 @@ export function recordPick(prize, tierKey, tierPrice) {
 
   state.streak = rank(prize.rarity) >= rank("rare") ? state.streak + 1 : 0;
 
-  if (!state.bestPull || rank(prize.rarity) > rank(state.bestPull.rarity)) {
-    state.bestPull = { name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image };
-  }
-
   save();
   return { streak: state.streak, multiplier };
 }
@@ -196,10 +191,6 @@ export function getHistory() {
 
 export function getBigPulls() {
   return state.bigPulls;
-}
-
-export function getBestPull() {
-  return state.bestPull;
 }
 
 export function getStreak() {

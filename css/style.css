@@ -357,32 +357,6 @@ body {
 
 /* --- Category screen --- */
 
-.player-bar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 28px;
-}
-
-.player-stat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--text-dim);
-  font-size: 0.72rem;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.player-stat:hover { border-color: var(--line-strong); color: var(--text); }
-.player-stat img { width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: #000; }
-.player-stat b { color: var(--text); font-weight: 700; }
-
 .game-top-bar {
   display: flex;
   align-items: center;
