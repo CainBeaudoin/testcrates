@@ -614,6 +614,61 @@ function buildPrizeListHTML(pool) {
     .join("");
 }
 
+// Expected value + odds-by-rarity for one tier's pool. Price ranges are
+// derived from that pool's own spread (not fixed buckets) so a $1000-tier
+// "Legendary" range reads nothing like a $100-tier one.
+function computeOddsBreakdown(pool) {
+  const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+  const ev = pool.reduce((sum, p) => sum + p.price * p.weight, 0) / totalWeight;
+
+  const byRarity = {};
+  pool.forEach((p) => {
+    if (!byRarity[p.rarity]) byRarity[p.rarity] = { weight: 0, min: Infinity, max: -Infinity };
+    const b = byRarity[p.rarity];
+    b.weight += p.weight;
+    b.min = Math.min(b.min, p.price);
+    b.max = Math.max(b.max, p.price);
+  });
+
+  const buckets = DISPLAY_RARITY_ORDER.slice()
+    .reverse()
+    .filter((r) => byRarity[r])
+    .map((r) => ({
+      rarity: r,
+      min: byRarity[r].min,
+      max: byRarity[r].max,
+      pct: (byRarity[r].weight / totalWeight) * 100,
+    }));
+
+  return { ev, buckets };
+}
+
+function buildOddsPanelHTML(pool) {
+  const { ev, buckets } = computeOddsBreakdown(pool);
+  const bucketsHTML = buckets
+    .map((b) => {
+      const meta = RARITY_META[b.rarity];
+      const range = b.min === b.max ? `$${b.min.toLocaleString()}` : `$${b.min.toLocaleString()}-$${b.max.toLocaleString()}`;
+      const pct = b.pct >= 10 ? Math.round(b.pct) : Math.round(b.pct * 10) / 10;
+      return `
+        <div class="odds-bucket">
+          <span class="odds-bucket-rarity" style="color:${meta.color}">${meta.label}</span>
+          <span class="odds-bucket-range">${range}</span>
+          <span class="odds-bucket-pct">${pct}%</span>
+        </div>`;
+    })
+    .join("");
+
+  return `
+    <div class="odds-ev-row">
+      <span>Expected Value</span>
+      <span class="odds-ev-value">$${Math.round(ev).toLocaleString()} <span class="odds-ev-unit">per pull</span></span>
+    </div>
+    <div class="odds-live-header">Live Odds</div>
+    <div class="odds-grid">${bucketsHTML}</div>
+  `;
+}
+
 function buildPityHTML(tierKey) {
   const pity = player.getPity(tierKey);
   const pct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
@@ -687,9 +742,20 @@ function renderCategories() {
     const prizePanel = document.createElement("div");
     prizePanel.className = "prize-dropdown";
     prizePanel.innerHTML = `
-      <div class="prize-dropdown-header">Prizes</div>
+      <div class="prize-dropdown-header">
+        <span>Pulls</span>
+        <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
+      </div>
+      <div class="odds-panel hidden">${buildOddsPanelHTML(cat.pool)}</div>
       <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
     `;
+    prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
+      playClick();
+      const panel = prizePanel.querySelector(".odds-panel");
+      const btn = prizePanel.querySelector(".odds-toggle-btn");
+      panel.classList.toggle("hidden");
+      btn.classList.toggle("active", !panel.classList.contains("hidden"));
+    });
 
     wrap.appendChild(card);
     wrap.appendChild(prizePanel);

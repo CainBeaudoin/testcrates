@@ -28,4 +28,7 @@ export const ICONS = {
   sneaker: svg(
     `<path d="M2.5 17.3c0-1.3 1.1-2.3 2.4-2.3h.5l3.6-3.4c.8-.7 1.8-1.1 2.9-1.1H15c2.5 0 4.5 2 4.5 4.5.9 0 2 .4 2 1.6v.7H2.5v-1z"/><path d="M2.5 18.3h19"/><path d="M9.5 12.5l2 2"/>`
   ),
+  dice: svg(
+    `<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/>`
+  ),
 };
