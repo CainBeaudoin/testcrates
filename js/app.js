@@ -1,5 +1,6 @@
 import { createBoxViewer, getBoxSnapshot } from "./boxViewer.js";
 import { PRIZE_POOL, RARITY_META } from "./prizeData.js";
+import { playRevealFX } from "./reveal.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each category has a pool of possible prizes with relative weights.
@@ -52,6 +53,8 @@ const slots = Array.from(document.querySelectorAll(".box-slot"));
 const helperText = document.getElementById("helperText");
 const playAgainBtn = document.getElementById("playAgainBtn");
 const prizeModal = document.getElementById("prizeModal");
+const prizeModalCard = prizeModal.querySelector(".prize-modal-card");
+const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const cashBackBtn = document.getElementById("cashBackBtn");
 const keepBtn = document.getElementById("keepBtn");
 
@@ -295,10 +298,12 @@ function openSlot(index, { isYours }) {
 }
 
 // ---- Won-prize modal -------------------------------------------------
+// Only ever called for the crate the player picked — the "what you could
+// have won" crates just use the plain openSlot() card, no reveal FX.
 
-function showPrizeModal(prize) {
+async function showPrizeModal(prize) {
   const meta = RARITY_META[prize.rarity];
-  prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+  prizeModalCard.style.setProperty("--rarity-color", meta.color);
 
   const rarityEl = prizeModal.querySelector(".prize-modal-rarity");
   rarityEl.textContent = meta.label;
@@ -312,8 +317,14 @@ function showPrizeModal(prize) {
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
 
+  // Content stays hidden behind the vortex/particle reveal until it finishes.
+  prizeModalCard.classList.add("revealing");
   prizeModal.classList.remove("hidden");
   requestAnimationFrame(() => prizeModal.classList.add("visible"));
+
+  await playRevealFX(revealFxEl, prize.rarity, meta.color);
+
+  prizeModalCard.classList.remove("revealing");
 }
 
 function hidePrizeModal() {

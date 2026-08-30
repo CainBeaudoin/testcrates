@@ -20,8 +20,14 @@ what you could have won.
   that turn before the lid opens, so every crate opens facing the camera
   the same way, regardless of what angle it was spinning at.
 - Opening your crate pops an image price card out of the lid, then shows
-  the same prize full-size in a center modal with **Cash Back** / **Keep**.
-  Either choice dismisses the modal and reveals the other two crates in
+  the same prize full-size in a center modal — but the actual item stays
+  hidden behind a rarity-tiered reveal animation first (`js/reveal.js`: a
+  vortex/particle CSS effect plus a synthesized WebAudio "hype" sound,
+  ~1-3s depending on rarity) before the image, name, price, and **Cash
+  Back** / **Keep** buttons fade in. This reveal only ever plays for the
+  crate you picked — the other two crates open with the plain price card,
+  no FX.
+- Either choice dismisses the modal and reveals the other two crates in
   sequence, then an **Open Again** button starts a fresh round.
 
 ## Prize catalog
