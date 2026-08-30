@@ -16,8 +16,11 @@
 </head>
 <body>
 
+<div id="ambientBg" class="ambient-bg" aria-hidden="true"></div>
+
 <div class="app">
   <header class="app-header">
+    <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound"></button>
     <p class="eyebrow">Gotcha Platform</p>
     <h1>GOTCHA MACHINE</h1>
   </header>
@@ -26,13 +29,25 @@
 
     <!-- SCREEN 1: category select -->
     <section id="screen-category" class="screen active">
+      <div id="playerBar" class="player-bar">
+        <button id="bestPullStat" class="player-stat hidden"></button>
+      </div>
+
       <h2 class="screen-title">Choose your prize tier</h2>
       <div id="categoryList" class="category-list"></div>
+
+      <div id="recentPulls" class="recent-pulls hidden">
+        <h3>Your Recent Pulls</h3>
+        <div id="recentPullsList" class="recent-pulls-list"></div>
+      </div>
     </section>
 
     <!-- SCREEN 2: reel + boxes + reveal -->
     <section id="screen-game" class="screen">
-      <button id="backBtn" class="back-btn">&larr; Change tier</button>
+      <div class="game-top-bar">
+        <button id="backBtn" class="back-btn">&larr; Change tier</button>
+        <span id="creditsMini" class="credits-mini hidden"></span>
+      </div>
       <h2 class="screen-title" id="gameTierLabel"></h2>
 
       <div id="reel" class="reel">
@@ -52,6 +67,7 @@
           </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 1</div>
+          <div class="near-miss-tag hidden"></div>
         </div>
         <div class="box-slot" data-index="1">
           <div class="price-card">
@@ -62,6 +78,7 @@
           </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 2</div>
+          <div class="near-miss-tag hidden"></div>
         </div>
         <div class="box-slot" data-index="2">
           <div class="price-card">
@@ -72,6 +89,7 @@
           </div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 3</div>
+          <div class="near-miss-tag hidden"></div>
         </div>
       </div>
 
@@ -103,12 +121,19 @@
       <img class="prize-modal-image" alt="">
       <h3 class="prize-modal-name"></h3>
       <p class="prize-modal-price"></p>
+      <span id="streakBadge" class="streak-badge hidden"></span>
       <div class="prize-modal-actions">
         <button id="cashBackBtn" class="modal-btn modal-btn-outline">Cash Back</button>
         <button id="keepBtn" class="modal-btn modal-btn-solid">Keep</button>
       </div>
     </div>
   </div>
+</div>
+
+<!-- Credit-earned toast -->
+<div id="creditToast" class="credit-toast hidden">
+  <span class="credit-toast-icon">&#128276;</span>
+  <span id="creditToastText"></span>
 </div>
 
 <script type="module" src="js/app.js"></script>

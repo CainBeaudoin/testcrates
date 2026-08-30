@@ -30,6 +30,32 @@ what you could have won.
 - Either choice dismisses the modal and reveals the other two crates in
   sequence, then an **Open Again** button starts a fresh round.
 
+## Engagement systems (`js/player.js`)
+
+Progress persists to `localStorage` (per-browser, not a real account):
+
+- **Pity**: if 8 rounds pass with no Rare+ anywhere among the 3 crates (or
+  20 rounds with no Epic+), the next round force-upgrades one crate into
+  that subpool. Progress shows as a bar on the $100 tier card.
+- **Credits meter**: opening the $100 tier earns 5 credits (a toast +
+  "ding" confirms it, and a live readout on the game screen ticks up).
+  100 credits redeems a free crate on the "Free Crate Meter" card — that
+  redemption doesn't also earn credits, so it can't partially refund
+  itself.
+- **Streak**: consecutive picks that land Rare+ show a "🔥 N Rare+ in a
+  row!" badge in the reveal modal.
+- **Near-miss**: if a crate you *didn't* pick outranks the one you did,
+  it gets a pulse + "So close — that was X!" tag. This only ever reflects
+  a real outcome — it never changes odds or which crate looks pickable
+  beforehand.
+- **Best pull** and **recent pulls** are surfaced on the tier-select
+  screen — both are the player's own real history, not a fabricated
+  "someone just won X" feed.
+
+Sound (`js/sound.js`) is entirely procedural WebAudio (oscillators +
+filtered noise) — no external audio files. A mute toggle (top-right) turns
+off both the ambient hum and every UI/reveal sound.
+
 ## Prize catalog
 
 `js/prizeData.js` is generated from a scrape of
@@ -73,10 +99,12 @@ The model ships with its own baked lid-hinge rotation, which is what
 
 This is a static site with no build step (three.js loads from a CDN via an
 import map in `index.html`, so you'll need network access). Serve the
-folder with any static file server, e.g.:
+folder with any static file server — `.devserver.py` is included and sends
+`Cache-Control: no-store` (handy since browsers can otherwise cache the JS
+modules and hide your changes):
 
 ```bash
-python3 -m http.server 8123
+python3 .devserver.py
 ```
 
 Then open `http://localhost:8123`.

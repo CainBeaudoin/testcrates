@@ -1,14 +1,21 @@
 import { createBoxViewer, getBoxSnapshot } from "./boxViewer.js";
 import { PRIZE_POOL, RARITY_META } from "./prizeData.js";
 import { playRevealFX } from "./reveal.js";
+import * as player from "./player.js";
+import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmbient } from "./sound.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each category has a pool of possible prizes with relative weights.
 // Add more categories here later and a matching card appears automatically
-// on the tier-select screen. The $100 tier's pool is scraped/generated —
-// see js/prizeData.js.
+// on the tier-select screen. Pools are scraped/generated — see prizeData.js.
 
 const CATEGORIES = {
+  creditCrate: {
+    label: "Free Crate Meter",
+    description: `Earn ${player.CREDIT_PER_OPEN} credits every time you open the $100 tier. ${player.CREDIT_THRESHOLD} credits = a free crate, on the house.`,
+    pool: PRIZE_POOL,
+    isCreditMeter: true,
+  },
   hundred: {
     label: "$100 Tier",
     description: "3 crates, one pull each. Odds are set by the pool below.",
@@ -16,7 +23,22 @@ const CATEGORIES = {
   },
 };
 
-const RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
+// Ascending — used for rank comparisons (near-misses, pity subpools, streaks).
+const RARITY_RANK_ASC = ["common", "uncommon", "rare", "epic", "legendary"];
+function rankOf(rarity) {
+  return RARITY_RANK_ASC.indexOf(rarity);
+}
+
+// Descending — used only for sorting the "View Prizes" list, top prize first.
+const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
+
+const HAPTIC_PATTERNS = {
+  common: [15],
+  uncommon: [18, 18, 18],
+  rare: [22, 26, 22, 26],
+  epic: [28, 36, 28, 36, 28],
+  legendary: [36, 46, 36, 46, 36, 60, 140],
+};
 
 // ---- Reel configuration ---------------------------------------------------
 
@@ -38,6 +60,7 @@ let selectedIndex = null;
 let roundLocked = false;
 let viewers = [null, null, null];
 let reelCellWidth = 0;
+let toastTimer = null;
 
 // ---- DOM refs -----------------------------------------------------------
 
@@ -55,8 +78,17 @@ const playAgainBtn = document.getElementById("playAgainBtn");
 const prizeModal = document.getElementById("prizeModal");
 const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
+const streakBadge = document.getElementById("streakBadge");
 const cashBackBtn = document.getElementById("cashBackBtn");
 const keepBtn = document.getElementById("keepBtn");
+const muteBtn = document.getElementById("muteBtn");
+const ambientBg = document.getElementById("ambientBg");
+const bestPullStat = document.getElementById("bestPullStat");
+const recentPulls = document.getElementById("recentPulls");
+const recentPullsList = document.getElementById("recentPullsList");
+const creditsMini = document.getElementById("creditsMini");
+const creditToast = document.getElementById("creditToast");
+const creditToastText = document.getElementById("creditToastText");
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -93,11 +125,101 @@ function formatPrice(prize) {
   return `$${prize.price.toLocaleString()}`;
 }
 
+function vibrate(rarity) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(HAPTIC_PATTERNS[rarity] ?? [15]);
+  } catch {
+    // unsupported — ignore
+  }
+}
+
+// ---- Ambient background --------------------------------------------------
+
+function buildAmbientParticles() {
+  const count = 16;
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement("span");
+    dot.className = "ambient-dot";
+    dot.style.left = `${Math.random() * 100}%`;
+    dot.style.setProperty("--size", `${2 + Math.random() * 4}px`);
+    dot.style.setProperty("--o", `${0.08 + Math.random() * 0.18}`);
+    dot.style.setProperty("--dur", `${18 + Math.random() * 22}s`);
+    dot.style.setProperty("--delay", `${-Math.random() * 30}s`);
+    dot.style.setProperty("--drift", `${Math.random() * 80 - 40}px`);
+    ambientBg.appendChild(dot);
+  }
+}
+
+// ---- Credits: earn toast + mini readout + meter card -----------------------
+
+function showCreditToast(amount) {
+  clearTimeout(toastTimer);
+  creditToastText.textContent = `+${amount} Credits Earned`;
+  creditToast.classList.remove("hidden");
+  requestAnimationFrame(() => creditToast.classList.add("show"));
+  playDing();
+  toastTimer = setTimeout(() => {
+    creditToast.classList.remove("show");
+    setTimeout(() => creditToast.classList.add("hidden"), 300);
+  }, 1800);
+}
+
+function updateCreditsMini() {
+  const credits = player.getCredits();
+  creditsMini.textContent = `\u{1F4B3} ${credits}/${player.CREDIT_THRESHOLD} Credits`;
+  creditsMini.classList.remove("hidden");
+  creditsMini.classList.add("pulse");
+  setTimeout(() => creditsMini.classList.remove("pulse"), 400);
+}
+
+// Earning only happens on the paid $100 tier — the meter-redeemed crate
+// doesn't also earn, so redeeming can't partially refund itself.
+function awardCredits() {
+  const total = player.addCredits(player.CREDIT_PER_OPEN);
+  showCreditToast(player.CREDIT_PER_OPEN);
+  updateCreditsMini();
+  return total;
+}
+
+// ---- Player bar (best pull) ------------------------------------------------
+
+function renderPlayerBar() {
+  const best = player.getBestPull();
+  if (best) {
+    const meta = RARITY_META[best.rarity];
+    bestPullStat.classList.remove("hidden");
+    bestPullStat.innerHTML = `<img src="${best.image}" alt=""> Best Pull: <b style="color:${meta.color}">${best.name}</b>`;
+  } else {
+    bestPullStat.classList.add("hidden");
+  }
+}
+
+// ---- Recent pulls (the player's own history — not a fabricated feed) ------
+
+function renderRecentPulls() {
+  const history = player.getHistory();
+  if (history.length === 0) {
+    recentPulls.classList.add("hidden");
+    return;
+  }
+  recentPulls.classList.remove("hidden");
+  recentPullsList.innerHTML = history
+    .map((p) => {
+      const meta = RARITY_META[p.rarity];
+      return `
+        <div class="recent-pull-item" style="--rarity-color:${meta.color}">
+          <img src="${p.image}" alt="">
+          <span>${meta.label}</span>
+        </div>`;
+    })
+    .join("");
+}
+
 // ---- Category screen -------------------------------------------------
 
 function buildPrizeListHTML(pool) {
   const sorted = [...pool].sort((a, b) => {
-    const rarityDiff = RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+    const rarityDiff = DISPLAY_RARITY_ORDER.indexOf(a.rarity) - DISPLAY_RARITY_ORDER.indexOf(b.rarity);
     return rarityDiff !== 0 ? rarityDiff : b.price - a.price;
   });
   return sorted
@@ -116,9 +238,68 @@ function buildPrizeListHTML(pool) {
     .join("");
 }
 
+function buildPityHTML() {
+  const pity = player.getPity();
+  const pct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
+  return `
+    <div class="pity-bar">
+      <span class="pity-bar-label">${pity.rareRoundsLeft} rounds to guaranteed Rare+</span>
+      <div class="pity-bar-track"><div class="pity-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+}
+
+function renderCreditMeterCard(cat) {
+  const wrap = document.createElement("div");
+  wrap.className = "category-wrap";
+
+  const card = document.createElement("div");
+  card.innerHTML = `
+    <h3>${cat.label}</h3>
+    <p>${cat.description}</p>
+    <div class="credits-stat-track"><div id="creditsStatFill" class="credits-stat-fill"></div></div>
+    <span id="creditsStatValue" class="cta"></span>
+  `;
+  wrap.appendChild(card);
+  categoryList.appendChild(wrap);
+
+  const fillEl = card.querySelector("#creditsStatFill");
+  const valueEl = card.querySelector("#creditsStatValue");
+
+  function refresh() {
+    const credits = player.getCredits();
+    const pct = Math.min(100, Math.round((credits / player.CREDIT_THRESHOLD) * 100));
+    fillEl.style.width = `${pct}%`;
+    const ready = player.canRedeemCredits();
+    card.className = ready ? "category-card ready-glow" : "category-card daily-locked";
+    valueEl.className = ready ? "cta ready" : "cta";
+    valueEl.textContent = ready
+      ? "Claim Free Crate!"
+      : `${credits}/${player.CREDIT_THRESHOLD} Credits`;
+  }
+
+  card.addEventListener("click", () => {
+    if (!player.canRedeemCredits()) return;
+    playClick();
+    player.redeemCredits();
+    startRound("hundred", { fromCreditMeter: true });
+  });
+  card.addEventListener("mouseenter", () => {
+    if (player.canRedeemCredits()) playHover();
+  });
+
+  refresh();
+  return refresh;
+}
+
 function renderCategories() {
   categoryList.innerHTML = "";
+
   Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    if (cat.isCreditMeter) {
+      renderCreditMeterCard(cat);
+      return;
+    }
+
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
 
@@ -128,8 +309,13 @@ function renderCategories() {
       <h3>${cat.label}</h3>
       <p>${cat.description}</p>
       <span class="cta">Tap to begin</span>
+      ${buildPityHTML()}
     `;
-    card.addEventListener("click", () => startRound(key));
+    card.addEventListener("click", () => {
+      playClick();
+      startRound(key);
+    });
+    card.addEventListener("mouseenter", playHover);
 
     const details = document.createElement("details");
     details.className = "prize-dropdown";
@@ -142,6 +328,9 @@ function renderCategories() {
     wrap.appendChild(details);
     categoryList.appendChild(wrap);
   });
+
+  renderPlayerBar();
+  renderRecentPulls();
 }
 
 // ---- Reel ------------------------------------------------------------
@@ -183,13 +372,16 @@ function spinReel() {
 
 function resetSlotsUI() {
   slots.forEach((slot) => {
-    slot.classList.remove("open", "you", "locked");
+    slot.classList.remove("open", "you", "locked", "near-miss");
     slot.querySelector(".price-card").style.removeProperty("--rarity-color");
     slot.querySelector(".price-card-rarity").textContent = "";
     slot.querySelector(".price-card-image").src = "";
     slot.querySelector(".price-card-name").textContent = "";
     slot.querySelector(".price-card-price").textContent = "";
     slot.querySelector(".box-caption").textContent = `Crate ${Number(slot.dataset.index) + 1}`;
+    const tag = slot.querySelector(".near-miss-tag");
+    tag.textContent = "";
+    tag.classList.add("hidden");
   });
 }
 
@@ -200,7 +392,10 @@ async function mountViewers() {
     viewers[i] = viewer;
     const slot = slots[i];
     slot.addEventListener("mouseenter", () => {
-      if (!roundLocked) viewer.setPaused(true);
+      if (!roundLocked) {
+        viewer.setPaused(true);
+        playHover();
+      }
     });
     slot.addEventListener("mouseleave", () => {
       if (!roundLocked) viewer.setPaused(false);
@@ -209,16 +404,21 @@ async function mountViewers() {
   });
 }
 
-async function startRound(key) {
+async function startRound(key, opts = {}) {
   currentCategoryKey = key;
   const cat = CATEGORIES[key];
 
-  // Predetermine each box's prize now, before the player picks anything.
+  // Every $100-tier crate opened earns credits toward the free-crate meter.
+  // A meter-redeemed crate doesn't also earn (no partial self-refund).
+  if (key === "hundred" && !opts.fromCreditMeter) awardCredits();
+
   boxPrizes = [weightedPick(cat.pool), weightedPick(cat.pool), weightedPick(cat.pool)];
+  boxPrizes = player.applyPity(boxPrizes, cat.pool);
   selectedIndex = null;
   roundLocked = false;
 
-  gameTierLabel.textContent = cat.label;
+  gameTierLabel.textContent = opts.fromCreditMeter ? "Free Crate" : cat.label;
+  updateCreditsMini();
   resetSlotsUI();
   disposeViewers();
 
@@ -245,11 +445,16 @@ function onPick(index) {
   if (roundLocked) return;
   roundLocked = true;
   selectedIndex = index;
+  playPop();
 
   slots.forEach((slot, i) => {
     slot.classList.add("locked");
     if (viewers[i]) viewers[i].setPaused(true);
   });
+
+  const prize = boxPrizes[index];
+  const { streak } = player.recordPick(prize);
+  renderPlayerBar();
 
   helperText.textContent = "Opening your crate…";
   // Lid opens now, but the box's own price card stays hidden — it reveals
@@ -258,19 +463,33 @@ function onPick(index) {
   openSlot(index, { isYours: true, revealCard: false });
 
   setTimeout(async () => {
-    await showPrizeModal(boxPrizes[index]);
+    await showPrizeModal(prize, { streak });
     slots[index].classList.add("open");
   }, MODAL_DELAY_MS);
 }
 
 function revealOthers() {
   const others = shuffledOthers(selectedIndex, SLOT_COUNT);
+  const yourRank = rankOf(boxPrizes[selectedIndex].rarity);
   helperText.classList.remove("hidden");
   helperText.textContent = "Here's what you could have won…";
 
   others.forEach((otherIndex, step) => {
     setTimeout(() => {
+      const otherPrize = boxPrizes[otherIndex];
+      const isNearMiss = rankOf(otherPrize.rarity) > yourRank;
       openSlot(otherIndex, { isYours: false });
+
+      if (isNearMiss) {
+        const slot = slots[otherIndex];
+        slot.classList.add("near-miss");
+        const tag = slot.querySelector(".near-miss-tag");
+        tag.textContent = `So close — that was ${RARITY_META[otherPrize.rarity].label}!`;
+        tag.style.color = RARITY_META[otherPrize.rarity].color;
+        tag.classList.remove("hidden");
+        playPop();
+      }
+
       if (step === others.length - 1) {
         setTimeout(() => {
           helperText.classList.add("hidden");
@@ -307,7 +526,7 @@ function openSlot(index, { isYours, revealCard = true }) {
 // Only ever called for the crate the player picked — the "what you could
 // have won" crates just use the plain openSlot() card, no reveal FX.
 
-async function showPrizeModal(prize) {
+async function showPrizeModal(prize, { streak } = {}) {
   const meta = RARITY_META[prize.rarity];
   prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
@@ -326,12 +545,21 @@ async function showPrizeModal(prize) {
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
 
+  if (streak >= 2) {
+    streakBadge.textContent = `\u{1F525} ${streak} Rare+ in a row!`;
+    streakBadge.classList.remove("hidden");
+  } else {
+    streakBadge.classList.add("hidden");
+  }
+
   // The whole card — image, name, price — stays hidden behind the
   // fullscreen vortex/particle reveal until it finishes, so the prize is
   // never shown before the reveal animation has played out.
   prizeModal.classList.add("revealing");
   prizeModal.classList.remove("hidden");
   requestAnimationFrame(() => prizeModal.classList.add("visible"));
+
+  vibrate(prize.rarity);
 
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
@@ -349,18 +577,42 @@ function hidePrizeModal() {
 // ---- Wire up events -----------------------------------------------------
 
 cashBackBtn.addEventListener("click", () => {
+  playClick();
   hidePrizeModal();
   revealOthers();
 });
 keepBtn.addEventListener("click", () => {
+  playClick();
   hidePrizeModal();
   revealOthers();
 });
 
-playAgainBtn.addEventListener("click", () => startRound(currentCategoryKey));
+playAgainBtn.addEventListener("click", () => {
+  playClick();
+  startRound(currentCategoryKey);
+});
 backBtn.addEventListener("click", () => {
+  playClick();
   disposeViewers();
   showScreen(screenCategory);
+  renderCategories(); // refresh pity/credits/best-pull/recent-pulls
 });
 
+function refreshMuteBtn() {
+  muteBtn.classList.toggle("muted", isMuted());
+}
+muteBtn.addEventListener("click", () => {
+  toggleMuted();
+  refreshMuteBtn();
+});
+refreshMuteBtn();
+
+// Autoplay policies require a user gesture before any audio can start.
+function onFirstGesture() {
+  startAmbient();
+  document.removeEventListener("pointerdown", onFirstGesture);
+}
+document.addEventListener("pointerdown", onFirstGesture);
+
+buildAmbientParticles();
 renderCategories();
