@@ -5,13 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gotcha Machine</title>
 <link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
 
 <div class="app">
   <header class="app-header">
-    <h1>🎰 GOTCHA MACHINE</h1>
-    <p class="subtitle">Pick a tier. Spin it up. Grab your crate.</p>
+    <p class="eyebrow">Gotcha Platform</p>
+    <h1>GOTCHA MACHINE</h1>
   </header>
 
   <main>
@@ -22,62 +30,52 @@
       <div id="categoryList" class="category-list"></div>
     </section>
 
-    <!-- SCREEN 2: spin + boxes + reveal -->
+    <!-- SCREEN 2: reel + boxes + reveal -->
     <section id="screen-game" class="screen">
       <button id="backBtn" class="back-btn">&larr; Change tier</button>
       <h2 class="screen-title" id="gameTierLabel"></h2>
 
-      <div id="spinner" class="spinner">
-        <div class="spinner-ring">
-          <span class="crate">📦</span>
-          <span class="crate">📦</span>
-          <span class="crate">📦</span>
-          <span class="crate">📦</span>
-          <span class="crate">📦</span>
-          <span class="crate">📦</span>
+      <div id="reel" class="reel">
+        <div id="reelTrack" class="reel-track"></div>
+        <div class="reel-slot-lines">
+          <span></span><span></span><span></span><span></span>
         </div>
-        <p class="spinner-text">Spinning&hellip;</p>
       </div>
 
       <div id="boxRow" class="box-row hidden">
-        <div class="box" data-index="0">
-          <div class="box-inner">
-            <div class="box-face box-front">📦</div>
-            <div class="box-face box-back">
-              <div class="prize-label"></div>
-            </div>
-          </div>
+        <div class="box-slot" data-index="0">
+          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 1</div>
         </div>
-        <div class="box" data-index="1">
-          <div class="box-inner">
-            <div class="box-face box-front">📦</div>
-            <div class="box-face box-back">
-              <div class="prize-label"></div>
-            </div>
-          </div>
+        <div class="box-slot" data-index="1">
+          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 2</div>
         </div>
-        <div class="box" data-index="2">
-          <div class="box-inner">
-            <div class="box-face box-front">📦</div>
-            <div class="box-face box-back">
-              <div class="prize-label"></div>
-            </div>
-          </div>
+        <div class="box-slot" data-index="2">
+          <div class="price-card"><span class="price-card-label">Prize</span><span class="price-card-value"></span></div>
+          <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 3</div>
         </div>
       </div>
 
-      <p id="helperText" class="helper-text hidden">Tap a crate to pick it</p>
-
-      <button id="openBtn" class="primary-btn hidden">Open</button>
+      <p id="helperText" class="helper-text hidden">Tap a crate to open it</p>
       <button id="playAgainBtn" class="primary-btn hidden">Play Again</button>
     </section>
 
   </main>
+
+  <footer class="app-footer">
+    <p>
+      3D "Nike Shoe Box" by
+      <a href="https://sketchfab.com/samplemem" target="_blank" rel="noopener">samplemem</a>,
+      licensed
+      <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+    </p>
+  </footer>
 </div>
 
-<script src="js/app.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
