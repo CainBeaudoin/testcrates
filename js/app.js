@@ -209,8 +209,10 @@ const cardAmountInput = document.getElementById("cardAmountInput");
 const applePayBtn = document.getElementById("applePayBtn");
 const cardPayBtn = document.getElementById("cardPayBtn");
 const addFundsCloseBtn = document.getElementById("addFundsCloseBtn");
+const streakStat = document.getElementById("streakStat");
 const streakRing = document.getElementById("streakRing");
 const streakValue = document.getElementById("streakValue");
+const referralStat = document.getElementById("referralStat");
 const referralRing = document.getElementById("referralRing");
 const referralValue = document.getElementById("referralValue");
 const listingModal = document.getElementById("listingModal");
@@ -1647,6 +1649,18 @@ usernameBtn.addEventListener("click", async () => {
 
 avatarBtn.addEventListener("click", () => {
   document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+});
+
+streakStat.addEventListener("click", () => {
+  playClick();
+  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+  document.querySelector('.account-nav-item[data-section="streaks"]')?.click();
+});
+
+referralStat.addEventListener("click", () => {
+  playClick();
+  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+  document.querySelector('.account-nav-item[data-section="referral"]')?.click();
 });
 
 notifBtn.addEventListener("click", () => {

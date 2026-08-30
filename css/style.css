@@ -209,10 +209,14 @@ body {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
+  font: inherit;
   font-size: 0.68rem;
   color: var(--text-dim);
   letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
+.stat-pill:hover { border-color: var(--line-strong); color: var(--text); }
 .stat-pill b { color: var(--text); font-variant-numeric: tabular-nums; }
 
 .ring {
