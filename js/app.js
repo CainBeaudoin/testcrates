@@ -106,8 +106,6 @@ const streakBadge = document.getElementById("streakBadge");
 const multiplierBadge = document.getElementById("multiplierBadge");
 const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
-const shipBtn = document.getElementById("shipBtn");
-const listBtn = document.getElementById("listBtn");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const ambientBg = document.getElementById("ambientBg");
@@ -797,7 +795,10 @@ function hidePrizeModal() {
   }, 300);
 }
 
-// ---- Wire up the four exits ---------------------------------------------
+// ---- Wire up the two exits ------------------------------------------------
+// Ship and List only make sense once an item is sitting in the vault, so
+// they live on Account's vault cards instead — the reveal only offers a
+// same-currency Cash Out or Keep (which auto-populates the vault).
 
 cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
@@ -807,28 +808,6 @@ cashOutBtn.addEventListener("click", () => {
   player.cashBack(amount, roundCurrency);
   renderWallet({ pulse: roundCurrency });
   showWalletToast(amount, roundCurrency);
-  hidePrizeModal();
-  revealOthers();
-});
-
-shipBtn.addEventListener("click", () => {
-  const prize = boxPrizes[selectedIndex];
-  if (!prize) return;
-  playClick();
-  const item = player.addToInventory(prize);
-  player.shipItem(item);
-  hidePrizeModal();
-  revealOthers();
-});
-
-listBtn.addEventListener("click", async () => {
-  const prize = boxPrizes[selectedIndex];
-  if (!prize) return;
-  const price = await promptAmount("List for Sale", `${prize.name} — catalog value $${prize.price.toLocaleString()}.`, prize.price);
-  if (!price) return;
-  playClick();
-  const item = addOwnedItem(prize);
-  market.updateListing(item.listingId, { price });
   hidePrizeModal();
   revealOthers();
 });
