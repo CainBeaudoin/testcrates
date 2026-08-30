@@ -751,10 +751,11 @@ function renderCategories() {
     `;
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
       playClick();
-      const panel = prizePanel.querySelector(".odds-panel");
-      const btn = prizePanel.querySelector(".odds-toggle-btn");
-      panel.classList.toggle("hidden");
-      btn.classList.toggle("active", !panel.classList.contains("hidden"));
+      // Toggled in lockstep across all three tiers — independent per-card
+      // open/close left the row uneven height and out of alignment.
+      const opening = prizePanel.querySelector(".odds-panel").classList.contains("hidden");
+      categoryList.querySelectorAll(".odds-panel").forEach((p) => p.classList.toggle("hidden", !opening));
+      categoryList.querySelectorAll(".odds-toggle-btn").forEach((b) => b.classList.toggle("active", opening));
     });
 
     wrap.appendChild(card);
