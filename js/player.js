@@ -1,15 +1,12 @@
 // Player progression, persisted to localStorage: pity counters, win streak,
-// best pull ever, recent-pull history, and the credits meter. Pure state +
-// a couple of pure helpers — no DOM here.
+// best pull ever, recent-pull history, and the two wallet balances (Credits
+// and Cash/USDC). Pure state + a couple of pure helpers — no DOM here.
 
-const STORAGE_KEY = "gotcha_player_v2";
+const STORAGE_KEY = "gotcha_player_v3";
 const RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary"];
 
 export const RARE_PITY_ROUNDS = 8; // rounds with no rare+ anywhere before one is forced
 export const EPIC_PITY_ROUNDS = 20; // rounds with no epic+ anywhere before one is forced
-
-export const CREDIT_PER_OPEN = 5; // earned every time the $100 tier is opened
-export const CREDIT_THRESHOLD = 100; // credits needed to redeem a free crate
 
 function rank(rarity) {
   return RARITY_ORDER.indexOf(rarity);
@@ -20,9 +17,14 @@ function defaultState() {
     history: [], // most-recent-first: {name, rarity, price, image, ts}
     bestPull: null, // {name, rarity, price, image}
     streak: 0, // consecutive picks (by the player) that were rare+
-    pity: { sinceRare: 0, sinceEpic: 0 },
-    credits: 0,
+    pity: {}, // { [tierKey]: { sinceRare, sinceEpic } } — each tier tracks its own
+    wallet: { credits: 0, cash: 0 },
   };
+}
+
+function pityFor(tierKey) {
+  if (!state.pity[tierKey]) state.pity[tierKey] = { sinceRare: 0, sinceEpic: 0 };
+  return state.pity[tierKey];
 }
 
 function load() {
@@ -61,34 +63,36 @@ function weightedPickFrom(pool) {
 // guarantee still holds. If the pity counter has run out, one of the 3
 // boxes (at random) gets force-upgraded into the rare+/epic+ subpool.
 
-export function applyPity(boxPrizes, pool) {
+export function applyPity(tierKey, boxPrizes, pool) {
+  const pity = pityFor(tierKey);
   const bestRank = () => Math.max(...boxPrizes.map((p) => rank(p.rarity)));
 
-  if (state.pity.sinceRare >= RARE_PITY_ROUNDS && bestRank() < rank("rare")) {
+  if (pity.sinceRare >= RARE_PITY_ROUNDS && bestRank() < rank("rare")) {
     const subpool = pool.filter((p) => rank(p.rarity) >= rank("rare"));
     const idx = Math.floor(Math.random() * boxPrizes.length);
     boxPrizes[idx] = weightedPickFrom(subpool);
   }
-  if (state.pity.sinceEpic >= EPIC_PITY_ROUNDS && bestRank() < rank("epic")) {
+  if (pity.sinceEpic >= EPIC_PITY_ROUNDS && bestRank() < rank("epic")) {
     const subpool = pool.filter((p) => rank(p.rarity) >= rank("epic"));
     const idx = Math.floor(Math.random() * boxPrizes.length);
     boxPrizes[idx] = weightedPickFrom(subpool);
   }
 
-  if (bestRank() >= rank("rare")) state.pity.sinceRare = 0;
-  else state.pity.sinceRare += 1;
-  if (bestRank() >= rank("epic")) state.pity.sinceEpic = 0;
-  else state.pity.sinceEpic += 1;
+  if (bestRank() >= rank("rare")) pity.sinceRare = 0;
+  else pity.sinceRare += 1;
+  if (bestRank() >= rank("epic")) pity.sinceEpic = 0;
+  else pity.sinceEpic += 1;
 
   save();
   return boxPrizes;
 }
 
-export function getPity() {
+export function getPity(tierKey) {
+  const pity = pityFor(tierKey);
   return {
-    ...state.pity,
-    rareRoundsLeft: Math.max(0, RARE_PITY_ROUNDS - state.pity.sinceRare),
-    epicRoundsLeft: Math.max(0, EPIC_PITY_ROUNDS - state.pity.sinceEpic),
+    ...pity,
+    rareRoundsLeft: Math.max(0, RARE_PITY_ROUNDS - pity.sinceRare),
+    epicRoundsLeft: Math.max(0, EPIC_PITY_ROUNDS - pity.sinceEpic),
   };
 }
 
@@ -126,27 +130,19 @@ export function getStreak() {
   return state.streak;
 }
 
-// ---- Credits meter -------------------------------------------------------
-// Earned every time the $100 tier is opened (not on a meter-redeemed free
-// crate, so redeeming doesn't partially refund itself).
+// ---- Wallet: Credits + Cash (USDC) -----------------------------------
+// Each round is opened "with Credits" or "with Cash" (see app.js's payment
+// picker). Choosing Cash Back on a win deposits the prize's dollar value
+// into whichever balance that round was opened with. Choosing Keep leaves
+// both balances untouched — you keep the physical item instead.
 
-export function getCredits() {
-  return state.credits;
+export function getWallet() {
+  return { ...state.wallet };
 }
 
-export function addCredits(amount = CREDIT_PER_OPEN) {
-  state.credits += amount;
+export function cashBack(amount, currency) {
+  if (currency !== "credits" && currency !== "cash") return state.wallet;
+  state.wallet[currency] += amount;
   save();
-  return state.credits;
-}
-
-export function canRedeemCredits() {
-  return state.credits >= CREDIT_THRESHOLD;
-}
-
-export function redeemCredits() {
-  if (state.credits < CREDIT_THRESHOLD) return false;
-  state.credits -= CREDIT_THRESHOLD;
-  save();
-  return true;
+  return { ...state.wallet };
 }

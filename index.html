@@ -23,6 +23,10 @@
     <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound"></button>
     <p class="eyebrow">Gotcha Platform</p>
     <h1>GOTCHA MACHINE</h1>
+    <div id="walletBar" class="wallet-bar">
+      <span class="wallet-item"><span class="wallet-icon">&#128179;</span> Credits: <b id="walletCredits">0</b></span>
+      <span class="wallet-item"><span class="wallet-icon">&#128181;</span> USDC: <b id="walletCash">$0</b></span>
+    </div>
   </header>
 
   <main>
@@ -46,7 +50,7 @@
     <section id="screen-game" class="screen">
       <div class="game-top-bar">
         <button id="backBtn" class="back-btn">&larr; Change tier</button>
-        <span id="creditsMini" class="credits-mini hidden"></span>
+        <span id="payingWithBadge" class="paying-with-badge hidden"></span>
       </div>
       <h2 class="screen-title" id="gameTierLabel"></h2>
 
@@ -130,9 +134,30 @@
   </div>
 </div>
 
-<!-- Credit-earned toast -->
+<!-- Payment method picker (shown before a round starts) -->
+<div id="paymentModal" class="prize-modal hidden">
+  <div class="prize-modal-card payment-modal-card">
+    <h3 class="payment-modal-title">Open <span id="paymentTierLabel"></span> with…</h3>
+    <div class="payment-modal-options">
+      <button id="payWithCredits" class="payment-option">
+        <span class="payment-option-icon">&#128179;</span>
+        <span class="payment-option-label">Credits</span>
+        <span class="payment-option-balance" id="payWithCreditsBalance"></span>
+      </button>
+      <button id="payWithCash" class="payment-option">
+        <span class="payment-option-icon">&#128181;</span>
+        <span class="payment-option-label">Cash</span>
+        <span class="payment-option-balance" id="payWithCashBalance"></span>
+      </button>
+    </div>
+    <p class="payment-modal-hint">Whichever you choose, a Cash Back win pays out in that same balance.</p>
+    <button id="paymentCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
+  </div>
+</div>
+
+<!-- Wallet-earned toast -->
 <div id="creditToast" class="credit-toast hidden">
-  <span class="credit-toast-icon">&#128276;</span>
+  <span class="credit-toast-icon" id="creditToastIcon">&#128276;</span>
   <span id="creditToastText"></span>
 </div>
 
