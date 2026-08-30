@@ -6,7 +6,7 @@
 
 const STORAGE_KEY = "gotcha_market_v1";
 
-const FAKE_USERNAMES = [
+export const FAKE_USERNAMES = [
   "PixelHawk77", "MidnightCartel", "SoleSeeker", "GrailChaser22", "VaultKid",
   "UrbanNomad", "ClutchDrop", "HeatCheckHQ", "BackboardBandit", "RarePairz",
   "KicksAndCo", "NorthStarTrades", "DuneRunner", "CrateDigger", "FlipMerchant",

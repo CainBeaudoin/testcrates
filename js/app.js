@@ -181,6 +181,15 @@ const listingBuyBtn = document.getElementById("listingBuyBtn");
 const listingUnlistBtn = document.getElementById("listingUnlistBtn");
 const listingOffersList = document.getElementById("listingOffersList");
 const listingCloseBtn = document.getElementById("listingCloseBtn");
+const pullDetailModal = document.getElementById("pullDetailModal");
+const pullDetailRarity = document.getElementById("pullDetailRarity");
+const pullDetailImage = document.getElementById("pullDetailImage");
+const pullDetailName = document.getElementById("pullDetailName");
+const pullDetailPrice = document.getElementById("pullDetailPrice");
+const pullDetailTierBadge = document.getElementById("pullDetailTierBadge");
+const pullDetailUser = document.getElementById("pullDetailUser");
+const pullDetailGoBtn = document.getElementById("pullDetailGoBtn");
+const pullDetailCloseBtn = document.getElementById("pullDetailCloseBtn");
 const amountModal = document.getElementById("amountModal");
 const amountModalTitle = document.getElementById("amountModalTitle");
 const amountModalHint = document.getElementById("amountModalHint");
@@ -320,24 +329,97 @@ function updatePayingWithBadge() {
   payingWithBadge.classList.remove("hidden");
 }
 
+// A live-feed illusion of what's being pulled platform-wide, same pattern
+// as the simulated marketplace sellers and leaderboard: a fixed cast of
+// fake usernames pulling real catalog items, generated once per session
+// and blended with the player's own real history by timestamp.
+let simulatedPulls = null;
+function buildSimulatedPulls() {
+  const tierKeys = Object.keys(CATEGORIES);
+  const now = Date.now();
+  return Array.from({ length: 14 }, () => {
+    const tierKey = tierKeys[Math.floor(Math.random() * tierKeys.length)];
+    const cat = CATEGORIES[tierKey];
+    const prize = weightedPick(cat.pool);
+    return {
+      name: prize.name,
+      rarity: prize.rarity,
+      price: prize.price,
+      image: prize.image,
+      tierKey,
+      username: market.FAKE_USERNAMES[Math.floor(Math.random() * market.FAKE_USERNAMES.length)],
+      isPlayer: false,
+      ts: now - Math.floor(Math.random() * 90 * 60 * 1000),
+    };
+  });
+}
+
 function renderRecentPulls() {
-  const history = player.getHistory().slice(0, 10);
-  if (history.length === 0) {
+  if (!simulatedPulls) simulatedPulls = buildSimulatedPulls();
+  const mine = player.getHistory().map((p) => ({ ...p, username: player.getUsername(), isPlayer: true }));
+  const feed = [...mine, ...simulatedPulls].sort((a, b) => b.ts - a.ts).slice(0, 16);
+
+  if (feed.length === 0) {
     recentPulls.classList.add("hidden");
     return;
   }
   recentPulls.classList.remove("hidden");
-  recentPullsList.innerHTML = history
-    .map((p) => {
-      const meta = RARITY_META[p.rarity];
+  recentPullsList.innerHTML = feed
+    .map((p, i) => {
+      const tierKey = p.tierKey ?? "hundred";
+      const badge = CATEGORIES[tierKey]?.badge ?? "Bronze";
       return `
-        <div class="recent-pull-item" style="--rarity-color:${meta.color}">
+        <div class="recent-pull-item" data-pull-index="${i}">
           <img src="${p.image}" alt="">
-          <span>${meta.label}</span>
+          <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
+          <span class="tier-badge tier-badge-${badge.toLowerCase()}">${badge}</span>
+          <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
         </div>`;
     })
     .join("");
+
+  recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
+    el.addEventListener("click", () => openPullDetail(feed[i]));
+  });
 }
+
+function openPullDetail(pull) {
+  const meta = RARITY_META[pull.rarity];
+  const tierKey = pull.tierKey ?? "hundred";
+  const cat = CATEGORIES[tierKey];
+
+  pullDetailModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+  pullDetailRarity.textContent = meta.label;
+  pullDetailRarity.style.color = meta.color;
+  pullDetailRarity.style.borderColor = meta.color;
+  pullDetailImage.src = pull.image;
+  pullDetailImage.alt = pull.name;
+  pullDetailName.textContent = pull.name;
+  pullDetailPrice.textContent = `$${pull.price.toLocaleString()}`;
+  pullDetailTierBadge.textContent = cat.badge;
+  pullDetailTierBadge.className = `tier-badge tier-badge-${cat.badge.toLowerCase()}`;
+  pullDetailUser.textContent = pull.isPlayer ? "Pulled by you" : `Pulled by ${pull.username}`;
+  pullDetailUser.classList.toggle("you", !!pull.isPlayer);
+  pullDetailGoBtn.textContent = `Go to ${cat.label} Crate`;
+  pullDetailGoBtn.onclick = () => {
+    playClick();
+    closePullDetail();
+    document.querySelector('.nav-tab[data-nav="screen-category"]').click();
+    openPaymentPicker(tierKey);
+  };
+
+  pullDetailModal.classList.remove("hidden");
+  requestAnimationFrame(() => pullDetailModal.classList.add("visible"));
+}
+
+function closePullDetail() {
+  pullDetailModal.classList.remove("visible");
+  setTimeout(() => pullDetailModal.classList.add("hidden"), 250);
+}
+pullDetailCloseBtn.addEventListener("click", () => {
+  playClick();
+  closePullDetail();
+});
 
 // ---- Category screen -------------------------------------------------
 
@@ -1170,8 +1252,9 @@ function renderHeaderStats() {
   notifBadge.classList.toggle("hidden", pending === 0);
 }
 
+// Rarity is shown only on the Boxes tab, where it's meaningful (what you
+// could have won) — Account/Marketplace deliberately leave it off.
 function inventoryItemHTML(item) {
-  const meta = RARITY_META[item.rarity];
   const archived = player.isArchived(item);
   const daysLeft = player.daysUntilArchival(item);
   const archivalClass = archived ? "archived" : daysLeft <= 30 ? "soon" : "";
@@ -1181,10 +1264,9 @@ function inventoryItemHTML(item) {
   const isListed = listing && listing.price != null;
 
   return `
-    <div class="market-item static" style="--rarity-color:${meta.color}">
+    <div class="market-item static">
       <div class="market-item-media">
         <img src="${item.image}" alt="">
-        <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
       </div>
       <div class="market-item-body">
         <span class="market-item-name">${item.name}</span>
@@ -1270,11 +1352,10 @@ function renderOpeningHistory() {
     ? openings
         .map((o) => {
           const pinned = (o.multiplier ?? 0) >= player.BIG_PULL_MULTIPLIER;
-          const meta = RARITY_META[o.rarity];
           return `
           <div class="opening-row ${pinned ? "pinned" : ""}">
             <img src="${o.image}" alt="">
-            <span class="opening-row-name" style="color:${meta.color}">${o.name}</span>
+            <span class="opening-row-name">${o.name}</span>
             <span class="opening-row-mult ${pinned ? "big" : ""}">${o.multiplier != null ? o.multiplier + "x" : "—"}</span>
             ${pinned ? `<span class="opening-row-pin" title="Pinned — 5x or more">★</span>` : ""}
           </div>`;
@@ -1288,12 +1369,10 @@ function renderShipped() {
   shippedList.innerHTML = shipped.length
     ? shipped
         .map((item) => {
-          const meta = RARITY_META[item.rarity];
           return `
-            <div class="market-item static" style="--rarity-color:${meta.color}">
+            <div class="market-item static">
               <div class="market-item-media">
                 <img src="${item.image}" alt="">
-                <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
               </div>
               <div class="market-item-body">
                 <span class="market-item-name">${item.name}</span>

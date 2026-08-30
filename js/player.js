@@ -161,7 +161,7 @@ export function rerollIfDuplicate(tierKey, prize, pool) {
 
 export function recordPick(prize, tierKey, tierPrice) {
   const multiplier = tierPrice ? +(prize.price / tierPrice).toFixed(2) : null;
-  const entry = { name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, multiplier, ts: Date.now() };
+  const entry = { name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, multiplier, tierKey, ts: Date.now() };
 
   state.history.unshift(entry);
   state.history = state.history.slice(0, OPENING_HISTORY_ROLLING);

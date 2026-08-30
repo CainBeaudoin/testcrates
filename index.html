@@ -90,7 +90,7 @@
       <div id="categoryList" class="category-list"></div>
 
       <div id="recentPulls" class="recent-pulls hidden">
-        <h3>Your Recent Pulls</h3>
+        <h3>Recent Pulls</h3>
         <div id="recentPullsList" class="recent-pulls-list"></div>
       </div>
     </section>
@@ -343,6 +343,22 @@
       <div id="listingOffersList" class="offers-list"></div>
     </div>
     <button id="listingCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Recent pull detail -->
+<div id="pullDetailModal" class="prize-modal hidden">
+  <div class="prize-modal-card listing-modal-card">
+    <span class="prize-modal-rarity" id="pullDetailRarity"></span>
+    <img class="prize-modal-image" id="pullDetailImage" alt="">
+    <h3 class="prize-modal-name" id="pullDetailName"></h3>
+    <p class="prize-modal-price" id="pullDetailPrice"></p>
+    <div class="pull-detail-meta">
+      <span class="tier-badge" id="pullDetailTierBadge"></span>
+      <span id="pullDetailUser" class="pull-detail-user"></span>
+    </div>
+    <button id="pullDetailGoBtn" class="modal-btn modal-btn-solid pull-detail-go-btn"></button>
+    <button id="pullDetailCloseBtn" class="back-btn listing-close-btn">Close</button>
   </div>
 </div>
 

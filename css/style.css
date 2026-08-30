@@ -557,10 +557,11 @@ body {
   flex: 0 0 auto;
 }
 
-/* --- Recent pulls (the player's own history — not a fabricated feed) --- */
+/* --- Recent pulls: a live ticker of pulls across the platform (yours +
+   a simulated cast, same pattern as the marketplace/leaderboard) --- */
 
 .recent-pulls {
-  max-width: 560px;
+  max-width: 900px;
   margin: 44px auto 0;
 }
 
@@ -583,26 +584,50 @@ body {
 
 .recent-pull-item {
   flex: 0 0 auto;
-  width: 72px;
+  width: 108px;
+  padding: 10px 10px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
+.recent-pull-item:hover { transform: translateY(-3px); border-color: var(--line-strong); }
 
 .recent-pull-item img {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   background: #000;
-  border: 1px solid var(--rarity-color, var(--line));
   border-radius: 4px;
-  margin: 0 auto 6px;
-  box-shadow: 0 0 10px -3px var(--rarity-color, transparent);
+  margin: 0 auto 8px;
+  display: block;
 }
 
-.recent-pull-item span {
+.recent-pull-price {
   display: block;
-  font-size: 0.6rem;
-  color: var(--text-faint);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
 }
+
+.recent-pull-item .tier-badge {
+  margin-bottom: 6px;
+  font-size: 0.52rem;
+  padding: 2px 8px;
+}
+
+.recent-pull-user {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-pull-user.you { color: var(--accent); }
 
 /* --- Game screen --- */
 
@@ -1623,6 +1648,26 @@ body {
 .listing-close-btn {
   margin: 16px auto 0;
   display: block;
+}
+
+/* --- Recent pull detail modal --- */
+
+.pull-detail-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -8px 0 20px;
+}
+.pull-detail-user {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+.pull-detail-user.you { color: var(--accent); }
+
+.pull-detail-go-btn {
+  width: 100%;
+  margin-bottom: 10px;
 }
 
 /* --- Amount prompt modal --- */
