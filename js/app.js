@@ -4,6 +4,7 @@ import { PRIZE_POOL as TWO_FIFTY_POOL } from "./prizeData250.js";
 import { PRIZE_POOL as THOUSAND_POOL } from "./prizeData1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
+import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmbient } from "./sound.js";
 import { ICONS } from "./icons.js";
 
@@ -39,6 +40,9 @@ function rankOf(rarity) {
 
 // Descending — used only for sorting the "View Prizes" list, top prize first.
 const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
+
+// Full catalog across all tiers, used to seed simulated marketplace listings.
+const ALL_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
 
 const HAPTIC_PATTERNS = {
   common: [15],
@@ -109,6 +113,34 @@ const payWithCash = document.getElementById("payWithCash");
 const payWithCreditsBalance = document.getElementById("payWithCreditsBalance");
 const payWithCashBalance = document.getElementById("payWithCashBalance");
 const paymentCancelBtn = document.getElementById("paymentCancelBtn");
+const screenMarketplace = document.getElementById("screen-marketplace");
+const screenAccount = document.getElementById("screen-account");
+const marketGrid = document.getElementById("marketGrid");
+const marketRarityFilter = document.getElementById("marketRarityFilter");
+const marketSort = document.getElementById("marketSort");
+const usernameBtn = document.getElementById("usernameBtn");
+const incomingOffersList = document.getElementById("incomingOffersList");
+const myListingsGrid = document.getElementById("myListingsGrid");
+const inventoryGrid = document.getElementById("inventoryGrid");
+const myOffersList = document.getElementById("myOffersList");
+const listingModal = document.getElementById("listingModal");
+const listingRarity = document.getElementById("listingRarity");
+const listingImage = document.getElementById("listingImage");
+const listingName = document.getElementById("listingName");
+const listingPrice = document.getElementById("listingPrice");
+const listingSeller = document.getElementById("listingSeller");
+const listingActions = document.getElementById("listingActions");
+const listingOfferBtn = document.getElementById("listingOfferBtn");
+const listingBuyBtn = document.getElementById("listingBuyBtn");
+const listingUnlistBtn = document.getElementById("listingUnlistBtn");
+const listingOffersList = document.getElementById("listingOffersList");
+const listingCloseBtn = document.getElementById("listingCloseBtn");
+const amountModal = document.getElementById("amountModal");
+const amountModalTitle = document.getElementById("amountModalTitle");
+const amountModalHint = document.getElementById("amountModalHint");
+const amountInput = document.getElementById("amountInput");
+const amountCancelBtn = document.getElementById("amountCancelBtn");
+const amountConfirmBtn = document.getElementById("amountConfirmBtn");
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -131,8 +163,9 @@ function shuffledOthers(excludeIndex, n) {
   return arr;
 }
 
+const allScreens = Array.from(document.querySelectorAll(".screen"));
 function showScreen(el) {
-  [screenCategory, screenGame].forEach((s) => s.classList.remove("active"));
+  allScreens.forEach((s) => s.classList.remove("active"));
   el.classList.add("active");
 }
 
@@ -592,8 +625,9 @@ function hidePrizeModal() {
 // ---- Wire up events -----------------------------------------------------
 
 cashBackBtn.addEventListener("click", () => {
-  playClick();
   const prize = boxPrizes[selectedIndex];
+  if (!prize) return;
+  playClick();
   player.cashBack(prize.price, roundCurrency);
   renderWallet({ pulse: roundCurrency });
   showWalletToast(prize.price, roundCurrency);
@@ -601,7 +635,10 @@ cashBackBtn.addEventListener("click", () => {
   revealOthers();
 });
 keepBtn.addEventListener("click", () => {
+  const prize = boxPrizes[selectedIndex];
+  if (!prize) return;
   playClick();
+  player.addToInventory(prize);
   hidePrizeModal();
   revealOthers();
 });
@@ -625,6 +662,392 @@ muteBtn.addEventListener("click", () => {
   refreshMuteBtn();
 });
 refreshMuteBtn();
+
+// ---- Nav tabs (Boxes / Marketplace / Account) -----------------------------
+
+const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
+navTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    playClick();
+    navTabs.forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const target = document.getElementById(tab.dataset.nav);
+    showScreen(target);
+    if (tab.dataset.nav === "screen-marketplace") renderMarketplace();
+    if (tab.dataset.nav === "screen-account") renderAccount();
+    if (tab.dataset.nav === "screen-category") renderCategories();
+  });
+});
+
+// ---- Generic amount prompt (list price / offer / counter-offer) ----------
+
+let amountResolver = null;
+function promptAmount(title, hint, defaultValue) {
+  amountModalTitle.textContent = title;
+  amountModalHint.textContent = hint;
+  amountInput.value = defaultValue ?? "";
+  amountModal.classList.remove("hidden");
+  requestAnimationFrame(() => amountModal.classList.add("visible"));
+  setTimeout(() => amountInput.focus(), 50);
+  return new Promise((resolve) => {
+    amountResolver = resolve;
+  });
+}
+function closeAmountModal(result) {
+  amountModal.classList.remove("visible");
+  setTimeout(() => amountModal.classList.add("hidden"), 250);
+  if (amountResolver) {
+    amountResolver(result);
+    amountResolver = null;
+  }
+}
+amountConfirmBtn.addEventListener("click", () => {
+  const value = Math.round(Number(amountInput.value));
+  if (!value || value <= 0) return;
+  playClick();
+  closeAmountModal(value);
+});
+amountCancelBtn.addEventListener("click", () => {
+  playClick();
+  closeAmountModal(null);
+});
+amountInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") amountConfirmBtn.click();
+});
+
+// ---- Shared: rendering a market item card ---------------------------------
+
+function marketItemCardHTML(listing) {
+  const meta = RARITY_META[listing.rarity];
+  return `
+    <div class="market-item" data-listing="${listing.id}" style="--rarity-color:${meta.color}">
+      <img src="${listing.image}" alt="">
+      <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+      <span class="market-item-name">${listing.name}</span>
+      <span class="market-item-price">$${listing.price.toLocaleString()}</span>
+      <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+    </div>`;
+}
+
+function offerRowHTML(offer, { showActions } = {}) {
+  const listing = market.getListing(offer.listingId);
+  const otherParty = offer.fromIsPlayer ? offer.toUsername : offer.fromUsername;
+  const verb = offer.fromIsPlayer ? "to" : "from";
+  let actions = "";
+  if (showActions === "incoming") {
+    actions = `
+      <div class="offer-actions">
+        <button class="offer-btn accept" data-offer-action="accept" data-offer="${offer.id}">Accept</button>
+        <button class="offer-btn" data-offer-action="counter" data-offer="${offer.id}">Counter</button>
+        <button class="offer-btn decline" data-offer-action="decline" data-offer="${offer.id}">Decline</button>
+      </div>`;
+  } else if (showActions === "counter-received") {
+    actions = `
+      <div class="offer-actions">
+        <button class="offer-btn accept" data-offer-action="accept-counter" data-offer="${offer.id}">Accept $${offer.counterAmount}</button>
+        <button class="offer-btn decline" data-offer-action="decline" data-offer="${offer.id}">Decline</button>
+      </div>`;
+  } else {
+    actions = `<span class="offer-status ${offer.status}">${offer.status}</span>`;
+  }
+  return `
+    <div class="offer-row">
+      <img src="${listing ? listing.image : ""}" alt="">
+      <div class="offer-row-info">
+        <b>${listing ? listing.name : "Item"}</b><br>
+        Offer ${verb} <b>${otherParty}</b>
+      </div>
+      <span class="offer-row-amount">$${offer.amount.toLocaleString()}</span>
+      ${actions}
+    </div>`;
+}
+
+// ---- Marketplace screen ---------------------------------------------------
+
+let marketRarityValue = "all";
+
+function renderMarketplace() {
+  market.ensureSeeded(ALL_CATALOG);
+
+  if (marketRarityFilter.children.length === 0) {
+    const chips = ["all", ...DISPLAY_RARITY_ORDER.slice().reverse()];
+    marketRarityFilter.innerHTML = chips
+      .map((r) => `<button class="market-chip${r === "all" ? " active" : ""}" data-rarity="${r}">${r === "all" ? "All" : RARITY_META[r].label}</button>`)
+      .join("");
+    marketRarityFilter.querySelectorAll(".market-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        playClick();
+        marketRarityValue = chip.dataset.rarity;
+        marketRarityFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        if (marketRarityValue !== "all") {
+          chip.style.color = "#000";
+          chip.style.background = RARITY_META[marketRarityValue].color;
+        }
+        marketRarityFilter.querySelectorAll(".market-chip").forEach((c) => {
+          if (c !== chip) {
+            c.style.color = "";
+            c.style.background = "";
+          }
+        });
+        renderMarketGrid();
+      });
+    });
+  }
+
+  renderMarketGrid();
+}
+
+function renderMarketGrid() {
+  let listings = market.getListings();
+  if (marketRarityValue !== "all") listings = listings.filter((l) => l.rarity === marketRarityValue);
+
+  const sort = marketSort.value;
+  listings = [...listings].sort((a, b) => {
+    if (sort === "price-asc") return a.price - b.price;
+    if (sort === "price-desc") return b.price - a.price;
+    return b.ts - a.ts;
+  });
+
+  marketGrid.innerHTML = listings.length
+    ? listings.map(marketItemCardHTML).join("")
+    : `<div class="market-empty">No listings yet.</div>`;
+
+  marketGrid.querySelectorAll(".market-item").forEach((el) => {
+    el.addEventListener("click", () => openListingModal(el.dataset.listing));
+  });
+}
+marketSort.addEventListener("change", renderMarketGrid);
+
+// ---- Listing detail modal --------------------------------------------
+
+let openListingId = null;
+
+function openListingModal(id) {
+  const listing = market.getListing(id);
+  if (!listing) return;
+  openListingId = listing.id;
+  const meta = RARITY_META[listing.rarity];
+
+  listingModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+  listingRarity.textContent = meta.label;
+  listingRarity.style.color = meta.color;
+  listingRarity.style.borderColor = meta.color;
+  listingImage.src = listing.image;
+  listingImage.alt = listing.name;
+  listingName.textContent = listing.name;
+  listingPrice.textContent = `$${listing.price.toLocaleString()}`;
+  listingSeller.innerHTML = listing.isPlayer ? "Listed by <b>you</b>" : `Listed by <b>${listing.seller}</b>`;
+
+  listingActions.classList.toggle("hidden", listing.isPlayer);
+  listingUnlistBtn.classList.toggle("hidden", !listing.isPlayer);
+
+  renderListingOffers(listing.id);
+
+  listingModal.classList.remove("hidden");
+  requestAnimationFrame(() => listingModal.classList.add("visible"));
+}
+
+function renderListingOffers(listingId) {
+  const offers = market.getOffersForListing(listingId);
+  listingOffersList.innerHTML = offers.length
+    ? offers.map((o) => offerRowHTML(o)).join("")
+    : `<div class="offers-empty">No offers yet.</div>`;
+}
+
+function closeListingModal() {
+  listingModal.classList.remove("visible");
+  setTimeout(() => listingModal.classList.add("hidden"), 250);
+  openListingId = null;
+}
+listingCloseBtn.addEventListener("click", () => {
+  playClick();
+  closeListingModal();
+});
+
+listingBuyBtn.addEventListener("click", () => {
+  const listing = market.getListing(openListingId);
+  if (!listing) return;
+  if (!player.spendCash(listing.price)) {
+    alert("Not enough Cash for this purchase.");
+    return;
+  }
+  playClick();
+  player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+  market.removeListing(listing.id);
+  renderWallet({ pulse: "cash" });
+  closeListingModal();
+  renderMarketGrid();
+});
+
+listingOfferBtn.addEventListener("click", async () => {
+  const listing = market.getListing(openListingId);
+  if (!listing) return;
+  const amount = await promptAmount("Make an Offer", `${listing.name} is listed at $${listing.price.toLocaleString()}.`, Math.round(listing.price * 0.8));
+  if (!amount) return;
+
+  const offer = market.makeOffer({
+    listingId: listing.id,
+    amount,
+    fromUsername: player.getUsername(),
+    fromIsPlayer: true,
+    toUsername: listing.seller,
+    toIsPlayer: false,
+  });
+  renderListingOffers(listing.id);
+
+  setTimeout(() => resolveBotOnMyOffer(offer.id), 1100);
+});
+
+listingUnlistBtn.addEventListener("click", () => {
+  const listing = market.getListing(openListingId);
+  if (!listing) return;
+  playClick();
+  if (listing.itemId) player.markUnlisted(listing.itemId);
+  market.removeListing(listing.id);
+  closeListingModal();
+  renderMarketGrid();
+});
+
+// A player's offer on a bot's listing resolves via the same transparent
+// rule the bot uses for offers on the player's own listings.
+function resolveBotOnMyOffer(offerId) {
+  const offer = market.getOffer(offerId);
+  if (!offer) return;
+  const listing = market.getListing(offer.listingId);
+  if (!listing) return;
+  const decision = market.botDecision(offer.amount, listing.price);
+  if (decision.status === "accepted") {
+    if (player.spendCash(offer.amount)) {
+      player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+      market.removeListing(listing.id);
+      market.updateOffer(offerId, { status: "accepted" });
+      renderWallet({ pulse: "cash" });
+    } else {
+      market.updateOffer(offerId, { status: "declined" });
+    }
+  } else {
+    market.updateOffer(offerId, decision);
+  }
+  if (openListingId === offer.listingId) renderListingOffers(offer.listingId);
+  renderMarketGrid();
+  if (screenAccount.classList.contains("active")) renderAccount();
+}
+
+// ---- Account screen ---------------------------------------------------
+
+usernameBtn.addEventListener("click", async () => {
+  const name = prompt("Choose a username", player.getUsername());
+  if (name) {
+    player.setUsername(name);
+    usernameBtn.textContent = player.getUsername();
+  }
+});
+
+function renderAccount() {
+  usernameBtn.textContent = player.getUsername();
+
+  market.maybeSpawnIncomingOffer();
+
+  const incoming = market.getIncomingOffers();
+  incomingOffersList.innerHTML = incoming.length
+    ? incoming.map((o) => offerRowHTML(o, { showActions: "incoming" })).join("")
+    : `<div class="offers-empty">No incoming offers right now.</div>`;
+
+  const myListings = market.getListings().filter((l) => l.isPlayer);
+  myListingsGrid.innerHTML = myListings.length
+    ? myListings.map(marketItemCardHTML).join("")
+    : `<div class="market-empty">You haven't listed anything yet.</div>`;
+  myListingsGrid.querySelectorAll(".market-item").forEach((el) => {
+    el.addEventListener("click", () => openListingModal(el.dataset.listing));
+  });
+
+  const inventory = player.getInventory().filter((i) => !i.listingId);
+  inventoryGrid.innerHTML = inventory.length
+    ? inventory
+        .map((item) => {
+          const meta = RARITY_META[item.rarity];
+          return `
+            <div class="market-item" style="--rarity-color:${meta.color}">
+              <img src="${item.image}" alt="">
+              <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+              <span class="market-item-name">${item.name}</span>
+              <span class="market-item-price">$${item.price.toLocaleString()}</span>
+              <button class="market-item-list-btn" data-item="${item.id}">List for Sale</button>
+            </div>`;
+        })
+        .join("")
+    : `<div class="market-empty">Keep a prize from a crate reveal to see it here.</div>`;
+  inventoryGrid.querySelectorAll(".market-item-list-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const item = player.getInventoryItem(btn.dataset.item);
+      if (!item) return;
+      const price = await promptAmount("List for Sale", `${item.name} — catalog value $${item.price.toLocaleString()}.`, item.price);
+      if (!price) return;
+      const listing = market.createListing({ item, price, seller: player.getUsername() });
+      player.markListed(item.id, listing.id);
+      renderAccount();
+    });
+  });
+
+  const myOffers = market.getMyOffers();
+  myOffersList.innerHTML = myOffers.length
+    ? myOffers.map((o) => offerRowHTML(o, { showActions: o.status === "countered" ? "counter-received" : null })).join("")
+    : `<div class="offers-empty">You haven't made any offers yet.</div>`;
+}
+
+// Delegated handling for offer action buttons (incoming offers + countered
+// offers I sent) since both lists re-render often.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-offer-action]");
+  if (!btn) return;
+  playClick();
+  const action = btn.dataset.offerAction;
+  const offer = market.getOffer(btn.dataset.offer);
+  if (!offer) return;
+  const listing = market.getListing(offer.listingId);
+
+  if (action === "accept") {
+    if (listing) {
+      player.addCash(offer.amount);
+      if (listing.itemId) player.removeFromInventory(listing.itemId);
+      market.removeListing(listing.id);
+    }
+    market.updateOffer(offer.id, { status: "accepted" });
+    renderWallet({ pulse: "cash" });
+    renderAccount();
+  } else if (action === "decline") {
+    market.updateOffer(offer.id, { status: "declined" });
+    renderAccount();
+  } else if (action === "accept-counter") {
+    if (player.spendCash(offer.counterAmount) && listing) {
+      player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+      market.removeListing(listing.id);
+      market.updateOffer(offer.id, { status: "accepted" });
+      renderWallet({ pulse: "cash" });
+    }
+    renderAccount();
+  } else if (action === "counter") {
+    promptAmount("Counter Offer", `${offer.fromUsername} offered $${offer.amount.toLocaleString()}.`, offer.amount).then((amount) => {
+      if (!amount || !listing) return;
+      market.updateOffer(offer.id, { status: "countered", counterAmount: amount });
+      renderAccount();
+      // The bot who sent the original offer decides on your counter.
+      setTimeout(() => {
+        const decision = amount <= offer.amount * 1.25 ? "accepted" : "declined";
+        if (decision === "accepted") {
+          player.addCash(amount);
+          if (listing.itemId) player.removeFromInventory(listing.itemId);
+          market.removeListing(listing.id);
+        }
+        market.updateOffer(offer.id, { status: decision });
+        renderWallet({ pulse: "cash" });
+        renderAccount();
+      }, 1300);
+    });
+  }
+});
 
 // Autoplay policies require a user gesture before any audio can start.
 function onFirstGesture() {

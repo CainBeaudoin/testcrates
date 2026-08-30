@@ -66,7 +66,7 @@ Progress persists to `localStorage` (per-browser, not a real account):
   anywhere among that tier's 3 crates (or 20 rounds with no Epic+), the
   next round in that tier force-upgrades one crate into that subpool.
   Progress shows as a bar on each tier card.
-- **Streak**: consecutive picks that land Rare+ show a "🔥 N Rare+ in a
+- **Streak**: consecutive picks that land Rare+ show an "N Rare+ in a
   row!" badge in the reveal modal.
 - **Near-miss**: if a crate you *didn't* pick outranks the one you did,
   it gets a pulse + "So close — that was X!" tag. This only ever reflects
@@ -78,7 +78,37 @@ Progress persists to `localStorage` (per-browser, not a real account):
 
 Sound (`js/sound.js`) is entirely procedural WebAudio (oscillators +
 filtered noise) — no external audio files. A mute toggle (top-right) turns
-off both the ambient hum and every UI/reveal sound.
+off both the ambient hum and every UI/reveal sound. All icons throughout
+the UI (`js/icons.js`) are inline SVG — no emoji.
+
+## Account & Marketplace
+
+Three nav tabs sit under the wallet bar: **Boxes** (the crate-opening flow
+above), **Marketplace**, and **Account** — loosely modeled on
+[phygitals.com](https://www.phygitals.com)'s packs/marketplace/profile
+structure (studied for reference, not copied).
+
+- Choosing **Keep** on a reveal adds the item to your **Account → My
+  Items** inventory (`player.js`'s `inventory`, separate from Credits/Cash
+  history).
+- **List for Sale** on an item prompts for a price and creates a
+  marketplace listing (`js/market.js`), which immediately appears in both
+  **Account → My Listings** and the main **Marketplace** grid.
+- The Marketplace is seeded once with ~22 listings from a cast of fake
+  usernames (`FAKE_USERNAMES` in `market.js`) drawn from the real prize
+  catalog — clearly-simulated "other sellers" for a marketplace demo, not
+  a live multiplayer system or fabricated real-user activity.
+- **Buy Now** spends Cash immediately. **Make Offer** submits an offer that
+  a simple, transparent rule resolves after a short delay
+  (`market.botDecision`): ≥88% of asking price accepts, ≥60% counters
+  with the midpoint, otherwise declines.
+- Your own listings occasionally receive a simulated **incoming offer**
+  (visible in **Account → Incoming Offers**), which you can Accept,
+  Decline, or **Counter** — a counter is resolved by the same buyer
+  against your counter-amount.
+- All marketplace trading — Buy Now, offers, sales — settles in **Cash**
+  (not Credits), since Credits are specifically the crate cash-back
+  currency.
 
 ## Prize catalog
 

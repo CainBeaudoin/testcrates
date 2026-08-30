@@ -30,6 +30,21 @@
       <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Credits: <b id="walletCredits">0</b></span>
       <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> USDC: <b id="walletCash">$0</b></span>
     </div>
+
+    <nav id="mainNav" class="main-nav">
+      <button class="nav-tab active" data-nav="screen-category">
+        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        Boxes
+      </button>
+      <button class="nav-tab" data-nav="screen-marketplace">
+        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
+        Marketplace
+      </button>
+      <button class="nav-tab" data-nav="screen-account">
+        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
+        Account
+      </button>
+    </nav>
   </header>
 
   <main>
@@ -104,6 +119,48 @@
       <button id="playAgainBtn" class="primary-btn hidden">Open Again</button>
     </section>
 
+    <!-- SCREEN 3: marketplace -->
+    <section id="screen-marketplace" class="screen">
+      <h2 class="screen-title">Marketplace</h2>
+      <div class="market-toolbar">
+        <div id="marketRarityFilter" class="market-filter-chips"></div>
+        <select id="marketSort" class="market-sort">
+          <option value="new">Newest</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+      <div id="marketGrid" class="market-grid"></div>
+    </section>
+
+    <!-- SCREEN 4: account -->
+    <section id="screen-account" class="screen">
+      <div class="account-header">
+        <h2 class="screen-title account-title">Account</h2>
+        <button id="usernameBtn" class="username-btn"></button>
+      </div>
+
+      <div class="account-block">
+        <h3 class="account-block-title">Incoming Offers</h3>
+        <div id="incomingOffersList" class="offers-list"></div>
+      </div>
+
+      <div class="account-block">
+        <h3 class="account-block-title">My Listings</h3>
+        <div id="myListingsGrid" class="market-grid"></div>
+      </div>
+
+      <div class="account-block">
+        <h3 class="account-block-title">My Items</h3>
+        <div id="inventoryGrid" class="market-grid"></div>
+      </div>
+
+      <div class="account-block">
+        <h3 class="account-block-title">My Offers Sent</h3>
+        <div id="myOffersList" class="offers-list"></div>
+      </div>
+    </section>
+
   </main>
 
   <footer class="app-footer">
@@ -155,6 +212,40 @@
     </div>
     <p class="payment-modal-hint">Whichever you choose, a Cash Back win pays out in that same balance.</p>
     <button id="paymentCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
+  </div>
+</div>
+
+<!-- Marketplace listing detail -->
+<div id="listingModal" class="prize-modal hidden">
+  <div class="prize-modal-card listing-modal-card">
+    <span class="prize-modal-rarity" id="listingRarity"></span>
+    <img class="prize-modal-image" id="listingImage" alt="">
+    <h3 class="prize-modal-name" id="listingName"></h3>
+    <p class="prize-modal-price" id="listingPrice"></p>
+    <p class="listing-seller" id="listingSeller"></p>
+    <div class="prize-modal-actions" id="listingActions">
+      <button id="listingOfferBtn" class="modal-btn modal-btn-outline">Make Offer</button>
+      <button id="listingBuyBtn" class="modal-btn modal-btn-solid">Buy Now</button>
+    </div>
+    <button id="listingUnlistBtn" class="modal-btn modal-btn-outline hidden">Remove Listing</button>
+    <div class="listing-offers">
+      <h4>Offers</h4>
+      <div id="listingOffersList" class="offers-list"></div>
+    </div>
+    <button id="listingCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
+<!-- Generic amount prompt (list price / make offer / counter-offer) -->
+<div id="amountModal" class="prize-modal hidden">
+  <div class="prize-modal-card amount-modal-card">
+    <h3 id="amountModalTitle" class="payment-modal-title"></h3>
+    <p id="amountModalHint" class="payment-modal-hint"></p>
+    <input id="amountInput" class="amount-input" type="number" min="1" step="1" inputmode="numeric">
+    <div class="prize-modal-actions">
+      <button id="amountCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
+      <button id="amountConfirmBtn" class="modal-btn modal-btn-solid">Confirm</button>
+    </div>
   </div>
 </div>
 

@@ -1,24 +1,43 @@
 // Player progression, persisted to localStorage: pity counters, win streak,
-// best pull ever, recent-pull history, and the two wallet balances (Credits
-// and Cash/USDC). Pure state + a couple of pure helpers — no DOM here.
+// best pull ever, recent-pull history, the two wallet balances (Credits and
+// Cash/USDC), username, and inventory (kept items). Pure state + a couple
+// of pure helpers — no DOM here.
 
-const STORAGE_KEY = "gotcha_player_v3";
+const STORAGE_KEY = "gotcha_player_v4";
 const RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary"];
 
 export const RARE_PITY_ROUNDS = 8; // rounds with no rare+ anywhere before one is forced
 export const EPIC_PITY_ROUNDS = 20; // rounds with no epic+ anywhere before one is forced
 
+const ADJECTIVES = ["Silent", "Crimson", "Golden", "Shadow", "Neon", "Frozen", "Rapid", "Lunar", "Iron", "Velvet"];
+const NOUNS = ["Falcon", "Voyager", "Wolf", "Phantom", "Rider", "Comet", "Hunter", "Nomad", "Viper", "Ranger"];
+
+function randomUsername() {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `${adj}${noun}${num}`;
+}
+
 function rank(rarity) {
   return RARITY_ORDER.indexOf(rarity);
 }
 
+let uidCounter = 0;
+function uid() {
+  uidCounter += 1;
+  return `${Date.now().toString(36)}${uidCounter.toString(36)}`;
+}
+
 function defaultState() {
   return {
+    username: randomUsername(),
     history: [], // most-recent-first: {name, rarity, price, image, ts}
     bestPull: null, // {name, rarity, price, image}
     streak: 0, // consecutive picks (by the player) that were rare+
     pity: {}, // { [tierKey]: { sinceRare, sinceEpic } } — each tier tracks its own
     wallet: { credits: 0, cash: 0 },
+    inventory: [], // kept items: {id, name, rarity, price, image, acquiredAt, listingId}
   };
 }
 
@@ -145,4 +164,80 @@ export function cashBack(amount, currency) {
   state.wallet[currency] += amount;
   save();
   return { ...state.wallet };
+}
+
+export function addCash(amount) {
+  state.wallet.cash += amount;
+  save();
+  return { ...state.wallet };
+}
+
+export function spendCash(amount) {
+  if (state.wallet.cash < amount) return false;
+  state.wallet.cash -= amount;
+  save();
+  return true;
+}
+
+// ---- Identity ----------------------------------------------------------
+
+export function getUsername() {
+  return state.username;
+}
+
+export function setUsername(name) {
+  const trimmed = name.trim().slice(0, 24);
+  if (!trimmed) return state.username;
+  state.username = trimmed;
+  save();
+  return state.username;
+}
+
+// ---- Inventory: items you chose to Keep -----------------------------
+// Listing/selling one moves it into the shared marketplace (see market.js),
+// which calls back into removeFromInventory / markListed / markUnlisted so
+// player.js stays the single source of truth for what you actually own.
+
+export function addToInventory(prize) {
+  const item = {
+    id: uid(),
+    name: prize.name,
+    rarity: prize.rarity,
+    price: prize.price,
+    image: prize.image,
+    acquiredAt: Date.now(),
+    listingId: null,
+  };
+  state.inventory.unshift(item);
+  save();
+  return item;
+}
+
+export function getInventory() {
+  return state.inventory;
+}
+
+export function getInventoryItem(id) {
+  return state.inventory.find((i) => i.id === id) || null;
+}
+
+export function removeFromInventory(id) {
+  state.inventory = state.inventory.filter((i) => i.id !== id);
+  save();
+}
+
+export function markListed(id, listingId) {
+  const item = getInventoryItem(id);
+  if (item) {
+    item.listingId = listingId;
+    save();
+  }
+}
+
+export function markUnlisted(id) {
+  const item = getInventoryItem(id);
+  if (item) {
+    item.listingId = null;
+    save();
+  }
 }
