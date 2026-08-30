@@ -915,15 +915,98 @@ body {
 .primary-btn:hover { transform: translateY(-2px); }
 
 .app-footer {
-  text-align: center;
   max-width: 1180px;
-  margin: 0 auto 28px;
+  margin: 64px auto 0;
   padding: 0 28px;
-  font-size: 0.72rem;
+}
+
+.app-footer-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  justify-content: space-between;
+  padding: 40px 0;
+  border-top: 1px solid var(--line);
+}
+
+.app-footer-brand { flex: 1 1 280px; max-width: 360px; }
+
+.app-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.app-footer-tagline {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
   color: var(--text-faint);
 }
-.app-footer a { color: var(--text-dim); }
-.app-footer a:hover { color: var(--text); }
+
+.app-footer-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.app-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 130px;
+}
+.app-footer-col h4 {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.app-footer-link {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  text-align: left;
+}
+.app-footer-link:hover { color: var(--text); }
+
+.app-footer-social {
+  display: flex;
+  gap: 8px;
+}
+.app-footer-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.app-footer-social-btn:hover { color: var(--text); border-color: var(--line-strong); }
+
+.app-footer-bottom {
+  text-align: center;
+  padding: 18px 0 28px;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+.app-footer-bottom p { margin: 0; }
+.app-footer-bottom a { color: var(--text-dim); }
+.app-footer-bottom a:hover { color: var(--text); }
 
 /* --- Won-prize modal --- */
 

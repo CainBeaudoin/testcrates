@@ -2098,6 +2098,23 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// ---- Footer: quick links navigate for real; social/support are labeled
+// placeholders (no real destinations exist for a demo) that surface an
+// honest "coming soon" rather than a dead link with no feedback. ---------
+document.querySelectorAll("[data-footer-nav]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    playClick();
+    document.querySelector(`.nav-tab[data-nav="${btn.dataset.footerNav}"]`)?.click();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+document.querySelectorAll("[data-footer-link]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    playClick();
+    showToast(`${btn.dataset.footerLink} — coming soon`, ICONS.bell);
+  });
+});
+
 const profileParam = new URLSearchParams(location.search).get("profile");
 if (profileParam) {
   renderPublicProfile(profileParam);
