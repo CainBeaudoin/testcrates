@@ -5,6 +5,7 @@ import { PRIZE_POOL as THOUSAND_POOL } from "./prizeData1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmbient } from "./sound.js";
+import { ICONS } from "./icons.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each category has a pool of possible prizes with relative weights. All
@@ -184,7 +185,7 @@ function renderWallet({ pulse } = {}) {
 
 function showWalletToast(amount, currency) {
   clearTimeout(toastTimer);
-  creditToastIcon.textContent = currency === "cash" ? "\u{1F4B5}" : "\u{1F514}";
+  creditToastIcon.innerHTML = currency === "cash" ? ICONS.cash : ICONS.bell;
   creditToastText.textContent =
     currency === "cash" ? `+$${amount.toLocaleString()} Cash Added` : `+${amount.toLocaleString()} Credits Added`;
   creditToast.classList.remove("hidden");
@@ -201,8 +202,8 @@ function updatePayingWithBadge() {
     payingWithBadge.classList.add("hidden");
     return;
   }
-  payingWithBadge.textContent =
-    roundCurrency === "cash" ? "\u{1F4B5} Playing with Cash" : "\u{1F4B3} Playing with Credits";
+  payingWithBadge.innerHTML =
+    roundCurrency === "cash" ? `${ICONS.cash} Playing with Cash` : `${ICONS.card} Playing with Credits`;
   payingWithBadge.classList.remove("hidden");
 }
 
@@ -560,7 +561,7 @@ async function showPrizeModal(prize, { streak } = {}) {
   cashBackBtn.textContent = roundCurrency === "cash" ? "Cash Back ($)" : "Cash Back (Credits)";
 
   if (streak >= 2) {
-    streakBadge.textContent = `\u{1F525} ${streak} Rare+ in a row!`;
+    streakBadge.innerHTML = `${ICONS.flame} ${streak} Rare+ in a row!`;
     streakBadge.classList.remove("hidden");
   } else {
     streakBadge.classList.add("hidden");

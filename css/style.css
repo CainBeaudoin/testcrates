@@ -80,13 +80,15 @@ main { flex: 1; }
   background: var(--panel);
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 0.95rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 .mute-btn:hover { color: var(--text); border-color: var(--line-strong); transform: translateY(-1px); }
-.mute-btn::before { content: "\1F50A"; }
-.mute-btn.muted::before { content: "\1F507"; }
+.mute-btn .icon-volume-muted { display: none; }
+.mute-btn.muted .icon-volume { display: none; }
+.mute-btn.muted .icon-volume-muted { display: block; }
 
 .wallet-bar {
   display: flex;
@@ -119,7 +121,7 @@ main { flex: 1; }
   color: #f2b84b;
   transform: scale(1.2);
 }
-.wallet-icon { font-size: 0.85rem; }
+.icon { vertical-align: -2px; flex: 0 0 auto; }
 
 .eyebrow {
   margin: 0 0 8px;
@@ -225,20 +227,23 @@ main { flex: 1; }
 .credit-toast-icon { font-size: 1rem; }
 
 .category-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  justify-content: center;
+  align-items: stretch;
 }
 
 .category-wrap {
-  width: 250px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
 }
 
 .category-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -246,6 +251,12 @@ main { flex: 1; }
   text-align: center;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Push the CTA + pity bar to the same baseline across cards regardless of
+   how many lines the description above it wraps to. */
+.category-card .cta {
+  margin-top: auto;
 }
 
 .category-card:hover {
