@@ -9,40 +9,54 @@ import { playClick, playHover, playPop, playDing, toggleMuted, isMuted, startAmb
 import { ICONS } from "./icons.js";
 
 // ---- Prize configuration -------------------------------------------------
-// Each category has a pool of possible prizes with relative weights. All
-// three tiers run the exact same mechanics (reel, pity, reveal, wallet) —
-// only the price point (and therefore the pool's price band) differs. Pools
-// are scraped/generated — see js/prizeData*.js.
+// Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
+// the price point (and therefore the pool's price band) differs. Opening a
+// crate costs its tier price, paid from whichever balance you choose.
 
 const CATEGORIES = {
   hundred: {
     label: "$100 Tier",
+    badge: "Bronze",
+    price: 100,
     description: "3 crates, one pull each. Odds are set by the pool below.",
     pool: HUNDRED_POOL,
   },
   twoFifty: {
     label: "$250 Tier",
+    badge: "Silver",
+    price: 250,
     description: "Same odds, a step up in stock — 3 crates, one pull each.",
     pool: TWO_FIFTY_POOL,
   },
   thousand: {
     label: "$1000 Tier",
+    badge: "Gold",
+    price: 1000,
     description: "The grail tier. 3 crates, one pull each.",
     pool: THOUSAND_POOL,
   },
 };
 
-// Ascending — used for rank comparisons (near-misses, pity subpools, streaks).
 const RARITY_RANK_ASC = ["common", "uncommon", "rare", "epic", "legendary"];
 function rankOf(rarity) {
   return RARITY_RANK_ASC.indexOf(rarity);
 }
-
-// Descending — used only for sorting the "View Prizes" list, top prize first.
 const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
 
 // Full catalog across all tiers, used to seed simulated marketplace listings.
 const ALL_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
+
+// Simulated leaderboard cast — static seed XP, the player's own row is
+// inserted alongside these at render time. Not live multiplayer data.
+const FAKE_LEADERS = [
+  { username: "VaultKid", xp: 48200 },
+  { username: "CrateDigger", xp: 36500 },
+  { username: "GrailChaser22", xp: 29800 },
+  { username: "NorthStarTrades", xp: 21100 },
+  { username: "HeatCheckHQ", xp: 15600 },
+  { username: "OrbitLace", xp: 9700 },
+  { username: "ReplayDrops", xp: 4200 },
+];
 
 const HAPTIC_PATTERNS = {
   common: [15],
@@ -60,15 +74,14 @@ const REEL_DURATION_MS = 2400;
 const REVEAL_STEP_MS = 950;
 const MODAL_DELAY_MS = 650;
 
-// Preload the snapshot as soon as the module loads so it's ready by the
-// time the player picks a tier.
 const boxSnapshotPromise = getBoxSnapshot();
 
 // ---- State -----------------------------------------------------------
 
 let currentCategoryKey = null;
-let pendingCategoryKey = null; // tier the payment picker is currently showing for
-let roundCurrency = null; // "credits" | "cash" — chosen before the current round
+let pendingCategoryKey = null;
+let roundCurrency = null; // "credits" | "cash"
+let pendingRebate = 0; // computed at purchase, credited when the reveal starts
 let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
@@ -93,8 +106,12 @@ const prizeModal = document.getElementById("prizeModal");
 const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
 const streakBadge = document.getElementById("streakBadge");
-const cashBackBtn = document.getElementById("cashBackBtn");
-const keepBtn = document.getElementById("keepBtn");
+const multiplierBadge = document.getElementById("multiplierBadge");
+const cashOutBtn = document.getElementById("cashOutBtn");
+const cashOutSub = document.getElementById("cashOutSub");
+const shipBtn = document.getElementById("shipBtn");
+const listBtn = document.getElementById("listBtn");
+const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const ambientBg = document.getElementById("ambientBg");
 const bestPullStat = document.getElementById("bestPullStat");
@@ -103,26 +120,37 @@ const recentPullsList = document.getElementById("recentPullsList");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const walletCredits = document.getElementById("walletCredits");
 const walletCash = document.getElementById("walletCash");
+const addFundsBtn = document.getElementById("addFundsBtn");
 const creditToast = document.getElementById("creditToast");
 const creditToastIcon = document.getElementById("creditToastIcon");
 const creditToastText = document.getElementById("creditToastText");
 const paymentModal = document.getElementById("paymentModal");
 const paymentTierLabel = document.getElementById("paymentTierLabel");
+const paymentError = document.getElementById("paymentError");
 const payWithCredits = document.getElementById("payWithCredits");
 const payWithCash = document.getElementById("payWithCash");
 const payWithCreditsBalance = document.getElementById("payWithCreditsBalance");
 const payWithCashBalance = document.getElementById("payWithCashBalance");
 const paymentCancelBtn = document.getElementById("paymentCancelBtn");
-const screenMarketplace = document.getElementById("screen-marketplace");
 const screenAccount = document.getElementById("screen-account");
 const marketGrid = document.getElementById("marketGrid");
-const marketRarityFilter = document.getElementById("marketRarityFilter");
+const marketBrandFilter = document.getElementById("marketBrandFilter");
+const marketFmvFilter = document.getElementById("marketFmvFilter");
+const marketListedOnly = document.getElementById("marketListedOnly");
+const marketPriceMin = document.getElementById("marketPriceMin");
+const marketPriceMax = document.getElementById("marketPriceMax");
 const marketSort = document.getElementById("marketSort");
 const usernameBtn = document.getElementById("usernameBtn");
+const accountSummary = document.getElementById("accountSummary");
 const incomingOffersList = document.getElementById("incomingOffersList");
 const myListingsGrid = document.getElementById("myListingsGrid");
 const inventoryGrid = document.getElementById("inventoryGrid");
 const myOffersList = document.getElementById("myOffersList");
+const openingsFilter = document.getElementById("openingsFilter");
+const openingsList = document.getElementById("openingsList");
+const shippedList = document.getElementById("shippedList");
+const leaderboardList = document.getElementById("leaderboardList");
+const referralPanel = document.getElementById("referralPanel");
 const listingModal = document.getElementById("listingModal");
 const listingRarity = document.getElementById("listingRarity");
 const listingImage = document.getElementById("listingImage");
@@ -178,12 +206,32 @@ function formatPrice(prize) {
   return `$${prize.price.toLocaleString()}`;
 }
 
+function fmt(n) {
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
 function vibrate(rarity) {
   try {
     if (navigator.vibrate) navigator.vibrate(HAPTIC_PATTERNS[rarity] ?? [15]);
   } catch {
     // unsupported — ignore
   }
+}
+
+// Every item you own (kept, or bought outright) auto-populates the
+// marketplace as an unlisted, offer-only entry — the "auto-population"
+// rule from the scope. Listing later just raises the price on this same
+// entry (see setListingPrice), it never creates a second one.
+function addOwnedItem(prize) {
+  const item = player.addToInventory(prize);
+  const listing = market.createListing({ item, price: null, seller: player.getUsername() });
+  player.markListed(item.id, listing.id);
+  return item;
+}
+
+function releaseOwnedItem(item) {
+  if (item.listingId) market.removeListing(item.listingId);
+  player.removeFromInventory(item.id);
 }
 
 // ---- Ambient background --------------------------------------------------
@@ -230,6 +278,15 @@ function showWalletToast(amount, currency) {
   }, 1800);
 }
 
+addFundsBtn.addEventListener("click", async () => {
+  playClick();
+  const amount = await promptAmount("Add Demo Funds", "A local top-up for testing — not a real deposit.", 500);
+  if (!amount) return;
+  player.addDemoFunds(amount);
+  renderWallet({ pulse: "cash" });
+  showWalletToast(amount, "cash");
+});
+
 function updatePayingWithBadge() {
   if (!roundCurrency) {
     payingWithBadge.classList.add("hidden");
@@ -253,10 +310,8 @@ function renderPlayerBar() {
   }
 }
 
-// ---- Recent pulls (the player's own history — not a fabricated feed) ------
-
 function renderRecentPulls() {
-  const history = player.getHistory();
+  const history = player.getHistory().slice(0, 10);
   if (history.length === 0) {
     recentPulls.classList.add("hidden");
     return;
@@ -317,9 +372,10 @@ function renderCategories() {
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
+      <span class="tier-badge">${cat.badge}</span>
       <h3>${cat.label}</h3>
       <p>${cat.description}</p>
-      <span class="cta">Tap to begin</span>
+      <span class="cta">Tap to begin — $${cat.price.toLocaleString()}</span>
       ${buildPityHTML(key)}
     `;
     card.addEventListener("click", () => {
@@ -355,6 +411,9 @@ function openPaymentPicker(key) {
   paymentTierLabel.textContent = cat.label;
   payWithCreditsBalance.textContent = `${wallet.credits.toLocaleString()} available`;
   payWithCashBalance.textContent = `$${wallet.cash.toLocaleString()} available`;
+  payWithCredits.classList.toggle("insufficient", wallet.credits < cat.price);
+  payWithCash.classList.toggle("insufficient", wallet.cash < cat.price);
+  paymentError.classList.add("hidden");
 
   paymentModal.classList.remove("hidden");
   requestAnimationFrame(() => paymentModal.classList.add("visible"));
@@ -365,17 +424,27 @@ function closePaymentPicker() {
   setTimeout(() => paymentModal.classList.add("hidden"), 250);
 }
 
+function tryPurchase(currency) {
+  const key = pendingCategoryKey;
+  const cat = CATEGORIES[key];
+  const result = player.purchaseCrate(key, cat.price, currency);
+  if (!result) {
+    paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for the ${cat.label} — try Add Funds.`;
+    paymentError.classList.remove("hidden");
+    return;
+  }
+  pendingRebate = result.rebate;
+  renderWallet({ pulse: currency });
+  closePaymentPicker();
+  startRound(key, currency);
+}
 payWithCredits.addEventListener("click", () => {
   playClick();
-  const key = pendingCategoryKey;
-  closePaymentPicker();
-  startRound(key, "credits");
+  tryPurchase("credits");
 });
 payWithCash.addEventListener("click", () => {
   playClick();
-  const key = pendingCategoryKey;
-  closePaymentPicker();
-  startRound(key, "cash");
+  tryPurchase("cash");
 });
 paymentCancelBtn.addEventListener("click", () => {
   playClick();
@@ -385,10 +454,7 @@ paymentCancelBtn.addEventListener("click", () => {
 // ---- Reel ------------------------------------------------------------
 
 function buildReel(snapshotUrl) {
-  // Match the cell width to the reel's actual rendered width so the landing
-  // cells line up exactly with the 3 slot dividers, at any viewport size.
   reelCellWidth = reel.clientWidth / SLOT_COUNT;
-
   reelTrack.innerHTML = "";
   reelTrack.style.transition = "none";
   reelTrack.style.transform = "translateX(0)";
@@ -403,7 +469,6 @@ function buildReel(snapshotUrl) {
     cell.appendChild(img);
     reelTrack.appendChild(cell);
   }
-  // force reflow so the reset above is committed before we animate
   void reelTrack.offsetWidth;
 }
 
@@ -498,18 +563,20 @@ function onPick(index) {
     if (viewers[i]) viewers[i].setPaused(true);
   });
 
-  const prize = boxPrizes[index];
-  const { streak } = player.recordPick(prize);
+  const cat = CATEGORIES[currentCategoryKey];
+  // "The algorithm must not hand a user the same item consecutively" — only
+  // applied to the crate the player actually picked.
+  const finalPrize = player.rerollIfDuplicate(currentCategoryKey, boxPrizes[index], cat.pool);
+  boxPrizes[index] = finalPrize;
+
+  const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, cat.price);
   renderPlayerBar();
 
   helperText.textContent = "Opening your crate…";
-  // Lid opens now, but the box's own price card stays hidden — it reveals
-  // in lockstep with the modal, once the fullscreen FX finishes, so the
-  // prize is never shown before the reveal animation has played out.
   openSlot(index, { isYours: true, revealCard: false });
 
   setTimeout(async () => {
-    await showPrizeModal(prize, { streak });
+    await showPrizeModal(finalPrize, { streak, multiplier });
     slots[index].classList.add("open");
   }, MODAL_DELAY_MS);
 }
@@ -568,11 +635,10 @@ function openSlot(index, { isYours, revealCard = true }) {
   if (viewers[index]) viewers[index].open();
 }
 
-// ---- Won-prize modal -------------------------------------------------
-// Only ever called for the crate the player picked — the "what you could
-// have won" crates just use the plain openSlot() card, no reveal FX.
+// ---- Won-prize modal (four exits) --------------------------------------
+// Only ever called for the crate the player picked.
 
-async function showPrizeModal(prize, { streak } = {}) {
+async function showPrizeModal(prize, { streak, multiplier } = {}) {
   const meta = RARITY_META[prize.rarity];
   prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
@@ -591,7 +657,15 @@ async function showPrizeModal(prize, { streak } = {}) {
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
 
-  cashBackBtn.textContent = roundCurrency === "cash" ? "Cash Back ($)" : "Cash Back (Credits)";
+  if (multiplier !== null && multiplier !== undefined) {
+    multiplierBadge.textContent = `${multiplier}x crate price`;
+    multiplierBadge.classList.remove("hidden");
+  } else {
+    multiplierBadge.classList.add("hidden");
+  }
+
+  const cashOutNow = Math.round(prize.price * player.CASHOUT_HAIRCUT);
+  cashOutSub.textContent = roundCurrency === "cash" ? `${fmt(cashOutNow)} now` : `${cashOutNow.toLocaleString()} credits now`;
 
   if (streak >= 2) {
     streakBadge.innerHTML = `${ICONS.flame} ${streak} Rare+ in a row!`;
@@ -600,14 +674,20 @@ async function showPrizeModal(prize, { streak } = {}) {
     streakBadge.classList.add("hidden");
   }
 
-  // The whole card — image, name, price — stays hidden behind the
-  // fullscreen vortex/particle reveal until it finishes, so the prize is
-  // never shown before the reveal animation has played out.
   prizeModal.classList.add("revealing");
   prizeModal.classList.remove("hidden");
   requestAnimationFrame(() => prizeModal.classList.add("visible"));
 
   vibrate(prize.rarity);
+
+  // Cashback rebate notification — lands while the reveal is still on
+  // screen, not tied to which exit the player eventually picks.
+  if (pendingRebate > 0) {
+    player.addCredits(pendingRebate);
+    renderWallet({ pulse: "credits" });
+    showWalletToast(pendingRebate, "credits");
+    pendingRebate = 0;
+  }
 
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
@@ -622,23 +702,47 @@ function hidePrizeModal() {
   }, 300);
 }
 
-// ---- Wire up events -----------------------------------------------------
+// ---- Wire up the four exits ---------------------------------------------
 
-cashBackBtn.addEventListener("click", () => {
+cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
-  player.cashBack(prize.price, roundCurrency);
+  const amount = Math.round(prize.price * player.CASHOUT_HAIRCUT);
+  player.cashBack(amount, roundCurrency);
   renderWallet({ pulse: roundCurrency });
-  showWalletToast(prize.price, roundCurrency);
+  showWalletToast(amount, roundCurrency);
   hidePrizeModal();
   revealOthers();
 });
-keepBtn.addEventListener("click", () => {
+
+shipBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
-  player.addToInventory(prize);
+  const item = player.addToInventory(prize);
+  player.shipItem(item);
+  hidePrizeModal();
+  revealOthers();
+});
+
+listBtn.addEventListener("click", async () => {
+  const prize = boxPrizes[selectedIndex];
+  if (!prize) return;
+  const price = await promptAmount("List for Sale", `${prize.name} — catalog value $${prize.price.toLocaleString()}.`, prize.price);
+  if (!price) return;
+  playClick();
+  const item = addOwnedItem(prize);
+  market.updateListing(item.listingId, { price });
+  hidePrizeModal();
+  revealOthers();
+});
+
+vaultKeepBtn.addEventListener("click", () => {
+  const prize = boxPrizes[selectedIndex];
+  if (!prize) return;
+  playClick();
+  addOwnedItem(prize);
   hidePrizeModal();
   revealOthers();
 });
@@ -651,7 +755,7 @@ backBtn.addEventListener("click", () => {
   playClick();
   disposeViewers();
   showScreen(screenCategory);
-  renderCategories(); // refresh pity/wallet/best-pull/recent-pulls
+  renderCategories();
 });
 
 function refreshMuteBtn() {
@@ -679,7 +783,7 @@ navTabs.forEach((tab) => {
   });
 });
 
-// ---- Generic amount prompt (list price / offer / counter-offer) ----------
+// ---- Generic amount prompt ------------------------------------------------
 
 let amountResolver = null;
 function promptAmount(title, hint, defaultValue) {
@@ -719,12 +823,18 @@ amountInput.addEventListener("keydown", (e) => {
 
 function marketItemCardHTML(listing) {
   const meta = RARITY_META[listing.rarity];
+  const fmv = market.fmvRating(listing);
+  const priceOrOffer =
+    listing.price != null
+      ? `<span class="market-item-price">$${listing.price.toLocaleString()}</span>`
+      : `<span class="market-item-offer-only">Offer only</span>`;
+  const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
   return `
     <div class="market-item" data-listing="${listing.id}" style="--rarity-color:${meta.color}">
       <img src="${listing.image}" alt="">
-      <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+      ${fmvHTML}
       <span class="market-item-name">${listing.name}</span>
-      <span class="market-item-price">$${listing.price.toLocaleString()}</span>
+      ${priceOrOffer}
       <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
     </div>`;
 }
@@ -763,33 +873,46 @@ function offerRowHTML(offer, { showActions } = {}) {
 }
 
 // ---- Marketplace screen ---------------------------------------------------
+// Rarity is deliberately not a browse filter here (it's tier-relative and
+// loses meaning once pooled) — brand, FMV rating, listed-vs-offer-only and
+// price range are, mirroring the scope's filter set.
 
-let marketRarityValue = "all";
+let marketBrandValue = "all";
+let marketFmvValue = "all";
 
 function renderMarketplace() {
   market.ensureSeeded(ALL_CATALOG);
 
-  if (marketRarityFilter.children.length === 0) {
-    const chips = ["all", ...DISPLAY_RARITY_ORDER.slice().reverse()];
-    marketRarityFilter.innerHTML = chips
-      .map((r) => `<button class="market-chip${r === "all" ? " active" : ""}" data-rarity="${r}">${r === "all" ? "All" : RARITY_META[r].label}</button>`)
+  if (marketBrandFilter.children.length === 0) {
+    const brands = ["all", ...new Set(market.getListings().map((l) => market.extractBrand(l.name)))];
+    marketBrandFilter.innerHTML = brands
+      .map((b) => `<button class="market-chip${b === "all" ? " active" : ""}" data-brand="${b}">${b === "all" ? "All Brands" : b}</button>`)
       .join("");
-    marketRarityFilter.querySelectorAll(".market-chip").forEach((chip) => {
+    marketBrandFilter.querySelectorAll(".market-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         playClick();
-        marketRarityValue = chip.dataset.rarity;
-        marketRarityFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        marketBrandValue = chip.dataset.brand;
+        marketBrandFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
         chip.classList.add("active");
-        if (marketRarityValue !== "all") {
-          chip.style.color = "#000";
-          chip.style.background = RARITY_META[marketRarityValue].color;
-        }
-        marketRarityFilter.querySelectorAll(".market-chip").forEach((c) => {
-          if (c !== chip) {
-            c.style.color = "";
-            c.style.background = "";
-          }
-        });
+        renderMarketGrid();
+      });
+    });
+
+    const fmvBands = [
+      { key: "all", label: "All" },
+      { key: "good-deal", label: "Very Good", color: "#4ade80" },
+      { key: "fair", label: "Good", color: "#AFBAC4" },
+      { key: "over", label: "Not Good", color: "#f87171" },
+    ];
+    marketFmvFilter.innerHTML = fmvBands
+      .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
+      .join("");
+    marketFmvFilter.querySelectorAll(".market-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        playClick();
+        marketFmvValue = chip.dataset.fmv;
+        marketFmvFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
         renderMarketGrid();
       });
     });
@@ -800,24 +923,37 @@ function renderMarketplace() {
 
 function renderMarketGrid() {
   let listings = market.getListings();
-  if (marketRarityValue !== "all") listings = listings.filter((l) => l.rarity === marketRarityValue);
+
+  if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
+  if (marketFmvValue !== "all") listings = listings.filter((l) => market.fmvRating(l)?.key === marketFmvValue);
+  if (marketListedOnly.checked) listings = listings.filter((l) => l.price != null);
+
+  const min = Number(marketPriceMin.value);
+  const max = Number(marketPriceMax.value);
+  if (min) listings = listings.filter((l) => (l.price ?? l.catalogPrice) >= min);
+  if (max) listings = listings.filter((l) => (l.price ?? l.catalogPrice) <= max);
 
   const sort = marketSort.value;
   listings = [...listings].sort((a, b) => {
-    if (sort === "price-asc") return a.price - b.price;
-    if (sort === "price-desc") return b.price - a.price;
+    if (sort === "price-asc") return (a.price ?? a.catalogPrice) - (b.price ?? b.catalogPrice);
+    if (sort === "price-desc") return (b.price ?? b.catalogPrice) - (a.price ?? a.catalogPrice);
     return b.ts - a.ts;
   });
 
   marketGrid.innerHTML = listings.length
     ? listings.map(marketItemCardHTML).join("")
-    : `<div class="market-empty">No listings yet.</div>`;
+    : `<div class="market-empty">No listings match these filters.</div>`;
 
   marketGrid.querySelectorAll(".market-item").forEach((el) => {
     el.addEventListener("click", () => openListingModal(el.dataset.listing));
   });
 }
 marketSort.addEventListener("change", renderMarketGrid);
+marketListedOnly.addEventListener("change", () => {
+  playClick();
+  renderMarketGrid();
+});
+[marketPriceMin, marketPriceMax].forEach((el) => el.addEventListener("input", renderMarketGrid));
 
 // ---- Listing detail modal --------------------------------------------
 
@@ -836,11 +972,13 @@ function openListingModal(id) {
   listingImage.src = listing.image;
   listingImage.alt = listing.name;
   listingName.textContent = listing.name;
-  listingPrice.textContent = `$${listing.price.toLocaleString()}`;
-  listingSeller.innerHTML = listing.isPlayer ? "Listed by <b>you</b>" : `Listed by <b>${listing.seller}</b>`;
+  listingPrice.textContent = listing.price != null ? `$${listing.price.toLocaleString()}` : "Offer only";
+  listingSeller.innerHTML = listing.isPlayer ? "Held by <b>you</b>" : `Held by <b>${listing.seller}</b>`;
 
   listingActions.classList.toggle("hidden", listing.isPlayer);
+  listingBuyBtn.classList.toggle("hidden", listing.price == null);
   listingUnlistBtn.classList.toggle("hidden", !listing.isPlayer);
+  listingUnlistBtn.textContent = listing.price != null ? "Remove Price (Keep Offers Open)" : "Remove From Marketplace";
 
   renderListingOffers(listing.id);
 
@@ -867,13 +1005,13 @@ listingCloseBtn.addEventListener("click", () => {
 
 listingBuyBtn.addEventListener("click", () => {
   const listing = market.getListing(openListingId);
-  if (!listing) return;
+  if (!listing || listing.price == null) return;
   if (!player.spendCash(listing.price)) {
     alert("Not enough Cash for this purchase.");
     return;
   }
   playClick();
-  player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+  addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
   market.removeListing(listing.id);
   renderWallet({ pulse: "cash" });
   closeListingModal();
@@ -883,7 +1021,8 @@ listingBuyBtn.addEventListener("click", () => {
 listingOfferBtn.addEventListener("click", async () => {
   const listing = market.getListing(openListingId);
   if (!listing) return;
-  const amount = await promptAmount("Make an Offer", `${listing.name} is listed at $${listing.price.toLocaleString()}.`, Math.round(listing.price * 0.8));
+  const reference = listing.price ?? listing.catalogPrice;
+  const amount = await promptAmount("Make an Offer", `${listing.name} — comp value $${listing.catalogPrice.toLocaleString()}.`, Math.round(reference * 0.8));
   if (!amount) return;
 
   const offer = market.makeOffer({
@@ -903,23 +1042,21 @@ listingUnlistBtn.addEventListener("click", () => {
   const listing = market.getListing(openListingId);
   if (!listing) return;
   playClick();
-  if (listing.itemId) player.markUnlisted(listing.itemId);
-  market.removeListing(listing.id);
+  market.updateListing(listing.id, { price: null });
   closeListingModal();
   renderMarketGrid();
 });
 
-// A player's offer on a bot's listing resolves via the same transparent
-// rule the bot uses for offers on the player's own listings.
 function resolveBotOnMyOffer(offerId) {
   const offer = market.getOffer(offerId);
   if (!offer) return;
   const listing = market.getListing(offer.listingId);
   if (!listing) return;
-  const decision = market.botDecision(offer.amount, listing.price);
+  const reference = listing.price ?? listing.catalogPrice;
+  const decision = market.botDecision(offer.amount, reference);
   if (decision.status === "accepted") {
     if (player.spendCash(offer.amount)) {
-      player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+      addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
       market.removeListing(listing.id);
       market.updateOffer(offerId, { status: "accepted" });
       renderWallet({ pulse: "cash" });
@@ -944,8 +1081,44 @@ usernameBtn.addEventListener("click", async () => {
   }
 });
 
+function renderAccountSummary() {
+  const referral = player.getReferralTier();
+  accountSummary.innerHTML = `
+    <div class="account-summary-cell"><dt>Lifetime Volume</dt><dd>$${player.getLifetimeVolume().toLocaleString()}</dd></div>
+    <div class="account-summary-cell"><dt>XP</dt><dd>${player.getXp().toLocaleString()}</dd></div>
+    <div class="account-summary-cell"><dt>Win Streak</dt><dd>${player.getStreak()}</dd></div>
+    <div class="account-summary-cell"><dt>Referral Share</dt><dd>${Math.round(referral.share * 100)}%</dd></div>
+  `;
+}
+
+function inventoryItemHTML(item) {
+  const meta = RARITY_META[item.rarity];
+  const archived = player.isArchived(item);
+  const daysLeft = player.daysUntilArchival(item);
+  const archivalClass = archived ? "archived" : daysLeft <= 30 ? "soon" : "";
+  const archivalText = archived ? "Archived — cash out only" : `${daysLeft}d to archival`;
+  const cashOutToday = player.cashOutValue(item);
+  const listing = item.listingId ? market.getListing(item.listingId) : null;
+  const isListed = listing && listing.price != null;
+
+  return `
+    <div class="market-item" style="--rarity-color:${meta.color}">
+      <img src="${item.image}" alt="">
+      <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
+      <span class="market-item-name">${item.name}</span>
+      <span class="item-archival ${archivalClass}">${archivalText}</span>
+      <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
+      <div class="item-actions">
+        <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
+        <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
+        <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
+      </div>
+    </div>`;
+}
+
 function renderAccount() {
   usernameBtn.textContent = player.getUsername();
+  renderAccountSummary();
 
   market.maybeSpawnIncomingOffer();
 
@@ -954,7 +1127,7 @@ function renderAccount() {
     ? incoming.map((o) => offerRowHTML(o, { showActions: "incoming" })).join("")
     : `<div class="offers-empty">No incoming offers right now.</div>`;
 
-  const myListings = market.getListings().filter((l) => l.isPlayer);
+  const myListings = market.getListings().filter((l) => l.isPlayer && l.price != null);
   myListingsGrid.innerHTML = myListings.length
     ? myListings.map(marketItemCardHTML).join("")
     : `<div class="market-empty">You haven't listed anything yet.</div>`;
@@ -962,9 +1135,68 @@ function renderAccount() {
     el.addEventListener("click", () => openListingModal(el.dataset.listing));
   });
 
-  const inventory = player.getInventory().filter((i) => !i.listingId);
+  const inventory = player.getInventory();
   inventoryGrid.innerHTML = inventory.length
-    ? inventory
+    ? inventory.map(inventoryItemHTML).join("")
+    : `<div class="market-empty">Keep, Ship or List a prize from a crate reveal to see it here.</div>`;
+
+  const myOffers = market.getMyOffers();
+  myOffersList.innerHTML = myOffers.length
+    ? myOffers.map((o) => offerRowHTML(o, { showActions: o.status === "countered" ? "counter-received" : null })).join("")
+    : `<div class="offers-empty">You haven't made any offers yet.</div>`;
+
+  renderOpeningHistory();
+  renderShipped();
+  renderLeaderboard();
+  renderReferralPanel();
+}
+
+let openingsFilterValue = "all";
+function renderOpeningHistory() {
+  if (openingsFilter.children.length === 0) {
+    openingsFilter.innerHTML = `
+      <button class="market-chip active" data-mult="all">All</button>
+      <button class="market-chip" data-mult="5">5x+</button>
+      <button class="market-chip" data-mult="10">10x+</button>
+    `;
+    openingsFilter.querySelectorAll(".market-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        playClick();
+        openingsFilterValue = chip.dataset.mult;
+        openingsFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        renderOpeningHistory();
+      });
+    });
+  }
+
+  let openings = player.getHistory();
+  if (openingsFilterValue !== "all") {
+    const min = Number(openingsFilterValue);
+    openings = openings.filter((o) => (o.multiplier ?? 0) >= min);
+  }
+
+  openingsList.innerHTML = openings.length
+    ? openings
+        .map((o) => {
+          const pinned = (o.multiplier ?? 0) >= player.BIG_PULL_MULTIPLIER;
+          const meta = RARITY_META[o.rarity];
+          return `
+          <div class="opening-row ${pinned ? "pinned" : ""}">
+            <img src="${o.image}" alt="">
+            <span class="opening-row-name" style="color:${meta.color}">${o.name}</span>
+            <span class="opening-row-mult ${pinned ? "big" : ""}">${o.multiplier != null ? o.multiplier + "x" : "—"}</span>
+            ${pinned ? `<span class="opening-row-pin" title="Pinned — 5x or more">★</span>` : ""}
+          </div>`;
+        })
+        .join("")
+    : `<div class="offers-empty">No openings yet.</div>`;
+}
+
+function renderShipped() {
+  const shipped = player.getShipped();
+  shippedList.innerHTML = shipped.length
+    ? shipped
         .map((item) => {
           const meta = RARITY_META[item.rarity];
           return `
@@ -973,79 +1205,133 @@ function renderAccount() {
               <span class="market-item-rarity" style="color:${meta.color}">${meta.label}</span>
               <span class="market-item-name">${item.name}</span>
               <span class="market-item-price">$${item.price.toLocaleString()}</span>
-              <button class="market-item-list-btn" data-item="${item.id}">List for Sale</button>
             </div>`;
         })
         .join("")
-    : `<div class="market-empty">Keep a prize from a crate reveal to see it here.</div>`;
-  inventoryGrid.querySelectorAll(".market-item-list-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const item = player.getInventoryItem(btn.dataset.item);
-      if (!item) return;
-      const price = await promptAmount("List for Sale", `${item.name} — catalog value $${item.price.toLocaleString()}.`, item.price);
-      if (!price) return;
-      const listing = market.createListing({ item, price, seller: player.getUsername() });
-      player.markListed(item.id, listing.id);
-      renderAccount();
-    });
-  });
-
-  const myOffers = market.getMyOffers();
-  myOffersList.innerHTML = myOffers.length
-    ? myOffers.map((o) => offerRowHTML(o, { showActions: o.status === "countered" ? "counter-received" : null })).join("")
-    : `<div class="offers-empty">You haven't made any offers yet.</div>`;
+    : `<div class="market-empty">Nothing shipped yet.</div>`;
 }
 
-// Delegated handling for offer action buttons (incoming offers + countered
-// offers I sent) since both lists re-render often.
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-offer-action]");
-  if (!btn) return;
-  playClick();
-  const action = btn.dataset.offerAction;
-  const offer = market.getOffer(btn.dataset.offer);
-  if (!offer) return;
-  const listing = market.getListing(offer.listingId);
+function renderLeaderboard() {
+  const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
+    (a, b) => b.xp - a.xp
+  );
+  leaderboardList.innerHTML = rows
+    .map(
+      (r, i) => `
+      <div class="leaderboard-row ${r.isPlayer ? "you" : ""}">
+        <span class="leaderboard-rank">#${i + 1}</span>
+        <span class="leaderboard-name">${r.isPlayer ? "You" : r.username}</span>
+        <span class="leaderboard-xp">${r.xp.toLocaleString()} XP</span>
+      </div>`
+    )
+    .join("");
+}
 
-  if (action === "accept") {
-    if (listing) {
-      player.addCash(offer.amount);
-      if (listing.itemId) player.removeFromInventory(listing.itemId);
-      market.removeListing(listing.id);
-    }
-    market.updateOffer(offer.id, { status: "accepted" });
-    renderWallet({ pulse: "cash" });
-    renderAccount();
-  } else if (action === "decline") {
-    market.updateOffer(offer.id, { status: "declined" });
-    renderAccount();
-  } else if (action === "accept-counter") {
-    if (player.spendCash(offer.counterAmount) && listing) {
-      player.addToInventory({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
-      market.removeListing(listing.id);
+function renderReferralPanel() {
+  const referral = player.getReferralTier();
+  const nextText = referral.next
+    ? `${Math.round(referral.progress * 100)}% to ${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
+    : "At the ceiling";
+  referralPanel.innerHTML = `
+    <div class="referral-current">
+      <div><span class="share">${Math.round(referral.share * 100)}%</span> current share</div>
+      <div class="next">${nextText}</div>
+    </div>
+    <div class="referral-progress-track"><div class="referral-progress-fill" style="width:${Math.round(referral.progress * 100)}%"></div></div>
+    <table class="referral-table">
+      <thead><tr><th>Share</th><th>How it's earned</th></tr></thead>
+      <tbody>
+        <tr><td>10%</td><td>Sign up</td></tr>
+        <tr><td>+5%</td><td>Arrive through a referral link</td></tr>
+        <tr><td>+5%</td><td>Verify X account</td></tr>
+        <tr><td>25%</td><td>$250,000 referred volume</td></tr>
+        <tr><td>30%</td><td>$500,000 referred volume</td></tr>
+        <tr><td>35%</td><td>$1,000,000 referred volume</td></tr>
+        <tr><td>40%</td><td>$2,000,000 referred volume — ceiling</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+// Delegated: offer actions + inventory item actions (both lists re-render often)
+document.addEventListener("click", (e) => {
+  const offerBtn = e.target.closest("[data-offer-action]");
+  const itemBtn = e.target.closest("[data-item-action]");
+
+  if (offerBtn) {
+    playClick();
+    const action = offerBtn.dataset.offerAction;
+    const offer = market.getOffer(offerBtn.dataset.offer);
+    if (!offer) return;
+    const listing = market.getListing(offer.listingId);
+
+    if (action === "accept") {
+      if (listing) {
+        player.addCash(offer.amount);
+        if (listing.itemId) player.removeFromInventory(listing.itemId);
+        market.removeListing(listing.id);
+      }
       market.updateOffer(offer.id, { status: "accepted" });
       renderWallet({ pulse: "cash" });
-    }
-    renderAccount();
-  } else if (action === "counter") {
-    promptAmount("Counter Offer", `${offer.fromUsername} offered $${offer.amount.toLocaleString()}.`, offer.amount).then((amount) => {
-      if (!amount || !listing) return;
-      market.updateOffer(offer.id, { status: "countered", counterAmount: amount });
       renderAccount();
-      // The bot who sent the original offer decides on your counter.
-      setTimeout(() => {
-        const decision = amount <= offer.amount * 1.25 ? "accepted" : "declined";
-        if (decision === "accepted") {
-          player.addCash(amount);
-          if (listing.itemId) player.removeFromInventory(listing.itemId);
-          market.removeListing(listing.id);
-        }
-        market.updateOffer(offer.id, { status: decision });
+    } else if (action === "decline") {
+      market.updateOffer(offer.id, { status: "declined" });
+      renderAccount();
+    } else if (action === "accept-counter") {
+      if (player.spendCash(offer.counterAmount) && listing) {
+        addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image });
+        market.removeListing(listing.id);
+        market.updateOffer(offer.id, { status: "accepted" });
         renderWallet({ pulse: "cash" });
+      }
+      renderAccount();
+    } else if (action === "counter") {
+      promptAmount("Counter Offer", `${offer.fromUsername} offered $${offer.amount.toLocaleString()}.`, offer.amount).then((amount) => {
+        if (!amount || !listing) return;
+        market.updateOffer(offer.id, { status: "countered", counterAmount: amount });
         renderAccount();
-      }, 1300);
-    });
+        setTimeout(() => {
+          const decision = amount <= offer.amount * 1.25 ? "accepted" : "declined";
+          if (decision === "accepted") {
+            player.addCash(amount);
+            if (listing.itemId) player.removeFromInventory(listing.itemId);
+            market.removeListing(listing.id);
+          }
+          market.updateOffer(offer.id, { status: decision });
+          renderWallet({ pulse: "cash" });
+          renderAccount();
+        }, 1300);
+      });
+    }
+    return;
+  }
+
+  if (itemBtn) {
+    const action = itemBtn.dataset.itemAction;
+    const item = player.getInventoryItem(itemBtn.dataset.item);
+    if (!item) return;
+
+    if (action === "cashout") {
+      playClick();
+      const amount = player.cashOutValue(item);
+      player.addCash(amount);
+      releaseOwnedItem(item);
+      renderWallet({ pulse: "cash" });
+      showWalletToast(amount, "cash");
+      renderAccount();
+    } else if (action === "ship") {
+      playClick();
+      if (item.listingId) market.removeListing(item.listingId);
+      player.shipItem(item);
+      renderAccount();
+    } else if (action === "list") {
+      promptAmount("List for Sale", `${item.name} — catalog value $${item.price.toLocaleString()}.`, item.price).then((price) => {
+        if (!price) return;
+        playClick();
+        market.updateListing(item.listingId, { price });
+        renderAccount();
+      });
+    }
   }
 });
 

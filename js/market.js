@@ -54,8 +54,10 @@ function save() {
 
 export function ensureSeeded(catalog) {
   if (state.seeded) return;
-  const picks = [...catalog].sort(() => Math.random() - 0.5).slice(0, 22);
-  picks.forEach((item) => {
+  const shuffled = [...catalog].sort(() => Math.random() - 0.5);
+
+  // Listed: priced, Buy Now available.
+  shuffled.slice(0, 20).forEach((item) => {
     const wobble = 0.85 + Math.random() * 0.35; // 85%-120% of catalog price
     const price = Math.max(1, Math.round(item.price * wobble));
     state.listings.push({
@@ -71,6 +73,25 @@ export function ensureSeeded(catalog) {
       ts: Date.now() - Math.floor(Math.random() * 6 * 24 * 60 * 60 * 1000),
     });
   });
+
+  // Unlisted: sitting in someone's vault, offer-only, no asking price —
+  // the "auto-population" state from the scope (kept items become
+  // browsable even before their owner sets a price).
+  shuffled.slice(20, 30).forEach((item) => {
+    state.listings.push({
+      id: uid(),
+      name: item.name,
+      rarity: item.rarity,
+      image: item.image,
+      catalogPrice: item.price,
+      price: null,
+      seller: FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)],
+      isPlayer: false,
+      itemId: null,
+      ts: Date.now() - Math.floor(Math.random() * 6 * 24 * 60 * 60 * 1000),
+    });
+  });
+
   state.seeded = true;
   save();
 }
@@ -83,7 +104,9 @@ export function getListing(id) {
   return state.listings.find((l) => l.id === id) || null;
 }
 
-export function createListing({ item, price, seller }) {
+// price: null => unlisted / offer-only (the auto-populated state from
+// Keep). A real number => listed, Buy Now available.
+export function createListing({ item, price = null, seller }) {
   const listing = {
     id: uid(),
     name: item.name,
@@ -101,10 +124,47 @@ export function createListing({ item, price, seller }) {
   return listing;
 }
 
+export function updateListing(id, patch) {
+  const listing = getListing(id);
+  if (!listing) return null;
+  Object.assign(listing, patch);
+  save();
+  return listing;
+}
+
 export function removeListing(id) {
   state.listings = state.listings.filter((l) => l.id !== id);
   state.offers = state.offers.filter((o) => o.listingId !== id);
   save();
+}
+
+// ---- Fair Market Value badge --------------------------------------------
+// Scores an asking price against the item's catalog/comp value. Band
+// thresholds are placeholder V1 numbers (the scope leaves them open).
+
+export function fmvRating(listing) {
+  if (listing.price == null) return null;
+  const ratio = listing.price / listing.catalogPrice;
+  if (ratio <= 0.9) return { key: "good-deal", label: "Very Good", color: "#4ade80" };
+  if (ratio <= 1.1) return { key: "fair", label: "Good", color: "#AFBAC4" };
+  return { key: "over", label: "Not Good", color: "#f87171" };
+}
+
+// Rough brand extraction from the item name, for the marketplace brand
+// filter (mirrors "brand" being a first-class filter in the scope).
+export function extractBrand(name) {
+  const upper = name.toUpperCase();
+  if (upper.includes("AIR JORDAN") || upper.includes("JORDAN")) return "Jordan";
+  if (upper.includes("YEEZY")) return "Yeezy";
+  if (upper.includes("NIKE")) return "Nike";
+  if (upper.includes("ADIDAS")) return "Adidas";
+  if (upper.includes("NEW BALANCE")) return "New Balance";
+  if (upper.includes("ASICS")) return "Asics";
+  if (upper.includes("VANS")) return "Vans";
+  if (upper.includes("CONVERSE")) return "Converse";
+  if (upper.includes("RICK OWENS")) return "Rick Owens";
+  if (upper.includes("CHROME HEARTS")) return "Chrome Hearts";
+  return "Other";
 }
 
 // ---- Offers ----------------------------------------------------------
