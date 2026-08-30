@@ -294,15 +294,15 @@ function renderCategories() {
     });
     card.addEventListener("mouseenter", playHover);
 
-    const details = document.createElement("details");
-    details.className = "prize-dropdown";
-    details.innerHTML = `
-      <summary>View Prizes</summary>
+    const prizePanel = document.createElement("div");
+    prizePanel.className = "prize-dropdown";
+    prizePanel.innerHTML = `
+      <div class="prize-dropdown-header">Prizes</div>
       <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
     `;
 
     wrap.appendChild(card);
-    wrap.appendChild(details);
+    wrap.appendChild(prizePanel);
     categoryList.appendChild(wrap);
   });
 
