@@ -47,6 +47,11 @@ function applyTierSkin(root, tierKey) {
     mat.color.setHex(skin.color);
     mat.metalness = skin.metalness;
     mat.roughness = skin.roughness;
+    // A metal this shiny gets almost all of its brightness from reflecting
+    // its surroundings rather than being lit head-on — envMapIntensity is
+    // the direct lever for "the metal actually looks bright," moreso than
+    // the scene's own lights.
+    mat.envMapIntensity = 2.2;
     node.material = mat;
   });
 }
@@ -103,7 +108,12 @@ function buildRig(root) {
   box.getSize(size);
   const center = new THREE.Vector3();
   box.getCenter(center);
-  const scale = 1.7 / Math.max(size.x, size.y, size.z);
+  // Framing has to fit the box's worst-case silhouette while it's idly
+  // spinning around Y, not just its resting front-on footprint — a
+  // rectangular box rotated to its diagonal projects wider than either
+  // side alone, which is what was clipping the corners mid-spin.
+  const horizontalDiagonal = Math.hypot(size.x, size.z);
+  const scale = 1.7 / Math.max(horizontalDiagonal, size.y);
 
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
@@ -126,12 +136,12 @@ function buildRig(root) {
   camera.position.set(0, 0.85, 3.3);
   camera.lookAt(0, 0.05, 0);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.65);
-  const key = new THREE.DirectionalLight(0xffffff, 1.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+  const key = new THREE.DirectionalLight(0xffffff, 1.9);
   key.position.set(2.5, 4, 3);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.45);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.6);
   fill.position.set(-3, 1.2, -1.5);
-  const rim = new THREE.DirectionalLight(0xffffff, 0.9);
+  const rim = new THREE.DirectionalLight(0xffffff, 1.1);
   rim.position.set(-1.5, 2.2, -3);
   scene.add(ambient, key, fill, rim);
 
@@ -142,7 +152,7 @@ function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.4;
 }
 
 const snapshotPromises = new Map(); // tierKey (or "" for unskinned) -> Promise<dataURL>
