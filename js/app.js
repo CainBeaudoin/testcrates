@@ -700,6 +700,7 @@ function renderCategories() {
         <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>
         <span class="category-tier-price">${cat.label}</span>
       </div>
+      <span class="category-powered-by">Powered by ODTO</span>
       ${buildPityHTML(key)}
       <div class="category-qty">
         <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>

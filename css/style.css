@@ -535,6 +535,15 @@ body {
   color: var(--text);
 }
 
+.category-powered-by {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+}
+
 .category-qty {
   display: flex;
   align-items: center;
