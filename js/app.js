@@ -167,7 +167,6 @@ const creditToastIcon = document.getElementById("creditToastIcon");
 const creditToastText = document.getElementById("creditToastText");
 const paymentModal = document.getElementById("paymentModal");
 const paymentTierLabel = document.getElementById("paymentTierLabel");
-const paymentError = document.getElementById("paymentError");
 const payWithCredits = document.getElementById("payWithCredits");
 const payWithCash = document.getElementById("payWithCash");
 const payWithCreditsBalance = document.getElementById("payWithCreditsBalance");
@@ -1063,11 +1062,10 @@ function openPaymentPicker(key, quantity = 1) {
   const cat = CATEGORIES[key];
 
   // Stocks settle in Cash only (real USDC, not a Credits reward balance) —
-  // skip the picker entirely and charge Cash straight away.
+  // skip the picker entirely and charge Cash straight away. tryPurchase
+  // itself handles routing to Add Funds if the balance falls short.
   if (cat.cashOnly) {
-    if (!tryPurchase("cash")) {
-      showToast(`Not enough Cash for ${cat.label} — try Add Funds.`, ICONS.bell);
-    }
+    tryPurchase("cash");
     return;
   }
 
@@ -1079,7 +1077,6 @@ function openPaymentPicker(key, quantity = 1) {
   payWithCashBalance.textContent = `$${wallet.cash.toLocaleString()} available`;
   payWithCredits.classList.toggle("insufficient", wallet.credits < totalCost);
   payWithCash.classList.toggle("insufficient", wallet.cash < totalCost);
-  paymentError.classList.add("hidden");
 
   paymentModal.classList.remove("hidden");
   requestAnimationFrame(() => paymentModal.classList.add("visible"));
@@ -1098,8 +1095,12 @@ function tryPurchase(currency) {
   const result = player.purchaseCrate(totalCost, currency);
   if (!result) {
     const label = qty > 1 ? `${qty}× ${cat.label}` : cat.label;
-    paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label} — try Add Funds.`;
-    paymentError.classList.remove("hidden");
+    // Route straight into Add Funds rather than leaving the user stuck on
+    // an error — Credits can't be topped up directly, but Cash can, and
+    // topping up Cash is the only way forward either way.
+    closePaymentPicker();
+    showToast(`Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label} — add funds to continue`, ICONS.bell);
+    openAddFundsModal();
     return false;
   }
   player.addCredits(result.rebate);
