@@ -1913,6 +1913,11 @@ button.deposit-btn:hover {
 .account-nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
 .account-nav-item.active { background: var(--accent-dim); color: var(--accent); }
 
+/* Icon is mobile-only (see the mobile media query near the end of this
+   file, which swaps label-only for icon-only) — desktop keeps the
+   text-label tabs as-is. */
+.account-nav-item-icon { display: none; }
+
 /* Mobile-only tab — see the mobile media query near the end of this
    file. Desktop already shows the sidebar (avatar/balances) permanently
    alongside every section, so a dedicated Profile tab would be redundant
@@ -3339,15 +3344,23 @@ button.deposit-btn:hover {
   .account-avatar-block { padding: 14px 12px; }
   .account-wallet-card { padding: 2px 14px; }
   .wallet-card-row { padding: 8px 0; font-size: 0.68rem; }
+  /* Icons instead of words — 11 text tabs needed horizontal scrolling to
+     see them all; icon-only tiles wrap onto two short rows that show
+     everything at once, no scrolling needed. */
   .account-nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    justify-content: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
     top: calc(var(--topbar-h) + 8px);
   }
-  .account-nav::-webkit-scrollbar { display: none; }
-  .account-nav-item { flex: 0 0 auto; padding: 8px 12px; font-size: 0.7rem; }
+  .account-nav-item {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 38px;
+    padding: 0;
+  }
+  .account-nav-item-icon { display: block; }
+  .account-nav-item-label { display: none; }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
      Funds/Withdraw) instead of that block sitting permanently above
