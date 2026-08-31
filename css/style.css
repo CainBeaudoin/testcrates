@@ -1978,6 +1978,30 @@ button.deposit-btn:hover {
   min-width: 0;
 }
 
+/* Desktop: the nav bar belongs over the content it switches, not stretched
+   across the profile card as well. Flattening the shell with
+   display:contents lets the sidebar and content become grid items of the
+   screen itself, so the nav can take the right-hand column's first row
+   while the sidebar rises to sit alongside it. Mobile stacks everything
+   in one column and is handled in the max-width:640px block. */
+@media (min-width: 641px) {
+  #screen-account.active {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    column-gap: 24px;
+    align-items: start;
+  }
+  .account-shell { display: contents; }
+  .account-nav { grid-column: 2; grid-row: 1; }
+  .account-content { grid-column: 2; grid-row: 2; }
+  .account-sidebar {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    /* Level with the nav now, rather than offset to clear it. */
+    top: calc(var(--topbar-h) + 12px);
+  }
+}
+
 .account-section { display: none; }
 .account-section.active { display: block; }
 /* A nav tab can show more than one of these stacked together now (see
