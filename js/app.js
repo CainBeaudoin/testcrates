@@ -1287,6 +1287,10 @@ async function startRound(key, currency) {
   boxRow.classList.add("hidden");
   helperText.classList.add("hidden");
   playAgainBtn.classList.add("hidden");
+  // Leaving mid-pick would abandon a round whose contents are already
+  // locked in (see the fairness commitment above) — only offer a way out
+  // once the reveal has actually played out.
+  backBtn.classList.add("hidden");
   reel.classList.remove("hidden");
 
   showScreen(screenGame);
@@ -1354,7 +1358,7 @@ function revealOthers() {
           verifyFairnessQuietly();
           if (batchRemaining > 0) {
             // Already paid for as one lump sum in tryPurchase — auto-chain
-            // straight into the next crate rather than waiting on "Open Again".
+            // straight into the next crate rather than waiting on "Try Again".
             batchRemaining -= 1;
             batchIndex += 1;
             helperText.textContent = `Next crate — ${batchIndex} of ${batchTotal}…`;
@@ -1362,6 +1366,7 @@ function revealOthers() {
           } else {
             helperText.classList.add("hidden");
             playAgainBtn.classList.remove("hidden");
+            backBtn.classList.remove("hidden");
           }
         }, 400);
       }
