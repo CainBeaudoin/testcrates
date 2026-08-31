@@ -8,7 +8,6 @@ import * as player from "./player.js";
 import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from "./sound.js";
 import { ICONS } from "./icons.js";
-import * as recorder from "./recorder.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -112,7 +111,6 @@ let viewers = [null, null, null];
 let reelCellWidth = 0;
 let toastTimer = null;
 let currentFairness = null; // {hash, nonce} for the active round's commit-reveal disclosure
-let currentRecording = null; // the startRecording() promise for this round, or null
 
 // ---- DOM refs -----------------------------------------------------------
 
@@ -132,8 +130,6 @@ const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
 const streakBadge = document.getElementById("streakBadge");
 const multiplierBadge = document.getElementById("multiplierBadge");
-const shareBtn = document.getElementById("shareBtn");
-const shareBtnLabel = document.getElementById("shareBtnLabel");
 const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
@@ -1065,11 +1061,6 @@ async function startRound(key, currency) {
 
   showScreen(screenGame);
 
-  // Kicked off (not awaited) so a pending share-permission prompt never
-  // blocks the reel/box animation — recording starts whenever the browser
-  // resolves it, comfortably ahead of the player picking a box.
-  currentRecording = recorder.startRecording();
-
   const snapshotUrl = await getBoxSnapshot(cat.badge.toLowerCase(), cat.boxKind ?? "box");
   buildReel(snapshotUrl);
   await spinReel();
@@ -1185,9 +1176,6 @@ function openSlot(index, { isYours, revealCard = true }) {
 // Only ever called for the crate the player picked.
 
 async function showPrizeModal(prize, { streak, multiplier } = {}) {
-  shareBtn.classList.add("hidden");
-  shareBtn.disabled = true;
-
   const meta = RARITY_META[prize.rarity];
   prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
@@ -1237,39 +1225,6 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   await playRevealFX(revealFxEl, prize.rarity, meta.color);
 
   prizeModal.classList.remove("revealing");
-  finalizeRecording(prize); // not awaited — never let a pending share prompt hold up the UI
-}
-
-// Stops the round's recording (started back in startRound) a beat after
-// the reveal settles, so the clip's last frame is the resolved prize card
-// rather than cutting off mid-animation. Resolves the Share button's
-// state; if recording never started (denied/unsupported), Share stays
-// hidden for this pull.
-async function finalizeRecording(prize) {
-  const pending = currentRecording;
-  currentRecording = null;
-  if (!pending) return;
-
-  const started = await pending;
-  if (!started) return;
-
-  shareBtnLabel.textContent = "Preparing…";
-  shareBtn.classList.remove("hidden");
-
-  await new Promise((r) => setTimeout(r, 600));
-  const clip = await recorder.stopRecording(prize, currentCategoryKey);
-  if (!clip) {
-    shareBtn.classList.add("hidden");
-    return;
-  }
-
-  shareBtnLabel.textContent = "Share";
-  shareBtn.disabled = false;
-  shareBtn.onclick = () => {
-    playClick();
-    recorder.shareClip(clip);
-  };
-  if (screenAccount.classList.contains("active")) renderClips();
 }
 
 function hidePrizeModal() {
@@ -2116,37 +2071,26 @@ function renderAccount() {
   renderClips();
 }
 
-function renderClips() {
-  const clips = recorder.getClips();
-  clipsCount.textContent = clips.length;
-  clipsGrid.innerHTML = clips.length
-    ? clips
-        .map(
-          (c) => `
-          <div class="clip-card">
-            <video src="${c.url}" muted loop playsinline controls preload="metadata"></video>
-            <div class="clip-card-body">
-              <span class="clip-card-name">${c.name}</span>
-              <div class="clip-card-actions">
-                <button class="clip-card-btn" data-clip-action="download" data-clip="${c.id}">Download</button>
-                <button class="clip-card-btn" data-clip-action="share" data-clip="${c.id}">Share</button>
-              </div>
-            </div>
-          </div>`
-        )
-        .join("")
-    : `<div class="market-empty">Open a crate and pick Share on the reveal to start collecting clips.</div>`;
-}
+// Screen-recording was pulled (getDisplayMedia's permission prompt doesn't
+// hold up in a shared demo) — Clips is a placeholder section for now,
+// pre-populated with blank video states rather than left empty.
+const BLANK_CLIP_COUNT = 3;
+const blankClipSVG = `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 9l5-3v12l-5-3"/></svg>`;
 
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-clip-action]");
-  if (!btn) return;
-  const clip = recorder.getClip(btn.dataset.clip);
-  if (!clip) return;
-  playClick();
-  if (btn.dataset.clipAction === "download") recorder.downloadClip(clip);
-  else recorder.shareClip(clip);
-});
+function renderClips() {
+  clipsCount.textContent = BLANK_CLIP_COUNT;
+  clipsGrid.innerHTML = Array.from({ length: BLANK_CLIP_COUNT })
+    .map(
+      () => `
+      <div class="clip-card clip-card-blank">
+        <div class="clip-card-placeholder">${blankClipSVG}</div>
+        <div class="clip-card-body">
+          <span class="clip-card-name">No recording yet</span>
+        </div>
+      </div>`
+    )
+    .join("");
+}
 
 let openingsFilterValue = "all";
 function renderOpeningHistory() {

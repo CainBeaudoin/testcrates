@@ -2216,29 +2216,6 @@ body {
 .exit-btn-primary .exit-btn-sub { color: rgba(0, 0, 0, 0.55); }
 .exit-btn-primary:hover { background: var(--text); opacity: 0.9; }
 
-/* --- Share (records the box-select-to-reveal moment) --- */
-
-.share-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px 0;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  color: var(--text-dim);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.share-btn:hover { border-color: var(--line-strong); color: var(--text); }
-.share-btn:disabled { opacity: 0.5; cursor: default; }
-
 /* --- Payment error --- */
 
 .payment-modal-error {
@@ -2612,12 +2589,14 @@ body {
   overflow: hidden;
 }
 
-.clip-card video {
+.clip-card-placeholder {
   width: 100%;
   aspect-ratio: 16 / 10;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #000;
-  object-fit: cover;
+  color: var(--text-faint);
 }
 
 .clip-card-body { padding: 10px 12px 12px; }
@@ -2626,32 +2605,11 @@ body {
   display: block;
   font-size: 0.74rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 8px;
 }
-
-.clip-card-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.clip-card-btn {
-  flex: 1;
-  padding: 7px 0;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--text);
-  border-radius: 999px;
-  cursor: pointer;
-}
-.clip-card-btn:hover { background: var(--text); color: #000; }
 
 /* --- Public shareable profile --- */
 
