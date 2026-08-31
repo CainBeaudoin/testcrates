@@ -1448,7 +1448,10 @@ function marketItemCardHTML(listing) {
       ? `<span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>`
       : `<span class="market-item-offer-only">Offer only</span>`;
   const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
-  const sizeHTML = listing.size ? `<span class="market-item-size">US ${listing.size}</span>` : "";
+  // Computed live from the name rather than read off listing.size — older
+  // listings seeded before that field existed would otherwise silently go
+  // without a size badge, showing sizes only on ones created afterward.
+  const sizeHTML = `<span class="market-item-size">US ${market.sizeForItem(listing.name)}</span>`;
   return `
     <div class="market-item" data-listing="${listing.id}">
       <div class="market-item-media">
