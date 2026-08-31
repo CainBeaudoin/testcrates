@@ -169,6 +169,7 @@ const fairnessCloseBtn = document.getElementById("fairnessCloseBtn");
 const walletCredits = document.getElementById("walletCredits");
 const walletCash = document.getElementById("walletCash");
 const addFundsBtn = document.getElementById("addFundsBtn");
+const walletCashBtn = document.getElementById("walletCashBtn");
 const creditToast = document.getElementById("creditToast");
 const creditToastIcon = document.getElementById("creditToastIcon");
 const creditToastText = document.getElementById("creditToastText");
@@ -193,6 +194,8 @@ const marketSort = document.getElementById("marketSort");
 const usernameBtn = document.getElementById("usernameBtn");
 const accountAvatar = document.getElementById("accountAvatar");
 const referralLinkBtn = document.getElementById("referralLinkBtn");
+const accountAddFundsBtn = document.getElementById("accountAddFundsBtn");
+const accountWithdrawBtn = document.getElementById("accountWithdrawBtn");
 const publicProfileScreen = document.getElementById("publicProfileScreen");
 const profileAvatar = document.getElementById("profileAvatar");
 const profileUsername = document.getElementById("profileUsername");
@@ -247,6 +250,18 @@ const cardAmountInput = document.getElementById("cardAmountInput");
 const applePayBtn = document.getElementById("applePayBtn");
 const cardPayBtn = document.getElementById("cardPayBtn");
 const addFundsCloseBtn = document.getElementById("addFundsCloseBtn");
+const withdrawModal = document.getElementById("withdrawModal");
+const withdrawAmountInput = document.getElementById("withdrawAmountInput");
+const withdrawMaxBtn = document.getElementById("withdrawMaxBtn");
+const withdrawAvailableHint = document.getElementById("withdrawAvailableHint");
+const withdrawChainFilter = document.getElementById("withdrawChainFilter");
+const withdrawAddressList = document.getElementById("withdrawAddressList");
+const withdrawAddressInput = document.getElementById("withdrawAddressInput");
+const withdrawNicknameInput = document.getElementById("withdrawNicknameInput");
+const withdrawWhitelistBtn = document.getElementById("withdrawWhitelistBtn");
+const withdrawError = document.getElementById("withdrawError");
+const withdrawConfirmBtn = document.getElementById("withdrawConfirmBtn");
+const withdrawCloseBtn = document.getElementById("withdrawCloseBtn");
 const streakStat = document.getElementById("streakStat");
 const streakRing = document.getElementById("streakRing");
 const streakValue = document.getElementById("streakValue");
@@ -521,6 +536,10 @@ addFundsBtn.addEventListener("click", () => {
   playClick();
   openAddFundsModal();
 });
+accountAddFundsBtn.addEventListener("click", () => {
+  playClick();
+  openAddFundsModal();
+});
 addFundsCloseBtn.addEventListener("click", () => {
   playClick();
   closeAddFundsModal();
@@ -570,6 +589,143 @@ applePayBtn.addEventListener("click", () => {
 cardPayBtn.addEventListener("click", () => {
   playClick();
   simulateDeposit(Math.round(Number(cardAmountInput.value)), cardPayBtn);
+});
+
+// ---- Withdraw: cash out to a whitelisted crypto wallet --------------------
+// Mirrors Add Funds in reverse — pick a network, whitelist a payout
+// address with a nickname, select it, confirm. Demo only: nothing is
+// broadcast anywhere, it just debits the Cash balance.
+
+let selectedWithdrawChain = DEMO_CHAINS[0].key;
+let selectedWithdrawAddressId = null;
+
+function renderWithdrawChainFilter() {
+  withdrawChainFilter.innerHTML = DEMO_CHAINS.map(
+    (c) => `<button class="market-chip${c.key === selectedWithdrawChain ? " active" : ""}" data-chain="${c.key}">${c.label}</button>`
+  ).join("");
+  withdrawChainFilter.querySelectorAll(".market-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      playClick();
+      selectedWithdrawChain = chip.dataset.chain;
+      renderWithdrawChainFilter();
+    });
+  });
+}
+
+function renderWithdrawAddressList() {
+  const addresses = player.getWithdrawAddresses();
+  withdrawAddressList.innerHTML = addresses.length
+    ? addresses
+        .map((a) => {
+          const chain = DEMO_CHAINS.find((c) => c.key === a.chain);
+          return `
+            <button class="withdraw-address-item${a.id === selectedWithdrawAddressId ? " selected" : ""}" data-address="${a.id}">
+              <span class="withdraw-address-info">
+                <span class="withdraw-address-nickname">${a.nickname}</span>
+                <span class="withdraw-address-detail">${a.address}</span>
+              </span>
+              <span class="withdraw-address-chain">${chain ? chain.label : a.chain}</span>
+            </button>`;
+        })
+        .join("")
+    : `<p class="withdraw-address-empty">No whitelisted wallets yet — add one below.</p>`;
+
+  withdrawAddressList.querySelectorAll(".withdraw-address-item").forEach((el) => {
+    el.addEventListener("click", () => {
+      playClick();
+      selectedWithdrawAddressId = el.dataset.address;
+      const address = addresses.find((a) => a.id === selectedWithdrawAddressId);
+      if (address) selectedWithdrawChain = address.chain;
+      renderWithdrawChainFilter();
+      renderWithdrawAddressList();
+      withdrawConfirmBtn.disabled = false;
+    });
+  });
+}
+
+function openWithdrawModal() {
+  const wallet = player.getWallet();
+  withdrawAmountInput.value = "";
+  withdrawAddressInput.value = "";
+  withdrawNicknameInput.value = "";
+  withdrawAvailableHint.textContent = `Available: $${wallet.cash.toLocaleString()}`;
+  withdrawError.classList.add("hidden");
+  selectedWithdrawAddressId = null;
+  withdrawConfirmBtn.disabled = true;
+  renderWithdrawChainFilter();
+  renderWithdrawAddressList();
+  withdrawModal.classList.remove("hidden");
+  requestAnimationFrame(() => withdrawModal.classList.add("visible"));
+}
+function closeWithdrawModal() {
+  withdrawModal.classList.remove("visible");
+  setTimeout(() => withdrawModal.classList.add("hidden"), 250);
+}
+
+walletCashBtn.addEventListener("click", () => {
+  playClick();
+  openWithdrawModal();
+});
+accountWithdrawBtn.addEventListener("click", () => {
+  playClick();
+  openWithdrawModal();
+});
+withdrawCloseBtn.addEventListener("click", () => {
+  playClick();
+  closeWithdrawModal();
+});
+
+withdrawMaxBtn.addEventListener("click", () => {
+  playClick();
+  withdrawAmountInput.value = Math.floor(player.getWallet().cash);
+  withdrawAmountInput.focus();
+});
+
+function showWithdrawError(text) {
+  withdrawError.textContent = text;
+  withdrawError.classList.remove("hidden");
+}
+
+withdrawWhitelistBtn.addEventListener("click", () => {
+  playClick();
+  const address = withdrawAddressInput.value.trim();
+  const nickname = withdrawNicknameInput.value.trim();
+  if (!address || !nickname) {
+    showWithdrawError("Enter a wallet address and a nickname to whitelist it.");
+    return;
+  }
+  withdrawError.classList.add("hidden");
+  const entry = player.addWithdrawAddress({ chain: selectedWithdrawChain, address, nickname });
+  selectedWithdrawAddressId = entry.id;
+  withdrawAddressInput.value = "";
+  withdrawNicknameInput.value = "";
+  renderWithdrawAddressList();
+  withdrawConfirmBtn.disabled = false;
+});
+
+withdrawConfirmBtn.addEventListener("click", () => {
+  playClick();
+  const amount = Math.round(Number(withdrawAmountInput.value));
+  if (!amount || amount <= 0) {
+    showWithdrawError("Enter an amount to withdraw.");
+    return;
+  }
+  if (!selectedWithdrawAddressId) {
+    showWithdrawError("Select (or whitelist) a wallet to withdraw to.");
+    return;
+  }
+  if (amount > player.getWallet().cash) {
+    showWithdrawError("That's more than your available Cash balance.");
+    return;
+  }
+  const address = player.getWithdrawAddresses().find((a) => a.id === selectedWithdrawAddressId);
+  if (!player.withdrawCash(amount, selectedWithdrawAddressId)) {
+    showWithdrawError("Withdrawal failed — try again.");
+    return;
+  }
+  renderWallet({ pulse: "cash" });
+  showToast(`-$${amount.toLocaleString()} sent to ${address ? address.nickname : "wallet"}`, ICONS.cash);
+  closeWithdrawModal();
 });
 
 function updatePayingWithBadge() {

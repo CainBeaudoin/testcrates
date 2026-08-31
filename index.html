@@ -29,7 +29,9 @@
         <span class="ring" id="referralRing"></span> Referral <b id="referralValue">20%</b>
       </button>
       <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></span>
-      <span class="wallet-item"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b></span>
+      <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Withdraw">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b>
+      </button>
       <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
         <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
@@ -215,6 +217,11 @@
             <div class="wallet-card-row"><span>Lifetime Volume</span><b id="sideVolume">$0</b></div>
             <div class="wallet-card-row"><span>Vault Value</span><b id="sideVaultValue" class="positive">$0</b></div>
             <div class="wallet-card-row"><span>Portfolio Value</span><b id="sidePortfolioValue" class="positive">$0</b></div>
+          </div>
+
+          <div class="account-wallet-actions">
+            <button id="accountAddFundsBtn" class="modal-btn modal-btn-outline">Add Funds</button>
+            <button id="accountWithdrawBtn" class="modal-btn modal-btn-solid">Withdraw</button>
           </div>
         </aside>
 
@@ -628,6 +635,36 @@
     </div>
 
     <button id="addFundsCloseBtn" class="back-btn listing-close-btn">Cancel</button>
+  </div>
+</div>
+
+<!-- Withdraw: cash out USDC to a whitelisted crypto wallet -->
+<div id="withdrawModal" class="prize-modal hidden">
+  <div class="prize-modal-card add-funds-modal-card">
+    <h3 class="payment-modal-title">Withdraw</h3>
+
+    <div class="amount-input-row">
+      <input id="withdrawAmountInput" class="amount-input" type="number" min="1" step="1" placeholder="Amount (USDC)">
+      <button id="withdrawMaxBtn" class="amount-max-btn">Max</button>
+    </div>
+    <p class="add-funds-note" id="withdrawAvailableHint"></p>
+
+    <span class="market-filter-label">Network</span>
+    <div id="withdrawChainFilter" class="market-filter-chips" style="margin:8px 0 16px;"></div>
+
+    <span class="market-filter-label">Withdraw To</span>
+    <div id="withdrawAddressList" class="withdraw-address-list"></div>
+
+    <div id="withdrawAddAddressForm" class="withdraw-add-address">
+      <input id="withdrawAddressInput" class="field-input" type="text" placeholder="Wallet address">
+      <input id="withdrawNicknameInput" class="field-input" type="text" placeholder="Nickname (e.g. My Ledger)">
+      <button id="withdrawWhitelistBtn" class="modal-btn modal-btn-outline">Whitelist Address</button>
+    </div>
+
+    <p id="withdrawError" class="payment-modal-error hidden"></p>
+    <button id="withdrawConfirmBtn" class="modal-btn modal-btn-solid" disabled>Withdraw</button>
+    <p class="add-funds-note">Demo only — no real blockchain transaction happens. Confirming debits your USDC balance directly.</p>
+    <button id="withdrawCloseBtn" class="back-btn listing-close-btn">Cancel</button>
   </div>
 </div>
 

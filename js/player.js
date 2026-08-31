@@ -78,6 +78,7 @@ function defaultState() {
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
     demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
     referralClaimable: 2269, // demo starting balance from referred volume — see claimReferralCash/claimReferralCredits
+    withdrawAddresses: [], // whitelisted payout wallets: {id, chain, address, nickname} — see addWithdrawAddress
   };
 }
 
@@ -301,6 +302,28 @@ export function spend(currency, amount) {
 // be usable without pretending to integrate real payment rails.
 export function addDemoFunds(amount) {
   return addCash(amount);
+}
+
+// ---- Withdrawal (crypto payout) ------------------------------------------
+// A locally-saved whitelist of payout wallets — mirrors the deposit flow's
+// "pick a chain, get an address" shape but in reverse. Nothing is actually
+// broadcast to a chain; withdrawing just debits Cash the same way spending
+// on a crate does.
+
+export function getWithdrawAddresses() {
+  return state.withdrawAddresses;
+}
+
+export function addWithdrawAddress({ chain, address, nickname }) {
+  const entry = { id: uid(), chain, address, nickname };
+  state.withdrawAddresses.push(entry);
+  save();
+  return entry;
+}
+
+export function withdrawCash(amount, addressId) {
+  if (!state.withdrawAddresses.some((a) => a.id === addressId)) return false;
+  return spendCash(amount);
 }
 
 // ---- Purchases: crate cost + cashback rebate + XP + volume ---------------
