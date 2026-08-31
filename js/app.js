@@ -1593,8 +1593,11 @@ function openListingModal(id, navIds = null) {
 
   listingActions.classList.toggle("hidden", listing.isPlayer);
   listingBuyBtn.classList.toggle("hidden", listing.price == null);
-  listingUnlistBtn.classList.toggle("hidden", !listing.isPlayer);
-  listingUnlistBtn.textContent = listing.price != null ? "Remove Price (Keep Offers Open)" : "Remove From Marketplace";
+  // Every owned item auto-populates the marketplace as an offer-only entry
+  // (see addOwnedItem) and can't be pulled off it entirely — only a set
+  // price can be removed, dropping it back to that offer-only baseline.
+  listingUnlistBtn.classList.toggle("hidden", !listing.isPlayer || listing.price == null);
+  listingUnlistBtn.textContent = "Remove Price (Keep Offers Open)";
 
   renderListingOffers(listing.id);
 
