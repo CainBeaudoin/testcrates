@@ -3370,6 +3370,26 @@ button.deposit-btn:hover {
   .box-canvas { width: 104px; height: 104px; }
   .box-caption { font-size: 0.62rem; }
 
+  /* No "Go to Drops" arrow here — the bottom tab bar is the way back, and
+     it deselects itself below so Drops reads as somewhere to return to.
+     That leaves the two status badges to centre on their own. */
+  .game-top-bar .back-btn { display: none; }
+  .game-top-bar { justify-content: center; margin-bottom: 30px; }
+
+  /* The whole screen stays vertically centred (there was too much dead
+     space under it otherwise), so growing the gaps at both ends is what
+     lifts the badges and drops the button away from the cards. */
+  #playAgainBtn { margin-top: 38px; }
+
+  /* Nothing in the tab bar is "where you are" mid-open: un-highlighting
+     Drops is what tells you to tap it to get back out. */
+  body:has(#screen-game.active) .nav-tab.active {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-faint);
+    font-weight: 400;
+  }
+
   /* --- Recent Pulls ---------------------------------------------------- */
 
   .recent-pulls { margin-top: 26px; }
