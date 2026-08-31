@@ -205,6 +205,11 @@
         </button>
         <button class="account-nav-item active" data-group="holdings" title="Holdings — Vault &amp; Portfolio">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="10" cy="12" r="5"/><circle cx="10" cy="12" r="1.3" fill="currentColor" stroke="none"/><line x1="10" y1="7.3" x2="10" y2="8.6"/><line x1="10" y1="15.4" x2="10" y2="16.7"/><line x1="5.3" y1="12" x2="6.6" y2="12"/><line x1="13.4" y1="12" x2="14.7" y2="12"/><line x1="17.3" y1="9.8" x2="17.3" y2="14.2"/></svg>
+          <!-- The safe/vault glyph above reads as mush at the 18px icon-only
+               size mobile uses, so mobile gets a plain 3D box instead (CSS
+               swaps which of the two is displayed). Desktop keeps the vault,
+               where the label next to it carries the meaning anyway. -->
+          <svg class="account-nav-item-icon account-nav-item-icon-mobile" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7"/><line x1="12" y1="11.5" x2="12" y2="21.5"/></svg>
           <span class="account-nav-item-label">Holdings</span>
         </button>
         <button class="account-nav-item" data-group="selling" title="Selling — Listings &amp; Offers">

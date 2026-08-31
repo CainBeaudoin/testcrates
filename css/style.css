@@ -1917,6 +1917,8 @@ button.deposit-btn:hover {
    file, which swaps label-only for icon-only) — desktop keeps the
    text-label tabs as-is. */
 .account-nav-item-icon { display: none; }
+/* Mobile-only alternate glyph; the mobile block below flips which one shows. */
+.account-nav-item-icon-mobile { display: none; }
 
 /* Mobile-only tab — see the mobile media query near the end of this
    file. Desktop already shows the sidebar (avatar/balances) permanently
@@ -3421,6 +3423,15 @@ button.deposit-btn:hover {
   }
   .account-nav-item-icon { display: block; }
   .account-nav-item-label { display: none; }
+  /* Swap the vault glyph for the box one (see index.html). */
+  .account-nav-item-icon-mobile { display: block; }
+  .account-nav-item-icon:has(+ .account-nav-item-icon-mobile) { display: none; }
+
+  /* The streak card only needs the number and the "N more days to
+     qualify" line on a phone — the explainer paragraph between them was
+     the tallest thing in the section. Hidden rather than deleted so
+     desktop keeps it and renderStreaks() can still write #streakGoalInline. */
+  .streak-explainer { display: none; }
 
   /* Second-level toggle within a group (My Items vs Portfolio, Clips vs
      History vs Cashed Out vs Shipped, ...) — a segmented pill switch,
