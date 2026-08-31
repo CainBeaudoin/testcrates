@@ -963,7 +963,15 @@ function spinReel() {
 
 // ---- Game screen -------------------------------------------------
 
+// Matches the label to what's actually being opened — "Box" for the ODTO
+// sneaker tiers, "Stock" for the Stocks tier — instead of the generic
+// "Crate" for every category.
+function boxNounFor(key) {
+  return key === "stocks" ? "Stock" : "Box";
+}
+
 function resetSlotsUI() {
+  const noun = boxNounFor(currentCategoryKey);
   slots.forEach((slot) => {
     slot.classList.remove("open", "you", "locked", "near-miss");
     slot.querySelector(".price-card").style.removeProperty("--rarity-color");
@@ -971,7 +979,7 @@ function resetSlotsUI() {
     slot.querySelector(".price-card-image").src = "";
     slot.querySelector(".price-card-name").textContent = "";
     slot.querySelector(".price-card-price").textContent = "";
-    slot.querySelector(".box-caption").textContent = `Crate ${Number(slot.dataset.index) + 1}`;
+    slot.querySelector(".box-caption").textContent = `${noun} ${Number(slot.dataset.index) + 1}`;
     const tag = slot.querySelector(".near-miss-tag");
     tag.textContent = "";
     tag.classList.add("hidden");
@@ -1075,7 +1083,7 @@ async function startRound(key, currency) {
   roundLocked = false;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
 
-  gameTierLabel.textContent = batchTotal > 1 ? `${cat.label} — Crate ${batchIndex} of ${batchTotal}` : cat.label;
+  gameTierLabel.textContent = batchTotal > 1 ? `${cat.label} — ${boxNounFor(key)} ${batchIndex} of ${batchTotal}` : cat.label;
   updatePayingWithBadge();
   resetSlotsUI();
   disposeViewers();
@@ -1094,7 +1102,7 @@ async function startRound(key, currency) {
   reel.classList.add("hidden");
   boxRow.classList.remove("hidden");
   helperText.classList.remove("hidden");
-  helperText.textContent = "Tap a crate to open it";
+  helperText.textContent = `Tap a ${boxNounFor(currentCategoryKey).toLowerCase()} to open it`;
 
   await mountViewers();
 }
@@ -1192,7 +1200,7 @@ function openSlot(index, { isYours, revealCard = true }) {
 
   slot.querySelector(".price-card-name").textContent = prize.name;
   slot.querySelector(".price-card-price").textContent = formatPrice(prize);
-  slot.querySelector(".box-caption").textContent = isYours ? "Your Crate" : "Unpicked";
+  slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
   if (revealCard) slot.classList.add("open");
   if (viewers[index]) viewers[index].open();
