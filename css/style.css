@@ -1,7 +1,14 @@
 :root {
-  --bg: #111114;
-  --panel: #0a0a0a;
-  --panel-2: #111111;
+  /* Surfaces step *up* from the page rather than down into it, so a card
+     reads as a card on its own — that elevation is what carries most
+     component boundaries here, in place of an outline around everything. */
+  --bg: #0b0b0e;
+  --panel: #131318;
+  --panel-2: #17171d;
+  /* --line is now reserved for things you can act on: buttons, inputs,
+     chips, and selected/hover/focus states. Static containers separate
+     with --hairline, which should be barely perceptible on its own. */
+  --hairline: rgba(255, 255, 255, 0.06);
   --line: rgba(255, 255, 255, 0.14);
   --line-strong: rgba(255, 255, 255, 0.4);
   --text: #f5f5f5;
@@ -14,8 +21,8 @@
   --accent-dim: rgba(230, 230, 235, 0.16);
   --rail-w: 76px;
   --topbar-h: 60px;
-  --surface-1: #0d0d10;
-  --surface-2: #131317;
+  --surface-1: #131318;
+  --surface-2: #1a1a20;
 }
 
 * { box-sizing: border-box; }
@@ -58,7 +65,7 @@ body {
   flex-direction: column;
   align-items: center;
   background: var(--surface-1);
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--hairline);
   padding: 16px 0;
   z-index: 20;
 }
@@ -66,7 +73,7 @@ body {
 .rail-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   align-items: center;
 }
@@ -75,9 +82,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   width: 58px;
-  padding: 9px 4px;
+  padding: 8px 4px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -102,7 +109,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mute-btn {
@@ -142,15 +149,15 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 0 24px;
-  background: rgba(10, 10, 10, 0.86);
+  background: rgba(19, 19, 24, 0.94);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .topbar-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 .brand-logo {
@@ -172,8 +179,8 @@ body {
 .wallet-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -196,8 +203,8 @@ body {
 .stat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 12px 6px 8px;
+  gap: 8px;
+  padding: 8px 12px 8px 8px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -248,7 +255,7 @@ body {
   right: -3px;
   min-width: 15px;
   height: 15px;
-  padding: 0 3px;
+  padding: 0 4px;
   border-radius: 999px;
   background: #1cb954;
   color: #04160c;
@@ -262,8 +269,8 @@ body {
 .avatar-btn {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 10px 4px 4px;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -300,7 +307,7 @@ body {
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 28px 28px 40px;
+  padding: 32px 32px 48px;
 }
 
 .eyebrow { display: none; }
@@ -331,7 +338,7 @@ body {
   letter-spacing: 0.3px;
   text-transform: none;
   color: var(--text);
-  margin: 0 0 22px;
+  margin: 0 0 24px;
 }
 
 /* --- Category screen --- */
@@ -354,19 +361,19 @@ body {
   font-size: 0.72rem;
   color: var(--text-dim);
   letter-spacing: 0.5px;
-  padding: 5px 12px;
-  border: 1px solid var(--line);
+  padding: 4px 12px;
+  border: 1px solid var(--hairline);
   border-radius: 999px;
 }
 
 .fairness-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 0.68rem;
   letter-spacing: 0.3px;
   color: var(--text-dim);
-  padding: 5px 12px;
+  padding: 4px 12px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -383,8 +390,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
 }
 .fairness-row-label {
   font-size: 0.6rem;
@@ -400,8 +407,8 @@ body {
 }
 
 .fairness-status {
-  margin: 14px 0;
-  padding: 10px 14px;
+  margin: 16px 0;
+  padding: 8px 16px;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -414,7 +421,7 @@ body {
   font-size: 0.66rem;
   line-height: 1.5;
   color: var(--text-faint);
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 /* --- Credit-earned toast --- */
@@ -427,7 +434,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 12px 24px;
   background: #f5f5f5;
   color: #000;
   font-size: 0.8rem;
@@ -459,7 +466,7 @@ body {
 .category-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
 }
 
@@ -469,9 +476,9 @@ body {
   flex-direction: column;
   flex: 1;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 4px;
-  padding: 26px 30px 28px;
+  padding: 24px 32px 32px;
   text-align: center;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -487,7 +494,7 @@ body {
   top: 14px;
   right: 14px;
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .category-icon-badge {
@@ -498,7 +505,7 @@ body {
   justify-content: center;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   color: var(--text-dim);
 }
 .category-icon-badge svg { width: 15px; height: 15px; }
@@ -507,7 +514,7 @@ body {
   display: block;
   width: 165px;
   height: 165px;
-  margin: 6px auto 2px;
+  margin: 8px auto 2px;
 }
 
 .category-tier-line {
@@ -540,7 +547,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--text-faint);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 /* Keeps cards without a "Powered by" line the same height as ones with it,
    so the tier row stays aligned. */
@@ -579,7 +586,7 @@ body {
 }
 
 .qty-max-btn {
-  padding: 5px 12px;
+  padding: 4px 12px;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -595,7 +602,7 @@ body {
 
 .category-open-btn {
   margin-top: 16px;
-  padding: 11px 0;
+  padding: 12px 0;
   background: var(--text);
   color: #000;
   border: none;
@@ -611,7 +618,7 @@ body {
 
 /* Pity progress, shown under the tier badge/price */
 .pity-bar {
-  margin-top: 14px;
+  margin-top: 16px;
   text-align: left;
 }
 .pity-bar-label {
@@ -620,7 +627,7 @@ body {
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 .pity-bar-track {
   height: 4px;
@@ -637,7 +644,7 @@ body {
 
 .prize-dropdown {
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -670,8 +677,8 @@ body {
 .odds-toggle-btn.active { color: var(--text); background: var(--surface-1); border-color: var(--line-strong); }
 
 .odds-panel {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 16px 16px;
+  border-bottom: 1px solid var(--hairline);
   background: var(--surface-1);
 }
 
@@ -680,7 +687,7 @@ body {
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-dim);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .odds-grid {
@@ -692,10 +699,10 @@ body {
 .odds-bucket {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
 }
 .odds-bucket-rarity {
@@ -717,7 +724,7 @@ body {
 .prize-list {
   max-height: 280px;
   overflow-y: auto;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--hairline);
 }
 
 /* Mobile-only disclosure for the list above (see the mobile media query
@@ -740,8 +747,8 @@ body {
 .drop-detail-back {
   display: none;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 16px;
   padding: 8px 16px;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -799,7 +806,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   .drop-detail-active {
     flex-direction: row;
     align-items: stretch;
-    gap: 20px;
+    gap: 24px;
     /* Short enough that the tier's pulls carousel below shows above the
        fold, without starving the prize list it's borrowing from. */
     height: calc(100vh - var(--topbar-h) - 240px);
@@ -827,8 +834,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .prize-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 8px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .prize-row:last-child { border-bottom: none; }
@@ -877,7 +884,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .recent-pulls {
   /* Full width of the tier-card row (Bronze through Gold), not a narrower
      centered strip — no max-width of its own. */
-  margin: 44px 0 0;
+  margin: 48px 0 0;
 }
 
 .recent-pulls h3 {
@@ -902,16 +909,16 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 
 .recent-pulls-list {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   padding: 4px 2px 12px;
 }
 
 .recent-pull-item {
   flex: 0 0 auto;
   width: 168px;
-  padding: 16px 16px 18px;
+  padding: 16px 16px 16px;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   text-align: center;
   cursor: pointer;
@@ -936,13 +943,13 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-size: 1rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 9px;
+  margin-bottom: 8px;
 }
 
 .recent-pull-item .tier-badge {
-  margin-bottom: 9px;
+  margin-bottom: 8px;
   font-size: 0.62rem;
-  padding: 3px 10px;
+  padding: 4px 8px;
 }
 
 .recent-pull-user {
@@ -979,10 +986,10 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   /* Top margin matches .box-row's top padding below, so the boxes sit at
      the same height whether the reel is spinning or has handed off to the
      picked/revealed boxes — no vertical jump on the cut between them. */
-  margin: 84px auto 36px;
+  margin: 80px auto 32px;
   overflow: hidden;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 4px;
   box-shadow: var(--glow);
 }
@@ -1044,7 +1051,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 }
 .reel-slot-lines span {
   flex: 1 0 auto;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--hairline);
 }
 .reel-slot-lines span:last-child { border-right: none; }
 
@@ -1053,7 +1060,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   justify-content: center;
   column-gap: 24px;
   row-gap: 96px;
-  padding: 84px 0 8px;
+  padding: 80px 0 8px;
   flex-wrap: wrap;
 }
 
@@ -1085,7 +1092,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .box-slot.locked .box-canvas { cursor: default; }
 
 .box-caption {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 0.75rem;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -1102,7 +1109,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   left: 50%;
   z-index: 3;
   width: 168px;
-  padding: 14px 12px;
+  padding: 16px 12px;
   background: #000;
   border: 1px solid var(--rarity-color);
   border-radius: 4px;
@@ -1162,7 +1169,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   line-height: 1.3;
   height: calc(3 * 1.3em);
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .price-card-price {
@@ -1183,7 +1190,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .primary-btn {
   display: block;
   margin: 0 auto;
-  padding: 13px 40px;
+  padding: 12px 48px;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 2px;
@@ -1201,7 +1208,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   display: none;
   max-width: 1180px;
   margin: 64px auto 0;
-  padding: 0 28px;
+  padding: 0 32px;
 }
 /* Only on the three main screens — not the crate-opening/reveal flow
    (#screen-game), where it's just dead scroll weight below a modal-
@@ -1219,10 +1226,10 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .app-footer-main {
   display: flex;
   flex-wrap: wrap;
-  gap: 40px;
+  gap: 48px;
   justify-content: space-between;
-  padding: 40px 0;
-  border-top: 1px solid var(--line);
+  padding: 48px 0;
+  border-top: 1px solid var(--hairline);
 }
 
 .app-footer-brand { flex: 1 1 280px; max-width: 360px; }
@@ -1235,7 +1242,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-size: 1.05rem;
   font-weight: 900;
   letter-spacing: 0.5px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .app-footer-tagline {
@@ -1250,13 +1257,13 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .app-footer-columns {
   display: flex;
   flex-wrap: wrap;
-  gap: 40px;
+  gap: 48px;
 }
 
 .app-footer-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 130px;
 }
 .app-footer-col h4 {
@@ -1312,7 +1319,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
-  padding: 20px;
+  padding: 24px;
 }
 
 .prize-modal.visible {
@@ -1325,10 +1332,10 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   z-index: 2;
   width: 100%;
   max-width: 300px;
-  background: #050505;
+  background: var(--panel-2);
   border: 1px solid var(--rarity-color);
   border-radius: 6px;
-  padding: 36px 32px 30px;
+  padding: 32px 32px 32px;
   text-align: center;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px -6px var(--rarity-color);
   opacity: 1;
@@ -1357,7 +1364,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   padding: 4px 12px;
   border: 1px solid currentColor;
   border-radius: 999px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .prize-modal-content {
@@ -1366,7 +1373,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 
 .streak-badge {
   display: block;
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 0.7rem;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -1495,7 +1502,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   left: 50%;
   width: 10px;
   height: 10px;
-  margin: -5px 0 0 -5px;
+  margin: -4px 0 0 -4px;
   border: 2px solid var(--rarity-color);
   border-radius: 50%;
   opacity: 0;
@@ -1504,7 +1511,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 }
 
 @keyframes ringExpand {
-  0% { width: 10px; height: 10px; margin: -5px 0 0 -5px; opacity: var(--climax, 0.2); }
+  0% { width: 10px; height: 10px; margin: -4px 0 0 -4px; opacity: var(--climax, 0.2); }
   100% { width: 160vmax; height: 160vmax; margin: -80vmax 0 0 -80vmax; opacity: 0; }
 }
 
@@ -1537,27 +1544,27 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   width: 150px;
   height: 150px;
   object-fit: contain;
-  margin: 0 auto 18px;
+  margin: 0 auto 16px;
   background: #000;
   border-radius: 18px;
 }
 
 .prize-modal-name {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.3px;
 }
 
 .prize-modal-price {
-  margin: 0 0 26px;
+  margin: 0 0 24px;
   font-size: 1.6rem;
   font-weight: 800;
 }
 
 .prize-modal-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .modal-btn {
@@ -1611,7 +1618,7 @@ button.deposit-btn:hover {
 }
 
 .payment-modal-title {
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -1628,8 +1635,8 @@ button.deposit-btn:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 18px 10px;
+  gap: 8px;
+  padding: 16px 8px;
   background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -1655,7 +1662,7 @@ button.deposit-btn:hover {
 }
 
 .payment-modal-hint {
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   font-size: 0.68rem;
   line-height: 1.5;
   color: var(--text-faint);
@@ -1679,7 +1686,7 @@ button.deposit-btn:hover {
   flex-direction: column;
   gap: 16px;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   padding: 16px;
 }
@@ -1711,7 +1718,7 @@ button.deposit-btn:hover {
   border: 1px solid var(--line);
   color: var(--text);
   border-radius: 6px;
-  padding: 9px 10px;
+  padding: 8px 8px;
   font-size: 0.72rem;
   cursor: pointer;
 }
@@ -1728,7 +1735,7 @@ button.deposit-btn:hover {
 }
 
 .market-chip {
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -1749,7 +1756,7 @@ button.deposit-btn:hover {
 .market-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 /* --- Card component: one shape reused for marketplace, vault, listings,
@@ -1758,7 +1765,7 @@ button.deposit-btn:hover {
 
 .market-item {
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -1782,7 +1789,7 @@ button.deposit-btn:hover {
   height: 100%;
   object-fit: contain;
   display: block;
-  padding: 10px;
+  padding: 8px;
   border-radius: 16px;
 }
 
@@ -1796,7 +1803,7 @@ button.deposit-btn:hover {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
@@ -1806,7 +1813,7 @@ button.deposit-btn:hover {
 .market-item-size { color: var(--text-dim); }
 
 .market-item-body {
-  padding: 10px 12px 12px;
+  padding: 8px 12px 12px;
 }
 
 .market-item-name {
@@ -1823,7 +1830,7 @@ button.deposit-btn:hover {
 
 .market-item-divider {
   height: 1px;
-  background: var(--line);
+  background: var(--hairline);
   margin-bottom: 8px;
 }
 
@@ -1837,7 +1844,7 @@ button.deposit-btn:hover {
 .market-item-price {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
@@ -1862,7 +1869,7 @@ button.deposit-btn:hover {
   text-align: center;
   color: var(--text-faint);
   font-size: 0.78rem;
-  padding: 30px 0;
+  padding: 32px 0;
 }
 
 /* --- Account: sidebar (identity + wallet + section nav) + content pane --- */
@@ -1884,20 +1891,20 @@ button.deposit-btn:hover {
 
 .account-avatar-block {
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
-  padding: 20px 16px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   text-align: center;
 }
 
 .account-username-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: none;
   border: none;
   color: var(--text);
@@ -1919,8 +1926,8 @@ button.deposit-btn:hover {
 .referral-link-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 8px 16px;
   background: var(--accent-dim);
   border: 1px solid rgba(230, 230, 235, 0.5);
   border-radius: 999px;
@@ -1934,21 +1941,21 @@ button.deposit-btn:hover {
 
 .account-wallet-card {
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
-  padding: 6px 16px;
+  padding: 8px 16px;
 }
 .wallet-card-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 8px 0;
   font-size: 0.72rem;
   color: var(--text-faint);
 }
 .wallet-card-row b { color: var(--text); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .wallet-card-row b.positive { color: #4ade80; }
-.wallet-card-divider { height: 1px; background: var(--line); }
+.wallet-card-divider { height: 1px; background: var(--hairline); }
 
 .account-wallet-actions {
   display: flex;
@@ -1961,12 +1968,12 @@ button.deposit-btn:hover {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 4px;
-  background: rgba(10, 10, 10, 0.86);
+  background: rgba(19, 19, 24, 0.94);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
-  padding: 6px;
-  margin-bottom: 20px;
+  padding: 8px;
+  margin-bottom: 24px;
   position: sticky;
   top: calc(var(--topbar-h) + 12px);
   z-index: 10;
@@ -1976,7 +1983,7 @@ button.deposit-btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 14px;
+  padding: 8px 16px;
   background: transparent;
   border: none;
   border-radius: 7px;
@@ -2051,8 +2058,8 @@ button.deposit-btn:hover {
    grid and Portfolio's header don't run straight into each other. */
 .account-section.active + .account-section.active {
   margin-top: 8px;
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
+  padding-top: 32px;
+  border-top: 1px solid var(--hairline);
 }
 
 /* Second-level toggle within a nav group (My Items vs Portfolio, Clips vs
@@ -2069,10 +2076,10 @@ button.deposit-btn:hover {
   display: flex;
   gap: 2px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 999px;
   padding: 4px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .account-toggle-label {
   flex: 1;
@@ -2084,7 +2091,7 @@ button.deposit-btn:hover {
   letter-spacing: 0.3px;
   text-align: center;
   line-height: 1.25;
-  padding: 9px 10px;
+  padding: 8px 8px;
   border-radius: 999px;
   cursor: pointer;
 }
@@ -2095,8 +2102,8 @@ button.deposit-btn:hover {
 .account-section-header {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin: 28px 0 14px;
+  gap: 8px;
+  margin: 32px 0 16px;
 }
 .account-section-header:first-child { margin-top: 0; }
 .account-section-header h3 {
@@ -2117,7 +2124,7 @@ button.deposit-btn:hover {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   color: var(--text-faint);
 }
 
@@ -2126,16 +2133,16 @@ button.deposit-btn:hover {
 .offers-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .offer-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
   flex-wrap: wrap;
 }
@@ -2167,7 +2174,7 @@ button.deposit-btn:hover {
   font-size: 0.6rem;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 3px 9px;
+  padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
   color: var(--text-dim);
@@ -2178,11 +2185,11 @@ button.deposit-btn:hover {
 
 .offer-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .offer-btn {
-  padding: 6px 12px;
+  padding: 8px 12px;
   font-size: 0.62rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -2202,7 +2209,7 @@ button.deposit-btn:hover {
   color: var(--text-faint);
   font-size: 0.75rem;
   text-align: center;
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 /* --- Listing detail modal --- */
@@ -2210,23 +2217,23 @@ button.deposit-btn:hover {
 .listing-modal-card { max-width: 320px; }
 
 .listing-seller {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   font-size: 0.72rem;
   color: var(--text-faint);
 }
 .listing-seller b { color: var(--text-dim); }
 
 .detail-meta {
-  margin: -4px 0 14px;
+  margin: -4px 0 16px;
   font-size: 0.68rem;
   color: var(--text-faint);
   letter-spacing: 0.3px;
 }
 
 .listing-market-data {
-  margin-bottom: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
   text-align: left;
 }
 .listing-market-value-row {
@@ -2271,11 +2278,11 @@ button.deposit-btn:hover {
 }
 
 .listing-offers {
-  margin-top: 20px;
+  margin-top: 24px;
   text-align: left;
 }
 .listing-offers h4 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: 0.65rem;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -2316,14 +2323,14 @@ button.deposit-btn:hover {
 .detail-media {
   flex: 0 0 390px;
   height: 100%;
-  padding: 28px 20px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
   text-align: center;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--hairline);
 }
 .detail-media .prize-modal-image {
   width: 320px;
@@ -2340,13 +2347,13 @@ button.deposit-btn:hover {
 .detail-media-actions {
   display: flex;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .detail-media-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 8px 16px;
   background: transparent;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -2368,7 +2375,7 @@ button.deposit-btn:hover {
   /* Top padding is deliberately generous — .detail-close-btn floats above
      this column at top:14px, and .price-chart carries its own -6px top
      margin, so a plain 32px would let the two intersect. */
-  padding: 56px 28px 32px;
+  padding: 56px 32px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2404,29 +2411,37 @@ button.deposit-btn:hover {
     display: block;
     width: 100%;
     text-align: right;
-    padding: 8px 14px;
+    padding: 8px 16px;
     margin: 0;
-    background: #050505;
-    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--hairline);
     z-index: 5;
   }
+  /* Grid rather than a flex row: as a row the name, price, meta and
+     seller each became their own narrow column beside the image and the
+     title broke onto four lines. The image takes a fixed column and
+     everything else stacks in the second one. */
   .detail-media {
     flex: 0 0 auto;
     width: 100%;
-    padding: 12px 14px;
+    padding: 16px;
     border-right: none;
-    border-bottom: 1px solid var(--line);
-    flex-direction: row;
-    align-items: center;
+    border-bottom: 1px solid var(--hairline);
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr);
+    align-items: start;
     text-align: left;
-    gap: 12px;
+    gap: 4px 16px;
   }
   .detail-media .prize-modal-image {
-    width: 76px;
-    height: 76px;
+    width: 80px;
+    height: 80px;
     margin: 0;
-    flex: 0 0 auto;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-self: center;
   }
+  .detail-media > *:not(.prize-modal-image) { grid-column: 2; }
   .detail-media .prize-modal-name {
     max-width: 100%;
     white-space: normal;
@@ -2440,7 +2455,7 @@ button.deposit-btn:hover {
   .detail-content {
     flex: 0 0 auto;
     height: auto;
-    padding: 12px 14px 16px;
+    padding: 12px 16px 16px;
     justify-content: flex-start;
     overflow-y: visible;
     gap: 4px;
@@ -2451,7 +2466,7 @@ button.deposit-btn:hover {
 .price-chart {
   width: 100%;
   height: 90px;
-  margin: -6px 0 4px;
+  margin: -8px 0 4px;
 }
 .price-chart-svg { width: 100%; height: 100%; display: block; }
 .price-chart-caption {
@@ -2459,12 +2474,12 @@ button.deposit-btn:hover {
   font-size: 0.6rem;
   color: var(--text-faint);
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .portfolio-sell-btn {
   width: 100%;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .item-detail-offers {
@@ -2472,7 +2487,7 @@ button.deposit-btn:hover {
   text-align: left;
 }
 .item-detail-offers h4 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: 0.65rem;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -2482,7 +2497,7 @@ button.deposit-btn:hover {
 .offer-row.platform-offer {
   border-color: var(--accent);
   background: var(--accent-dim);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 /* --- Recent pull detail modal --- */
@@ -2491,8 +2506,8 @@ button.deposit-btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin: -8px 0 20px;
+  gap: 8px;
+  margin: -8px 0 24px;
 }
 .pull-detail-user {
   font-size: 0.72rem;
@@ -2502,7 +2517,7 @@ button.deposit-btn:hover {
 
 .pull-detail-go-btn {
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 /* --- Amount prompt modal --- */
@@ -2512,13 +2527,13 @@ button.deposit-btn:hover {
 .amount-input-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .amount-input {
   flex: 1;
   width: 100%;
-  padding: 12px 14px;
+  padding: 12px 16px;
   background: var(--panel-2);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -2568,7 +2583,7 @@ button.deposit-btn:hover {
   letter-spacing: 2px;
   text-transform: uppercase;
   margin-bottom: 8px;
-  padding: 3px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid currentColor;
 }
@@ -2599,7 +2614,7 @@ button.deposit-btn:hover {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .exit-btn {
@@ -2607,7 +2622,7 @@ button.deposit-btn:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   padding: 12px 8px;
   background: transparent;
   border: 1px solid var(--line-strong);
@@ -2654,7 +2669,7 @@ button.deposit-btn:hover {
 .market-listed-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 0.7rem;
   color: var(--text-dim);
   letter-spacing: 0.5px;
@@ -2664,14 +2679,14 @@ button.deposit-btn:hover {
 .market-price-range {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-faint);
   font-size: 0.75rem;
 }
 
 .market-price-input {
   width: 72px;
-  padding: 7px 8px;
+  padding: 8px 8px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -2710,7 +2725,7 @@ button.deposit-btn:hover {
   display: block;
   font-size: 0.58rem;
   color: var(--text-faint);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .item-archival.soon { color: #f2b84b; }
 .item-archival.archived { color: #f87171; }
@@ -2728,7 +2743,7 @@ button.deposit-btn:hover {
   gap: 4px;
 }
 .item-action-btn {
-  padding: 6px 0;
+  padding: 8px 0;
   font-size: 0.58rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -2755,9 +2770,9 @@ button.deposit-btn:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
 }
 .opening-row.pinned { border-color: #f2b84b; }
@@ -2785,15 +2800,15 @@ button.deposit-btn:hover {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .leaderboard-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
+  gap: 16px;
+  padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
   font-size: 0.8rem;
   cursor: pointer;
@@ -2822,7 +2837,7 @@ button.deposit-btn:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px 24px;
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: 6px;
@@ -2842,7 +2857,7 @@ button.deposit-btn:hover {
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .referral-progress-fill {
   height: 100%;
@@ -2856,7 +2871,7 @@ button.deposit-btn:hover {
 }
 .referral-table th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 8px;
   color: var(--text-faint);
   font-size: 0.6rem;
   letter-spacing: 1px;
@@ -2864,8 +2879,8 @@ button.deposit-btn:hover {
   border-bottom: 1px solid var(--line-strong);
 }
 .referral-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--hairline);
   color: var(--text-dim);
 }
 .referral-table td:first-child { color: var(--text); font-weight: 700; }
@@ -2875,7 +2890,7 @@ button.deposit-btn:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px;
+  padding: 16px 24px;
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: 6px;
@@ -2908,8 +2923,8 @@ button.deposit-btn:hover {
 }
 .referral-claim-bonus {
   display: inline-block;
-  margin-left: 3px;
-  padding: 1px 6px;
+  margin-left: 4px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: rgba(74, 222, 128, 0.18);
   color: #4ade80;
@@ -2924,7 +2939,7 @@ button.deposit-btn:hover {
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 /* --- Streaks: daily-play calendar + weekly raffle -------------------- */
@@ -2932,7 +2947,11 @@ button.deposit-btn:hover {
 .streak-top-row {
   display: flex;
   align-items: stretch;
-  gap: 14px;
+  /* Wraps rather than crushing both columns past their basis — at narrower
+     desktop widths two 320px panels don't fit and the text was breaking to
+     one word per line. */
+  flex-wrap: wrap;
+  gap: 16px;
 }
 .streak-top-row > * { flex: 1 1 320px; min-width: 0; }
 
@@ -2942,7 +2961,7 @@ button.deposit-btn:hover {
 .streak-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .streak-panel-title {
   font-size: 0.78rem;
@@ -2957,11 +2976,11 @@ button.deposit-btn:hover {
 .streak-summary {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
-  padding: 18px 20px;
+  padding: 16px 24px;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
 }
 .streak-summary-meta {
@@ -2970,14 +2989,14 @@ button.deposit-btn:hover {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .streak-count-block {
   flex: 0 0 auto;
   text-align: center;
-  padding-right: 20px;
-  border-right: 1px solid var(--line);
+  padding-right: 24px;
+  border-right: 1px solid var(--hairline);
 }
 .streak-count-value {
   display: block;
@@ -3008,20 +3027,20 @@ button.deposit-btn:hover {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
   white-space: nowrap;
 }
 .streak-raffle-badge.qualified { color: #4ade80; background: rgba(74, 222, 128, 0.14); border: 1px solid rgba(74, 222, 128, 0.4); }
-.streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: 1px solid var(--line); }
+.streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: 1px solid var(--hairline); }
 
 .streak-raffle-prize {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 16px;
+  padding: 16px 16px;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
 }
 .streak-raffle-prize img {
@@ -3049,15 +3068,15 @@ button.deposit-btn:hover {
   display: block;
   font-size: 0.7rem;
   color: var(--text-faint);
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .streak-calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 8px;
   max-width: 420px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .streak-calendar-weekdays span {
   text-align: center;
@@ -3068,7 +3087,7 @@ button.deposit-btn:hover {
 .streak-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 8px;
   max-width: 420px;
 }
 
@@ -3081,7 +3100,7 @@ button.deposit-btn:hover {
   font-size: 0.62rem;
   color: var(--text-faint);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
 }
 .streak-tile.empty { background: transparent; border-color: transparent; }
 .streak-tile.level-1 { background: rgba(230, 230, 235, 0.22); border-color: rgba(230, 230, 235, 0.3); color: var(--text-dim); }
@@ -3095,12 +3114,12 @@ button.deposit-btn:hover {
 .clips-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 .clip-card {
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -3115,7 +3134,7 @@ button.deposit-btn:hover {
   color: var(--text-faint);
 }
 
-.clip-card-body { padding: 10px 12px 12px; }
+.clip-card-body { padding: 8px 12px 12px; }
 
 .clip-card-name {
   display: block;
@@ -3134,7 +3153,7 @@ button.deposit-btn:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 48px 24px;
   background: var(--bg);
 }
 
@@ -3143,9 +3162,9 @@ button.deposit-btn:hover {
   max-width: 420px;
   text-align: center;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 14px;
-  padding: 36px 30px;
+  padding: 32px 32px;
 }
 
 .public-profile-card .avatar-lg { margin: 0 auto 16px; width: 72px; height: 72px; font-size: 1.4rem; }
@@ -3160,19 +3179,19 @@ button.deposit-btn:hover {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
-.public-profile-stats > div { background: var(--surface-2); padding: 14px; }
+.public-profile-stats > div { background: var(--surface-2); padding: 16px; }
 .public-profile-stats dt {
   font-size: 0.6rem;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .public-profile-stats dd {
   margin: 0;
@@ -3192,7 +3211,7 @@ button.deposit-btn:hover {
   margin: 0 0 12px;
 }
 
-.public-profile-card .recent-pulls-list { justify-content: center; margin-bottom: 26px; }
+.public-profile-card .recent-pulls-list { justify-content: center; margin-bottom: 24px; }
 
 .public-profile-back { display: block; text-decoration: none; }
 
@@ -3203,8 +3222,8 @@ button.deposit-btn:hover {
 
 .add-funds-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 16px;
   background: var(--surface-2);
   border-radius: 8px;
   padding: 4px;
@@ -3224,10 +3243,10 @@ button.deposit-btn:hover {
 
 .deposit-address-box {
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
 }
 .deposit-address-label {
   display: block;
@@ -3253,7 +3272,7 @@ button.deposit-btn:hover {
 }
 .deposit-copy-btn {
   flex: 0 0 auto;
-  padding: 5px 12px;
+  padding: 4px 12px;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -3269,15 +3288,15 @@ button.deposit-btn:hover {
 .add-funds-card-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .add-funds-note {
   font-size: 0.64rem;
   line-height: 1.5;
   color: var(--text-faint);
-  margin: 14px 0 18px;
+  margin: 16px 0 16px;
 }
 
 /* --- Withdraw: payout wallet whitelist + crypto withdrawal --- */
@@ -3286,24 +3305,24 @@ button.deposit-btn:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 8px 0 10px;
+  margin: 8px 0 8px;
 }
 
 .withdraw-address-empty {
   font-size: 0.68rem;
   color: var(--text-faint);
-  margin: 8px 0 10px;
+  margin: 8px 0 8px;
 }
 
 .withdraw-address-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
@@ -3342,12 +3361,12 @@ button.deposit-btn:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .field-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--panel-2);
   border: 1px solid var(--line-strong);
   border-radius: 6px;
@@ -3368,28 +3387,28 @@ button.deposit-btn:hover {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 40px);
-  padding-bottom: 20px;
+  padding-bottom: 24px;
 }
 .credits-earned-list {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  margin: 0 -6px;
-  padding: 0 6px;
+  margin: 0 -8px;
+  padding: 0 8px;
 }
 .credits-earned-actions {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 16px;
   margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
 }
 .credits-earned-actions .listing-close-btn { margin: 0; }
 .credits-earned-clear-btn {
-  padding: 7px 14px;
+  padding: 8px 16px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -3416,6 +3435,9 @@ button.deposit-btn:hover {
   :root {
     --topbar-h: 52px;
     --bottom-nav-h: 60px;
+    /* Height of the floating Account group-icon bar, which the section
+       toggle above it is positioned off. */
+    --account-nav-h: 56px;
   }
 
   /* --- Bottom tab bar ----------------------------------------------- */
@@ -3431,10 +3453,10 @@ button.deposit-btn:hover {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
-    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    padding: 8px 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
     border-right: none;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--hairline);
     z-index: 40;
   }
   .rail-nav {
@@ -3447,7 +3469,7 @@ button.deposit-btn:hover {
   .nav-tab {
     width: auto;
     flex: 1;
-    padding: 5px 2px;
+    padding: 4px 2px;
   }
   /* Mute lives in the footer's Social Media row on mobile (see the JS
      that reparents #muteBtn there) — the bottom bar is Drops/Market/
@@ -3456,7 +3478,7 @@ button.deposit-btn:hover {
   .mute-btn { width: 32px; height: 32px; }
 
   .shell-main main {
-    padding: 14px 14px calc(var(--bottom-nav-h) + 20px);
+    padding: 16px 16px calc(var(--bottom-nav-h) + 24px);
   }
 
   /* --- Condensed header — logo, balances, notifications, avatar; the
@@ -3466,19 +3488,19 @@ button.deposit-btn:hover {
   .topbar { padding: 0 12px; gap: 8px; }
   .brand-logo { height: 28px; }
   #streakStat, #referralStat, #addFundsBtn { display: none; }
-  .topbar-stats { flex-wrap: nowrap; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+  .topbar-stats { flex-wrap: nowrap; gap: 4px; overflow-x: auto; scrollbar-width: none; }
   .topbar-stats::-webkit-scrollbar { display: none; }
-  .wallet-item, .avatar-btn { font-size: 0.62rem; padding: 5px 8px; white-space: nowrap; }
+  .wallet-item, .avatar-btn { font-size: 0.62rem; padding: 4px 8px; white-space: nowrap; }
   #topUsername { display: none; }
-  .avatar-btn { padding: 3px; gap: 0; }
+  .avatar-btn { padding: 4px; gap: 0; }
   .notif-btn { width: 28px; height: 28px; }
 
-  .screen-title { font-size: 1.05rem; margin-bottom: 14px; }
+  .screen-title { font-size: 1.05rem; margin-bottom: 16px; }
 
   /* --- Drops: tier cards ---------------------------------------------- */
 
-  .category-list { gap: 10px; }
-  .category-card { padding: 14px 10px 14px; }
+  .category-list { gap: 8px; }
+  .category-card { padding: 16px 8px 16px; }
   .category-box-canvas { width: 92px; height: 92px; margin: 4px auto 2px; }
   .category-payment-badges { top: 8px; right: 8px; gap: 4px; }
   .category-icon-badge { width: 22px; height: 22px; }
@@ -3487,11 +3509,11 @@ button.deposit-btn:hover {
   .category-powered-by, .category-powered-by-spacer { display: none; }
   .pity-bar { margin-top: 8px; }
   .pity-bar-label { font-size: 0.54rem; }
-  .category-qty { margin-top: 10px; gap: 6px; }
+  .category-qty { margin-top: 8px; gap: 8px; }
   .qty-btn { width: 24px; height: 24px; font-size: 0.8rem; }
   .qty-value { font-size: 0.82rem; min-width: 16px; }
-  .qty-max-btn { padding: 4px 9px; }
-  .category-open-btn { margin-top: 10px; padding: 9px 0; font-size: 0.68rem; }
+  .qty-max-btn { padding: 4px 8px; }
+  .category-open-btn { margin-top: 8px; padding: 8px 0; font-size: 0.68rem; }
 
   /* Live odds: five full-width buckets stacked in one column was mostly
      empty space to the right of each. Four across fits the row; what
@@ -3501,19 +3523,19 @@ button.deposit-btn:hover {
      wrap instead. Whatever's left over (Legendary, usually) takes the
      full width underneath rather than sitting as a quarter-width orphan. */
   .odds-panel { padding: 12px 12px; }
-  .odds-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
-  .odds-bucket { padding: 7px 6px; gap: 1px; }
+  .odds-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .odds-bucket { padding: 8px 8px; gap: 1px; }
   .odds-bucket-rarity { font-size: 0.5rem; letter-spacing: 0.4px; }
   .odds-bucket-range { font-size: 0.54rem; line-height: 1.2; }
   .odds-bucket-pct { font-size: 0.82rem; }
   .odds-grid > .odds-bucket:last-child:nth-child(4n + 1) { grid-column: 1 / -1; }
 
-  .prize-dropdown-header { padding: 9px 12px; font-size: 0.6rem; }
+  .prize-dropdown-header { padding: 8px 12px; font-size: 0.6rem; }
 
   /* Tier page (structure is in the base cascade) — mobile sizing only. */
-  .drop-detail-back { margin-bottom: 12px; padding: 7px 12px; font-size: 0.66rem; }
+  .drop-detail-back { margin-bottom: 12px; padding: 8px 12px; font-size: 0.66rem; }
   .drop-detail-active .category-box-canvas { width: 132px; height: 132px; }
-  .drop-detail-active .category-card { padding: 18px 16px; }
+  .drop-detail-active .category-card { padding: 16px 16px; }
   /* Undo the list view's hide — the tier page has room for the credit. */
   .drop-detail-active .category-powered-by { display: block; }
 
@@ -3521,7 +3543,10 @@ button.deposit-btn:hover {
 
   /* Top padding clears the tier label ($1000 etc.), which the reveal
      cards float up into otherwise. */
-  .box-row { column-gap: 14px; row-gap: 44px; padding: 54px 0 8px; }
+  /* 3 slots + 2 gaps has to clear the 343px between the page gutters:
+     104*3 + 8*2 = 328. A 16px gap tipped it to 344 and the third
+     crate wrapped onto its own row. */
+  .box-row { column-gap: 8px; row-gap: 48px; padding: 56px 0 8px; }
   .box-slot { width: 104px; }
   .box-canvas { width: 104px; height: 104px; }
   .box-caption { font-size: 0.62rem; }
@@ -3531,9 +3556,9 @@ button.deposit-btn:hover {
      of them landed on top of each other and the outer two ran off the
      side of the screen. Sized to sit inside the 118px slot pitch, with
      the contents scaled to match. */
-  .price-card { width: 108px; padding: 8px 6px; border-radius: 8px; }
-  .price-card-rarity { font-size: 0.48rem; letter-spacing: 1px; margin-bottom: 5px; }
-  .price-card-image { width: 52px; height: 52px; margin-bottom: 5px; }
+  .price-card { width: 104px; padding: 8px; border-radius: 8px; }
+  .price-card-rarity { font-size: 0.48rem; letter-spacing: 1px; margin-bottom: 4px; }
+  .price-card-image { width: 52px; height: 52px; margin-bottom: 4px; }
   /* line-height stays 1.3 so the base three-line height rule holds here too. */
   .price-card-name { font-size: 0.55rem; margin-bottom: 4px; }
   .price-card-price { font-size: 0.8rem; }
@@ -3543,12 +3568,12 @@ button.deposit-btn:hover {
      it deselects itself below so Drops reads as somewhere to return to.
      That leaves the two status badges to centre on their own. */
   .game-top-bar .back-btn { display: none; }
-  .game-top-bar { justify-content: center; margin-bottom: 30px; }
+  .game-top-bar { justify-content: center; margin-bottom: 32px; }
 
   /* The whole screen stays vertically centred (there was too much dead
      space under it otherwise), so growing the gaps at both ends is what
      lifts the badges and drops the button away from the cards. */
-  #playAgainBtn { margin-top: 38px; }
+  #playAgainBtn { margin-top: 32px; }
 
   /* Nothing in the tab bar is "where you are" mid-open: un-highlighting
      Drops is what tells you to tap it to get back out. */
@@ -3561,10 +3586,10 @@ button.deposit-btn:hover {
 
   /* --- Recent Pulls ---------------------------------------------------- */
 
-  .recent-pulls { margin-top: 26px; }
-  .recent-pull-item { width: 118px; padding: 10px 10px 12px; }
+  .recent-pulls { margin-top: 24px; }
+  .recent-pull-item { width: 118px; padding: 8px 8px 12px; }
   .recent-pull-item img { width: 72px; height: 72px; margin-bottom: 8px; }
-  .recent-pull-price { font-size: 0.8rem; margin-bottom: 6px; }
+  .recent-pull-price { font-size: 0.8rem; margin-bottom: 8px; }
 
   /* --- Marketplace: filters become a slide-up sheet -------------------- */
 
@@ -3575,8 +3600,8 @@ button.deposit-btn:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .market-title-row .screen-title { margin-bottom: 0; }
   /* Thumb reach: floated just above the tab bar rather than up beside the
@@ -3587,14 +3612,14 @@ button.deposit-btn:hover {
   .market-filters-toggle-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
     bottom: calc(var(--bottom-nav-h) + 12px);
     z-index: 41;
     margin: 0;
-    padding: 10px 20px;
+    padding: 8px 24px;
     background: var(--surface-2);
     border: 1px solid var(--line-strong);
     border-radius: 999px;
@@ -3623,7 +3648,7 @@ button.deposit-btn:hover {
     max-height: 78vh;
     margin: 0;
     border-radius: 16px 16px 0 0;
-    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
     overflow-y: auto;
     transform: translateY(105%);
     transition: transform 0.28s ease;
@@ -3650,9 +3675,9 @@ button.deposit-btn:hover {
      .market-item / .market-grid — pin to a tight 2-up instead of desktop's
      auto-fill(150px), for a clean grid feel instead of an odd 1.5-column
      wrap. --- */
-  .market-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .market-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .market-item-name { font-size: 0.68rem; }
-  .market-item-body { padding: 8px 10px 10px; }
+  .market-item-body { padding: 8px 8px 8px; }
 
   /* --- Account -------------------------------------------------------- */
 
@@ -3664,14 +3689,14 @@ button.deposit-btn:hover {
      Pin both to the full width so switching Clips/History/Cashed Out or
      My Listings/Offers never resizes the container around them. */
   /* Clearance for the two control rows now floating over the bottom of
-     the screen (nav 52px + toggle 34px + their gaps). */
+     the screen (--account-nav-h + the toggle + their gaps). */
   #screen-account.active { padding-bottom: 112px; }
 
-  .account-shell { flex-direction: column; gap: 14px; }
+  .account-shell { flex-direction: column; gap: 16px; }
   .account-sidebar { position: static; width: 100%; flex-basis: auto; }
   .account-content { width: 100%; }
-  .account-avatar-block { padding: 14px 12px; }
-  .account-wallet-card { padding: 2px 14px; }
+  .account-avatar-block { padding: 16px 12px; }
+  .account-wallet-card { padding: 2px 16px; }
   .wallet-card-row { padding: 8px 0; font-size: 0.68rem; }
   /* Icons instead of words — 11 text tabs needed horizontal scrolling to
      see them all; icon-only tiles wrap onto two short rows that show
@@ -3689,7 +3714,7 @@ button.deposit-btn:hover {
     bottom: calc(var(--bottom-nav-h) + 8px);
     flex-wrap: wrap;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 0;
     z-index: 41;
   }
@@ -3727,28 +3752,31 @@ button.deposit-btn:hover {
   /* No room for two columns — back to a stack, which with the explainer
      hidden leaves the count and its badge on one line as before. The
      row's flex-basis is a *height* once stacked, so it has to go. */
-  .streak-top-row { flex-direction: column; gap: 10px; }
+  .streak-top-row { flex-direction: column; gap: 8px; }
   .streak-top-row > * { flex: 0 0 auto; }
   .streak-summary-meta { flex: 0 0 auto; }
 
   /* Second-level toggle (structure is in the base cascade) — the labels
      have to get down to phone width here, and it rides just above the
-     group icons (52px tall) rather than above the content. */
+     group icons rather than above the content. */
   .account-toggle.toggle-group-active {
     position: fixed;
     left: 14px;
     right: 14px;
-    bottom: calc(var(--bottom-nav-h) + 8px + 52px + 8px);
+    bottom: calc(var(--bottom-nav-h) + 8px + var(--account-nav-h) + 8px);
     z-index: 41;
-    padding: 3px;
+    padding: 4px;
     margin-bottom: 0;
-    /* Floating over the grid now, so it needs to read as a solid bar. */
-    background: rgba(10, 10, 10, 0.92);
-    backdrop-filter: blur(10px);
+    /* Floating over the grid now, so both bars read as solid rather than
+       leaning on a blur the content behind them shows through. */
+    background: var(--surface-1);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
-  .account-nav { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
-  .account-toggle-label { font-size: 0.6rem; letter-spacing: 0.2px; padding: 7px 2px; }
+  .account-nav {
+    background: var(--surface-1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  .account-toggle-label { font-size: 0.6rem; letter-spacing: 0.2px; padding: 8px 2px; }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
      Funds/Withdraw) instead of that block sitting permanently above
@@ -3780,7 +3808,7 @@ button.deposit-btn:hover {
     overflow-y: auto;
     margin: 0;
     max-width: 100%;
-    padding: 60px 16px calc(24px + env(safe-area-inset-bottom));
+    padding: 64px 16px calc(24px + env(safe-area-inset-bottom));
   }
   .app-footer.mobile-visible { display: block; }
   .app-footer-close-btn {
@@ -3798,6 +3826,6 @@ button.deposit-btn:hover {
     color: var(--text);
     z-index: 201;
   }
-  .app-footer-main { padding: 24px 0; gap: 22px; }
-  .app-footer-columns { gap: 22px; }
+  .app-footer-main { padding: 24px 0; gap: 24px; }
+  .app-footer-columns { gap: 24px; }
 }
