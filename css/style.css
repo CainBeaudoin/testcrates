@@ -2266,7 +2266,7 @@ body {
 .add-funds-btn:hover { background: var(--text); color: #000; }
 
 .wallet-cash-btn {
-  font: inherit;
+  font-family: inherit;
   cursor: pointer;
 }
 .wallet-cash-btn:hover { border-color: var(--line-strong); }
