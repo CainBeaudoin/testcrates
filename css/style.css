@@ -313,6 +313,10 @@ body {
    below — center the whole block vertically in the available space
    instead. The other screens (Drops picker, Marketplace, Account) stay
    plain block flow; they're meant to scroll, not center. */
+/* A single open sets no tier label at all (see startRound) — collapse the
+   heading rather than leaving its margin behind as a gap. */
+#gameTierLabel:empty { display: none; }
+
 #screen-game.active {
   display: flex;
   flex-direction: column;

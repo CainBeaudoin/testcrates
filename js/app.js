@@ -1313,7 +1313,10 @@ async function startRound(key, currency) {
   roundLocked = false;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
 
-  gameTierLabel.textContent = batchTotal > 1 ? `${cat.label} — ${boxNounFor(key)} ${batchIndex} of ${batchTotal}` : cat.label;
+  // No price here — what the crate cost belongs on the Drops page you pick
+  // it from, not over the open itself. The batch counter still earns its
+  // place; a single open leaves this empty and the :empty rule collapses it.
+  gameTierLabel.textContent = batchTotal > 1 ? `${boxNounFor(key)} ${batchIndex} of ${batchTotal}` : "";
   updatePayingWithBadge();
   resetSlotsUI();
   disposeViewers();
