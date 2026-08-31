@@ -1425,6 +1425,7 @@ body {
   object-fit: contain;
   margin: 0 auto 18px;
   background: #000;
+  border-radius: 10px;
 }
 
 .prize-modal-name {
@@ -1641,6 +1642,7 @@ body {
   object-fit: contain;
   display: block;
   padding: 10px;
+  border-radius: 8px;
 }
 
 .market-item-rarity,
