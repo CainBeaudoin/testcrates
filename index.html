@@ -192,50 +192,30 @@
 
     <!-- SCREEN 4: account -->
     <section id="screen-account" class="screen">
+      <!-- Grouped: each tab shows several of the underlying .account-section
+           blocks stacked together (see ACCOUNT_NAV_GROUPS in app.js) — 11
+           flat categories read as too many, these 5 group them by what
+           they're actually about. -->
       <nav class="account-nav">
-        <button class="account-nav-item" data-section="profile" title="Profile">
+        <button class="account-nav-item" data-group="profile" title="Profile">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
           <span class="account-nav-item-label">Profile</span>
         </button>
-        <button class="account-nav-item active" data-section="vault" title="Vault">
+        <button class="account-nav-item active" data-group="holdings" title="Holdings — Vault &amp; Portfolio">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="8.3" x2="12" y2="9.3"/></svg>
-          <span class="account-nav-item-label">Vault</span>
+          <span class="account-nav-item-label">Holdings</span>
         </button>
-        <button class="account-nav-item" data-section="portfolio" title="Portfolio">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="2" y1="13" x2="22" y2="13"/></svg>
-          <span class="account-nav-item-label">Portfolio</span>
-        </button>
-        <button class="account-nav-item" data-section="streaks" title="Streaks">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.5 0 7-3 7-7 0-3.5-2-5.5-3.5-8C14.5 9 13 10 13 10s1-4-2-8c0 4-4 6-4 11a5 5 0 0 0 5 5z"/></svg>
-          <span class="account-nav-item-label">Streaks</span>
-        </button>
-        <button class="account-nav-item" data-section="clips" title="Clips">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 9 16 12 10 15"/></svg>
-          <span class="account-nav-item-label">Clips</span>
-        </button>
-        <button class="account-nav-item" data-section="listings" title="Listings">
+        <button class="account-nav-item" data-group="selling" title="Selling — Listings &amp; Offers">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9 8.59-8.59A2 2 0 0 1 13 4h6a1 1 0 0 1 1 1v6a2 2 0 0 1-.41 1.41z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
-          <span class="account-nav-item-label">Listings</span>
+          <span class="account-nav-item-label">Selling</span>
         </button>
-        <button class="account-nav-item" data-section="offers" title="Offers">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3 3 7l4 4"/><path d="M3 7h13a4 4 0 0 1 4 4v1"/><path d="M17 21l4-4-4-4"/><path d="M21 17H8a4 4 0 0 1-4-4v-1"/></svg>
-          <span class="account-nav-item-label">Offers</span>
-        </button>
-        <button class="account-nav-item" data-section="history" title="History">
+        <button class="account-nav-item" data-group="activity" title="Activity — History, Shipped &amp; Clips">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
-          <span class="account-nav-item-label">History</span>
+          <span class="account-nav-item-label">Activity</span>
         </button>
-        <button class="account-nav-item" data-section="shipped" title="Shipped">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
-          <span class="account-nav-item-label">Shipped</span>
-        </button>
-        <button class="account-nav-item" data-section="leaderboard" title="Leaderboard">
+        <button class="account-nav-item" data-group="rewards" title="Rewards — Streaks, Leaderboard &amp; Referral">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4"/><path d="M17 6h3a2 2 0 0 1-2 4"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-          <span class="account-nav-item-label">Leaderboard</span>
-        </button>
-        <button class="account-nav-item" data-section="referral" title="Referral">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>
-          <span class="account-nav-item-label">Referral</span>
+          <span class="account-nav-item-label">Rewards</span>
         </button>
       </nav>
 
@@ -274,7 +254,7 @@
             <div id="inventoryGrid" class="market-grid"></div>
           </div>
 
-          <div class="account-section" data-section="portfolio">
+          <div class="account-section active" data-section="portfolio">
             <div class="account-section-header">
               <h3>Portfolio <span class="count-badge" id="portfolioCount">0</span></h3>
               <span class="account-block-note">Stocks redeem on-chain at exact value — no listing, no shipping</span>

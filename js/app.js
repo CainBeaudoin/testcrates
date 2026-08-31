@@ -1553,14 +1553,29 @@ navTabs.forEach((tab) => {
   });
 });
 
-// ---- Account sidebar sub-nav (Vault / Listings / Offers / History / …) ---
+// ---- Account sidebar sub-nav (Profile / Holdings / Selling / Activity / Rewards) ---
+// Each tab groups several of the underlying .account-section blocks —
+// 11 flat categories (Vault, Portfolio, Streaks, Clips, Listings, Offers,
+// History, Shipped, Leaderboard, Referral) was too many to scan at a
+// glance, so they're paired up by what they're actually about. Every
+// section keeps its own render function and its own <h3> sub-header
+// (see index.html) — grouping only changes which combination of them is
+// visible at once, nothing about how they're built.
+const ACCOUNT_NAV_GROUPS = {
+  profile: ["profile"],
+  holdings: ["vault", "portfolio"],
+  selling: ["listings", "offers"],
+  activity: ["history", "shipped", "clips"],
+  rewards: ["streaks", "leaderboard", "referral"],
+};
 
 accountNavItems.forEach((item) => {
   item.addEventListener("click", () => {
     playClick();
     accountNavItems.forEach((i) => i.classList.remove("active"));
     item.classList.add("active");
-    accountSections.forEach((s) => s.classList.toggle("active", s.dataset.section === item.dataset.section));
+    const sections = ACCOUNT_NAV_GROUPS[item.dataset.group] ?? [];
+    accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
   });
 });
 
@@ -1972,13 +1987,13 @@ avatarBtn.addEventListener("click", () => {
 streakStat.addEventListener("click", () => {
   playClick();
   document.querySelector('.nav-tab[data-nav="screen-account"]').click();
-  document.querySelector('.account-nav-item[data-section="streaks"]')?.click();
+  document.querySelector('.account-nav-item[data-group="rewards"]')?.click();
 });
 
 referralStat.addEventListener("click", () => {
   playClick();
   document.querySelector('.nav-tab[data-nav="screen-account"]').click();
-  document.querySelector('.account-nav-item[data-section="referral"]')?.click();
+  document.querySelector('.account-nav-item[data-group="rewards"]')?.click();
 });
 
 notifBtn.addEventListener("click", () => {

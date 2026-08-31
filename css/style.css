@@ -1922,7 +1922,7 @@ button.deposit-btn:hover {
    file. Desktop already shows the sidebar (avatar/balances) permanently
    alongside every section, so a dedicated Profile tab would be redundant
    there. */
-.account-nav-item[data-section="profile"] { display: none; }
+.account-nav-item[data-group="profile"] { display: none; }
 
 .account-content {
   flex: 1;
@@ -1931,6 +1931,14 @@ button.deposit-btn:hover {
 
 .account-section { display: none; }
 .account-section.active { display: block; }
+/* A nav tab can show more than one of these stacked together now (see
+   ACCOUNT_NAV_GROUPS in app.js) — a divider between them so e.g. Vault's
+   grid and Portfolio's header don't run straight into each other. */
+.account-section.active + .account-section.active {
+  margin-top: 8px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
 
 .account-section-header {
   display: flex;
@@ -3364,14 +3372,14 @@ button.deposit-btn:hover {
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
      Funds/Withdraw) instead of that block sitting permanently above
-     whichever section you're actually looking at — Vault, Portfolio,
+     whichever section you're actually looking at — Holdings, Selling,
      etc. now show *only* their own content. */
-  .account-nav-item[data-section="profile"] { display: flex; }
+  .account-nav-item[data-group="profile"] { display: flex; }
   .account-sidebar { display: none; }
-  .account-nav:has(.account-nav-item[data-section="profile"].active) ~ .account-shell .account-sidebar {
+  .account-nav:has(.account-nav-item[data-group="profile"].active) ~ .account-shell .account-sidebar {
     display: flex;
   }
-  .account-nav:has(.account-nav-item[data-section="profile"].active) ~ .account-shell .account-content {
+  .account-nav:has(.account-nav-item[data-group="profile"].active) ~ .account-shell .account-content {
     display: none;
   }
 
