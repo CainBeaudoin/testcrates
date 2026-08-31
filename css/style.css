@@ -745,6 +745,10 @@ body {
 .prize-list-toggle-input { display: none; }
 .prize-list-toggle-label { display: none; }
 
+/* Mobile-only tier detail page (see .drop-detail-open in the mobile media
+   query). Never shown on desktop, where the tier list is the page. */
+.drop-detail-back { display: none; }
+
 .prize-row {
   display: flex;
   align-items: center;
@@ -3312,6 +3316,52 @@ button.deposit-btn:hover {
   }
   #prizeListToggleAll:checked ~ #categoryList .prize-list-toggle-label { color: var(--text); }
   #prizeListToggleAll:checked ~ #categoryList .prize-list { display: block; }
+
+  /* --- Drops: one tier as its own page --------------------------------
+     Tapping a tier card promotes it: the other three wraps drop out, the
+     grid goes single-column, and the two disclosures this tier keeps
+     behind taps in list view (Pulls odds, full prize catalog) are forced
+     open — this page exists precisely to show them without hunting. The
+     card is the same DOM node throughout, so its spinning 3D box carries
+     straight over instead of re-initializing. */
+  .drop-detail-back {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 7px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  body.drop-detail-open .drop-detail-back { display: inline-flex; }
+  body.drop-detail-open #screen-category .screen-title,
+  body.drop-detail-open #recentPulls { display: none; }
+
+  /* minmax(0,...) rather than a bare 1fr: the full prize list's long
+     product names give the column a wide min-content, which a bare 1fr
+     honors and the page then scrolls sideways. */
+  body.drop-detail-open .category-list { grid-template-columns: minmax(0, 1fr); }
+  body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
+
+  /* Bigger box now that the tier has the width to itself. */
+  .drop-detail-active .category-box-canvas { width: 132px; height: 132px; }
+  .drop-detail-active .category-card { padding: 18px 16px; }
+  .drop-detail-active .category-powered-by { display: block; }
+
+  /* Both disclosures open, and their triggers gone with them — .hidden is
+     an !important rule, so unhiding the odds panel needs one too. */
+  .drop-detail-active .odds-panel.hidden { display: block !important; }
+  .drop-detail-active .odds-toggle-btn,
+  .drop-detail-active .prize-list-toggle-label { display: none; }
+  .drop-detail-active .prize-list { display: block; max-height: 300px; }
+  .drop-detail-active .prize-dropdown-header { border-bottom: 1px solid var(--line); }
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 

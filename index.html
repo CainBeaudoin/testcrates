@@ -76,6 +76,10 @@
     <!-- SCREEN 1: category select -->
     <section id="screen-category" class="screen active">
       <h2 class="screen-title">Time to Choose</h2>
+      <!-- Mobile only: tapping a tier card turns that tier into its own
+           page (see .drop-detail-open in the mobile media query); this is
+           the way back out. Hidden at every other time. -->
+      <button id="dropDetailBackBtn" class="drop-detail-back">&larr; Drops</button>
       <input type="checkbox" id="prizeListToggleAll" class="prize-list-toggle-input">
       <div id="categoryList" class="category-list"></div>
 

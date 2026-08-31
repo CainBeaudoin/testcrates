@@ -341,6 +341,9 @@ const allScreens = Array.from(document.querySelectorAll(".screen"));
 function showScreen(el) {
   allScreens.forEach((s) => s.classList.remove("active"));
   el.classList.add("active");
+  // Leaving Drops (or coming back to it, e.g. after an open) always lands
+  // on the tier list rather than whichever tier page was last open.
+  closeTierDetail();
 }
 
 function disposeViewers() {
@@ -959,6 +962,30 @@ function buildPityHTML(tierKey) {
 let categoryBoxViewers = [];
 const batchQuantities = { stocks: 1, hundred: 1, twoFifty: 1, thousand: 1 };
 
+// ---- Mobile tier detail page --------------------------------------------
+// Everything visual here lives in the max-width:640px block in style.css,
+// so these classes are inert on desktop even if they linger on the body.
+
+const dropDetailBackBtn = document.getElementById("dropDetailBackBtn");
+const isMobileLayout = () => window.matchMedia("(max-width: 640px)").matches;
+
+function openTierDetail(wrap) {
+  categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
+  wrap.classList.add("drop-detail-active");
+  document.body.classList.add("drop-detail-open");
+  window.scrollTo({ top: 0 });
+}
+
+function closeTierDetail() {
+  document.body.classList.remove("drop-detail-open");
+  categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
+}
+
+dropDetailBackBtn.addEventListener("click", () => {
+  playClick();
+  closeTierDetail();
+});
+
 function renderCategories() {
   categoryList.innerHTML = "";
   categoryBoxViewers.forEach((v) => v.dispose());
@@ -967,6 +994,7 @@ function renderCategories() {
   Object.entries(CATEGORIES).forEach(([key, cat]) => {
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
+    wrap.dataset.tier = key;
 
     const paymentBadgesHTML = cat.cashOnly
       ? `<span class="category-icon-badge" title="Cash only — settles in real USDC">${ICONS.cash}</span>`
@@ -993,6 +1021,15 @@ function renderCategories() {
       <button class="category-open-btn">Open</button>
     `;
     card.addEventListener("mouseenter", playHover);
+
+    // Mobile: tapping the card body (not its buttons) promotes this tier
+    // to its own page. Nothing is re-rendered — the other wraps are just
+    // hidden by CSS — so the card keeps the very same spinning 3D box it
+    // was already showing, and the qty/Open handlers stay live.
+    card.addEventListener("click", (e) => {
+      if (!isMobileLayout() || e.target.closest("button")) return;
+      openTierDetail(wrap);
+    });
 
     const qtyValueEl = card.querySelector(".qty-value");
     const maxBtn = card.querySelector('[data-qty-action="max"]');
