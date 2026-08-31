@@ -899,7 +899,6 @@ function buildPrizeListHTML(pool) {
 // "Legendary" range reads nothing like a $100-tier one.
 function computeOddsBreakdown(pool) {
   const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
-  const ev = pool.reduce((sum, p) => sum + p.price * p.weight, 0) / totalWeight;
 
   const byRarity = {};
   pool.forEach((p) => {
@@ -920,11 +919,11 @@ function computeOddsBreakdown(pool) {
       pct: (byRarity[r].weight / totalWeight) * 100,
     }));
 
-  return { ev, buckets };
+  return { buckets };
 }
 
 function buildOddsPanelHTML(pool) {
-  const { ev, buckets } = computeOddsBreakdown(pool);
+  const { buckets } = computeOddsBreakdown(pool);
   const bucketsHTML = buckets
     .map((b) => {
       const meta = RARITY_META[b.rarity];
@@ -940,10 +939,6 @@ function buildOddsPanelHTML(pool) {
     .join("");
 
   return `
-    <div class="odds-ev-row">
-      <span>Expected Value</span>
-      <span class="odds-ev-value">$${Math.round(ev).toLocaleString()} <span class="odds-ev-unit">per pull</span></span>
-    </div>
     <div class="odds-live-header">Live Odds</div>
     <div class="odds-grid">${bucketsHTML}</div>
   `;

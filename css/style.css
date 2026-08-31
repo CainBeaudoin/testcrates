@@ -671,29 +671,6 @@ body {
   background: var(--surface-1);
 }
 
-.odds-ev-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-  font-size: 0.78rem;
-  color: var(--text-dim);
-}
-.odds-ev-value {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--text);
-}
-.odds-ev-unit {
-  font-size: 0.68rem;
-  font-weight: 400;
-  color: var(--text-faint);
-  text-transform: none;
-  letter-spacing: normal;
-}
-
 .odds-live-header {
   font-size: 0.68rem;
   letter-spacing: 1.5px;
@@ -3285,14 +3262,20 @@ button.deposit-btn:hover {
   .qty-max-btn { padding: 4px 9px; }
   .category-open-btn { margin-top: 10px; padding: 9px 0; font-size: 0.68rem; }
 
-  /* Live odds: the 2-up bucket grid was cropping its own content at
-     mobile card widths — ODTO's sneaker tiers especially, since their
-     price ranges ("$3,302–$11,005") are much wider strings than Stocks'.
-     One column gives each bucket the card's full width to lay out in. */
+  /* Live odds: five full-width buckets stacked in one column was mostly
+     empty space to the right of each. Four across fits the row; what
+     used to crop the content here wasn't the column count but the bare
+     1fr — the widest price range ("$3,302–$11,005") set the track's
+     min-content, so pin the tracks with minmax(0,…) and let the range
+     wrap instead. Whatever's left over (Legendary, usually) takes the
+     full width underneath rather than sitting as a quarter-width orphan. */
   .odds-panel { padding: 12px 12px; }
-  .odds-grid { grid-template-columns: 1fr; gap: 6px; }
-  .odds-bucket { padding: 8px 10px; }
-  .odds-bucket-range { font-size: 0.66rem; }
+  .odds-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .odds-bucket { padding: 7px 6px; gap: 1px; }
+  .odds-bucket-rarity { font-size: 0.5rem; letter-spacing: 0.4px; }
+  .odds-bucket-range { font-size: 0.54rem; line-height: 1.2; }
+  .odds-bucket-pct { font-size: 0.82rem; }
+  .odds-grid > .odds-bucket:last-child:nth-child(4n + 1) { grid-column: 1 / -1; }
 
   /* Full prize catalog is the single biggest source of "cram" per card
      (×4 cards) — collapsed by default, one tap away via a single shared
