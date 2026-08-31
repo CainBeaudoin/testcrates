@@ -66,6 +66,8 @@ const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"]
 
 // Full catalog across all tiers, used to seed simulated marketplace listings.
 const ALL_CATALOG = [...STOCKS_POOL, ...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
+// ODTO tiers only (no stocks) — used to demo-seed the Vault.
+const SNEAKER_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
@@ -350,6 +352,20 @@ function addOwnedItem(prize) {
 function releaseOwnedItem(item) {
   if (item.listingId) market.removeListing(item.listingId);
   player.removeFromInventory(item.id);
+}
+
+// Demo convenience: the first time this browser ever loads the app, drop a
+// few random ODTO items in the Vault and a few random stocks in the
+// Portfolio, so there's something to click through without opening crates
+// first. Goes through addOwnedItem like a real Keep, so listings/
+// consolidation behave identically to the real thing. Runs once ever (see
+// player.markDemoSeeded) — never re-seeds an account that's already played.
+function seedDemoInventory() {
+  if (player.hasSeededDemoInventory()) return;
+  const randomFrom = (pool) => pool[Math.floor(Math.random() * pool.length)];
+  for (let i = 0; i < 4; i++) addOwnedItem(randomFrom(SNEAKER_CATALOG));
+  for (let i = 0; i < 3; i++) addOwnedItem(randomFrom(STOCKS_POOL));
+  player.markDemoSeeded();
 }
 
 // ---- Wallet: Credits + Cash (USDC) balances --------------------------
@@ -2438,6 +2454,7 @@ if (profileParam) {
 } else {
   renderIdentity();
   seedSimulatedPulls();
+  seedDemoInventory();
   renderCategories();
   setInterval(tickSimulatedPulls, 4000);
 }

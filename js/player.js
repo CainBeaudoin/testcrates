@@ -76,6 +76,7 @@ function defaultState() {
     creditEvents: [], // cashback rebate notifications: {amount, tierKey, ts}
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
+    demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
   };
 }
 
@@ -352,6 +353,17 @@ export function setUsername(name) {
   state.username = trimmed;
   save();
   return state.username;
+}
+
+// ---- Demo seeding (Vault/Portfolio pre-populated once) -------------------
+
+export function hasSeededDemoInventory() {
+  return state.demoSeeded;
+}
+
+export function markDemoSeeded() {
+  state.demoSeeded = true;
+  save();
 }
 
 // ---- Inventory: items you chose to Keep -----------------------------
