@@ -2538,7 +2538,7 @@ function renderReferralPanel() {
           <span class="exit-btn-label">Cash Back</span>
           <span class="exit-btn-sub">$${claimable.toLocaleString()}</span>
         </button>
-        <button id="referralClaimCreditsBtn" class="exit-btn exit-btn-primary" ${claimable <= 0 ? "disabled" : ""}>
+        <button id="referralClaimCreditsBtn" class="exit-btn exit-btn-primary deposit-btn" ${claimable <= 0 ? "disabled" : ""}>
           <span class="exit-btn-label">Credits <span class="referral-claim-bonus">1.1x</span></span>
           <span class="exit-btn-sub">${creditsClaimAmount.toLocaleString()} credits</span>
         </button>

@@ -2730,6 +2730,7 @@ button.deposit-btn:hover {
   font-weight: 800;
 }
 .exit-btn-primary .referral-claim-bonus { background: rgba(0, 0, 0, 0.12); color: #1f9d55; }
+.deposit-btn .referral-claim-bonus { background: rgba(4, 22, 12, 0.18); color: #04160c; }
 
 .referral-section-label {
   font-size: 0.62rem;
