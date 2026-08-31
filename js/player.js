@@ -74,6 +74,7 @@ function defaultState() {
     cashedOut: [], // liquidated items: {id, name, rarity, price, image, amount, currency, ts}
     transfers: [], // items sent to another account: {id, name, rarity, price, image, toUsername, ts}
     creditEvents: [], // cashback rebate notifications: {amount, tierKey, ts}
+    creditEventsSeenTs: 0, // newest ts the user has actually opened the list on — see getUnseenCreditCount
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
     demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
@@ -667,4 +668,21 @@ export function logCreditEarned(amount, tierKey) {
 
 export function getCreditEvents() {
   return state.creditEvents;
+}
+
+// The badge counts what's arrived since the list was last opened, not the
+// whole history — otherwise it never clears and stops meaning anything.
+export function getUnseenCreditCount() {
+  return state.creditEvents.filter((e) => e.ts > state.creditEventsSeenTs).length;
+}
+
+export function markCreditEventsSeen() {
+  state.creditEventsSeenTs = state.creditEvents.length ? state.creditEvents[0].ts : Date.now();
+  save();
+}
+
+export function clearCreditEvents() {
+  state.creditEvents = [];
+  state.creditEventsSeenTs = Date.now();
+  save();
 }

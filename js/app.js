@@ -232,6 +232,7 @@ const notifBadge = document.getElementById("notifBadge");
 const creditsEarnedModal = document.getElementById("creditsEarnedModal");
 const creditsEarnedList = document.getElementById("creditsEarnedList");
 const creditsEarnedCloseBtn = document.getElementById("creditsEarnedCloseBtn");
+const creditsEarnedClearBtn = document.getElementById("creditsEarnedClearBtn");
 const addFundsModal = document.getElementById("addFundsModal");
 const chainFilter = document.getElementById("chainFilter");
 const depositChainName = document.getElementById("depositChainName");
@@ -2098,9 +2099,21 @@ function openCreditsEarnedModal() {
         .join("")
     : `<div class="offers-empty">Open a crate to start earning cashback credits.</div>`;
 
+  creditsEarnedClearBtn.classList.toggle("hidden", events.length === 0);
+
+  // Opening the list is what marks it read — the badge counts arrivals
+  // since the last look, so it clears here rather than growing forever.
+  player.markCreditEventsSeen();
+  renderHeaderStats();
+
   creditsEarnedModal.classList.remove("hidden");
   requestAnimationFrame(() => creditsEarnedModal.classList.add("visible"));
 }
+creditsEarnedClearBtn.addEventListener("click", () => {
+  playClick();
+  player.clearCreditEvents();
+  openCreditsEarnedModal();
+});
 creditsEarnedCloseBtn.addEventListener("click", () => {
   playClick();
   creditsEarnedModal.classList.remove("visible");
@@ -2184,9 +2197,9 @@ function renderHeaderStats() {
   referralValue.textContent = `${Math.round(referral.share * 100)}%`;
   referralRing.style.setProperty("--pct", Math.round(referral.progress * 100));
 
-  const earned = player.getCreditEvents().length;
-  notifBadge.textContent = earned;
-  notifBadge.classList.toggle("hidden", earned === 0);
+  const unseen = player.getUnseenCreditCount();
+  notifBadge.textContent = unseen;
+  notifBadge.classList.toggle("hidden", unseen === 0);
 }
 
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you

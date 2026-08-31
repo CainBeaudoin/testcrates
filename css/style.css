@@ -3172,6 +3172,46 @@ button.deposit-btn:hover {
 
 .credits-earned-amount { color: #4ade80; font-weight: 700; }
 
+/* Cashback history grows to 50 entries, which ran the card far past both
+   ends of the viewport with no way to scroll it. Cap the card to the
+   screen and let the list — and only the list — scroll inside it, so the
+   title and the buttons stay put at either end. */
+.credits-earned-modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 40px);
+  padding-bottom: 20px;
+}
+.credits-earned-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+.credits-earned-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.credits-earned-actions .listing-close-btn { margin: 0; }
+.credits-earned-clear-btn {
+  padding: 7px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.credits-earned-clear-btn:hover { color: var(--text); border-color: var(--line-strong); }
+
 .hidden { display: none !important; }
 
 /* ==========================================================================

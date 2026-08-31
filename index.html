@@ -654,11 +654,14 @@
 
 <!-- Credits earned notifications -->
 <div id="creditsEarnedModal" class="prize-modal hidden">
-  <div class="prize-modal-card listing-modal-card">
+  <div class="prize-modal-card listing-modal-card credits-earned-modal-card">
     <h3 class="payment-modal-title">Credits Earned</h3>
     <p class="payment-modal-hint">A bit of cashback lands in Credits on every crate purchase — here's your recent history.</p>
-    <div id="creditsEarnedList" class="openings-list"></div>
-    <button id="creditsEarnedCloseBtn" class="back-btn listing-close-btn">Close</button>
+    <div id="creditsEarnedList" class="openings-list credits-earned-list"></div>
+    <div class="credits-earned-actions">
+      <button id="creditsEarnedClearBtn" class="credits-earned-clear-btn">Clear notifications</button>
+      <button id="creditsEarnedCloseBtn" class="back-btn listing-close-btn">Close</button>
+    </div>
   </div>
 </div>
 
