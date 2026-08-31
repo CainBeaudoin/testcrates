@@ -2233,8 +2233,10 @@ function renderReferralPanel() {
     <div class="referral-progress-track"><div class="referral-progress-fill" style="width:${Math.round(referral.progress * 100)}%"></div></div>
 
     <div class="referral-claim">
-      <div class="referral-claim-label">Credits Available</div>
-      <div class="referral-claim-amount">${claimable.toLocaleString()} credits</div>
+      <div class="referral-claim-info">
+        <div class="referral-claim-label">Credits Available</div>
+        <div class="referral-claim-amount">${claimable.toLocaleString()} credits</div>
+      </div>
       <button id="referralClaimBtn" class="modal-btn modal-btn-solid referral-claim-btn" ${claimable <= 0 ? "disabled" : ""}>Claim Credits</button>
     </div>
 
