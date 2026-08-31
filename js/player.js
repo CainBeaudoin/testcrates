@@ -77,6 +77,7 @@ function defaultState() {
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
     demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
+    referralClaimable: 223, // demo starting balance from referred volume — see claimReferralCredits
   };
 }
 
@@ -339,6 +340,25 @@ export function getReferralTier() {
     next: atCeiling ? null : next,
     progress: atCeiling ? 1 : Math.min(1, state.lifetimeVolume / next.volume),
   };
+}
+
+// ---- Referral claimable credits -----------------------------------------
+// A demo starting balance (see referralClaimable in defaultState) standing
+// in for accrued referral-share earnings — there's no backend tallying
+// real referred-volume payouts, so claiming just lands the balance in
+// Credits once and zeroes it out.
+
+export function getReferralClaimable() {
+  return state.referralClaimable;
+}
+
+export function claimReferralCredits() {
+  const amount = state.referralClaimable;
+  if (amount <= 0) return 0;
+  state.wallet.credits += amount;
+  state.referralClaimable = 0;
+  save();
+  return amount;
 }
 
 // ---- Identity ----------------------------------------------------------

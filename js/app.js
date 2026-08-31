@@ -80,6 +80,16 @@ const FAKE_LEADERS = [
   { username: "ReplayDrops", xp: 4200 },
 ];
 
+// Simulated referred-users cast for the Referral tab — static seed volume,
+// not live data (no real referral tracking backend).
+const FAKE_REFERRALS = [
+  { username: "SoleSeeker", volume: 84200 },
+  { username: "PixelHawk77", volume: 52600 },
+  { username: "DuneRunner", volume: 37900 },
+  { username: "ThreadCounter", volume: 19400 },
+  { username: "RarePairz", volume: 8150 },
+];
+
 const HAPTIC_PATTERNS = {
   common: [15],
   uncommon: [18, 18, 18],
@@ -2214,12 +2224,29 @@ function renderReferralPanel() {
   const nextText = referral.next
     ? `${Math.round(referral.progress * 100)}% to ${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
     : "At the ceiling";
+  const claimable = player.getReferralClaimable();
   referralPanel.innerHTML = `
     <div class="referral-current">
       <div><span class="share">${Math.round(referral.share * 100)}%</span> current share</div>
       <div class="next">${nextText}</div>
     </div>
     <div class="referral-progress-track"><div class="referral-progress-fill" style="width:${Math.round(referral.progress * 100)}%"></div></div>
+
+    <div class="referral-claim">
+      <div class="referral-claim-label">Credits Available</div>
+      <div class="referral-claim-amount">${claimable.toLocaleString()} credits</div>
+      <button id="referralClaimBtn" class="modal-btn modal-btn-solid referral-claim-btn" ${claimable <= 0 ? "disabled" : ""}>Claim Credits</button>
+    </div>
+
+    <div class="referral-section-label">Referred by You</div>
+    <table class="referral-table">
+      <thead><tr><th>Username</th><th>Volume</th></tr></thead>
+      <tbody>
+        ${FAKE_REFERRALS.map((r) => `<tr><td>${r.username}</td><td>$${r.volume.toLocaleString()}</td></tr>`).join("")}
+      </tbody>
+    </table>
+
+    <div class="referral-section-label">How Your Share Is Earned</div>
     <table class="referral-table">
       <thead><tr><th>Share</th><th>How it's earned</th></tr></thead>
       <tbody>
@@ -2233,6 +2260,16 @@ function renderReferralPanel() {
       </tbody>
     </table>
   `;
+
+  const claimBtn = document.getElementById("referralClaimBtn");
+  claimBtn.addEventListener("click", () => {
+    const amount = player.claimReferralCredits();
+    if (!amount) return;
+    playClick();
+    renderWallet({ pulse: "credits" });
+    showWalletToast(amount, "credits");
+    renderReferralPanel();
+  });
 }
 
 // Deterministic per-week pick from the grail tier, so the raffle prize is

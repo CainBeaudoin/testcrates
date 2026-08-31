@@ -2431,6 +2431,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.72rem;
+  margin-bottom: 24px;
 }
 .referral-table th {
   text-align: left;
@@ -2447,6 +2448,43 @@ body {
   color: var(--text-dim);
 }
 .referral-table td:first-child { color: var(--text); font-weight: 700; }
+
+.referral-claim {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.referral-claim-label {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.referral-claim-amount {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.referral-claim-btn {
+  width: 100%;
+  max-width: 240px;
+}
+
+.referral-section-label {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 10px;
+}
 
 /* --- Streaks: daily-play calendar + weekly raffle -------------------- */
 
