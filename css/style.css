@@ -2083,7 +2083,13 @@ body {
   flex: 1;
   min-width: 0;
   height: 100%;
-  padding: 32px 28px;
+  /* Top padding is deliberately generous — .detail-close-btn floats above
+     this column at top:14px, and .price-chart carries its own -6px top
+     margin, so a plain 32px would let the two intersect. */
+  padding: 56px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   overflow-y: auto;
 }
 
@@ -2105,7 +2111,7 @@ body {
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
-  .detail-content { padding: 20px; }
+  .detail-content { padding: 52px 20px 20px; }
 }
 
 .price-chart {
