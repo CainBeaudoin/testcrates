@@ -2254,7 +2254,11 @@ button.deposit-btn:hover {
      Scrolling the whole card as one unit, instead of splitting a fixed
      media block from an independently-scrolled content block, fixes it
      regardless of how tall either section's content happens to be. */
-  .detail-modal-card { height: 85vh; max-height: 640px; overflow-y: auto; flex-direction: column; }
+  /* The goal on mobile is fitting everything on screen with no scroll at
+     all, not just "less" scroll — so the media block switches from a
+     stacked column to a compact left-image/right-info row (a photo on
+     its own line ate too much height), and the chart/paddings shrink too. */
+  .detail-modal-card { height: auto; max-height: 90vh; overflow-y: auto; flex-direction: column; }
   .detail-layout { flex-direction: column; height: auto; }
   .detail-close-btn {
     position: sticky;
@@ -2263,7 +2267,7 @@ button.deposit-btn:hover {
     display: block;
     width: 100%;
     text-align: right;
-    padding: 12px 16px;
+    padding: 8px 14px;
     margin: 0;
     background: #050505;
     border-bottom: 1px solid var(--line);
@@ -2272,21 +2276,39 @@ button.deposit-btn:hover {
   .detail-media {
     flex: 0 0 auto;
     width: 100%;
-    padding: 20px;
+    padding: 12px 14px;
     border-right: none;
     border-bottom: 1px solid var(--line);
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
   }
   .detail-media .prize-modal-image {
-    width: 160px;
-    height: 160px;
+    width: 76px;
+    height: 76px;
+    margin: 0;
+    flex: 0 0 auto;
   }
+  .detail-media .prize-modal-name {
+    max-width: 100%;
+    white-space: normal;
+    font-size: 0.8rem;
+    line-height: 1.25;
+  }
+  .detail-media .prize-modal-price { font-size: 0.95rem; }
+  .detail-media .detail-meta { margin: 0 0 4px; }
+  .detail-media .listing-seller { text-align: left; }
+  .detail-media-actions { justify-content: flex-start; margin-top: 4px; }
   .detail-content {
     flex: 0 0 auto;
     height: auto;
-    padding: 20px;
+    padding: 12px 14px 16px;
     justify-content: flex-start;
     overflow-y: visible;
+    gap: 4px;
   }
+  .detail-content .price-chart { height: 56px; margin: 0 0 2px; }
 }
 
 .price-chart {
