@@ -205,7 +205,6 @@ const profileRecentPulls = document.getElementById("profileRecentPulls");
 const sideCredits = document.getElementById("sideCredits");
 const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
-const sideVolume = document.getElementById("sideVolume");
 const sideVaultValue = document.getElementById("sideVaultValue");
 const sidePortfolioValue = document.getElementById("sidePortfolioValue");
 const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item"));
@@ -2306,7 +2305,6 @@ function renderAccount() {
   sideCredits.textContent = player.getWallet().credits.toLocaleString();
   sideCash.textContent = `$${player.getWallet().cash.toLocaleString()}`;
   sideXp.textContent = player.getXp().toLocaleString();
-  sideVolume.textContent = `$${player.getLifetimeVolume().toLocaleString()}`;
   sideVaultValue.textContent = `$${getVaultValue().toLocaleString()}`;
   sidePortfolioValue.textContent = `$${getPortfolioValue().toLocaleString()}`;
 
