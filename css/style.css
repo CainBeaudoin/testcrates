@@ -1482,19 +1482,20 @@ body {
   border: 1px solid var(--line-strong);
 }
 
-/* Deposit — deliberately its own color (purple, not the app's usual
-   monochrome) with a gradient + glow so it reads as the one button on
-   the page you'd actually tap to put money in, not just another outline
-   button in the row. */
+/* Deposit — deliberately its own color (neon-leaning green, not the
+   app's usual monochrome) with a gradient + glow so it reads as the one
+   button on the page you'd actually tap to put money in, not just
+   another outline button in the row. The gradient/shading keeps the
+   neon tone from feeling flat or overpowering. */
 .deposit-btn {
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  color: #fff;
+  background: linear-gradient(135deg, #5eead4, #16a34a);
+  color: #04160c;
   border: none;
-  box-shadow: 0 6px 18px -4px rgba(124, 58, 237, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 18px -4px rgba(52, 211, 153, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 .deposit-btn:hover {
-  background: linear-gradient(135deg, #b39dfb, #8b5cf6);
-  box-shadow: 0 8px 22px -4px rgba(124, 58, 237, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #7af0dd, #1cb954);
+  box-shadow: 0 8px 22px -4px rgba(52, 211, 153, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* --- Payment method picker --- */
