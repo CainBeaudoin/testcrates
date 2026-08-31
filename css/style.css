@@ -3451,8 +3451,16 @@ button.deposit-btn:hover {
 
   /* --- Account -------------------------------------------------------- */
 
+  /* Stacking the shell turns .account-shell's align-items:flex-start into
+     a *horizontal* constraint, so both columns shrink-wrap their content
+     — which made every toggle bar and section a different width
+     depending on what was selected (a lone listing tile gave ~210px, an
+     empty Shipped state ~184px, a full offers list the whole 347px).
+     Pin both to the full width so switching Clips/History/Cashed Out or
+     My Listings/Offers never resizes the container around them. */
   .account-shell { flex-direction: column; gap: 14px; }
   .account-sidebar { position: static; width: 100%; flex-basis: auto; }
+  .account-content { width: 100%; }
   .account-avatar-block { padding: 14px 12px; }
   .account-wallet-card { padding: 2px 14px; }
   .wallet-card-row { padding: 8px 0; font-size: 0.68rem; }
