@@ -1213,9 +1213,6 @@ function resetSlotsUI() {
     slot.querySelector(".price-card-name").textContent = "";
     slot.querySelector(".price-card-price").textContent = "";
     slot.querySelector(".box-caption").textContent = `${noun} ${Number(slot.dataset.index) + 1}`;
-    const tag = slot.querySelector(".near-miss-tag");
-    tag.textContent = "";
-    tag.classList.add("hidden");
   });
 }
 
@@ -1380,13 +1377,11 @@ function revealOthers() {
       const isNearMiss = rankOf(otherPrize.rarity) > yourRank;
       openSlot(otherIndex, { isYours: false });
 
+      // The glow pulse carries the beat on its own — the "So close — that
+      // was Epic!" caption that used to sit under the card read as
+      // repetitive the moment a round turned up two of them.
       if (isNearMiss) {
-        const slot = slots[otherIndex];
-        slot.classList.add("near-miss");
-        const tag = slot.querySelector(".near-miss-tag");
-        tag.textContent = `So close — that was ${RARITY_META[otherPrize.rarity].label}!`;
-        tag.style.color = RARITY_META[otherPrize.rarity].color;
-        tag.classList.remove("hidden");
+        slots[otherIndex].classList.add("near-miss");
         playPop();
       }
 
