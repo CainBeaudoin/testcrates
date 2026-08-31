@@ -1759,12 +1759,6 @@ body {
   cursor: pointer;
 }
 .referral-link-btn:hover { background: rgba(230, 230, 235, 0.5); }
-.profile-link-btn {
-  background: var(--surface-2);
-  border-color: var(--line);
-  color: var(--text-dim);
-}
-.profile-link-btn:hover { background: var(--surface-2); border-color: var(--line-strong); color: var(--text); }
 
 .account-wallet-card {
   background: var(--surface-1);

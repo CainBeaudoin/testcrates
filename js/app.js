@@ -175,7 +175,6 @@ const marketSort = document.getElementById("marketSort");
 const usernameBtn = document.getElementById("usernameBtn");
 const accountAvatar = document.getElementById("accountAvatar");
 const referralLinkBtn = document.getElementById("referralLinkBtn");
-const profileLinkBtn = document.getElementById("profileLinkBtn");
 const publicProfileScreen = document.getElementById("publicProfileScreen");
 const profileAvatar = document.getElementById("profileAvatar");
 const profileUsername = document.getElementById("profileUsername");
@@ -1838,17 +1837,6 @@ function renderPublicProfile(username) {
   document.querySelector(".shell").classList.add("hidden");
   publicProfileScreen.classList.remove("hidden");
 }
-
-profileLinkBtn.addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}?profile=${encodeURIComponent(player.getUsername())}`;
-  try {
-    await navigator.clipboard.writeText(link);
-  } catch {
-    // clipboard API unavailable — nothing more we can do client-side
-  }
-  playClick();
-  showToast("Profile link copied", ICONS.bell);
-});
 
 // Streak + referral-share rings and the notification badge live in the
 // topbar, visible from every screen — refreshed alongside the wallet and
