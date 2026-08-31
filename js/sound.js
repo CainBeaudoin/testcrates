@@ -118,11 +118,13 @@ export function playRaritySound(rarity) {
   }
 }
 
-export function playClick() {
-  const ctx = getCtx();
-  if (!ctx) return;
-  tone(ctx, { freq: 320, start: ctx.currentTime, duration: 0.06, type: "square", gain: 0.05 });
-}
+// Deliberately a no-op — a click tone on every single button (nav,
+// filters, toggles, modals, ...) turned out to be overwhelming across the
+// whole app. Sound is reserved for the crate-opening/reveal moments
+// (playPop, playRaritySound) and notifications (playDing). Kept as a
+// real export rather than deleted so the ~70 existing playClick() call
+// sites throughout app.js don't need to change.
+export function playClick() {}
 
 export function playHover() {
   const ctx = getCtx();
