@@ -77,7 +77,7 @@ function defaultState() {
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
     demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
-    referralClaimable: 223, // demo starting balance from referred volume — see claimReferralCredits
+    referralClaimable: 2269, // demo starting balance from referred volume — see claimReferralCash/claimReferralCredits
   };
 }
 
@@ -342,19 +342,32 @@ export function getReferralTier() {
   };
 }
 
-// ---- Referral claimable credits -----------------------------------------
+// ---- Referral claimable earnings -----------------------------------------
 // A demo starting balance (see referralClaimable in defaultState) standing
 // in for accrued referral-share earnings — there's no backend tallying
-// real referred-volume payouts, so claiming just lands the balance in
-// Credits once and zeroes it out.
+// real referred-volume payouts, so claiming just lands it in a balance
+// once and zeroes it out. Claiming as Credits instead of Cash pays a 10%
+// bonus — a small nudge toward Credits, same idea as purchase cashback.
+
+export const REFERRAL_CREDITS_BONUS = 0.1;
 
 export function getReferralClaimable() {
   return state.referralClaimable;
 }
 
-export function claimReferralCredits() {
+export function claimReferralCash() {
   const amount = state.referralClaimable;
   if (amount <= 0) return 0;
+  state.wallet.cash += amount;
+  state.referralClaimable = 0;
+  save();
+  return amount;
+}
+
+export function claimReferralCredits() {
+  const base = state.referralClaimable;
+  if (base <= 0) return 0;
+  const amount = Math.round(base * (1 + REFERRAL_CREDITS_BONUS));
   state.wallet.credits += amount;
   state.referralClaimable = 0;
   save();

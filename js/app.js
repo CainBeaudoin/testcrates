@@ -2225,6 +2225,7 @@ function renderReferralPanel() {
     ? `${Math.round(referral.progress * 100)}% to ${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
     : "At the ceiling";
   const claimable = player.getReferralClaimable();
+  const creditsClaimAmount = Math.round(claimable * (1 + player.REFERRAL_CREDITS_BONUS));
   referralPanel.innerHTML = `
     <div class="referral-current">
       <div><span class="share">${Math.round(referral.share * 100)}%</span> current share</div>
@@ -2234,10 +2235,19 @@ function renderReferralPanel() {
 
     <div class="referral-claim">
       <div class="referral-claim-info">
-        <div class="referral-claim-label">Credits Available</div>
-        <div class="referral-claim-amount">${claimable.toLocaleString()} credits</div>
+        <div class="referral-claim-label">Available to Claim</div>
+        <div class="referral-claim-amount">${claimable.toLocaleString()}</div>
       </div>
-      <button id="referralClaimBtn" class="modal-btn modal-btn-solid referral-claim-btn" ${claimable <= 0 ? "disabled" : ""}>Claim Credits</button>
+      <div class="referral-claim-actions">
+        <button id="referralClaimCashBtn" class="exit-btn" ${claimable <= 0 ? "disabled" : ""}>
+          <span class="exit-btn-label">Cash Back</span>
+          <span class="exit-btn-sub">$${claimable.toLocaleString()}</span>
+        </button>
+        <button id="referralClaimCreditsBtn" class="exit-btn exit-btn-primary" ${claimable <= 0 ? "disabled" : ""}>
+          <span class="exit-btn-label">Credits <span class="referral-claim-bonus">1.1x</span></span>
+          <span class="exit-btn-sub">${creditsClaimAmount.toLocaleString()} credits</span>
+        </button>
+      </div>
     </div>
 
     <div class="referral-section-label">Referred by You</div>
@@ -2263,8 +2273,15 @@ function renderReferralPanel() {
     </table>
   `;
 
-  const claimBtn = document.getElementById("referralClaimBtn");
-  claimBtn.addEventListener("click", () => {
+  document.getElementById("referralClaimCashBtn").addEventListener("click", () => {
+    const amount = player.claimReferralCash();
+    if (!amount) return;
+    playClick();
+    renderWallet({ pulse: "cash" });
+    showWalletToast(amount, "cash");
+    renderReferralPanel();
+  });
+  document.getElementById("referralClaimCreditsBtn").addEventListener("click", () => {
     const amount = player.claimReferralCredits();
     if (!amount) return;
     playClick();

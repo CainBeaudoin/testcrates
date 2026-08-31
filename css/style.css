@@ -2534,11 +2534,25 @@ body {
   font-weight: 800;
   color: var(--text);
 }
-.referral-claim-btn {
+.referral-claim-actions {
+  display: flex;
   flex: 0 0 auto;
-  width: auto;
-  padding: 12px 28px;
+  gap: 8px;
 }
+.referral-claim-actions .exit-btn {
+  min-width: 112px;
+}
+.referral-claim-bonus {
+  display: inline-block;
+  margin-left: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.18);
+  color: #4ade80;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+.exit-btn-primary .referral-claim-bonus { background: rgba(0, 0, 0, 0.12); color: #1f9d55; }
 
 .referral-section-label {
   font-size: 0.62rem;
