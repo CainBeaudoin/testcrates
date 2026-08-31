@@ -150,6 +150,7 @@ const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const recentPulls = document.getElementById("recentPulls");
 const recentPullsList = document.getElementById("recentPullsList");
+const recentPullsTitle = document.getElementById("recentPullsTitle");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
 const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
@@ -771,9 +772,21 @@ function tickSimulatedPulls() {
   if (screenCategory.classList.contains("active")) renderRecentPulls();
 }
 
+// Set while a tier page is open, so the carousel under it shows that
+// tier's pulls only — see openTierDetail. null = the whole feed.
+let recentPullsTierKey = null;
+
 function renderRecentPulls() {
   const mine = player.getHistory().map((p) => ({ ...p, username: player.getUsername(), isPlayer: true }));
-  const feed = [...mine, ...simulatedPulls].sort((a, b) => b.ts - a.ts).slice(0, 16);
+  const all = [...mine, ...simulatedPulls];
+  const scoped = recentPullsTierKey
+    ? all.filter((p) => (p.tierKey ?? "hundred") === recentPullsTierKey)
+    : all;
+  const feed = scoped.sort((a, b) => b.ts - a.ts).slice(0, 16);
+
+  recentPullsTitle.textContent = recentPullsTierKey
+    ? `Recent ${CATEGORIES[recentPullsTierKey].badge} Pulls`
+    : "Recent Pulls";
 
   if (feed.length === 0) {
     recentPulls.classList.add("hidden");
@@ -968,12 +981,19 @@ function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
+  // The carousel stays put below the card, narrowed to this tier's pulls.
+  recentPullsTierKey = wrap.dataset.tier;
+  renderRecentPulls();
   window.scrollTo({ top: 0 });
 }
 
 function closeTierDetail() {
   document.body.classList.remove("drop-detail-open");
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
+  if (recentPullsTierKey !== null) {
+    recentPullsTierKey = null;
+    renderRecentPulls();
+  }
 }
 
 dropDetailBackBtn.addEventListener("click", () => {

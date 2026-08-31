@@ -755,8 +755,9 @@ body {
 }
 .drop-detail-back:hover { color: var(--text); border-color: var(--line-strong); }
 body.drop-detail-open .drop-detail-back { display: inline-flex; }
-body.drop-detail-open #screen-category .screen-title,
-body.drop-detail-open #recentPulls { display: none; }
+body.drop-detail-open #screen-category .screen-title { display: none; }
+/* The pulls carousel stays, narrowed to this tier — see openTierDetail. */
+body.drop-detail-open #recentPulls { max-width: 1000px; margin-left: auto; margin-right: auto; }
 
 /* minmax(0,...) rather than a bare 1fr: the full prize list's long
    product names give the column a wide min-content, which a bare 1fr
@@ -799,8 +800,10 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
     flex-direction: row;
     align-items: stretch;
     gap: 20px;
-    height: calc(100vh - var(--topbar-h) - 150px);
-    min-height: 440px;
+    /* Short enough that the tier's pulls carousel below shows above the
+       fold, without starving the prize list it's borrowing from. */
+    height: calc(100vh - var(--topbar-h) - 240px);
+    min-height: 420px;
   }
   .drop-detail-active .category-card {
     flex: 0 0 320px;
