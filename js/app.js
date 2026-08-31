@@ -628,11 +628,19 @@ function renderRecentPulls() {
   }
   recentPulls.classList.remove("hidden");
 
+  // FLIP-animate the update instead of a flat innerHTML swap: record where
+  // every currently-rendered tile sits (keyed by its pull's timestamp, a
+  // stable per-pull id) before touching the DOM.
+  const priorLeft = new Map();
+  recentPullsList.querySelectorAll(".recent-pull-item[data-pull-ts]").forEach((el) => {
+    priorLeft.set(el.dataset.pullTs, el.getBoundingClientRect().left);
+  });
+
   const itemHTML = (p) => {
     const tierKey = p.tierKey ?? "hundred";
     const badge = CATEGORIES[tierKey]?.badge ?? "Bronze";
     return `
-      <div class="recent-pull-item">
+      <div class="recent-pull-item" data-pull-ts="${p.ts}">
         <img src="${p.image}" alt="">
         <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
         <span class="tier-badge tier-badge-${badge.toLowerCase()}">${badge}</span>
@@ -640,17 +648,36 @@ function renderRecentPulls() {
       </div>`;
   };
 
-  // Rendered twice back-to-back so the CSS marquee (see .recent-pulls-list)
-  // can loop seamlessly at translateX(-50%) — the moment the first copy
-  // scrolls fully offscreen, the second copy is sitting exactly where the
-  // first one started. Ticks (new pulls arriving) only touch the children
-  // here, not the list element's own animation, so the scroll never
-  // stutters or resets when the feed refreshes.
-  recentPullsList.innerHTML = feed.map(itemHTML).join("") + feed.map(itemHTML).join("");
-  recentPullsList.style.animationDuration = `${feed.length * 3.5}s`;
+  recentPullsList.innerHTML = feed.map(itemHTML).join("");
 
   recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
-    el.addEventListener("click", () => openPullDetail(feed[i % feed.length]));
+    el.addEventListener("click", () => openPullDetail(feed[i]));
+
+    const wasAt = priorLeft.get(el.dataset.pullTs);
+    if (wasAt == null) {
+      // A genuinely new pull — it appears in place (pops in), it never
+      // slides in from off to one side.
+      el.style.transition = "none";
+      el.style.opacity = "0";
+      el.style.transform = "scale(0.82)";
+      void el.offsetWidth; // force the browser to commit the styles above before...
+      el.style.transition = "opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)";
+      el.style.opacity = "1";
+      el.style.transform = "scale(1)"; // ...transitioning to these, so it actually animates.
+    } else {
+      // An existing pull that just got bumped rightward by the new one
+      // landing to its left — FLIP: jump it back to its old spot with no
+      // transition, then transition it forward to its real (rightward)
+      // position, so it visibly slides over.
+      const delta = wasAt - el.getBoundingClientRect().left;
+      if (delta !== 0) {
+        el.style.transition = "none";
+        el.style.transform = `translateX(${delta}px)`;
+        void el.offsetWidth; // force-commit the jump before transitioning back, same reason as above
+        el.style.transition = "transform 0.35s ease";
+        el.style.transform = "";
+      }
+    }
   });
 }
 

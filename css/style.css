@@ -788,12 +788,12 @@ body {
   font-weight: 500;
 }
 
-/* A continuously auto-scrolling ticker (feed items are rendered twice back
-   to back, see renderRecentPulls) rather than a static row that just pops
-   to a new set of items every few seconds — the row is always visibly
-   sliding, edges fade via mask so items don't hard-cut. */
+/* New pulls land at the left (newest-first) and pop in in place — see
+   renderRecentPulls — while everything already in the row FLIP-animates
+   sliding right to make room, edges fading via mask. No continuous
+   auto-scroll: it only moves when a pull genuinely arrives. */
 .recent-pulls-viewport {
-  overflow: hidden;
+  overflow-x: auto;
   -webkit-mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
   mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
 }
@@ -801,20 +801,7 @@ body {
 .recent-pulls-list {
   display: flex;
   gap: 14px;
-  width: max-content;
   padding: 4px 2px 12px;
-  animation: recent-pulls-scroll 40s linear infinite;
-}
-.recent-pulls-viewport:hover .recent-pulls-list { animation-play-state: paused; }
-
-@keyframes recent-pulls-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .recent-pulls-list { animation: none; }
-  .recent-pulls-viewport { overflow-x: auto; }
 }
 
 .recent-pull-item {
