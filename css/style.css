@@ -3277,28 +3277,12 @@ button.deposit-btn:hover {
   .odds-bucket-pct { font-size: 0.82rem; }
   .odds-grid > .odds-bucket:last-child:nth-child(4n + 1) { grid-column: 1 / -1; }
 
-  /* Full prize catalog is the single biggest source of "cram" per card
-     (×4 cards) — collapsed by default, one tap away via a single shared
-     checkbox (#prizeListToggleAll, a preceding sibling of #categoryList)
-     with one label per card all pointing at it via `for`. Clicking any
-     card's label flips the one checkbox, so all four open/close in
-     lockstep — same uniform-row behavior as the odds toggle below. */
+  /* Pulls and the prize catalog belong to the tier page now, so the list
+     view stops repeating them under every card and is just the four
+     tiers. (This replaces the old shared-checkbox disclosure — with the
+     panel gone from list view there's nothing left to disclose.) */
+  .category-wrap:not(.drop-detail-active) .prize-dropdown { display: none; }
   .prize-dropdown-header { padding: 9px 12px; font-size: 0.6rem; }
-  .prize-list { display: none; }
-  .prize-list-toggle-label {
-    display: block;
-    padding: 9px 12px;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    text-align: center;
-    color: var(--text-dim);
-    cursor: pointer;
-    border-top: 1px solid var(--line);
-  }
-  #prizeListToggleAll:checked ~ #categoryList .prize-list-toggle-label { color: var(--text); }
-  #prizeListToggleAll:checked ~ #categoryList .prize-list { display: block; }
 
   /* --- Drops: one tier as its own page --------------------------------
      Tapping a tier card promotes it: the other three wraps drop out, the
@@ -3348,10 +3332,25 @@ button.deposit-btn:hover {
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 
-  .box-row { column-gap: 14px; row-gap: 44px; padding: 40px 0 8px; }
+  /* Top padding clears the tier label ($1000 etc.), which the reveal
+     cards float up into otherwise. */
+  .box-row { column-gap: 14px; row-gap: 44px; padding: 54px 0 8px; }
   .box-slot { width: 104px; }
   .box-canvas { width: 104px; height: 104px; }
   .box-caption { font-size: 0.62rem; }
+
+  /* The reveal card kept its desktop 168px while the slot under it shrank
+     to 104px, so each card overhung its neighbours by ~50px — the three
+     of them landed on top of each other and the outer two ran off the
+     side of the screen. Sized to sit inside the 118px slot pitch, with
+     the contents scaled to match. */
+  .price-card { width: 108px; padding: 8px 6px; border-radius: 8px; }
+  .price-card-rarity { font-size: 0.48rem; letter-spacing: 1px; margin-bottom: 5px; }
+  .price-card-image { width: 52px; height: 52px; margin-bottom: 5px; }
+  .price-card-name { font-size: 0.55rem; line-height: 1.25; margin-bottom: 4px; }
+  .price-card-price { font-size: 0.8rem; }
+  .box-slot.open .price-card { transform: translate(-50%, -52px) scale(1); }
+  .near-miss-tag { font-size: 0.5rem; letter-spacing: 0.8px; }
 
   /* No "Go to Drops" arrow here — the bottom tab bar is the way back, and
      it deselects itself below so Drops reads as somewhere to return to.
