@@ -53,6 +53,26 @@ export async function buildShareCard(item) {
   const drawW = prizeImg.width * scale;
   const drawH = prizeImg.height * scale;
   ctx.drawImage(prizeImg, innerX + (innerSize - drawW) / 2, innerY + (innerSize - drawH) / 2, drawW, drawH);
+
+  // A "shrink-wrapped in plastic" finish — a diagonal glare band plus a
+  // faint top-edge highlight, like light catching a clear case over the
+  // item. The photo underneath stays fully clear/vivid; this only adds
+  // reflected light on top, it doesn't fade or wash out the image itself.
+  const sheen = ctx.createLinearGradient(innerX, innerY, innerX + innerSize, innerY + innerSize * 0.6);
+  sheen.addColorStop(0, "rgba(255, 255, 255, 0)");
+  sheen.addColorStop(0.38, "rgba(255, 255, 255, 0)");
+  sheen.addColorStop(0.48, "rgba(255, 255, 255, 0.22)");
+  sheen.addColorStop(0.58, "rgba(255, 255, 255, 0)");
+  sheen.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(innerX, innerY, innerSize, innerSize);
+
+  const rim = ctx.createLinearGradient(innerX, innerY, innerX, innerY + innerSize * 0.25);
+  rim.addColorStop(0, "rgba(255, 255, 255, 0.12)");
+  rim.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = rim;
+  ctx.fillRect(innerX, innerY, innerSize, innerSize * 0.25);
+
   ctx.restore();
 
   roundedRectPath(ctx, innerX, innerY, innerSize, innerSize, RADIUS);
@@ -67,9 +87,13 @@ export async function buildShareCard(item) {
   ctx.fillText("CHOSEN.WIN", BORDER, BORDER / 2);
 
   if (logoImg) {
-    const logoH = BORDER * 0.5;
+    // 2.5x the original size, intentionally — it's allowed to spill past
+    // the border and over the item a bit. Anchored with a small fixed
+    // margin off the true canvas edge so it never runs off-canvas.
+    const edgePad = 24;
+    const logoH = BORDER * 0.5 * 2.5;
     const logoW = logoImg.width * (logoH / logoImg.height);
-    ctx.drawImage(logoImg, CANVAS_SIZE - BORDER - logoW, CANVAS_SIZE - BORDER / 2 - logoH / 2, logoW, logoH);
+    ctx.drawImage(logoImg, CANVAS_SIZE - edgePad - logoW, CANVAS_SIZE - edgePad - logoH, logoW, logoH);
   }
 
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
