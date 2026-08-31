@@ -2079,6 +2079,30 @@ body {
   text-overflow: ellipsis;
 }
 
+.detail-media-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.detail-media-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.detail-media-btn:hover { background: var(--text); color: #000; }
+.detail-media-btn:disabled { opacity: 0.5; cursor: default; }
+.detail-media-btn:disabled:hover { background: transparent; color: var(--text-dim); }
+
 .detail-content {
   flex: 1;
   min-width: 0;

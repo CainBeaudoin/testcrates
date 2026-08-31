@@ -8,6 +8,7 @@ import * as player from "./player.js";
 import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from "./sound.js";
 import { ICONS } from "./icons.js";
+import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -275,6 +276,8 @@ const itemDetailBuyout = document.getElementById("itemDetailBuyout");
 const itemDetailBuyoutBtn = document.getElementById("itemDetailBuyoutBtn");
 const itemDetailPeerOffers = document.getElementById("itemDetailPeerOffers");
 const itemDetailCloseBtn = document.getElementById("itemDetailCloseBtn");
+const itemDetailShareBtn = document.getElementById("itemDetailShareBtn");
+const itemDetailDownloadBtn = document.getElementById("itemDetailDownloadBtn");
 const portfolioCount = document.getElementById("portfolioCount");
 const portfolioGrid = document.getElementById("portfolioGrid");
 const portfolioModal = document.getElementById("portfolioModal");
@@ -1902,6 +1905,8 @@ function openItemDetail(itemId) {
   const buyout = player.cashOutValue(item);
   itemDetailBuyout.textContent = `$${buyout.toLocaleString()}`;
   itemDetailBuyoutBtn.dataset.item = item.id;
+  itemDetailShareBtn.dataset.item = item.id;
+  itemDetailDownloadBtn.dataset.item = item.id;
 
   const peerOffers = item.listingId ? market.getOffersForListing(item.listingId) : [];
   itemDetailPeerOffers.innerHTML = peerOffers.length
@@ -1924,6 +1929,40 @@ itemDetailCloseBtn.addEventListener("click", () => {
 // (see the document click listener below) — close the modal once it fires.
 itemDetailBuyoutBtn.addEventListener("click", () => {
   setTimeout(closeItemDetail, 50);
+});
+
+// Share/Download compose a branded card (black frame, rounded inner
+// edges, CHOSEN.WIN + logo baked into the exported pixels) from the
+// item's own image — see exportCard.js.
+async function withBusyLabel(btn, busyText, fn) {
+  const label = btn.querySelector(".detail-media-btn-label");
+  const original = label.textContent;
+  btn.disabled = true;
+  label.textContent = busyText;
+  try {
+    await fn();
+  } finally {
+    btn.disabled = false;
+    label.textContent = original;
+  }
+}
+itemDetailShareBtn.addEventListener("click", () => {
+  const item = player.getInventoryItem(itemDetailShareBtn.dataset.item);
+  if (!item) return;
+  playClick();
+  withBusyLabel(itemDetailShareBtn, "Preparing…", async () => {
+    const blob = await buildShareCard(item);
+    await shareCard(blob, item);
+  });
+});
+itemDetailDownloadBtn.addEventListener("click", () => {
+  const item = player.getInventoryItem(itemDetailDownloadBtn.dataset.item);
+  if (!item) return;
+  playClick();
+  withBusyLabel(itemDetailDownloadBtn, "Preparing…", async () => {
+    const blob = await buildShareCard(item);
+    downloadShareCard(blob, item);
+  });
 });
 
 // ---- Portfolio: consolidated stock holdings --------------------------
