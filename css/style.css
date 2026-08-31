@@ -788,6 +788,39 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .drop-detail-active .prize-dropdown-header { order: 2; }
 .drop-detail-active .prize-list { order: 3; display: block; max-height: 300px; }
 
+/* Desktop turns the page on its side: the tier card takes a fixed left
+   column and Pulls fills the rest, rather than the phone's single stack
+   leaving most of the width empty and the prize list below the fold. The
+   row is sized to the viewport so the catalog scrolls inside it instead
+   of the page scrolling. */
+@media (min-width: 641px) {
+  body.drop-detail-open .category-list { max-width: 1000px; }
+  .drop-detail-active {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 20px;
+    height: calc(100vh - var(--topbar-h) - 150px);
+    min-height: 440px;
+  }
+  .drop-detail-active .category-card {
+    flex: 0 0 320px;
+    justify-content: center;
+  }
+  .drop-detail-active .category-box-canvas { width: 200px; height: 200px; }
+  /* Same tidy-up the mobile grid gets: the odd one out (Legendary, with
+     five rarities in two columns) spans rather than leaving a gap. */
+  .drop-detail-active .odds-grid > .odds-bucket:last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+  }
+  .drop-detail-active .prize-dropdown { flex: 1 1 auto; min-width: 0; }
+  .drop-detail-active .prize-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+}
+
 .prize-row {
   display: flex;
   align-items: center;
