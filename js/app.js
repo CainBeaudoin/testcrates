@@ -1479,30 +1479,22 @@ function renderMarketplace() {
   if (marketBrandFilter.children.length === 0) {
     const brands = ["all", ...new Set(market.getListings().map((l) => market.extractBrand(l.name)))];
     marketBrandFilter.innerHTML = brands
-      .map((b) => `<button class="market-chip${b === "all" ? " active" : ""}" data-brand="${b}">${b === "all" ? "All Brands" : b}</button>`)
+      .map((b) => `<option value="${b}">${b === "all" ? "All Brands" : b}</option>`)
       .join("");
-    marketBrandFilter.querySelectorAll(".market-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        playClick();
-        marketBrandValue = chip.dataset.brand;
-        marketBrandFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
-        chip.classList.add("active");
-        renderMarketGrid();
-      });
+    marketBrandFilter.addEventListener("change", () => {
+      playClick();
+      marketBrandValue = marketBrandFilter.value;
+      renderMarketGrid();
     });
 
     const sizes = ["all", ...market.SIZES];
     marketSizeFilter.innerHTML = sizes
-      .map((s) => `<button class="market-chip${s === "all" ? " active" : ""}" data-size="${s}">${s === "all" ? "All Sizes" : `US ${s}`}</button>`)
+      .map((s) => `<option value="${s}">${s === "all" ? "All Sizes" : `US ${s}`}</option>`)
       .join("");
-    marketSizeFilter.querySelectorAll(".market-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        playClick();
-        marketSizeValue = chip.dataset.size;
-        marketSizeFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
-        chip.classList.add("active");
-        renderMarketGrid();
-      });
+    marketSizeFilter.addEventListener("change", () => {
+      playClick();
+      marketSizeValue = marketSizeFilter.value;
+      renderMarketGrid();
     });
 
     const fmvBands = [

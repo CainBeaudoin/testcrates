@@ -1520,14 +1520,54 @@ body {
 
 /* --- Marketplace --- */
 
-.market-toolbar {
+.market-shell {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  max-width: 960px;
-  margin: 0 auto 20px;
+  align-items: flex-start;
+  gap: 24px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.market-filters {
+  flex: 0 0 220px;
+  position: sticky;
+  top: calc(var(--topbar-h) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.market-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.market-filter-label {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.market-filter-select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.market-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .market-filter-chips {
@@ -1555,22 +1595,10 @@ body {
   border-color: rgba(230, 230, 235, 0.5);
 }
 
-.market-sort {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 0.7rem;
-  cursor: pointer;
-}
-
 .market-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 14px;
-  max-width: 960px;
-  margin: 0 auto;
 }
 
 /* --- Card component: one shape reused for marketplace, vault, listings,

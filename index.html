@@ -146,25 +146,37 @@
     <!-- SCREEN 3: marketplace -->
     <section id="screen-marketplace" class="screen">
       <h2 class="screen-title">Marketplace <span class="count-badge" id="marketCount">0</span></h2>
-      <div class="market-toolbar">
-        <div id="marketBrandFilter" class="market-filter-chips"></div>
-        <div id="marketSizeFilter" class="market-filter-chips"></div>
-        <div id="marketFmvFilter" class="market-filter-chips"></div>
-        <label class="market-listed-toggle">
-          <input type="checkbox" id="marketListedOnly"> Listed only
-        </label>
-        <div class="market-price-range">
-          <input type="number" id="marketPriceMin" class="market-price-input" placeholder="Min $">
-          <span>–</span>
-          <input type="number" id="marketPriceMax" class="market-price-input" placeholder="Max $">
+      <div class="market-shell">
+        <aside class="market-filters">
+          <label class="market-listed-toggle">
+            <input type="checkbox" id="marketListedOnly"> Listed only
+          </label>
+          <div id="marketFmvFilter" class="market-filter-chips"></div>
+
+          <div class="market-filter-group">
+            <span class="market-filter-label">Price</span>
+            <div class="market-price-range">
+              <input type="number" id="marketPriceMin" class="market-price-input" placeholder="Min $">
+              <span>–</span>
+              <input type="number" id="marketPriceMax" class="market-price-input" placeholder="Max $">
+            </div>
+          </div>
+
+          <select id="marketSort" class="market-filter-select">
+            <option value="new">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+
+          <select id="marketBrandFilter" class="market-filter-select"></select>
+
+          <select id="marketSizeFilter" class="market-filter-select"></select>
+        </aside>
+
+        <div class="market-content">
+          <div id="marketGrid" class="market-grid"></div>
         </div>
-        <select id="marketSort" class="market-sort">
-          <option value="new">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-        </select>
       </div>
-      <div id="marketGrid" class="market-grid"></div>
     </section>
 
     <!-- SCREEN 4: account -->
