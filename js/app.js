@@ -354,16 +354,43 @@ function releaseOwnedItem(item) {
 }
 
 // Demo convenience: the first time this browser ever loads the app, drop a
-// few random ODTO items in the Vault and a few random stocks in the
-// Portfolio, so there's something to click through without opening crates
-// first. Goes through addOwnedItem like a real Keep, so listings/
-// consolidation behave identically to the real thing. Runs once ever (see
+// fixed set of ODTO items in the Vault, a fixed set of stocks in the
+// Portfolio, and top up Cash/Credits — so there's something to click
+// through without opening crates first. This dataset is hardcoded (not
+// randomized) on purpose: it's what a shared deployment link shows too,
+// with no backend to carry a specific developer's own local state to
+// another visitor, so every fresh session — including someone else
+// opening the link — shows the exact same populated demo account.
+// Goes through addOwnedItem like a real Keep, so listings/consolidation
+// behave identically to the real thing. Runs once ever (see
 // player.markDemoSeeded) — never re-seeds an account that's already played.
+const DEMO_VAULT_ITEM_NAMES = [
+  "Air Jordan 4 Nigel Sylvester Brick By Brick", // Bronze, Legendary, $587
+  "Nike Air Force 1 Low White", // Bronze, Common, $103
+  "Nike Air Force 1 Low Off-White Volt", // Silver, Legendary, $1,174
+  "Air Jordan 1 High Off-White Chicago", // Gold, Legendary, $6,236
+];
+const DEMO_PORTFOLIO_ITEM_NAMES = [
+  "NVDA — Nvidia Corp",
+  "NVDA — Nvidia Corp", // two lots on purpose — demos Portfolio consolidation
+  "AAPL — Apple Inc",
+];
+const DEMO_STARTING_CASH = 2000; // added on top of the base $500 starting balance
+const DEMO_STARTING_CREDITS = 25;
+
 function seedDemoInventory() {
   if (player.hasSeededDemoInventory()) return;
-  const randomFrom = (pool) => pool[Math.floor(Math.random() * pool.length)];
-  for (let i = 0; i < 4; i++) addOwnedItem(randomFrom(SNEAKER_CATALOG));
-  for (let i = 0; i < 3; i++) addOwnedItem(randomFrom(STOCKS_POOL));
+  const findByName = (pool, name) => pool.find((p) => p.name === name);
+  DEMO_VAULT_ITEM_NAMES.forEach((name) => {
+    const prize = findByName(SNEAKER_CATALOG, name);
+    if (prize) addOwnedItem(prize);
+  });
+  DEMO_PORTFOLIO_ITEM_NAMES.forEach((name) => {
+    const prize = findByName(STOCKS_POOL, name);
+    if (prize) addOwnedItem(prize);
+  });
+  player.addCash(DEMO_STARTING_CASH);
+  player.addCredits(DEMO_STARTING_CREDITS);
   player.markDemoSeeded();
 }
 
