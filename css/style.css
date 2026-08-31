@@ -727,6 +727,12 @@ body {
   border-top: 1px solid var(--line);
 }
 
+/* Mobile-only disclosure for the list above (see the mobile media query
+   near the end of this file) — inert on desktop, where .prize-list is
+   always shown and this checkbox/label pair stays hidden. */
+.prize-list-toggle-input { display: none; }
+.prize-list-toggle-label { display: none; }
+
 .prize-row {
   display: flex;
   align-items: center;
@@ -1555,6 +1561,14 @@ body {
   border-radius: 10px;
   padding: 16px;
 }
+
+/* Mobile-only "Filters" sheet trigger + backdrop (see the mobile media
+   query near the end of this file) — inert on desktop, where
+   .market-filters is always the visible sticky sidebar and these stay
+   hidden/no-op. */
+.market-filters-toggle-input { display: none; }
+.market-filters-toggle-btn { display: none; }
+.market-filters-backdrop { display: none; }
 
 .market-filter-group {
   display: flex;
@@ -3046,3 +3060,209 @@ body {
 .credits-earned-amount { color: #4ade80; font-weight: 700; }
 
 .hidden { display: none !important; }
+
+/* ==========================================================================
+   Mobile (<=640px) — a real mobile pass, not the desktop shell squeezed
+   down. Everything below is additive/overriding inside this one query, so
+   nothing here touches desktop rendering. Bottom tab bar in place of the
+   left rail, a condensed always-visible-essentials header, single-column
+   stacking wherever desktop used a fixed sticky sidebar, tighter type and
+   spacing throughout, and secondary detail (full prize catalog, "Powered
+   by" lines, stat labels) tucked behind a tap or dropped entirely.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 52px;
+    --bottom-nav-h: 60px;
+  }
+
+  /* --- Bottom tab bar ----------------------------------------------- */
+
+  .rail {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: var(--bottom-nav-h);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    border-right: none;
+    border-top: 1px solid var(--line);
+    z-index: 40;
+  }
+  .rail-nav {
+    flex-direction: row;
+    width: auto;
+    flex: 1;
+    justify-content: space-around;
+    gap: 0;
+  }
+  .nav-tab {
+    width: auto;
+    flex: 1;
+    padding: 5px 2px;
+  }
+  .rail-bottom {
+    margin-top: 0;
+    flex: 0 0 auto;
+  }
+  .mute-btn { width: 30px; height: 30px; }
+
+  .shell-main main {
+    padding: 14px 14px calc(var(--bottom-nav-h) + 20px);
+  }
+
+  /* --- Condensed header — logo, balances, notifications, avatar; the
+     gamification stats and secondary actions live in their own screens
+     already (Streaks/Referral tabs, Account's Add Funds button). --- */
+
+  .topbar { padding: 0 12px; gap: 8px; }
+  .brand-logo { height: 28px; }
+  #streakStat, #referralStat, #addFundsBtn { display: none; }
+  .topbar-stats { flex-wrap: nowrap; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+  .topbar-stats::-webkit-scrollbar { display: none; }
+  .wallet-item, .avatar-btn { font-size: 0.62rem; padding: 5px 8px; white-space: nowrap; }
+  #topUsername { display: none; }
+  .avatar-btn { padding: 3px; gap: 0; }
+  .notif-btn { width: 28px; height: 28px; }
+
+  .screen-title { font-size: 1.05rem; margin-bottom: 14px; }
+
+  /* --- Drops: tier cards ---------------------------------------------- */
+
+  .category-list { gap: 10px; }
+  .category-card { padding: 14px 10px 14px; }
+  .category-box-canvas { width: 92px; height: 92px; margin: 4px auto 2px; }
+  .category-payment-badges { top: 8px; right: 8px; gap: 4px; }
+  .category-icon-badge { width: 22px; height: 22px; }
+  .category-icon-badge svg { width: 11px; height: 11px; }
+  .category-tier-name, .category-tier-price { font-size: 0.82rem; }
+  .category-powered-by, .category-powered-by-spacer { display: none; }
+  .pity-bar { margin-top: 8px; }
+  .pity-bar-label { font-size: 0.54rem; }
+  .category-qty { margin-top: 10px; gap: 6px; }
+  .qty-btn { width: 24px; height: 24px; font-size: 0.8rem; }
+  .qty-value { font-size: 0.82rem; min-width: 16px; }
+  .qty-max-btn { padding: 4px 9px; }
+  .category-open-btn { margin-top: 10px; padding: 9px 0; font-size: 0.68rem; }
+
+  /* Full prize catalog is the single biggest source of "cram" per card
+     (×4 cards) — collapsed by default, one tap away via the checkbox/
+     label pair added right next to it in app.js. */
+  .prize-dropdown-header { padding: 9px 12px; font-size: 0.6rem; }
+  .prize-list { display: none; }
+  .prize-list-toggle-label {
+    display: block;
+    padding: 9px 12px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-top: 1px solid var(--line);
+  }
+  .prize-list-toggle-input:checked + .prize-list-toggle-label { color: var(--text); }
+  .prize-list-toggle-input:checked + .prize-list-toggle-label + .prize-list { display: block; }
+
+  /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
+
+  .box-row { column-gap: 14px; row-gap: 44px; padding: 40px 0 8px; }
+  .box-slot { width: 104px; }
+  .box-canvas { width: 104px; height: 104px; }
+  .box-caption { font-size: 0.62rem; }
+
+  /* --- Recent Pulls ---------------------------------------------------- */
+
+  .recent-pulls { margin-top: 26px; }
+  .recent-pull-item { width: 118px; padding: 10px 10px 12px; }
+  .recent-pull-item img { width: 72px; height: 72px; margin-bottom: 8px; }
+  .recent-pull-price { font-size: 0.8rem; margin-bottom: 6px; }
+
+  /* --- Marketplace: filters become a slide-up sheet -------------------- */
+
+  .market-filters-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -6px 0 14px;
+    padding: 8px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    width: fit-content;
+  }
+  .market-shell { flex-direction: column; gap: 0; max-width: 100%; }
+  .market-filters {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    flex: 0 0 auto;
+    max-height: 78vh;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    transform: translateY(105%);
+    transition: transform 0.28s ease;
+    z-index: 60;
+  }
+  .market-filters-toggle-input:checked ~ .market-shell .market-filters { transform: translateY(0); }
+  .market-filters-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+    z-index: 55;
+  }
+  .market-filters-toggle-input:checked ~ .market-shell .market-filters-backdrop { opacity: 1; pointer-events: auto; }
+  .market-content { width: 100%; }
+
+  /* --- Grids: Marketplace, Vault, Portfolio, Listings, Shipped share
+     .market-item / .market-grid — pin to a tight 2-up instead of desktop's
+     auto-fill(150px), for a clean grid feel instead of an odd 1.5-column
+     wrap. --- */
+  .market-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .market-item-name { font-size: 0.68rem; }
+  .market-item-body { padding: 8px 10px 10px; }
+
+  /* --- Account -------------------------------------------------------- */
+
+  .account-shell { flex-direction: column; gap: 14px; }
+  .account-sidebar { position: static; width: 100%; flex-basis: auto; }
+  .account-avatar-block { padding: 14px 12px; }
+  .account-wallet-card { padding: 2px 14px; }
+  .wallet-card-row { padding: 8px 0; font-size: 0.68rem; }
+  .account-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    top: calc(var(--topbar-h) + 8px);
+  }
+  .account-nav::-webkit-scrollbar { display: none; }
+  .account-nav-item { flex: 0 0 auto; padding: 8px 12px; font-size: 0.7rem; }
+
+  /* --- Footer ----------------------------------------------------------- */
+
+  .app-footer { margin-top: 40px; padding: 0 14px; }
+  .app-footer-main { padding: 24px 0; gap: 22px; }
+  .app-footer-columns { gap: 22px; }
+}

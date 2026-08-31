@@ -1027,6 +1027,8 @@ function renderCategories() {
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
       <div class="odds-panel hidden">${buildOddsPanelHTML(cat.pool)}</div>
+      <input type="checkbox" class="prize-list-toggle-input" id="prizeListToggle-${key}">
+      <label for="prizeListToggle-${key}" class="prize-list-toggle-label">View all prizes</label>
       <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
     `;
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {

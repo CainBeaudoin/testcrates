@@ -150,7 +150,13 @@
     <!-- SCREEN 3: marketplace -->
     <section id="screen-marketplace" class="screen">
       <h2 class="screen-title">Marketplace <span class="count-badge" id="marketCount">0</span></h2>
+      <input type="checkbox" id="marketFiltersToggle" class="market-filters-toggle-input">
+      <label for="marketFiltersToggle" class="market-filters-toggle-btn">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+        Filters
+      </label>
       <div class="market-shell">
+        <label for="marketFiltersToggle" class="market-filters-backdrop"></label>
         <aside class="market-filters">
           <label class="market-listed-toggle">
             <input type="checkbox" id="marketListedOnly"> Listed only
