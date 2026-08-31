@@ -290,26 +290,28 @@
             <button type="button" class="account-toggle-label" data-toggle-target="referral">Referral</button>
           </div>
           <div class="account-section" data-section="streaks" data-toggle-key="streaks">
-            <div class="account-section-header"><h3>Streaks</h3></div>
-
             <!-- Count and raffle prize sit side by side rather than stacked
-                 down the page; on mobile the row wraps back to a column. -->
+                 down the page, each under its own heading so the two line
+                 up; on mobile the row wraps back to a column. -->
             <div class="streak-top-row">
-              <div class="streak-summary">
-                <div class="streak-count-block">
-                  <span class="streak-count-value" id="streakDaysValue">0</span>
-                  <span class="streak-count-label">day streak</span>
-                </div>
-                <div class="streak-summary-meta">
-                  <p class="streak-explainer">
-                    One drop a day, any tier, keeps it alive — reach <b id="streakGoalInline">7</b> for the weekly raffle.
-                  </p>
-                  <span class="streak-raffle-badge" id="streakRaffleBadge"></span>
+              <div class="streak-panel">
+                <span class="streak-panel-title">Streaks</span>
+                <div class="streak-summary">
+                  <div class="streak-count-block">
+                    <span class="streak-count-value" id="streakDaysValue">0</span>
+                    <span class="streak-count-label">day streak</span>
+                  </div>
+                  <div class="streak-summary-meta">
+                    <p class="streak-explainer">
+                      One drop a day, any tier, keeps it alive — reach <b id="streakGoalInline">7</b> for the weekly raffle.
+                    </p>
+                    <span class="streak-raffle-badge" id="streakRaffleBadge"></span>
+                  </div>
                 </div>
               </div>
 
-              <div class="streak-raffle-panel">
-                <span class="streak-raffle-panel-title">This Week's Raffle Prize</span>
+              <div class="streak-panel">
+                <span class="streak-panel-title">This Week's Raffle Prize</span>
                 <div id="streakRafflePrize" class="streak-raffle-prize"></div>
               </div>
             </div>

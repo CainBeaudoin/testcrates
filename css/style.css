@@ -2936,19 +2936,23 @@ button.deposit-btn:hover {
 }
 .streak-top-row > * { flex: 1 1 320px; min-width: 0; }
 
-.streak-raffle-panel {
+/* Both columns are a heading over a card, so the two headings sit on one
+   line and — since the row stretches and each card takes the leftover
+   height — the cards under them match. */
+.streak-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.streak-raffle-panel-title {
+.streak-panel-title {
   font-size: 0.78rem;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-dim);
   font-weight: 600;
 }
-.streak-raffle-panel .streak-raffle-prize { flex: 1; }
+.streak-panel > .streak-summary,
+.streak-panel > .streak-raffle-prize { flex: 1; }
 
 .streak-summary {
   display: flex;
@@ -3027,6 +3031,12 @@ button.deposit-btn:hover {
   background: #000;
   border-radius: 6px;
   flex: 0 0 auto;
+}
+/* Desktop has the height to spare now the two cards match — a bigger
+   image keeps the prize card from reading as mostly empty beside the
+   streak count. */
+@media (min-width: 641px) {
+  .streak-raffle-prize img { width: 88px; height: 88px; }
 }
 .streak-raffle-prize-info { flex: 1; min-width: 0; }
 .streak-raffle-prize-name {
