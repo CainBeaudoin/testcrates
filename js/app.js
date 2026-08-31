@@ -1569,6 +1569,8 @@ const ACCOUNT_NAV_GROUPS = {
   rewards: ["streaks", "leaderboard", "referral"],
 };
 
+const accountToggles = Array.from(document.querySelectorAll(".account-toggle"));
+
 accountNavItems.forEach((item) => {
   item.addEventListener("click", () => {
     playClick();
@@ -1576,6 +1578,36 @@ accountNavItems.forEach((item) => {
     item.classList.add("active");
     const sections = ACCOUNT_NAV_GROUPS[item.dataset.group] ?? [];
     accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
+    // Mobile's second-level toggle (My Items vs Portfolio, etc.) only
+    // makes sense for whichever group is now showing.
+    accountToggles.forEach((t) => t.classList.toggle("toggle-group-active", t.dataset.toggleGroup === item.dataset.group));
+  });
+});
+
+// ---- Account: mobile-only second-level toggle within a nav group ---------
+// e.g. Holdings' "My Items" vs "Portfolio" — a generic handler so it
+// doesn't need per-group wiring. A target with data-toggle-key can carry
+// more than one space-separated key (the shared Offers/History wrapper,
+// which should stay visible for either of its own sub-options) — hidden
+// unless at least one of its keys matches whatever's selected in its
+// toggle group. Purely a mobile visual concern (.toggle-hidden only does
+// anything inside the mobile media query), so this runs harmlessly on
+// desktop too.
+document.querySelectorAll(".account-toggle").forEach((toggle) => {
+  const buttons = Array.from(toggle.querySelectorAll(".account-toggle-label"));
+  const groupKeys = new Set(buttons.map((b) => b.dataset.toggleTarget));
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClick();
+      buttons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const selectedKey = btn.dataset.toggleTarget;
+      document.querySelectorAll("[data-toggle-key]").forEach((el) => {
+        const keys = el.dataset.toggleKey.split(" ");
+        if (!keys.some((k) => groupKeys.has(k))) return; // belongs to a different toggle group
+        el.classList.toggle("toggle-hidden", !keys.includes(selectedKey));
+      });
+    });
   });
 });
 
