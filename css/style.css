@@ -153,11 +153,10 @@ body {
   gap: 9px;
   flex: 0 0 auto;
 }
-.brand-name {
-  font-size: 1.15rem;
-  font-weight: 900;
-  letter-spacing: 0.5px;
-  color: var(--text);
+.brand-logo {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
 .topbar-stats {
