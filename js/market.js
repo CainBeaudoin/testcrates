@@ -25,7 +25,7 @@ function uid() {
 // inventory data.
 export const SIZES = ["7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "13"];
 
-function sizeForItem(name) {
+export function sizeForItem(name) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return SIZES[h % SIZES.length];

@@ -1965,6 +1965,13 @@ body {
 }
 .listing-seller b { color: var(--text-dim); }
 
+.detail-meta {
+  margin: -4px 0 14px;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  letter-spacing: 0.3px;
+}
+
 .listing-market-data {
   margin-bottom: 18px;
   padding-top: 14px;

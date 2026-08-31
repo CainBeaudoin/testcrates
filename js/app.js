@@ -141,6 +141,7 @@ const revealFxEl = prizeModal.querySelector(".reveal-fx");
 const revealBannerEl = prizeModal.querySelector(".reveal-rarity-banner span");
 const streakBadge = document.getElementById("streakBadge");
 const multiplierBadge = document.getElementById("multiplierBadge");
+const prizeModalMeta = document.getElementById("prizeModalMeta");
 const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
@@ -247,6 +248,7 @@ const listingRarity = document.getElementById("listingRarity");
 const listingImage = document.getElementById("listingImage");
 const listingName = document.getElementById("listingName");
 const listingPrice = document.getElementById("listingPrice");
+const listingMeta = document.getElementById("listingMeta");
 const listingSeller = document.getElementById("listingSeller");
 const listingActions = document.getElementById("listingActions");
 const listingOfferBtn = document.getElementById("listingOfferBtn");
@@ -271,6 +273,7 @@ const itemDetailModal = document.getElementById("itemDetailModal");
 const itemDetailImage = document.getElementById("itemDetailImage");
 const itemDetailName = document.getElementById("itemDetailName");
 const itemDetailValue = document.getElementById("itemDetailValue");
+const itemDetailMeta = document.getElementById("itemDetailMeta");
 const itemDetailChart = document.getElementById("itemDetailChart");
 const itemDetailBuyout = document.getElementById("itemDetailBuyout");
 const itemDetailBuyoutBtn = document.getElementById("itemDetailBuyoutBtn");
@@ -334,6 +337,16 @@ function formatPrice(prize) {
 
 function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
+}
+
+// Size + condition line shown on the reveal, Vault item detail, and
+// Marketplace listing detail — so a size mismatch is obvious immediately,
+// before spending an exit on something that won't fit. Stocks have
+// neither. Condition is always "New" (no used/worn inventory in this
+// catalog) but still stated explicitly rather than assumed.
+function itemMetaText(name, category) {
+  if (category === "stocks") return "";
+  return `Size US ${market.sizeForItem(name)} · Condition: New`;
 }
 
 function vibrate(rarity) {
@@ -1206,6 +1219,9 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
+  const metaText = itemMetaText(prize.name, prize.category);
+  prizeModalMeta.textContent = metaText;
+  prizeModalMeta.classList.toggle("hidden", !metaText);
 
   if (multiplier !== null && multiplier !== undefined) {
     const positive = multiplier > 1;
@@ -1557,6 +1573,9 @@ function openListingModal(id, navIds = null) {
   listingImage.alt = listing.name;
   listingName.textContent = listing.name;
   listingPrice.textContent = listing.price != null ? `$${listing.price.toLocaleString()}` : "Offer only";
+  const listMeta = itemMetaText(listing.name, listing.category);
+  listingMeta.textContent = listMeta;
+  listingMeta.classList.toggle("hidden", !listMeta);
   listingSeller.innerHTML = listing.isPlayer ? "Held by <b>you</b>" : `Held by <b>${listing.seller}</b>`;
 
   // Simulated market data — every listing gets this, not just ones the
@@ -1898,6 +1917,9 @@ function openItemDetail(itemId) {
   itemDetailImage.src = item.image;
   itemDetailImage.alt = item.name;
   itemDetailName.textContent = item.name;
+  const itemMeta = itemMetaText(item.name, item.category);
+  itemDetailMeta.textContent = itemMeta;
+  itemDetailMeta.classList.toggle("hidden", !itemMeta);
   const value = player.currentMarketValue(item);
   itemDetailValue.textContent = `$${value.toLocaleString()}`;
   itemDetailChart.innerHTML = buildPriceChartSVG(player.priceHistory(item));
