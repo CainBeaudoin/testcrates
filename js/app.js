@@ -1592,16 +1592,27 @@ mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
 
 // ---- Nav tabs (Boxes / Marketplace / Account) -----------------------------
 
-// Mobile's floating Filters button dims while the page is moving so it
-// isn't sitting solidly over the grid you're scanning. Inert elsewhere —
-// .is-scrolling is only styled inside the mobile media query.
+// Mobile's floating controls get out of the way while the page is moving:
+// the Filters button dims, and Account's two bottom bars tuck away on the
+// way down. Both come back the moment you scroll up or simply stop, so
+// .scrolling-down is cleared on the same idle timer as .is-scrolling.
+// Inert elsewhere — neither class is styled outside the mobile block.
 let scrollFadeTimer = null;
+let lastScrollY = window.scrollY;
 window.addEventListener(
   "scroll",
   () => {
+    const y = window.scrollY;
+    // A few pixels of slack so scroll jitter doesn't flip the direction.
+    if (Math.abs(y - lastScrollY) > 4) {
+      document.body.classList.toggle("scrolling-down", y > lastScrollY);
+      lastScrollY = y;
+    }
     document.body.classList.add("is-scrolling");
     clearTimeout(scrollFadeTimer);
-    scrollFadeTimer = setTimeout(() => document.body.classList.remove("is-scrolling"), 220);
+    scrollFadeTimer = setTimeout(() => {
+      document.body.classList.remove("is-scrolling", "scrolling-down");
+    }, 220);
   },
   { passive: true }
 );

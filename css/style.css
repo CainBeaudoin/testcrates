@@ -3693,6 +3693,20 @@ button.deposit-btn:hover {
     margin-bottom: 0;
     z-index: 41;
   }
+
+  /* Both bottom bars tuck away on the way down and come back when you
+     scroll up or stop — the idle timer in app.js clears .scrolling-down,
+     so "stopped" reads the same as "scrolling up" here. */
+  .account-nav,
+  .account-toggle.toggle-group-active {
+    transition: transform 0.22s ease, opacity 0.22s ease;
+  }
+  body.is-scrolling.scrolling-down .account-nav,
+  body.is-scrolling.scrolling-down .account-toggle.toggle-group-active {
+    transform: translateY(calc(100% + 16px));
+    opacity: 0;
+    pointer-events: none;
+  }
   .account-nav-item {
     flex: 0 0 auto;
     width: 42px;
