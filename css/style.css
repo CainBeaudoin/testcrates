@@ -1182,16 +1182,6 @@ body {
 }
 .app-footer-social-btn:hover { color: var(--text); border-color: var(--line-strong); }
 
-.app-footer-bottom {
-  text-align: center;
-  padding: 18px 0 28px;
-  font-size: 0.7rem;
-  color: var(--text-faint);
-}
-.app-footer-bottom p { margin: 0; }
-.app-footer-bottom a { color: var(--text-dim); }
-.app-footer-bottom a:hover { color: var(--text); }
-
 /* --- Won-prize modal --- */
 
 .prize-modal {
