@@ -1989,15 +1989,42 @@ button.deposit-btn:hover {
   border-top: 1px solid var(--line);
 }
 
-/* Mobile-only second-level toggle (My Items vs Portfolio, etc.) — see
-   the mobile media query near the end of this file for the actual
-   show/hide effect (.toggle-hidden) and the switch's visible styling.
-   Desktop keeps stacking every section in a group: .account-toggle stays
-   hidden here, and .toggle-hidden is deliberately declared nowhere in
-   this scope (not even as a "block" no-op — that would fight the normal
-   .account-section{display:none}/.active{display:block} cascade for any
-   element carrying both classes), so it has zero effect outside mobile. */
+/* Second-level toggle within a nav group (My Items vs Portfolio, Clips vs
+   History vs Cashed Out vs Shipped, ...) — a segmented pill switch that
+   shows one section at a time instead of stacking a group's sections down
+   the page. Only the toggle belonging to the active nav group shows; the
+   click handler in app.js sets .toggle-group-active, otherwise all four
+   would stack regardless of which tab you're on.
+
+   .toggle-hidden needs the !important: the initial hidden state ships in
+   the markup, and Portfolio carries both .active and .toggle-hidden. */
 .account-toggle { display: none; }
+.account-toggle.toggle-group-active {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.account-toggle-label {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-align: center;
+  line-height: 1.25;
+  padding: 9px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.account-toggle-label:hover { color: var(--text); }
+.account-toggle-label.active { background: var(--accent-dim); color: var(--accent); }
+.toggle-hidden { display: none !important; }
 
 .account-section-header {
   display: flex;
@@ -3550,39 +3577,10 @@ button.deposit-btn:hover {
      desktop keeps it and renderStreaks() can still write #streakGoalInline. */
   .streak-explainer { display: none; }
 
-  /* Second-level toggle within a group (My Items vs Portfolio, Clips vs
-     History vs Cashed Out vs Shipped, ...) — a segmented pill switch,
-     and whichever target isn't selected is actually hidden here (this
-     is the only place .toggle-hidden does anything). Only the toggle
-     belonging to whichever nav group is currently active should show
-     (see the accountNavItems click handler in app.js, which sets
-     .toggle-group-active) — otherwise all four stack up regardless of
-     which top-level tab you're actually on. */
-  .account-toggle.toggle-group-active {
-    display: flex;
-    gap: 2px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 3px;
-    margin-bottom: 16px;
-  }
-  .account-toggle-label {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-dim);
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-    text-align: center;
-    line-height: 1.25;
-    padding: 7px 2px;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-  .account-toggle-label.active { background: var(--accent-dim); color: var(--accent); }
-  .toggle-hidden { display: none !important; }
+  /* Second-level toggle (structure is in the base cascade) — the labels
+     have to get down to phone width here. */
+  .account-toggle.toggle-group-active { padding: 3px; margin-bottom: 16px; }
+  .account-toggle-label { font-size: 0.6rem; letter-spacing: 0.2px; padding: 7px 2px; }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
      Funds/Withdraw) instead of that block sitting permanently above
