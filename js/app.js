@@ -627,22 +627,30 @@ function renderRecentPulls() {
     return;
   }
   recentPulls.classList.remove("hidden");
-  recentPullsList.innerHTML = feed
-    .map((p, i) => {
-      const tierKey = p.tierKey ?? "hundred";
-      const badge = CATEGORIES[tierKey]?.badge ?? "Bronze";
-      return `
-        <div class="recent-pull-item" data-pull-index="${i}">
-          <img src="${p.image}" alt="">
-          <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
-          <span class="tier-badge tier-badge-${badge.toLowerCase()}">${badge}</span>
-          <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
-        </div>`;
-    })
-    .join("");
+
+  const itemHTML = (p) => {
+    const tierKey = p.tierKey ?? "hundred";
+    const badge = CATEGORIES[tierKey]?.badge ?? "Bronze";
+    return `
+      <div class="recent-pull-item">
+        <img src="${p.image}" alt="">
+        <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
+        <span class="tier-badge tier-badge-${badge.toLowerCase()}">${badge}</span>
+        <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
+      </div>`;
+  };
+
+  // Rendered twice back-to-back so the CSS marquee (see .recent-pulls-list)
+  // can loop seamlessly at translateX(-50%) — the moment the first copy
+  // scrolls fully offscreen, the second copy is sitting exactly where the
+  // first one started. Ticks (new pulls arriving) only touch the children
+  // here, not the list element's own animation, so the scroll never
+  // stutters or resets when the feed refreshes.
+  recentPullsList.innerHTML = feed.map(itemHTML).join("") + feed.map(itemHTML).join("");
+  recentPullsList.style.animationDuration = `${feed.length * 3.5}s`;
 
   recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
-    el.addEventListener("click", () => openPullDetail(feed[i]));
+    el.addEventListener("click", () => openPullDetail(feed[i % feed.length]));
   });
 }
 
@@ -1890,11 +1898,13 @@ function inventoryItemHTML(item) {
   const cashOutToday = player.cashOutValue(item);
   const listing = item.listingId ? market.getListing(item.listingId) : null;
   const isListed = listing && listing.price != null;
+  const sizeHTML = item.category !== "stocks" ? `<span class="market-item-size">US ${market.sizeForItem(item.name)}</span>` : "";
 
   return `
     <div class="market-item" data-item="${item.id}">
       <div class="market-item-media">
         <img src="${item.image}" alt="">
+        ${sizeHTML}
       </div>
       <div class="market-item-body">
         <span class="market-item-name">${item.name}</span>
@@ -2260,10 +2270,12 @@ function renderShipped() {
   shippedList.innerHTML = shipped.length
     ? shipped
         .map((item) => {
+          const sizeHTML = item.category !== "stocks" ? `<span class="market-item-size">US ${market.sizeForItem(item.name)}</span>` : "";
           return `
             <div class="market-item static">
               <div class="market-item-media">
                 <img src="${item.image}" alt="">
+                ${sizeHTML}
               </div>
               <div class="market-item-body">
                 <span class="market-item-name">${item.name}</span>

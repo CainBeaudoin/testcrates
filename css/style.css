@@ -788,11 +788,33 @@ body {
   font-weight: 500;
 }
 
+/* A continuously auto-scrolling ticker (feed items are rendered twice back
+   to back, see renderRecentPulls) rather than a static row that just pops
+   to a new set of items every few seconds — the row is always visibly
+   sliding, edges fade via mask so items don't hard-cut. */
+.recent-pulls-viewport {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);
+}
+
 .recent-pulls-list {
   display: flex;
   gap: 14px;
-  overflow-x: auto;
+  width: max-content;
   padding: 4px 2px 12px;
+  animation: recent-pulls-scroll 40s linear infinite;
+}
+.recent-pulls-viewport:hover .recent-pulls-list { animation-play-state: paused; }
+
+@keyframes recent-pulls-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recent-pulls-list { animation: none; }
+  .recent-pulls-viewport { overflow-x: auto; }
 }
 
 .recent-pull-item {
@@ -1650,7 +1672,7 @@ body {
   backdrop-filter: blur(4px);
   border: 1px solid currentColor;
 }
-.market-item-fmv { left: auto; right: 8px; }
+.market-item-size { left: auto; right: 8px; }
 .market-item-size { color: var(--text-dim); }
 
 .market-item-body {
