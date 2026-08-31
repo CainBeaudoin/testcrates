@@ -250,8 +250,8 @@ body {
   height: 15px;
   padding: 0 3px;
   border-radius: 999px;
-  background: #f2b84b;
-  color: #000;
+  background: #1cb954;
+  color: #04160c;
   font-size: 0.55rem;
   font-weight: 800;
   display: flex;
@@ -1108,9 +1108,22 @@ body {
 .primary-btn:hover { transform: translateY(-2px); }
 
 .app-footer {
+  display: none;
   max-width: 1180px;
   margin: 64px auto 0;
   padding: 0 28px;
+}
+/* Only on the three main screens — not the crate-opening/reveal flow
+   (#screen-game), where it's just dead scroll weight below a modal-
+   driven flow. min-width so this never fights the mobile media query's
+   own (stricter — Account only) footer rule on specificity; the :has()
+   compound selector here outranks a plain .app-footer{display:none}. */
+@media (min-width: 641px) {
+  main:has(#screen-category.active) + .app-footer,
+  main:has(#screen-marketplace.active) + .app-footer,
+  main:has(#screen-account.active) + .app-footer {
+    display: block;
+  }
 }
 
 .app-footer-main {
@@ -1482,21 +1495,24 @@ body {
   border: 1px solid var(--line-strong);
 }
 
-/* Deposit — deliberately its own color (neon-leaning green, not the
-   app's usual monochrome) with a gradient + glow so it reads as the one
-   button on the page you'd actually tap to put money in, not just
-   another outline button in the row. The gradient/shading keeps the
-   neon tone from feeling flat or overpowering. */
-.deposit-btn {
+/* The one accent color in an otherwise monochrome app (neon-leaning
+   green, gradient + glow so it doesn't feel flat/overpowering) — reused
+   on every "this is the button you actually want to tap" moment:
+   Deposit, Cash Out on a reveal, and Try Again after a round.
+   Specificity is bumped (button.deposit-btn, not just .deposit-btn) so
+   it reliably wins over each button's own base class (.exit-btn,
+   .primary-btn) regardless of which is later in this file. */
+button.deposit-btn {
   background: linear-gradient(135deg, #5eead4, #16a34a);
   color: #04160c;
   border: none;
   box-shadow: 0 6px 18px -4px rgba(52, 211, 153, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
-.deposit-btn:hover {
+button.deposit-btn:hover {
   background: linear-gradient(135deg, #7af0dd, #1cb954);
   box-shadow: 0 8px 22px -4px rgba(52, 211, 153, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
+.deposit-btn .exit-btn-sub { color: rgba(4, 22, 12, 0.6); }
 
 /* --- Payment method picker --- */
 
