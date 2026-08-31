@@ -2033,6 +2033,81 @@ body {
 
 .item-detail-card { max-width: 340px; }
 
+/* --- Shared fixed-size landscape detail card: marketplace listing, Vault
+   item, Portfolio position. Same footprint regardless of content — image
+   + key facts in a left column, chart/offers/actions in a scrollable
+   right column. The reveal modal (opening a prize) stays vertical and is
+   NOT part of this — see .exits-modal-card. */
+
+.detail-modal-card {
+  width: 100%;
+  max-width: 720px;
+  height: 460px;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  overflow: hidden;
+}
+
+.detail-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.detail-media {
+  flex: 0 0 250px;
+  height: 100%;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+}
+.detail-media .prize-modal-image {
+  width: 160px;
+  height: 160px;
+  margin: 0 0 8px;
+}
+.detail-media .prize-modal-name {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 32px 28px;
+  overflow-y: auto;
+}
+
+.detail-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 3;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .detail-modal-card { height: 80vh; max-height: 560px; }
+  .detail-layout { flex-direction: column; }
+  .detail-media {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .detail-content { padding: 20px; }
+}
+
 .price-chart {
   width: 100%;
   height: 90px;
@@ -2156,66 +2231,9 @@ body {
 .tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
 .tier-badge-stocks { color: #4ade80; background: rgba(74, 222, 128, 0.14); }
 
-/* --- Reveal exits: Cash Out / Keep ---------------------------------------
-   Fixed-size landscape card (image left, details right) instead of a
-   content-driven vertical stack — the same footprint every time regardless
-   of item name length or which badges are showing, so nothing reflows or
-   overlaps between a common sneaker and a long legendary stock name. */
+/* --- Reveal exits: Cash Out / Keep --- */
 
-.exits-modal-card {
-  width: 100%;
-  max-width: 620px;
-  height: 320px;
-  padding: 28px;
-  text-align: left;
-  display: flex;
-  align-items: center;
-}
-
-.exits-layout {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  width: 100%;
-  height: 100%;
-}
-
-.exits-media {
-  flex: 0 0 200px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-.exits-media .prize-modal-image {
-  width: 170px;
-  height: 170px;
-  margin: 0;
-}
-
-.exits-details {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-}
-.exits-details .prize-modal-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 640px) {
-  .exits-modal-card { height: 260px; padding: 20px; }
-  .exits-layout { gap: 18px; }
-  .exits-media { flex-basis: 140px; }
-  .exits-media .prize-modal-image { width: 110px; height: 110px; }
-}
+.exits-modal-card { max-width: 340px; }
 
 .multiplier-badge {
   display: inline-flex;
