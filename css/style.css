@@ -1869,6 +1869,12 @@ body {
 .account-nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
 .account-nav-item.active { background: var(--accent-dim); color: var(--accent); }
 
+/* Mobile-only tab — see the mobile media query near the end of this
+   file. Desktop already shows the sidebar (avatar/balances) permanently
+   alongside every section, so a dedicated Profile tab would be redundant
+   there. */
+.account-nav-item[data-section="profile"] { display: none; }
+
 .account-content {
   flex: 1;
   min-width: 0;
@@ -3152,6 +3158,15 @@ body {
   .qty-max-btn { padding: 4px 9px; }
   .category-open-btn { margin-top: 10px; padding: 9px 0; font-size: 0.68rem; }
 
+  /* Live odds: the 2-up bucket grid was cropping its own content at
+     mobile card widths — ODTO's sneaker tiers especially, since their
+     price ranges ("$3,302–$11,005") are much wider strings than Stocks'.
+     One column gives each bucket the card's full width to lay out in. */
+  .odds-panel { padding: 12px 12px; }
+  .odds-grid { grid-template-columns: 1fr; gap: 6px; }
+  .odds-bucket { padding: 8px 10px; }
+  .odds-bucket-range { font-size: 0.66rem; }
+
   /* Full prize catalog is the single biggest source of "cram" per card
      (×4 cards) — collapsed by default, one tap away via the checkbox/
      label pair added right next to it in app.js. */
@@ -3260,9 +3275,36 @@ body {
   .account-nav::-webkit-scrollbar { display: none; }
   .account-nav-item { flex: 0 0 auto; padding: 8px 12px; font-size: 0.7rem; }
 
-  /* --- Footer ----------------------------------------------------------- */
+  /* A dedicated Profile tab (avatar/username/referral link/balances/Add
+     Funds/Withdraw) instead of that block sitting permanently above
+     whichever section you're actually looking at — Vault, Portfolio,
+     etc. now show *only* their own content. */
+  .account-nav-item[data-section="profile"] { display: flex; }
+  .account-sidebar { display: none; }
+  .account-nav:has(.account-nav-item[data-section="profile"].active) ~ .account-shell .account-sidebar {
+    display: flex;
+  }
+  .account-nav:has(.account-nav-item[data-section="profile"].active) ~ .account-shell .account-content {
+    display: none;
+  }
 
-  .app-footer { margin-top: 40px; padding: 0 14px; }
+  /* The mute toggle normally rides in the bottom tab bar, but that
+     crowds the Account page's own tab strip right above it — tuck it up
+     near the header instead while Account is open. Same button, same
+     click handler, just repositioned. */
+  body:has(#screen-account.active) .mute-btn {
+    position: fixed;
+    top: calc(var(--topbar-h) + 10px);
+    right: 10px;
+    z-index: 35;
+  }
+
+  /* --- Footer ----------------------------------------------------------- */
+  /* Only worth showing on the Account page — elsewhere it's just dead
+     scroll weight below a screen that's otherwise a tight single view. */
+
+  .app-footer { display: none; margin-top: 40px; padding: 0 14px; }
+  main:has(#screen-account.active) + .app-footer { display: block; }
   .app-footer-main { padding: 24px 0; gap: 22px; }
   .app-footer-columns { gap: 22px; }
 }
