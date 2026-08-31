@@ -1499,18 +1499,16 @@ function renderMarketplace() {
     });
 
     // "Not Good" isn't a filter people actually want (nobody's browsing
-    // for overpriced listings) — it's rendered as a plain, non-clickable
-    // label so the rating scale still reads as complete without cluttering
-    // the filter row with a button no one will use.
+    // for overpriced listings) — dropped entirely rather than shown as a
+    // dead label.
     const fmvBands = [
       { key: "all", label: "All" },
       { key: "good-deal", label: "Very Good", color: "#4ade80" },
       { key: "fair", label: "Good", color: "#AFBAC4" },
     ];
-    marketFmvFilter.innerHTML =
-      fmvBands
-        .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
-        .join("") + `<span class="market-chip market-chip-static" style="--rarity-color:#f87171">Not Good</span>`;
+    marketFmvFilter.innerHTML = fmvBands
+      .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
+      .join("");
     marketFmvFilter.querySelectorAll("button.market-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         playClick();
