@@ -308,6 +308,18 @@ body {
 .screen { display: none; }
 .screen.active { display: block; }
 
+/* The crate-opening screen (reel/boxes/reveal) is short relative to the
+   viewport and was just sitting at the top of `main` with a big dead gap
+   below — center the whole block vertically in the available space
+   instead. The other screens (Drops picker, Marketplace, Account) stay
+   plain block flow; they're meant to scroll, not center. */
+#screen-game.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100vh - var(--topbar-h) - 68px);
+}
+
 .screen-title {
   text-align: left;
   font-weight: 700;
