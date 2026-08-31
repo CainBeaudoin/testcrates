@@ -1923,6 +1923,11 @@ button.deposit-btn:hover {
    alongside every section, so a dedicated Profile tab would be redundant
    there. */
 .account-nav-item[data-group="profile"] { display: none; }
+/* Mobile-only "More" — opens the footer as an overlay there (see the
+   mobile media query); desktop already shows the footer inline, so this
+   button and the footer's own close control both stay hidden here. */
+#accountMoreBtn { display: none; }
+.app-footer-close-btn { display: none; }
 
 .account-content {
   flex: 1;
@@ -3441,13 +3446,42 @@ button.deposit-btn:hover {
   .account-nav:has(.account-nav-item[data-group="profile"].active) ~ .account-shell .account-content {
     display: none;
   }
+  #accountMoreBtn { display: flex; }
 
   /* --- Footer ----------------------------------------------------------- */
-  /* Only worth showing on the Account page — elsewhere it's just dead
-     scroll weight below a screen that's otherwise a tight single view. */
+  /* Never part of the normal page flow on mobile (not even on Account) —
+     tapping the ••• "More" tab opens this same element as a full-screen
+     overlay instead (see the accountMoreBtn handler in app.js), so the
+     brand blurb/social/support links are still reachable without eating
+     permanent scroll space on every screen. */
 
-  .app-footer { display: none; margin-top: 40px; padding: 0 14px; }
-  main:has(#screen-account.active) + .app-footer { display: block; }
+  .app-footer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--bg);
+    overflow-y: auto;
+    margin: 0;
+    max-width: 100%;
+    padding: 60px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .app-footer.mobile-visible { display: block; }
+  .app-footer-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    z-index: 201;
+  }
   .app-footer-main { padding: 24px 0; gap: 22px; }
   .app-footer-columns { gap: 22px; }
 }

@@ -198,7 +198,10 @@ const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
 const sideVaultValue = document.getElementById("sideVaultValue");
 const sidePortfolioValue = document.getElementById("sidePortfolioValue");
-const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item"));
+// [data-group] excludes #accountMoreBtn — it opens the footer-info modal
+// rather than switching which section(s) are showing, so it can't run
+// through the generic group-switching handler below.
+const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item[data-group]"));
 const accountSections = Array.from(document.querySelectorAll(".account-section"));
 const vaultCount = document.getElementById("vaultCount");
 const listingsCount = document.getElementById("listingsCount");
@@ -1582,6 +1585,23 @@ accountNavItems.forEach((item) => {
     // makes sense for whichever group is now showing.
     accountToggles.forEach((t) => t.classList.toggle("toggle-group-active", t.dataset.toggleGroup === item.dataset.group));
   });
+});
+
+// ---- Account: mobile-only "More" — the footer's own content shown as an
+// overlay instead of duplicating it, since on mobile the footer is never
+// part of the normal page flow (see the mobile media query for
+// .app-footer's fixed-overlay styling; desktop still shows it inline as
+// before and never sees this button, which stays display:none there). ---
+const accountMoreBtn = document.getElementById("accountMoreBtn");
+const appFooter = document.querySelector(".app-footer");
+const appFooterCloseBtn = document.getElementById("appFooterCloseBtn");
+accountMoreBtn.addEventListener("click", () => {
+  playClick();
+  appFooter.classList.add("mobile-visible");
+});
+appFooterCloseBtn.addEventListener("click", () => {
+  playClick();
+  appFooter.classList.remove("mobile-visible");
 });
 
 // ---- Account: mobile-only second-level toggle within a nav group ---------
