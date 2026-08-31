@@ -3579,22 +3579,38 @@ button.deposit-btn:hover {
     margin-bottom: 14px;
   }
   .market-title-row .screen-title { margin-bottom: 0; }
+  /* Thumb reach: floated just above the tab bar rather than up beside the
+     title, where it needed a second hand. Dimmed while the page is
+     moving (body.is-scrolling, set in app.js) so it isn't sitting
+     solidly over the grid you're scanning, and out of the way entirely
+     once the sheet it opens is up. */
   .market-filters-toggle-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    flex: 0 0 auto;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--bottom-nav-h) + 12px);
+    z-index: 41;
     margin: 0;
-    padding: 8px 14px;
+    padding: 10px 20px;
     background: var(--surface-2);
-    border: 1px solid var(--line);
+    border: 1px solid var(--line-strong);
     border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     color: var(--text);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.3px;
     cursor: pointer;
     width: fit-content;
+    transition: opacity 0.2s ease;
+  }
+  body.is-scrolling .market-filters-toggle-btn { opacity: 0.4; }
+  .market-title-row:has(.market-filters-toggle-input:checked) .market-filters-toggle-btn {
+    opacity: 0;
+    pointer-events: none;
   }
   .market-shell { flex-direction: column; gap: 0; max-width: 100%; }
   .market-filters {
@@ -3647,6 +3663,10 @@ button.deposit-btn:hover {
      empty Shipped state ~184px, a full offers list the whole 347px).
      Pin both to the full width so switching Clips/History/Cashed Out or
      My Listings/Offers never resizes the container around them. */
+  /* Clearance for the two control rows now floating over the bottom of
+     the screen (nav 52px + toggle 34px + their gaps). */
+  #screen-account.active { padding-bottom: 112px; }
+
   .account-shell { flex-direction: column; gap: 14px; }
   .account-sidebar { position: static; width: 100%; flex-basis: auto; }
   .account-content { width: 100%; }
@@ -3656,11 +3676,22 @@ button.deposit-btn:hover {
   /* Icons instead of words — 11 text tabs needed horizontal scrolling to
      see them all; icon-only tiles wrap onto two short rows that show
      everything at once, no scrolling needed. */
+  /* Thumb reach again: the two rows of controls stack upward off the tab
+     bar instead of sitting at the top of the screen — tab bar, then the
+     group icons, then that group's section toggle, so everything you tap
+     to get around is under your thumb. (The reverse of desktop, where
+     they read top-down.) */
   .account-nav {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    top: auto;
+    bottom: calc(var(--bottom-nav-h) + 8px);
     flex-wrap: wrap;
     justify-content: center;
     gap: 6px;
-    top: calc(var(--topbar-h) + 8px);
+    margin-bottom: 0;
+    z-index: 41;
   }
   .account-nav-item {
     flex: 0 0 auto;
@@ -3687,8 +3718,22 @@ button.deposit-btn:hover {
   .streak-summary-meta { flex: 0 0 auto; }
 
   /* Second-level toggle (structure is in the base cascade) — the labels
-     have to get down to phone width here. */
-  .account-toggle.toggle-group-active { padding: 3px; margin-bottom: 16px; }
+     have to get down to phone width here, and it rides just above the
+     group icons (52px tall) rather than above the content. */
+  .account-toggle.toggle-group-active {
+    position: fixed;
+    left: 14px;
+    right: 14px;
+    bottom: calc(var(--bottom-nav-h) + 8px + 52px + 8px);
+    z-index: 41;
+    padding: 3px;
+    margin-bottom: 0;
+    /* Floating over the grid now, so it needs to read as a solid bar. */
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  .account-nav { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
   .account-toggle-label { font-size: 0.6rem; letter-spacing: 0.2px; padding: 7px 2px; }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add

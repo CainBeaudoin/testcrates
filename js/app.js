@@ -1592,6 +1592,20 @@ mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
 
 // ---- Nav tabs (Boxes / Marketplace / Account) -----------------------------
 
+// Mobile's floating Filters button dims while the page is moving so it
+// isn't sitting solidly over the grid you're scanning. Inert elsewhere —
+// .is-scrolling is only styled inside the mobile media query.
+let scrollFadeTimer = null;
+window.addEventListener(
+  "scroll",
+  () => {
+    document.body.classList.add("is-scrolling");
+    clearTimeout(scrollFadeTimer);
+    scrollFadeTimer = setTimeout(() => document.body.classList.remove("is-scrolling"), 220);
+  },
+  { passive: true }
+);
+
 const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
 navTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
