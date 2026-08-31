@@ -292,20 +292,27 @@
           <div class="account-section" data-section="streaks" data-toggle-key="streaks">
             <div class="account-section-header"><h3>Streaks</h3></div>
 
-            <div class="streak-summary">
-              <div class="streak-count-block">
-                <span class="streak-count-value" id="streakDaysValue">0</span>
-                <span class="streak-count-label">day streak</span>
+            <!-- Count and raffle prize sit side by side rather than stacked
+                 down the page; on mobile the row wraps back to a column. -->
+            <div class="streak-top-row">
+              <div class="streak-summary">
+                <div class="streak-count-block">
+                  <span class="streak-count-value" id="streakDaysValue">0</span>
+                  <span class="streak-count-label">day streak</span>
+                </div>
+                <div class="streak-summary-meta">
+                  <p class="streak-explainer">
+                    One drop a day, any tier, keeps it alive — reach <b id="streakGoalInline">7</b> for the weekly raffle.
+                  </p>
+                  <span class="streak-raffle-badge" id="streakRaffleBadge"></span>
+                </div>
               </div>
-              <p class="streak-explainer">
-                Open at least one crate a day — any tier, Bronze included — to keep your streak alive.
-                Reach <b id="streakGoalInline">7</b> days in a row and you're entered in that week's raffle.
-              </p>
-              <span class="streak-raffle-badge" id="streakRaffleBadge"></span>
-            </div>
 
-            <div class="account-section-header"><h3>This Week's Raffle Prize</h3></div>
-            <div id="streakRafflePrize" class="streak-raffle-prize"></div>
+              <div class="streak-raffle-panel">
+                <span class="streak-raffle-panel-title">This Week's Raffle Prize</span>
+                <div id="streakRafflePrize" class="streak-raffle-prize"></div>
+              </div>
+            </div>
 
             <div class="account-section-header">
               <h3>Activity <span id="streakMonthLabel" class="account-block-note"></span></h3>

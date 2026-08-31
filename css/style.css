@@ -2021,6 +2021,12 @@ button.deposit-btn:hover {
   #screen-account.active {
     display: grid;
     grid-template-columns: 232px minmax(0, 1fr);
+    /* The sidebar spans both rows, so with two auto rows its height gets
+       distributed across them and a short section (Clips, My Listings)
+       inflates row 1, dropping the toggle bar well below the nav. A
+       flexible second row takes that slack instead, so the toggle sits
+       the same distance under the nav whatever is selected. */
+    grid-template-rows: auto 1fr;
     column-gap: 24px;
     align-items: start;
   }
@@ -2920,6 +2926,27 @@ button.deposit-btn:hover {
 
 /* --- Streaks: daily-play calendar + weekly raffle -------------------- */
 
+.streak-top-row {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+}
+.streak-top-row > * { flex: 1 1 320px; min-width: 0; }
+
+.streak-raffle-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.streak-raffle-panel-title {
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.streak-raffle-panel .streak-raffle-prize { flex: 1; }
+
 .streak-summary {
   display: flex;
   align-items: center;
@@ -2929,6 +2956,14 @@ button.deposit-btn:hover {
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: 10px;
+}
+.streak-summary-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .streak-count-block {
@@ -2954,11 +2989,9 @@ button.deposit-btn:hover {
 }
 
 .streak-explainer {
-  flex: 1;
-  min-width: 220px;
   margin: 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
+  font-size: 0.74rem;
+  line-height: 1.45;
   color: var(--text-dim);
 }
 .streak-explainer b { color: var(--text); }
@@ -3633,6 +3666,12 @@ button.deposit-btn:hover {
      the tallest thing in the section. Hidden rather than deleted so
      desktop keeps it and renderStreaks() can still write #streakGoalInline. */
   .streak-explainer { display: none; }
+  /* No room for two columns — back to a stack, which with the explainer
+     hidden leaves the count and its badge on one line as before. The
+     row's flex-basis is a *height* once stacked, so it has to go. */
+  .streak-top-row { flex-direction: column; gap: 10px; }
+  .streak-top-row > * { flex: 0 0 auto; }
+  .streak-summary-meta { flex: 0 0 auto; }
 
   /* Second-level toggle (structure is in the base cascade) — the labels
      have to get down to phone width here. */
