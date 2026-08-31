@@ -2036,6 +2036,11 @@ body {
   margin-bottom: 20px;
 }
 
+.portfolio-sell-btn {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
 .item-detail-offers {
   margin-top: 4px;
   text-align: left;
@@ -2078,10 +2083,16 @@ body {
 
 .amount-modal-card { max-width: 280px; }
 
+.amount-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
 .amount-input {
+  flex: 1;
   width: 100%;
   padding: 12px 14px;
-  margin-bottom: 18px;
   background: var(--panel-2);
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -2091,6 +2102,21 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .amount-input:focus { outline: none; border-color: var(--text); }
+
+.amount-max-btn {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.amount-max-btn:hover { background: var(--text); color: #000; }
 
 /* --- Add Funds --- */
 

@@ -25,6 +25,7 @@ const CATEGORIES = {
     categoryLabel: "Stocks",
     poweredBy: "Robinhood Chain",
     boxKind: "printer", // generic printer model, not the shoe box
+    cashOnly: true, // real USDC settlement, not a Credits reward balance
   },
   hundred: {
     label: "$100",
@@ -266,12 +267,23 @@ const itemDetailBuyout = document.getElementById("itemDetailBuyout");
 const itemDetailBuyoutBtn = document.getElementById("itemDetailBuyoutBtn");
 const itemDetailPeerOffers = document.getElementById("itemDetailPeerOffers");
 const itemDetailCloseBtn = document.getElementById("itemDetailCloseBtn");
+const portfolioCount = document.getElementById("portfolioCount");
+const portfolioGrid = document.getElementById("portfolioGrid");
+const portfolioModal = document.getElementById("portfolioModal");
+const portfolioDetailImage = document.getElementById("portfolioDetailImage");
+const portfolioDetailName = document.getElementById("portfolioDetailName");
+const portfolioDetailValue = document.getElementById("portfolioDetailValue");
+const portfolioDetailChart = document.getElementById("portfolioDetailChart");
+const portfolioDetailLots = document.getElementById("portfolioDetailLots");
+const portfolioDetailSellBtn = document.getElementById("portfolioDetailSellBtn");
+const portfolioDetailCloseBtn = document.getElementById("portfolioDetailCloseBtn");
 const amountModal = document.getElementById("amountModal");
 const amountModalTitle = document.getElementById("amountModalTitle");
 const amountModalHint = document.getElementById("amountModalHint");
 const amountInput = document.getElementById("amountInput");
 const amountCancelBtn = document.getElementById("amountCancelBtn");
 const amountConfirmBtn = document.getElementById("amountConfirmBtn");
+const amountMaxBtn = document.getElementById("amountMaxBtn");
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -327,6 +339,8 @@ function vibrate(rarity) {
 // entry (see setListingPrice), it never creates a second one.
 function addOwnedItem(prize) {
   const item = player.addToInventory(prize);
+  // Stocks settle on-chain directly (see Portfolio) — no marketplace entry.
+  if (prize.category === "stocks") return item;
   const listing = market.createListing({ item, price: null, seller: player.getUsername() });
   player.markListed(item.id, listing.id);
   return item;
@@ -685,7 +699,7 @@ function buildPityHTML(tierKey) {
 }
 
 let categoryBoxViewers = [];
-const batchQuantities = { hundred: 1, twoFifty: 1, thousand: 1 };
+const batchQuantities = { stocks: 1, hundred: 1, twoFifty: 1, thousand: 1 };
 
 function renderCategories() {
   categoryList.innerHTML = "";
@@ -786,6 +800,16 @@ function openPaymentPicker(key, quantity = 1) {
   pendingCategoryKey = key;
   pendingQuantity = quantity;
   const cat = CATEGORIES[key];
+
+  // Stocks settle in Cash only (real USDC, not a Credits reward balance) —
+  // skip the picker entirely and charge Cash straight away.
+  if (cat.cashOnly) {
+    if (!tryPurchase("cash")) {
+      showToast(`Not enough Cash for ${cat.label} — try Add Funds.`, ICONS.bell);
+    }
+    return;
+  }
+
   const wallet = player.getWallet();
   const totalCost = cat.price * quantity;
 
@@ -815,7 +839,7 @@ function tryPurchase(currency) {
     const label = qty > 1 ? `${qty}× ${cat.label}` : cat.label;
     paymentError.textContent = `Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label} — try Add Funds.`;
     paymentError.classList.remove("hidden");
-    return;
+    return false;
   }
   player.addCredits(result.rebate);
   player.logCreditEarned(result.rebate, key);
@@ -826,6 +850,7 @@ function tryPurchase(currency) {
   batchIndex = 1;
   batchRemaining = qty - 1;
   startRound(key, currency);
+  return true;
 }
 payWithCredits.addEventListener("click", () => {
   playClick();
@@ -1150,7 +1175,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
     multiplierBadge.classList.add("hidden");
   }
 
-  const cashOutNow = Math.round(prize.price * player.CASHOUT_HAIRCUT);
+  const cashOutNow = Math.round(prize.price * player.cashOutMultiplier(prize.category));
   cashOutSub.textContent = roundCurrency === "cash" ? `${fmt(cashOutNow)} now` : `${cashOutNow.toLocaleString()} credits now`;
 
   if (streak >= 2) {
@@ -1221,7 +1246,7 @@ cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
-  const amount = Math.round(prize.price * player.CASHOUT_HAIRCUT);
+  const amount = Math.round(prize.price * player.cashOutMultiplier(prize.category));
   player.cashBack(amount, roundCurrency);
   player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
   renderWallet({ pulse: roundCurrency });
@@ -1289,10 +1314,14 @@ accountNavItems.forEach((item) => {
 // ---- Generic amount prompt ------------------------------------------------
 
 let amountResolver = null;
-function promptAmount(title, hint, defaultValue) {
+let amountMax = null;
+function promptAmount(title, hint, defaultValue, { max } = {}) {
   amountModalTitle.textContent = title;
   amountModalHint.textContent = hint;
   amountInput.value = defaultValue ?? "";
+  amountMax = max ?? null;
+  amountInput.max = max ?? "";
+  amountMaxBtn.classList.toggle("hidden", max == null);
   amountModal.classList.remove("hidden");
   requestAnimationFrame(() => amountModal.classList.add("visible"));
   setTimeout(() => amountInput.focus(), 50);
@@ -1309,14 +1338,21 @@ function closeAmountModal(result) {
   }
 }
 amountConfirmBtn.addEventListener("click", () => {
-  const value = Math.round(Number(amountInput.value));
+  let value = Math.round(Number(amountInput.value));
   if (!value || value <= 0) return;
+  if (amountMax != null) value = Math.min(value, amountMax);
   playClick();
   closeAmountModal(value);
 });
 amountCancelBtn.addEventListener("click", () => {
   playClick();
   closeAmountModal(null);
+});
+amountMaxBtn.addEventListener("click", () => {
+  if (amountMax == null) return;
+  playClick();
+  amountInput.value = amountMax;
+  amountInput.focus();
 });
 amountInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") amountConfirmBtn.click();
@@ -1901,6 +1937,91 @@ itemDetailBuyoutBtn.addEventListener("click", () => {
   setTimeout(closeItemDetail, 50);
 });
 
+// ---- Portfolio: consolidated stock holdings --------------------------
+// Every stocks-tier win is its own lot in player.inventory, same as any
+// other kept item — this just groups them by ticker for display. Selling
+// happens here (redeem a dollar amount, no marketplace listing, no
+// haircut), never through the collectibles vault flow above.
+
+function portfolioCardHTML(holding) {
+  return `
+    <div class="market-item" data-ticker="${holding.ticker}">
+      <div class="market-item-media">
+        <img src="${holding.image}" alt="">
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${holding.name}</span>
+        <span class="item-cashout-today">${holding.lots.length} share${holding.lots.length === 1 ? "" : "s"} held</span>
+        <div class="market-item-divider"></div>
+        <div class="market-item-foot">
+          <span class="market-item-price">$${holding.totalValue.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderPortfolio() {
+  const portfolio = player.getPortfolio();
+  portfolioCount.textContent = portfolio.length;
+  portfolioGrid.innerHTML = portfolio.length
+    ? portfolio.map(portfolioCardHTML).join("")
+    : `<div class="market-empty">Win a stock from the Stocks tier to start your portfolio.</div>`;
+  portfolioGrid.querySelectorAll(".market-item").forEach((el) => {
+    el.addEventListener("click", () => openPortfolioDetail(el.dataset.ticker));
+  });
+}
+
+function openPortfolioDetail(ticker) {
+  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
+  if (!holding) return;
+
+  portfolioDetailImage.src = holding.image;
+  portfolioDetailImage.alt = holding.name;
+  portfolioDetailName.textContent = holding.name;
+  portfolioDetailValue.textContent = `$${holding.totalValue.toLocaleString()}`;
+  portfolioDetailChart.innerHTML = buildPriceChartSVG(player.portfolioPriceHistory(ticker));
+
+  portfolioDetailLots.innerHTML = [...holding.lots]
+    .sort((a, b) => b.acquiredAt - a.acquiredAt)
+    .map(
+      (lot) => `
+      <div class="offer-row">
+        <div class="offer-row-info"><b>1 share</b><br>Won ${new Date(lot.acquiredAt).toLocaleDateString()}</div>
+        <span class="offer-row-amount">$${player.currentMarketValue(lot).toLocaleString()}</span>
+      </div>`
+    )
+    .join("");
+
+  portfolioDetailSellBtn.dataset.ticker = ticker;
+  portfolioModal.classList.remove("hidden");
+  requestAnimationFrame(() => portfolioModal.classList.add("visible"));
+}
+
+function closePortfolioDetail() {
+  portfolioModal.classList.remove("visible");
+  setTimeout(() => portfolioModal.classList.add("hidden"), 250);
+}
+portfolioDetailCloseBtn.addEventListener("click", () => {
+  playClick();
+  closePortfolioDetail();
+});
+portfolioDetailSellBtn.addEventListener("click", () => {
+  const ticker = portfolioDetailSellBtn.dataset.ticker;
+  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
+  if (!holding) return;
+  promptAmount("Sell Share Value", `${holding.name} — you hold $${holding.totalValue.toLocaleString()}.`, holding.totalValue, { max: holding.totalValue }).then((amount) => {
+    if (!amount) return;
+    playClick();
+    const sold = player.sellStock(ticker, amount);
+    player.addCash(sold);
+    player.logCashOut({ name: holding.name, rarity: holding.lots[0].rarity, price: sold, image: holding.image, amount: sold, currency: "cash" });
+    renderWallet({ pulse: "cash" });
+    showWalletToast(sold, "cash");
+    closePortfolioDetail();
+    renderAccount();
+  });
+});
+
 // Market value of everything the player has ever received — vault items at
 // today's simulated value, shipped/cashed-out items at what they were
 // worth when they left the vault. Deliberately reads as a positive number
@@ -1938,10 +2059,10 @@ function renderAccount() {
     el.addEventListener("click", () => openListingModal(el.dataset.listing, myListingIds));
   });
 
-  const inventory = player.getInventory();
-  vaultCount.textContent = inventory.length;
-  inventoryGrid.innerHTML = inventory.length
-    ? inventory.map(inventoryItemHTML).join("")
+  const collectibles = player.getInventory().filter((i) => i.category !== "stocks");
+  vaultCount.textContent = collectibles.length;
+  inventoryGrid.innerHTML = collectibles.length
+    ? collectibles.map(inventoryItemHTML).join("")
     : `<div class="market-empty">Keep, Ship or List a prize from a crate reveal to see it here.</div>`;
   inventoryGrid.querySelectorAll(".market-item").forEach((el) => {
     el.addEventListener("click", (e) => {
@@ -1949,6 +2070,8 @@ function renderAccount() {
       openItemDetail(el.dataset.item);
     });
   });
+
+  renderPortfolio();
 
   const myOffers = market.getMyOffers();
   myOffersList.innerHTML = myOffers.length

@@ -46,10 +46,21 @@ function defaultState() {
   };
 }
 
+// One-time cleanup for sessions seeded before stocks were excluded from
+// the marketplace — drops any stock listings (and offers on them) already
+// sitting in localStorage.
+function stripStockListings(loaded) {
+  const stockIds = new Set(loaded.listings.filter((l) => l.category === "stocks").map((l) => l.id));
+  if (stockIds.size === 0) return loaded;
+  loaded.listings = loaded.listings.filter((l) => !stockIds.has(l.id));
+  loaded.offers = loaded.offers.filter((o) => !stockIds.has(o.listingId));
+  return loaded;
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...defaultState(), ...JSON.parse(raw) };
+    if (raw) return stripStockListings({ ...defaultState(), ...JSON.parse(raw) });
   } catch {
     // corrupt/blocked storage — fall back to a fresh session
   }
@@ -73,7 +84,9 @@ function save() {
 
 export function ensureSeeded(catalog) {
   if (state.seeded) return;
-  const shuffled = [...catalog].sort(() => Math.random() - 0.5);
+  // Stocks never touch the marketplace — they redeem straight to the
+  // platform at exact on-chain value, not peer-to-peer like collectibles.
+  const shuffled = catalog.filter((item) => item.category !== "stocks").sort(() => Math.random() - 0.5);
 
   // Listed: priced, Buy Now available.
   shuffled.slice(0, 20).forEach((item) => {

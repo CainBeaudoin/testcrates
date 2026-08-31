@@ -200,6 +200,7 @@
 
           <nav class="account-nav">
             <button class="account-nav-item active" data-section="vault">Vault</button>
+            <button class="account-nav-item" data-section="portfolio">Portfolio</button>
             <button class="account-nav-item" data-section="streaks">Streaks</button>
             <button class="account-nav-item" data-section="clips">Clips</button>
             <button class="account-nav-item" data-section="listings">Listings</button>
@@ -218,6 +219,14 @@
               <span class="account-block-note">Vault · archives at 365 days</span>
             </div>
             <div id="inventoryGrid" class="market-grid"></div>
+          </div>
+
+          <div class="account-section" data-section="portfolio">
+            <div class="account-section-header">
+              <h3>Portfolio <span class="count-badge" id="portfolioCount">0</span></h3>
+              <span class="account-block-note">Stocks redeem on-chain at exact value — no listing, no shipping</span>
+            </div>
+            <div id="portfolioGrid" class="market-grid"></div>
           </div>
 
           <div class="account-section" data-section="streaks">
@@ -515,6 +524,27 @@
   </div>
 </div>
 
+<!-- Portfolio position detail: consolidated stock holding, its individual
+     lots ("shares"), a price chart, and a sell-by-amount control -->
+<div id="portfolioModal" class="prize-modal hidden">
+  <div class="prize-modal-card listing-modal-card item-detail-card">
+    <img class="prize-modal-image" id="portfolioDetailImage" alt="">
+    <h3 class="prize-modal-name" id="portfolioDetailName"></h3>
+    <p class="prize-modal-price" id="portfolioDetailValue"></p>
+    <div id="portfolioDetailChart" class="price-chart"></div>
+    <span class="price-chart-caption">Simulated price action — last 30 days</span>
+
+    <button id="portfolioDetailSellBtn" class="modal-btn modal-btn-solid portfolio-sell-btn">Sell Share Value</button>
+
+    <div class="item-detail-offers">
+      <h4>Your Shares</h4>
+      <div id="portfolioDetailLots" class="offers-list"></div>
+    </div>
+
+    <button id="portfolioDetailCloseBtn" class="back-btn listing-close-btn">Close</button>
+  </div>
+</div>
+
 <!-- Fairness disclosure: commit-before-pick, verify-after-reveal -->
 <div id="fairnessModal" class="prize-modal hidden">
   <div class="prize-modal-card fairness-modal-card">
@@ -589,7 +619,10 @@
   <div class="prize-modal-card amount-modal-card">
     <h3 id="amountModalTitle" class="payment-modal-title"></h3>
     <p id="amountModalHint" class="payment-modal-hint"></p>
-    <input id="amountInput" class="amount-input" type="number" min="1" step="1" inputmode="numeric">
+    <div class="amount-input-row">
+      <input id="amountInput" class="amount-input" type="number" min="1" step="1" inputmode="numeric">
+      <button id="amountMaxBtn" class="amount-max-btn hidden">Max</button>
+    </div>
     <div class="prize-modal-actions">
       <button id="amountCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
       <button id="amountConfirmBtn" class="modal-btn modal-btn-solid">Confirm</button>
