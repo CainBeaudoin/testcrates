@@ -184,7 +184,8 @@ const sideCredits = document.getElementById("sideCredits");
 const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
 const sideVolume = document.getElementById("sideVolume");
-const sideItemValue = document.getElementById("sideItemValue");
+const sideVaultValue = document.getElementById("sideVaultValue");
+const sidePortfolioValue = document.getElementById("sidePortfolioValue");
 const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item"));
 const accountSections = Array.from(document.querySelectorAll(".account-section"));
 const vaultCount = document.getElementById("vaultCount");
@@ -2022,15 +2023,18 @@ portfolioDetailSellBtn.addEventListener("click", () => {
   });
 });
 
-// Market value of everything the player has ever received — vault items at
-// today's simulated value, shipped/cashed-out items at what they were
-// worth when they left the vault. Deliberately reads as a positive number
-// distinct from Lifetime Volume (what was spent), per the scope doc.
-function getTotalItemValue() {
-  const vaultValue = player.getInventory().reduce((sum, item) => sum + player.currentMarketValue(item), 0);
-  const shippedValue = player.getShipped().reduce((sum, item) => sum + item.price, 0);
-  const cashedValue = player.getCashedOut().reduce((sum, item) => sum + item.price, 0);
-  return vaultValue + shippedValue + cashedValue;
+// Current simulated value of everything sitting in the Vault right now —
+// collectibles only, stocks live in the Portfolio total instead.
+function getVaultValue() {
+  return player
+    .getInventory()
+    .filter((item) => item.category !== "stocks")
+    .reduce((sum, item) => sum + player.currentMarketValue(item), 0);
+}
+
+// Current simulated value of every consolidated stock position.
+function getPortfolioValue() {
+  return player.getPortfolio().reduce((sum, holding) => sum + holding.totalValue, 0);
 }
 
 function renderAccount() {
@@ -2039,7 +2043,8 @@ function renderAccount() {
   sideCash.textContent = `$${player.getWallet().cash.toLocaleString()}`;
   sideXp.textContent = player.getXp().toLocaleString();
   sideVolume.textContent = `$${player.getLifetimeVolume().toLocaleString()}`;
-  sideItemValue.textContent = `$${getTotalItemValue().toLocaleString()}`;
+  sideVaultValue.textContent = `$${getVaultValue().toLocaleString()}`;
+  sidePortfolioValue.textContent = `$${getPortfolioValue().toLocaleString()}`;
 
   market.maybeSpawnIncomingOffer();
   renderHeaderStats();
