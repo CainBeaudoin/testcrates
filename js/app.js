@@ -1027,8 +1027,7 @@ function renderCategories() {
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
       <div class="odds-panel hidden">${buildOddsPanelHTML(cat.pool)}</div>
-      <input type="checkbox" class="prize-list-toggle-input" id="prizeListToggle-${key}">
-      <label for="prizeListToggle-${key}" class="prize-list-toggle-label">View all prizes</label>
+      <label for="prizeListToggleAll" class="prize-list-toggle-label">View all prizes</label>
       <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
     `;
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
@@ -1522,6 +1521,21 @@ muteBtn.addEventListener("click", () => {
   refreshMuteBtn();
 });
 refreshMuteBtn();
+
+// On mobile the bottom tab bar is Drops/Market/Account only — mute moves
+// into the footer's Social Media row instead (same button/click handler,
+// just reparented) so it's not competing with real navigation. Desktop
+// keeps it in the rail. Re-parenting (not cloning) means the listener
+// above stays attached wherever the node ends up.
+const railBottom = document.querySelector(".rail-bottom");
+const footerSocial = document.querySelector(".app-footer-social");
+const mobileNavQuery = window.matchMedia("(max-width: 640px)");
+function placeMuteBtn(isMobile) {
+  const target = isMobile ? footerSocial : railBottom;
+  if (target && muteBtn.parentElement !== target) target.appendChild(muteBtn);
+}
+placeMuteBtn(mobileNavQuery.matches);
+mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
 
 // ---- Nav tabs (Boxes / Marketplace / Account) -----------------------------
 

@@ -1482,6 +1482,21 @@ body {
   border: 1px solid var(--line-strong);
 }
 
+/* Deposit — deliberately its own color (purple, not the app's usual
+   monochrome) with a gradient + glow so it reads as the one button on
+   the page you'd actually tap to put money in, not just another outline
+   button in the row. */
+.deposit-btn {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px -4px rgba(124, 58, 237, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.deposit-btn:hover {
+  background: linear-gradient(135deg, #b39dfb, #8b5cf6);
+  box-shadow: 0 8px 22px -4px rgba(124, 58, 237, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
 /* --- Payment method picker --- */
 
 .payment-modal-card {
@@ -2175,8 +2190,28 @@ body {
 }
 
 @media (max-width: 640px) {
-  .detail-modal-card { height: 80vh; max-height: 560px; }
-  .detail-layout { flex-direction: column; }
+  /* .detail-media used to refuse to shrink (flex: 0 0 auto) inside a
+     fixed-height card — its own content (image/name/price/meta/seller)
+     ran taller than the card, so .detail-content (the market-value chart
+     and offers) got squeezed to a sliver and was effectively invisible.
+     Scrolling the whole card as one unit, instead of splitting a fixed
+     media block from an independently-scrolled content block, fixes it
+     regardless of how tall either section's content happens to be. */
+  .detail-modal-card { height: 85vh; max-height: 640px; overflow-y: auto; flex-direction: column; }
+  .detail-layout { flex-direction: column; height: auto; }
+  .detail-close-btn {
+    position: sticky;
+    top: 0;
+    left: auto;
+    display: block;
+    width: 100%;
+    text-align: right;
+    padding: 12px 16px;
+    margin: 0;
+    background: #050505;
+    border-bottom: 1px solid var(--line);
+    z-index: 5;
+  }
   .detail-media {
     flex: 0 0 auto;
     width: 100%;
@@ -2185,10 +2220,16 @@ body {
     border-bottom: 1px solid var(--line);
   }
   .detail-media .prize-modal-image {
-    width: 180px;
-    height: 180px;
+    width: 160px;
+    height: 160px;
   }
-  .detail-content { padding: 52px 20px 20px; }
+  .detail-content {
+    flex: 0 0 auto;
+    height: auto;
+    padding: 20px;
+    justify-content: flex-start;
+    overflow-y: visible;
+  }
 }
 
 .price-chart {
@@ -3114,11 +3155,11 @@ body {
     flex: 1;
     padding: 5px 2px;
   }
-  .rail-bottom {
-    margin-top: 0;
-    flex: 0 0 auto;
-  }
-  .mute-btn { width: 30px; height: 30px; }
+  /* Mute lives in the footer's Social Media row on mobile (see the JS
+     that reparents #muteBtn there) — the bottom bar is Drops/Market/
+     Account only, nothing else. */
+  .rail-bottom { display: none; }
+  .mute-btn { width: 32px; height: 32px; }
 
   .shell-main main {
     padding: 14px 14px calc(var(--bottom-nav-h) + 20px);
@@ -3168,8 +3209,11 @@ body {
   .odds-bucket-range { font-size: 0.66rem; }
 
   /* Full prize catalog is the single biggest source of "cram" per card
-     (×4 cards) — collapsed by default, one tap away via the checkbox/
-     label pair added right next to it in app.js. */
+     (×4 cards) — collapsed by default, one tap away via a single shared
+     checkbox (#prizeListToggleAll, a preceding sibling of #categoryList)
+     with one label per card all pointing at it via `for`. Clicking any
+     card's label flips the one checkbox, so all four open/close in
+     lockstep — same uniform-row behavior as the odds toggle below. */
   .prize-dropdown-header { padding: 9px 12px; font-size: 0.6rem; }
   .prize-list { display: none; }
   .prize-list-toggle-label {
@@ -3184,8 +3228,8 @@ body {
     cursor: pointer;
     border-top: 1px solid var(--line);
   }
-  .prize-list-toggle-input:checked + .prize-list-toggle-label { color: var(--text); }
-  .prize-list-toggle-input:checked + .prize-list-toggle-label + .prize-list { display: block; }
+  #prizeListToggleAll:checked ~ #categoryList .prize-list-toggle-label { color: var(--text); }
+  #prizeListToggleAll:checked ~ #categoryList .prize-list { display: block; }
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 
@@ -3286,17 +3330,6 @@ body {
   }
   .account-nav:has(.account-nav-item[data-section="profile"].active) ~ .account-shell .account-content {
     display: none;
-  }
-
-  /* The mute toggle normally rides in the bottom tab bar, but that
-     crowds the Account page's own tab strip right above it — tuck it up
-     near the header instead while Account is open. Same button, same
-     click handler, just repositioned. */
-  body:has(#screen-account.active) .mute-btn {
-    position: fixed;
-    top: calc(var(--topbar-h) + 10px);
-    right: 10px;
-    z-index: 35;
   }
 
   /* --- Footer ----------------------------------------------------------- */
