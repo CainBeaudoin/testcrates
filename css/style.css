@@ -3327,8 +3327,14 @@ button.deposit-btn:hover {
   .drop-detail-active .odds-panel.hidden { display: block !important; }
   .drop-detail-active .odds-toggle-btn,
   .drop-detail-active .prize-list-toggle-label { display: none; }
-  .drop-detail-active .prize-list { display: block; max-height: 300px; }
-  .drop-detail-active .prize-dropdown-header { border-bottom: 1px solid var(--line); }
+  /* The "Pulls" header shipped above the odds, so the panel opened
+     "Pulls / Live Odds / <buckets> / <the actual pulls>" — the heading
+     sat over the wrong section. Reorder it to head the prize list it
+     names, leaving Live Odds to open the panel on its own. */
+  .drop-detail-active .prize-dropdown { display: flex; flex-direction: column; }
+  .drop-detail-active .odds-panel { order: 1; }
+  .drop-detail-active .prize-dropdown-header { order: 2; }
+  .drop-detail-active .prize-list { order: 3; display: block; max-height: 300px; }
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 
