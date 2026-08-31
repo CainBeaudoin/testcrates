@@ -21,8 +21,6 @@ const CATEGORIES = {
     badge: "Stocks",
     price: 25,
     pool: STOCKS_POOL,
-    categoryIcon: "stock",
-    categoryLabel: "Stocks",
     poweredBy: "Robinhood Chain",
     boxKind: "printer", // generic printer model, not the shoe box
     cashOnly: true, // real USDC settlement, not a Credits reward balance
@@ -32,8 +30,6 @@ const CATEGORIES = {
     badge: "Bronze",
     price: 100,
     pool: HUNDRED_POOL,
-    categoryIcon: "sneaker", // swap per-tier if a pool ever isn't sneakers
-    categoryLabel: "Sneakers",
     poweredBy: "ODTO",
   },
   twoFifty: {
@@ -41,8 +37,6 @@ const CATEGORIES = {
     badge: "Silver",
     price: 250,
     pool: TWO_FIFTY_POOL,
-    categoryIcon: "sneaker",
-    categoryLabel: "Sneakers",
     poweredBy: "ODTO",
   },
   thousand: {
@@ -50,8 +44,6 @@ const CATEGORIES = {
     badge: "Gold",
     price: 1000,
     pool: THOUSAND_POOL,
-    categoryIcon: "sneaker",
-    categoryLabel: "Sneakers",
     poweredBy: "ODTO",
   },
 };
@@ -974,10 +966,15 @@ function renderCategories() {
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
 
+    const paymentBadgesHTML = cat.cashOnly
+      ? `<span class="category-icon-badge" title="Cash only — settles in real USDC">${ICONS.cash}</span>`
+      : `<span class="category-icon-badge" title="Buy with Cash — cashback pays back in Cash">${ICONS.cash}</span>
+         <span class="category-icon-badge" title="Buy with Credits — cashback pays back in Credits">${ICONS.card}</span>`;
+
     const card = document.createElement("div");
     card.className = "category-card";
     card.innerHTML = `
-      <span class="category-icon-badge" title="${cat.categoryLabel}">${ICONS[cat.categoryIcon]}</span>
+      <div class="category-payment-badges">${paymentBadgesHTML}</div>
       <canvas class="category-box-canvas"></canvas>
       <div class="category-tier-line">
         <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>

@@ -466,10 +466,15 @@ body {
   box-shadow: var(--glow);
 }
 
-.category-icon-badge {
+.category-payment-badges {
   position: absolute;
   top: 14px;
   right: 14px;
+  display: flex;
+  gap: 6px;
+}
+
+.category-icon-badge {
   width: 30px;
   height: 30px;
   display: flex;

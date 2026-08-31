@@ -23,14 +23,7 @@ export const ICONS = {
   volumeMuted: svg(
     `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`
   ),
-  // Category glyph for the tier cards — swappable per-tier later if a
-  // tier's pool stops being sneakers (see CATEGORIES.*.categoryIcon).
-  sneaker: svg(
-    `<path d="M2.5 17.3c0-1.3 1.1-2.3 2.4-2.3h.5l3.6-3.4c.8-.7 1.8-1.1 2.9-1.1H15c2.5 0 4.5 2 4.5 4.5.9 0 2 .4 2 1.6v.7H2.5v-1z"/><path d="M2.5 18.3h19"/><path d="M9.5 12.5l2 2"/>`
-  ),
   dice: svg(
     `<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/>`
   ),
-  // Category glyph for the Stocks tier — a simple trending-up chart.
-  stock: svg(`<polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/>`),
 };
