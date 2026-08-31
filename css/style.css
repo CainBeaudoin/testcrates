@@ -726,9 +726,67 @@ body {
 .prize-list-toggle-input { display: none; }
 .prize-list-toggle-label { display: none; }
 
-/* Mobile-only tier detail page (see .drop-detail-open in the mobile media
-   query). Never shown on desktop, where the tier list is the page. */
-.drop-detail-back { display: none; }
+/* --- Drops: one tier as its own page ----------------------------------
+   Clicking a tier card promotes it: the other three wraps drop out, the
+   grid collapses to that one card, and the Pulls panel — which the list
+   view no longer shows at all — comes up with its odds and full prize
+   catalog already open. The card is the same DOM node throughout, so its
+   spinning 3D box carries straight over instead of re-initializing.
+   Mobile sizing overrides live in the max-width:640px block. */
+
+.category-wrap:not(.drop-detail-active) .prize-dropdown { display: none; }
+.category-wrap:not(.drop-detail-active) .category-card { cursor: pointer; }
+
+.drop-detail-back {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.drop-detail-back:hover { color: var(--text); border-color: var(--line-strong); }
+body.drop-detail-open .drop-detail-back { display: inline-flex; }
+body.drop-detail-open #screen-category .screen-title,
+body.drop-detail-open #recentPulls { display: none; }
+
+/* minmax(0,...) rather than a bare 1fr: the full prize list's long
+   product names give the column a wide min-content, which a bare 1fr
+   honors and the page then scrolls sideways. The max-width keeps the
+   single card from stretching the full content width on a desktop
+   viewport; it's wider than a phone, so mobile ignores it. */
+body.drop-detail-open .category-list {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 560px;
+  margin: 0 auto;
+}
+body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
+
+/* Nothing left to choose between here, so drop the list view's lift. */
+.drop-detail-active .category-card:hover { transform: none; box-shadow: none; }
+
+/* Both disclosures open, and their triggers gone with them — .hidden is
+   an !important rule, so unhiding the odds panel needs one too. */
+.drop-detail-active .odds-panel.hidden { display: block !important; }
+.drop-detail-active .odds-toggle-btn,
+.drop-detail-active .prize-list-toggle-label { display: none; }
+
+/* The "Pulls" header shipped above the odds, so the panel opened
+   "Pulls / Live Odds / <buckets> / <the actual pulls>" — the heading sat
+   over the wrong section. Reorder it to head the prize list it names,
+   leaving Live Odds to open the panel on its own. */
+.drop-detail-active .prize-dropdown { display: flex; flex-direction: column; }
+.drop-detail-active .odds-panel { order: 1; }
+.drop-detail-active .prize-dropdown-header { order: 2; }
+.drop-detail-active .prize-list { order: 3; display: block; max-height: 300px; }
 
 .prize-row {
   display: flex;
@@ -3320,64 +3378,14 @@ button.deposit-btn:hover {
   .odds-bucket-pct { font-size: 0.82rem; }
   .odds-grid > .odds-bucket:last-child:nth-child(4n + 1) { grid-column: 1 / -1; }
 
-  /* Pulls and the prize catalog belong to the tier page now, so the list
-     view stops repeating them under every card and is just the four
-     tiers. (This replaces the old shared-checkbox disclosure — with the
-     panel gone from list view there's nothing left to disclose.) */
-  .category-wrap:not(.drop-detail-active) .prize-dropdown { display: none; }
   .prize-dropdown-header { padding: 9px 12px; font-size: 0.6rem; }
 
-  /* --- Drops: one tier as its own page --------------------------------
-     Tapping a tier card promotes it: the other three wraps drop out, the
-     grid goes single-column, and the two disclosures this tier keeps
-     behind taps in list view (Pulls odds, full prize catalog) are forced
-     open — this page exists precisely to show them without hunting. The
-     card is the same DOM node throughout, so its spinning 3D box carries
-     straight over instead of re-initializing. */
-  .drop-detail-back {
-    display: none;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-    padding: 7px 12px;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    color: var(--text-dim);
-    font-size: 0.66rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-  body.drop-detail-open .drop-detail-back { display: inline-flex; }
-  body.drop-detail-open #screen-category .screen-title,
-  body.drop-detail-open #recentPulls { display: none; }
-
-  /* minmax(0,...) rather than a bare 1fr: the full prize list's long
-     product names give the column a wide min-content, which a bare 1fr
-     honors and the page then scrolls sideways. */
-  body.drop-detail-open .category-list { grid-template-columns: minmax(0, 1fr); }
-  body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
-
-  /* Bigger box now that the tier has the width to itself. */
+  /* Tier page (structure is in the base cascade) — mobile sizing only. */
+  .drop-detail-back { margin-bottom: 12px; padding: 7px 12px; font-size: 0.66rem; }
   .drop-detail-active .category-box-canvas { width: 132px; height: 132px; }
   .drop-detail-active .category-card { padding: 18px 16px; }
+  /* Undo the list view's hide — the tier page has room for the credit. */
   .drop-detail-active .category-powered-by { display: block; }
-
-  /* Both disclosures open, and their triggers gone with them — .hidden is
-     an !important rule, so unhiding the odds panel needs one too. */
-  .drop-detail-active .odds-panel.hidden { display: block !important; }
-  .drop-detail-active .odds-toggle-btn,
-  .drop-detail-active .prize-list-toggle-label { display: none; }
-  /* The "Pulls" header shipped above the odds, so the panel opened
-     "Pulls / Live Odds / <buckets> / <the actual pulls>" — the heading
-     sat over the wrong section. Reorder it to head the prize list it
-     names, leaving Live Odds to open the panel on its own. */
-  .drop-detail-active .prize-dropdown { display: flex; flex-direction: column; }
-  .drop-detail-active .odds-panel { order: 1; }
-  .drop-detail-active .prize-dropdown-header { order: 2; }
-  .drop-detail-active .prize-list { order: 3; display: block; max-height: 300px; }
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 

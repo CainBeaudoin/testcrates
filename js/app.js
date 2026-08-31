@@ -958,12 +958,11 @@ function buildPityHTML(tierKey) {
 let categoryBoxViewers = [];
 const batchQuantities = { stocks: 1, hundred: 1, twoFifty: 1, thousand: 1 };
 
-// ---- Mobile tier detail page --------------------------------------------
-// Everything visual here lives in the max-width:640px block in style.css,
-// so these classes are inert on desktop even if they linger on the body.
+// ---- Tier detail page ----------------------------------------------------
+// Promotes one tier to a page of its own — its odds and full prize list
+// instead of all four tiers' worth stacked down the Drops screen.
 
 const dropDetailBackBtn = document.getElementById("dropDetailBackBtn");
-const isMobileLayout = () => window.matchMedia("(max-width: 640px)").matches;
 
 function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
@@ -1018,12 +1017,12 @@ function renderCategories() {
     `;
     card.addEventListener("mouseenter", playHover);
 
-    // Mobile: tapping the card body (not its buttons) promotes this tier
-    // to its own page. Nothing is re-rendered — the other wraps are just
-    // hidden by CSS — so the card keeps the very same spinning 3D box it
-    // was already showing, and the qty/Open handlers stay live.
+    // Clicking the card body (not its buttons) promotes this tier to its
+    // own page. Nothing is re-rendered — the other wraps are just hidden
+    // by CSS — so the card keeps the very same spinning 3D box it was
+    // already showing, and the qty/Open handlers stay live.
     card.addEventListener("click", (e) => {
-      if (!isMobileLayout() || e.target.closest("button")) return;
+      if (e.target.closest("button")) return;
       openTierDetail(wrap);
     });
 
