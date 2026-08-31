@@ -1595,6 +1595,12 @@ body {
   border-color: rgba(230, 230, 235, 0.5);
 }
 
+.market-chip-static {
+  cursor: default;
+  opacity: 0.55;
+}
+.market-chip.market-chip-static:hover { border-color: var(--line); color: var(--text-dim); }
+
 .market-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

@@ -214,12 +214,15 @@ export function listingPriceHistory(listing, days = 30) {
 }
 
 // ---- Fair Market Value badge --------------------------------------------
-// Scores an asking price against the item's catalog/comp value. Band
-// thresholds are placeholder V1 numbers (the scope leaves them open).
+// Scores an asking price against the item's simulated live market value
+// (the same comp value shown as "Simulated Market Value" on the listing
+// detail modal) rather than the static catalog price, so the badge tracks
+// what the item is actually worth right now. Band thresholds are
+// placeholder V1 numbers (the scope leaves them open).
 
 export function fmvRating(listing) {
   if (listing.price == null) return null;
-  const ratio = listing.price / listing.catalogPrice;
+  const ratio = listing.price / currentListingValue(listing);
   if (ratio <= 0.9) return { key: "good-deal", label: "Very Good", color: "#4ade80" };
   if (ratio <= 1.1) return { key: "fair", label: "Good", color: "#AFBAC4" };
   return { key: "over", label: "Not Good", color: "#f87171" };

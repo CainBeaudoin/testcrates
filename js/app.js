@@ -81,15 +81,25 @@ const FAKE_LEADERS = [
   { username: "ReplayDrops", xp: 4200 },
 ];
 
-// Simulated referred-users cast for the Referral tab — static seed volume,
-// not live data (no real referral tracking backend).
+// Simulated referred-users cast for the Referral tab — shows the trading
+// fees each referred account has generated (not raw volume), since that's
+// the number your referral share is actually a cut of and makes the small
+// claimable balance make sense. baseFees is the starting amount; each
+// account's fees keep accruing daily (see accruedFees) so the table looks
+// like it's tracking live activity rather than a frozen demo number.
+const REFERRAL_FEES_EPOCH = new Date("2026-06-01T00:00:00Z").getTime();
 const FAKE_REFERRALS = [
-  { username: "SoleSeeker", volume: 84200 },
-  { username: "PixelHawk77", volume: 52600 },
-  { username: "DuneRunner", volume: 37900 },
-  { username: "ThreadCounter", volume: 19400 },
-  { username: "RarePairz", volume: 8150 },
+  { username: "SoleSeeker", baseFees: 4720, dailyRate: 6.4 },
+  { username: "PixelHawk77", baseFees: 2950, dailyRate: 4.1 },
+  { username: "DuneRunner", baseFees: 2120, dailyRate: 2.9 },
+  { username: "ThreadCounter", baseFees: 1090, dailyRate: 1.6 },
+  { username: "RarePairz", baseFees: 460, dailyRate: 0.7 },
 ];
+
+function accruedFees(referral) {
+  const days = Math.max(0, Math.floor((Date.now() - REFERRAL_FEES_EPOCH) / 86400000));
+  return Math.round(referral.baseFees + referral.dailyRate * days);
+}
 
 const HAPTIC_PATTERNS = {
   common: [15],
@@ -244,7 +254,6 @@ const referralStat = document.getElementById("referralStat");
 const referralRing = document.getElementById("referralRing");
 const referralValue = document.getElementById("referralValue");
 const listingModal = document.getElementById("listingModal");
-const listingRarity = document.getElementById("listingRarity");
 const listingImage = document.getElementById("listingImage");
 const listingName = document.getElementById("listingName");
 const listingPrice = document.getElementById("listingPrice");
@@ -1489,20 +1498,24 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
+    // "Not Good" isn't a filter people actually want (nobody's browsing
+    // for overpriced listings) — it's rendered as a plain, non-clickable
+    // label so the rating scale still reads as complete without cluttering
+    // the filter row with a button no one will use.
     const fmvBands = [
       { key: "all", label: "All" },
       { key: "good-deal", label: "Very Good", color: "#4ade80" },
       { key: "fair", label: "Good", color: "#AFBAC4" },
-      { key: "over", label: "Not Good", color: "#f87171" },
     ];
-    marketFmvFilter.innerHTML = fmvBands
-      .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
-      .join("");
-    marketFmvFilter.querySelectorAll(".market-chip").forEach((chip) => {
+    marketFmvFilter.innerHTML =
+      fmvBands
+        .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
+        .join("") + `<span class="market-chip market-chip-static" style="--rarity-color:#f87171">Not Good</span>`;
+    marketFmvFilter.querySelectorAll("button.market-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         playClick();
         marketFmvValue = chip.dataset.fmv;
-        marketFmvFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
+        marketFmvFilter.querySelectorAll("button.market-chip").forEach((c) => c.classList.remove("active"));
         chip.classList.add("active");
         renderMarketGrid();
       });
@@ -1571,12 +1584,9 @@ function openListingModal(id, navIds = null) {
   listingPrevBtn.disabled = hasNav && listingNavIndex === 0;
   listingNextBtn.disabled = hasNav && listingNavIndex === listingNavIds.length - 1;
 
-  const meta = RARITY_META[listing.rarity];
-
-  listingModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
-  listingRarity.textContent = meta.label;
-  listingRarity.style.color = meta.color;
-  listingRarity.style.borderColor = meta.color;
+  // Rarity is deliberately not shown here — it's a tier-relative concept
+  // that loses meaning once everything is pooled into one marketplace, so
+  // every listing gets the same uniform card treatment.
   listingImage.src = listing.image;
   listingImage.alt = listing.name;
   listingName.textContent = listing.name;
@@ -2324,9 +2334,9 @@ function renderReferralPanel() {
 
     <div class="referral-section-label">Referred by You</div>
     <table class="referral-table">
-      <thead><tr><th>Username</th><th>Volume</th></tr></thead>
+      <thead><tr><th>Username</th><th>Fees</th></tr></thead>
       <tbody>
-        ${FAKE_REFERRALS.map((r) => `<tr><td>${r.username}</td><td>$${r.volume.toLocaleString()}</td></tr>`).join("")}
+        ${FAKE_REFERRALS.map((r) => `<tr><td>${r.username}</td><td>$${accruedFees(r).toLocaleString()}</td></tr>`).join("")}
       </tbody>
     </table>
 
