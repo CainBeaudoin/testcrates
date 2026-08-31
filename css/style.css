@@ -3290,11 +3290,23 @@ button.deposit-btn:hover {
 
   /* --- Marketplace: filters become a slide-up sheet -------------------- */
 
+  /* Filters sits beside the title instead of stacked below it — on its
+     own line it left a bigger gap under "Marketplace" than "Time to
+     Choose" gets on Drops, for no reason. */
+  .market-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .market-title-row .screen-title { margin-bottom: 0; }
   .market-filters-toggle-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin: -6px 0 14px;
+    flex: 0 0 auto;
+    margin: 0;
     padding: 8px 14px;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -3323,7 +3335,10 @@ button.deposit-btn:hover {
     transition: transform 0.28s ease;
     z-index: 60;
   }
-  .market-filters-toggle-input:checked ~ .market-shell .market-filters { transform: translateY(0); }
+  /* The toggle checkbox now lives inside .market-title-row (so Filters
+     can sit beside the title) rather than directly beside .market-shell,
+     so reaching .market-shell needs :has() on the wrapper first. */
+  .market-title-row:has(.market-filters-toggle-input:checked) ~ .market-shell .market-filters { transform: translateY(0); }
   .market-filters-backdrop {
     display: block;
     position: fixed;
@@ -3334,7 +3349,7 @@ button.deposit-btn:hover {
     transition: opacity 0.28s ease;
     z-index: 55;
   }
-  .market-filters-toggle-input:checked ~ .market-shell .market-filters-backdrop { opacity: 1; pointer-events: auto; }
+  .market-title-row:has(.market-filters-toggle-input:checked) ~ .market-shell .market-filters-backdrop { opacity: 1; pointer-events: auto; }
   .market-content { width: 100%; }
 
   /* --- Grids: Marketplace, Vault, Portfolio, Listings, Shipped share
