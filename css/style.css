@@ -3884,6 +3884,18 @@ button.deposit-btn:hover {
     z-index: 41;
   }
 
+  /* Rewards is its own rail tab, so the Account group icons (profile,
+     holdings, activity, clips, •••) don't belong to it — only its own
+     Streaks/Leaderboard/Referral toggle does, which then drops to sit
+     directly on the tab bar. */
+  body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: none; }
+  body:has(.nav-tab[data-account-group="rewards"].active) .account-toggle.toggle-group-active {
+    bottom: calc(var(--bottom-nav-h) + 8px);
+  }
+  body:has(.nav-tab[data-account-group="rewards"].active) #screen-account.active {
+    padding-bottom: 56px;
+  }
+
   /* Both bottom bars tuck away on the way down and come back when you
      scroll up or stop — the idle timer in app.js clears .scrolling-down,
      so "stopped" reads the same as "scrolling up" here. */
