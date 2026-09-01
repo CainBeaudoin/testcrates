@@ -223,8 +223,6 @@ const rwWeekStrip = document.getElementById("rwWeekStrip");
 const rwWeekFill = document.getElementById("rwWeekFill");
 const rwEarnList = document.getElementById("rwEarnList");
 const streakRafflePrize = document.getElementById("streakRafflePrize");
-const streakMonthLabel = document.getElementById("streakMonthLabel");
-const streakCalendar = document.getElementById("streakCalendar");
 const topAvatar = document.getElementById("topAvatar");
 const topUsername = document.getElementById("topUsername");
 const avatarBtn = document.getElementById("avatarBtn");
@@ -2892,34 +2890,13 @@ function renderActivity() {
 }
 
 
-// Expands the card in place rather than navigating — there's no separate
-// leaderboard route to send anyone to.
-let leaderboardExpanded = false;
-const rwFullLeaderboardBtn = document.getElementById("rwFullLeaderboardBtn");
-rwFullLeaderboardBtn.addEventListener("click", () => {
-  playClick();
-  leaderboardExpanded = !leaderboardExpanded;
-  renderLeaderboard();
-});
-
 function renderLeaderboard() {
   const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
     (a, b) => b.xp - a.xp
   );
-  // Top three plus your own row — the full table lives behind the link
-  // under it, so the card stays the same height as its neighbour.
-  const you = rows.findIndex((r) => r.isPlayer);
-  let shown;
-  if (leaderboardExpanded) {
-    shown = rows;
-  } else {
-    shown = rows.slice(0, 3);
-    if (you >= 3) shown.push(rows[you]);
-  }
-  rwFullLeaderboardBtn.firstChild.nodeValue = leaderboardExpanded ? "Show less " : "View full leaderboard ";
-  rwFullLeaderboardBtn.classList.toggle("expanded", leaderboardExpanded);
-
-  leaderboardList.innerHTML = shown
+  // The whole board — with the month calendar gone there's room for all of
+  // it, so there's nothing left for a "view full leaderboard" link to open.
+  leaderboardList.innerHTML = rows
     .map(
       (r) => `
       <div class="leaderboard-row ${r.isPlayer ? "you" : ""}" data-username="${r.username}">
@@ -3077,31 +3054,8 @@ function renderStreaks() {
     )
     .join("");
 
-  renderStreakCalendar();
 }
 
-function renderStreakCalendar() {
-  const activity = player.getDailyActivity();
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstWeekday = new Date(year, month, 1).getDay();
-  const todayKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  streakMonthLabel.textContent = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-
-  let html = "";
-  for (let i = 0; i < firstWeekday; i++) html += `<span class="streak-tile empty"></span>`;
-  for (let day = 1; day <= daysInMonth; day++) {
-    const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const count = activity[key] ?? 0;
-    const level = count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 6 ? 3 : 4;
-    const isToday = key === todayKey;
-    html += `<span class="streak-tile level-${level} ${isToday ? "today" : ""}" title="${key}: ${count} crate${count === 1 ? "" : "s"} opened">${day}</span>`;
-  }
-  streakCalendar.innerHTML = html;
-}
 
 // Delegated: offer actions + inventory item actions (both lists re-render often)
 document.addEventListener("click", (e) => {

@@ -316,7 +316,12 @@
               </div>
             </div>
 
+            <!-- Two independent columns rather than grid rows: rows size to
+                 their tallest card, so a short card left a 60-80px hole under
+                 it while its neighbour sat at the intended 16px. Stacking each
+                 column separately keeps every gap the same. -->
             <div class="rewards-grid">
+              <div class="rewards-col rewards-col-main">
               <section class="rewards-card rewards-week">
                 <span class="rewards-card-title">Your Weekly Progress</span>
                 <div class="rewards-week-body">
@@ -328,35 +333,25 @@
                 </div>
                 <div class="rewards-week-track"><div class="rewards-week-fill" id="rwWeekFill"></div></div>
               </section>
-
+              <section class="rewards-card rewards-leaderboard">
+                <span class="rewards-card-title">Leaderboard</span>
+                <div id="leaderboardList" class="leaderboard-list"></div>
+              </section>
+              </div>
+              <div class="rewards-col rewards-col-side">
               <section class="rewards-card rewards-raffle">
                 <span class="rewards-card-title">This Week's Raffle</span>
                 <div id="streakRafflePrize" class="streak-raffle-prize"></div>
               </section>
-
-              <section class="rewards-card rewards-leaderboard">
-                <span class="rewards-card-title">Leaderboard</span>
-                <div id="leaderboardList" class="leaderboard-list"></div>
-                <button type="button" id="rwFullLeaderboardBtn" class="rewards-more">View full leaderboard <span aria-hidden="true">&rsaquo;</span></button>
-              </section>
-
               <section class="rewards-card rewards-referral">
                 <span class="rewards-card-title">Referral Rewards</span>
                 <div id="referralPanel" class="referral-panel"></div>
               </section>
-
-              <section class="rewards-card rewards-calendar">
-                <span class="rewards-card-title">This Month <em id="streakMonthLabel"></em></span>
-                <div class="streak-calendar-weekdays">
-                  <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                </div>
-                <div id="streakCalendar" class="streak-calendar"></div>
-              </section>
-
               <section class="rewards-card rewards-earn">
                 <span class="rewards-card-title">How You Earn More</span>
                 <div class="rewards-earn-list" id="rwEarnList"></div>
               </section>
+              </div>
             </div>
           </div>
 

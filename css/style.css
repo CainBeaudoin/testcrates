@@ -2269,11 +2269,18 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 .rewards-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  display: flex;
+  align-items: flex-start;
   gap: 16px;
-  align-items: start;
 }
+.rewards-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.rewards-col-main { flex: 1.55; }
+.rewards-col-side { flex: 1; }
 
 .rewards-card {
   display: flex;
@@ -2381,15 +2388,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .rewards-more.expanded span { transform: rotate(90deg); }
 .rewards-more span { display: inline-block; transition: transform 0.2s ease; }
 
-/* align-self, not auto margins: on a flex item those shrink-wrap it (the
-   same trap the leaderboard hit above) rather than centring it. */
-.rewards-calendar .streak-calendar-weekdays,
-.rewards-calendar .streak-calendar {
-  align-self: center;
-  width: 100%;
-  max-width: 420px;
-}
-
 /* How you earn more */
 .rewards-earn-list { display: flex; flex-direction: column; gap: 8px; }
 .rewards-earn-row {
@@ -2430,7 +2428,19 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 @media (max-width: 900px) {
-  .rewards-grid { grid-template-columns: minmax(0, 1fr); }
+  /* One column: the wrappers dissolve so the cards become items of the grid
+     itself, and `order` puts them back into the reading sequence the two
+     columns interleave into — main, side, main, side... */
+  /* align-items:flex-start is a *horizontal* constraint once the grid
+     stacks, which shrink-wrapped every card to its content and pushed the
+     page 49px wider than the viewport. */
+  .rewards-grid { flex-direction: column; align-items: stretch; }
+  .rewards-col { display: contents; }
+  .rewards-week { order: 1; }
+  .rewards-raffle { order: 2; }
+  .rewards-leaderboard { order: 3; }
+  .rewards-referral { order: 4; }
+  .rewards-earn { order: 5; }
 }
 
 /* --- Account: KicksDB key ------------------------------------------------ */
