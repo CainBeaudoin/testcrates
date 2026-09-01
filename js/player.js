@@ -363,8 +363,6 @@ export function getReferralTier(activeReferrals = 0) {
     }
   }
   const atCeiling = activeReferrals >= REFERRAL_TIERS[REFERRAL_TIERS.length - 1].referrals;
-  // Bonuses you've claimed on top of the base (see getEarnBonuses).
-  share += getEarnBonus();
   return {
     share,
     activeReferrals,
@@ -374,10 +372,12 @@ export function getReferralTier(activeReferrals = 0) {
 }
 
 // ---- "How you earn more" bonuses -----------------------------------------
-// Each is worth +5% on the referral share once done. The clip one stores the
-// link the user submits; both are marked pending until someone verifies
-// them, which is a manual step here — there's no backend to check either.
-export const EARN_BONUS_VALUE = 0.05;
+// Each pays a flat Credits bonus once done, rather than moving the referral
+// share — the share ladder is earned by bringing active referrals, and
+// mixing one-off tasks into it made the same number mean two things. Each
+// stores the link the user submits and sits pending until someone verifies
+// it, which is a manual step here: there's no backend to check either.
+export const EARN_TASK_CREDITS = 10;
 
 export function getEarnTasks() {
   return state.earnTasks ?? {};
@@ -388,9 +388,15 @@ export function submitEarnTask(key, link = "") {
   save();
 }
 
-// Only verified tasks pay — pending ones are awaiting a manual check.
-function getEarnBonus() {
-  return Object.values(state.earnTasks ?? {}).filter((t) => t.status === "verified").length * EARN_BONUS_VALUE;
+// Marks a submitted task verified and pays its Credits. The manual step a
+// reviewer would trigger — nothing calls it automatically.
+export function verifyEarnTask(key) {
+  const task = (state.earnTasks ?? {})[key];
+  if (!task || task.status === "verified") return 0;
+  task.status = "verified";
+  state.wallet.credits += EARN_TASK_CREDITS;
+  save();
+  return EARN_TASK_CREDITS;
 }
 
 // ---- Referral claimable earnings -----------------------------------------

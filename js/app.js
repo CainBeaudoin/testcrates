@@ -64,6 +64,8 @@ const SNEAKER_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
+// A deep enough board that ranking means something and the pagination below
+// has pages to turn — the player slots in by XP wherever they land.
 const FAKE_LEADERS = [
   { username: "VaultKid", xp: 48200 },
   { username: "CrateDigger", xp: 36500 },
@@ -72,6 +74,47 @@ const FAKE_LEADERS = [
   { username: "HeatCheckHQ", xp: 15600 },
   { username: "OrbitLace", xp: 9700 },
   { username: "ReplayDrops", xp: 4200 },
+  { username: "SoleSeeker", xp: 43100 },
+  { username: "PixelHawk77", xp: 39400 },
+  { username: "DuneRunner", xp: 33750 },
+  { username: "MidnightCartel", xp: 31200 },
+  { username: "ThreadCounter", xp: 27900 },
+  { username: "BackboardBandit", xp: 26400 },
+  { username: "RarePairz", xp: 24850 },
+  { username: "LaceLogic", xp: 23300 },
+  { username: "BoxFreshBen", xp: 22050 },
+  { username: "AtriumApe", xp: 20400 },
+  { username: "QuietStorm88", xp: 19250 },
+  { username: "CopOrDrop", xp: 18100 },
+  { username: "VelvetSole", xp: 16900 },
+  { username: "NeonAtrium", xp: 14750 },
+  { username: "HollowPoint", xp: 13900 },
+  { username: "SuedeSociety", xp: 13100 },
+  { username: "GlassCannon", xp: 12400 },
+  { username: "PaperRoute", xp: 11800 },
+  { username: "TripleWhite", xp: 11200 },
+  { username: "OffsetOllie", xp: 10600 },
+  { username: "CarbonCopy", xp: 10050 },
+  { username: "SilentPartner", xp: 9200 },
+  { username: "DriftKing", xp: 8700 },
+  { username: "MonoChrome", xp: 8250 },
+  { username: "SecondWind", xp: 7800 },
+  { username: "LowTop", xp: 7350 },
+  { username: "GhostRunner", xp: 6900 },
+  { username: "SaltFlats", xp: 6100 },
+  { username: "CobaltClub", xp: 5700 },
+  { username: "EchoPark", xp: 5300 },
+  { username: "TenthMan", xp: 4900 },
+  { username: "PaleHorse", xp: 3800 },
+  { username: "SlowBurn", xp: 3400 },
+  { username: "IronLace", xp: 3000 },
+  { username: "OpenBox", xp: 2600 },
+  { username: "FadedGlory", xp: 2200 },
+  { username: "LastCall", xp: 1800 },
+  { username: "RookieYear", xp: 1400 },
+  { username: "FirstPull", xp: 950 },
+  { username: "WindowShopper", xp: 600 },
+  { username: "DayOne", xp: 250 },
 ];
 
 // Simulated referred-users cast for the Referral tab — shows the trading
@@ -218,6 +261,10 @@ const activityCount = document.getElementById("activityCount");
 const clipsGrid = document.getElementById("clipsGrid");
 const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
+const leaderboardPrevBtn = document.getElementById("leaderboardPrevBtn");
+const leaderboardNextBtn = document.getElementById("leaderboardNextBtn");
+const leaderboardPageLabel = document.getElementById("leaderboardPageLabel");
+const leaderboardYouNote = document.getElementById("leaderboardYouNote");
 const referralPanel = document.getElementById("referralPanel");
 const rwStreakStat = document.getElementById("rwStreakStat");
 const rwRankStat = document.getElementById("rwRankStat");
@@ -2896,17 +2943,23 @@ function renderActivity() {
 }
 
 
+const LEADERBOARD_PAGE_SIZE = 10;
+let leaderboardPage = 0;
+
 function renderLeaderboard() {
   const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
     (a, b) => b.xp - a.xp
   );
-  // The whole board — with the month calendar gone there's room for all of
-  // it, so there's nothing left for a "view full leaderboard" link to open.
+  const pages = Math.max(1, Math.ceil(rows.length / LEADERBOARD_PAGE_SIZE));
+  leaderboardPage = Math.min(Math.max(0, leaderboardPage), pages - 1);
+  const start = leaderboardPage * LEADERBOARD_PAGE_SIZE;
+
   leaderboardList.innerHTML = rows
+    .slice(start, start + LEADERBOARD_PAGE_SIZE)
     .map(
-      (r) => `
+      (r, i) => `
       <div class="leaderboard-row ${r.isPlayer ? "you" : ""}" data-username="${r.username}">
-        <span class="leaderboard-rank">#${rows.indexOf(r) + 1}</span>
+        <span class="leaderboard-rank">#${start + i + 1}</span>
         <span class="leaderboard-name">${r.isPlayer ? "You" : r.username}</span>
         <span class="leaderboard-xp">${r.xp.toLocaleString()} XP</span>
       </div>`
@@ -2917,7 +2970,25 @@ function renderLeaderboard() {
       location.search = `?profile=${encodeURIComponent(el.dataset.username)}`;
     });
   });
+
+  // Your own rank is worth knowing even when it's on another page.
+  const you = rows.findIndex((r) => r.isPlayer) + 1;
+  leaderboardPageLabel.textContent = `${leaderboardPage + 1} / ${pages}`;
+  leaderboardYouNote.textContent = `You're #${you}`;
+  leaderboardPrevBtn.disabled = leaderboardPage === 0;
+  leaderboardNextBtn.disabled = leaderboardPage >= pages - 1;
 }
+
+leaderboardPrevBtn.addEventListener("click", () => {
+  playClick();
+  leaderboardPage -= 1;
+  renderLeaderboard();
+});
+leaderboardNextBtn.addEventListener("click", () => {
+  playClick();
+  leaderboardPage += 1;
+  renderLeaderboard();
+});
 
 function renderReferralPanel() {
   const active = activeReferrals();
@@ -3000,8 +3071,8 @@ const REWARD_EARN_ICONS = {
 // past. Both of these need a human to check the proof, so they submit and
 // sit pending rather than paying out on the spot.
 const EARN_TASKS = [
-  { key: "xVerify", icon: "x", label: "Verify X account", value: "+5%", placeholder: "Link to your X profile" },
-  { key: "clipPost", icon: "clip", label: "Post a clip", value: "+5%", placeholder: "Link to your post" },
+  { key: "xVerify", icon: "x", label: "Verify X account", placeholder: "Link to your X profile" },
+  { key: "clipPost", icon: "clip", label: "Post a clip", placeholder: "Link to your post", help: "Clips" },
 ];
 
 function renderEarnTasks() {
@@ -3018,10 +3089,21 @@ function renderEarnTasks() {
       <div class="rewards-earn-row ${task ? "submitted" : ""}">
         <span class="rewards-earn-icon">${REWARD_EARN_ICONS[t.icon]}</span>
         <span class="rewards-earn-label">${t.label}</span>
-        <span class="rewards-earn-value">${t.value}</span>
+        ${t.help ? `<button type="button" class="rewards-earn-help" data-earn-help="${t.key}">${t.help}</button>` : ""}
+        <span class="rewards-earn-value">+${player.EARN_TASK_CREDITS} credits</span>
         ${state}
       </div>`;
   }).join("");
+
+  // "What's a clip?" — send them to the tab that shows theirs rather than
+  // explaining it in a tooltip nobody opens.
+  rwEarnList.querySelectorAll("[data-earn-help]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClick();
+      document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+      showAccountGroup("clips");
+    });
+  });
 
   rwEarnList.querySelectorAll("[data-earn-task]").forEach((form) => {
     form.addEventListener("submit", (e) => {
