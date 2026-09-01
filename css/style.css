@@ -2667,6 +2667,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   margin-bottom: 16px;
 }
 
+/* .modal-btn carries flex:1 so a row of them splits the width evenly. A
+   button placed directly in .detail-content is in a *column* flex instead,
+   where that grows it vertically — Sell Share Value came out 228px tall for
+   12px of padding. Applies to Remove Listing in the same slot. */
+.detail-content > .modal-btn { flex: 0 0 auto; }
+
 .item-detail-offers {
   margin-top: 4px;
   text-align: left;
