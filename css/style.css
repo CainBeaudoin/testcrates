@@ -3525,6 +3525,17 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .referral-claim-actions .exit-btn {
   min-width: 112px;
 }
+/* The two claims are alternatives, not a pair to collect — one small "or"
+   says that without a sentence explaining it. */
+.referral-claim-or {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
 .referral-claim-bonus {
   display: inline-block;
   margin-left: 4px;

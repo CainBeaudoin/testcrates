@@ -2277,6 +2277,13 @@ avatarBtn.addEventListener("click", () => {
 // opening Account and then reaching for a sub-tab that no longer exists.
 const railRewardsTab = document.querySelector('.nav-tab[data-account-group="rewards"]');
 
+// Credits are what Rewards is about, so the pill is the way in — the Cash
+// pill already opens Withdraw beside it.
+document.getElementById("walletCreditsBtn").addEventListener("click", () => {
+  playClick();
+  railRewardsTab.click();
+});
+
 streakStat.addEventListener("click", () => {
   playClick();
   railRewardsTab.click();
@@ -2995,6 +3002,9 @@ function renderReferralPanel() {
   const referral = player.getReferralTier(active);
   const claimable = player.getReferralClaimable();
   const creditsClaimAmount = Math.round(claimable * (1 + player.REFERRAL_CREDITS_BONUS));
+  // Taking it in Credits is worth more than Cash — say so on the button
+  // rather than leaving it to be inferred from two different totals.
+  const creditsBonusLabel = `${(1 + player.REFERRAL_CREDITS_BONUS).toFixed(1)}x`;
   const nextText = referral.next
     ? `${Math.round(referral.next.share * 100)}% at ${referral.next.referrals} active referrals`
     : "Top tier reached";
@@ -3019,8 +3029,9 @@ function renderReferralPanel() {
           <span class="exit-btn-label">Cash Back</span>
           <span class="exit-btn-sub">$${claimable.toLocaleString()}</span>
         </button>
+        <span class="referral-claim-or" aria-hidden="true">or</span>
         <button id="referralClaimCreditsBtn" class="exit-btn exit-btn-primary deposit-btn" ${claimable <= 0 ? "disabled" : ""}>
-          <span class="exit-btn-label">Credits</span>
+          <span class="exit-btn-label">Credits <span class="referral-claim-bonus">${creditsBonusLabel}</span></span>
           <span class="exit-btn-sub">${creditsClaimAmount.toLocaleString()}</span>
         </button>
       </div>
