@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Without this the system refuses every Activity.request. -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<!-- Frequent updates are not needed: an open produces two or three state
+	     changes and then ends. -->
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<false/>
+
+	<!-- The site the companion app hosts. Point this at a dev server to run
+	     against a local build. -->
+	<key>ChosenWebURL</key>
+	<string>https://testcrates.vercel.app</string>
+
+	<!-- chosen://result?item=… — the Live Activity's tap target. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.chosen.app.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chosen</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string></string>
+	</dict>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>

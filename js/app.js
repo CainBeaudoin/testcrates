@@ -10,6 +10,7 @@ import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from ".
 import { ICONS } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
+import * as liveActivity from "./liveActivity.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -1380,6 +1381,10 @@ async function startRound(key, currency) {
   roundCurrency = currency;
   const cat = CATEGORIES[key];
 
+  // Dynamic Island: "◈ OPENING" from here until the pick resolves. A no-op
+  // outside the iOS companion app (see liveActivity.js).
+  liveActivity.startOpening({ crate: `${cat.badge} Crate` });
+
   boxPrizes = [weightedPick(cat.pool), weightedPick(cat.pool), weightedPick(cat.pool)];
   boxPrizes = player.applyPity(key, boxPrizes, cat.pool);
   // Duplicate-guard runs here, for all three, rather than only on whichever
@@ -1435,6 +1440,18 @@ function onPick(index) {
   const finalPrize = boxPrizes[index]; // duplicate-guard already resolved at round start, see startRound
 
   const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, CATEGORIES[currentCategoryKey].price);
+
+  // Result is known — the Live Activity switches from OPENING to the rarity.
+  // Deliberately fired here rather than after the modal animation: the point
+  // of the island is that it resolves while you're looking at the phone, not
+  // three seconds behind the screen.
+  liveActivity.reportItem({
+    rarity: finalPrize.rarity,
+    rarityLabel: RARITY_META[finalPrize.rarity].label,
+    name: finalPrize.name,
+    value: finalPrize.price,
+    image: finalPrize.image,
+  });
 
   helperText.textContent = "Opening your crate…";
   openSlot(index, { isYours: true, revealCard: false });
@@ -1597,6 +1614,14 @@ cashOutBtn.addEventListener("click", () => {
   const amount = Math.round(prize.price * player.cashOutMultiplier(prize.category));
   player.cashBack(amount, roundCurrency);
   player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
+  // The one exit that pays a balance instead of an item, so the one that
+  // turns the island into "+333 ◈".
+  const wallet = player.getWallet();
+  liveActivity.reportCredits({
+    amount,
+    currency: roundCurrency,
+    balance: roundCurrency === "cash" ? wallet.cash : wallet.credits,
+  });
   renderWallet({ pulse: roundCurrency });
   showWalletToast(amount, roundCurrency);
   hidePrizeModal();
@@ -1607,7 +1632,17 @@ vaultKeepBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
-  addOwnedItem(prize);
+  const item = addOwnedItem(prize);
+  // Same result, but now it has a vault id — re-sent so the island's tap
+  // target lands on the item's own page instead of the reveal screen.
+  liveActivity.reportItem({
+    rarity: prize.rarity,
+    rarityLabel: RARITY_META[prize.rarity].label,
+    name: prize.name,
+    value: prize.price,
+    image: prize.image,
+    itemId: item?.id,
+  });
   hidePrizeModal();
   revealOthers();
 });
@@ -1619,6 +1654,9 @@ playAgainBtn.addEventListener("click", () => {
 backBtn.addEventListener("click", () => {
   playClick();
   disposeViewers();
+  // Done looking at this open — dismiss the island now rather than leaving it
+  // to time out.
+  liveActivity.end();
   showScreen(screenCategory);
   renderCategories();
 });
@@ -3315,6 +3353,29 @@ document.querySelectorAll("[data-footer-link]").forEach((btn) => {
   });
 });
 
+// ---- Deep links from the Live Activity ----------------------------------
+// Tapping the Dynamic Island opens chosen://result?…, which the companion app
+// turns into these params (warm, via window.Chosen.handleDeepLink) or into a
+// query string on a cold launch. Both land here. Plain browsers never produce
+// one, and an unrecognised param is ignored.
+function routeDeepLink(params) {
+  const itemId = params.get("item");
+  if (itemId) {
+    document.querySelector('.nav-tab[data-nav="screen-account"]:not([data-account-group])')?.click();
+    showAccountGroup("holdings");
+    openItemDetail(itemId);
+    return true;
+  }
+  if (params.get("credits")) {
+    // The cash-out that paid it is the top row of the activity feed.
+    document.querySelector('.nav-tab[data-nav="screen-account"]:not([data-account-group])')?.click();
+    showAccountGroup("activity");
+    return true;
+  }
+  return false;
+}
+liveActivity.onDeepLink(routeDeepLink);
+
 const profileParam = new URLSearchParams(location.search).get("profile");
 if (profileParam) {
   renderPublicProfile(profileParam);
@@ -3324,4 +3385,7 @@ if (profileParam) {
   seedDemoInventory();
   renderCategories();
   setInterval(tickSimulatedPulls, 4000);
+  // Cold launch from a tapped Live Activity — the inventory has to exist
+  // before the item route can open anything, so this runs last.
+  routeDeepLink(new URLSearchParams(location.search));
 }

@@ -1,0 +1,62 @@
+# XcodeGen spec for the Chosen companion app.
+#
+#   brew install xcodegen && cd ios && xcodegen generate && open Chosen.xcodeproj
+#
+# The project file itself is generated rather than committed: a .pbxproj is a
+# merge-hostile blob, and everything that actually matters about the two
+# targets is legible here instead.
+
+name: Chosen
+options:
+  bundleIdPrefix: com.chosen
+  deploymentTarget:
+    # 16.2 is where ActivityContent and staleDate land. Live Activities
+    # themselves are 16.1, but the extra two months of API are worth more than
+    # the sliver of devices between them.
+    iOS: "16.2"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    # iPhone only. Live Activities don't exist on iPad, and the site's own
+    # tablet and desktop layouts are unchanged and served by Safari.
+    TARGETED_DEVICE_FAMILY: "1"
+    DEVELOPMENT_TEAM: "" # set your Team ID, or configure signing in Xcode
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  Chosen:
+    type: application
+    platform: iOS
+    sources:
+      - path: Chosen
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chosen.app
+        INFOPLIST_FILE: Chosen/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Chosen/Chosen.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+    dependencies:
+      - target: ChosenActivityWidget
+        embed: true
+        codeSign: true
+
+  ChosenActivityWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ChosenActivityWidget
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.chosen.app.ActivityWidget
+        INFOPLIST_FILE: ChosenActivityWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ChosenActivityWidget/ChosenActivityWidget.entitlements
+    dependencies:
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: ActivityKit.framework

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Live Activity push tokens come from the normal push entitlement.
+	     Switch to "production" for a TestFlight/App Store build, and set
+	     APNS_ENV to match on the Vercel side. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Shared with the widget so an item thumbnail written by the app can be
+	     read at render time by the extension. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.chosen.app</string>
+	</array>
+</dict>
+</plist>
