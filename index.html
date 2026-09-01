@@ -213,11 +213,7 @@
           <svg class="account-nav-item-icon account-nav-item-icon-mobile" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7"/><line x1="12" y1="11.5" x2="12" y2="21.5"/></svg>
           <span class="account-nav-item-label">Holdings</span>
         </button>
-        <button class="account-nav-item" data-group="selling" title="Selling — Listings &amp; Offers">
-          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41 12 22l-9-9 8.59-8.59A2 2 0 0 1 13 4h6a1 1 0 0 1 1 1v6a2 2 0 0 1-.41 1.41z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
-          <span class="account-nav-item-label">Selling</span>
-        </button>
-        <button class="account-nav-item" data-group="activity" title="Activity — History, Shipped &amp; Clips">
+        <button class="account-nav-item" data-group="activity" title="Activity — Listings, Offers, History &amp; Clips">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>
           <span class="account-nav-item-label">Activity</span>
         </button>
@@ -342,25 +338,17 @@
             <div id="streakCalendar" class="streak-calendar"></div>
           </div>
 
+          <!-- Selling folded in here: listings, offers and the event log are
+               all "things that happened to your items", so they share one tab
+               and one toggle rather than being split across two groups. -->
           <div class="account-toggle" data-toggle-group="activity">
-            <button type="button" class="account-toggle-label active" data-toggle-target="clips">Clips</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="history-opens">History</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="history-cashedout">Cashed Out</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="shipped">Shipped</button>
-          </div>
-          <div class="account-section" data-section="clips" data-toggle-key="clips">
-            <div class="account-section-header">
-              <h3>Clips <span class="count-badge" id="clipsCount">0</span></h3>
-              <span class="account-block-note">Clip recording coming soon</span>
-            </div>
-            <div id="clipsGrid" class="clips-grid"></div>
-          </div>
-
-          <div class="account-toggle" data-toggle-group="selling">
             <button type="button" class="account-toggle-label active" data-toggle-target="listings">My Listings</button>
             <button type="button" class="account-toggle-label" data-toggle-target="offers-incoming">Incoming Offers</button>
             <button type="button" class="account-toggle-label" data-toggle-target="offers-sent">Sent Offers</button>
+            <button type="button" class="account-toggle-label" data-toggle-target="history">History</button>
+            <button type="button" class="account-toggle-label" data-toggle-target="clips">Clips</button>
           </div>
+
           <div class="account-section" data-section="listings" data-toggle-key="listings">
             <div class="account-section-header"><h3>My Listings <span class="count-badge" id="listingsCount">0</span></h3></div>
             <div id="myListingsGrid" class="market-grid"></div>
@@ -377,27 +365,20 @@
             </div>
           </div>
 
-          <div class="account-section toggle-hidden" data-section="history" data-toggle-key="history-opens history-cashedout">
-            <div class="account-subsection" data-toggle-key="history-opens">
-              <div class="account-section-header">
-                <h3>Opening History</h3>
-                <span class="account-block-note">5x+ pulls pinned</span>
-              </div>
-              <div id="openingsFilter" class="market-filter-chips"></div>
-              <div id="openingsList" class="openings-list"></div>
-            </div>
-            <div class="account-subsection toggle-hidden" data-toggle-key="history-cashedout">
-              <div class="account-section-header"><h3>Cashed Out</h3></div>
-              <div id="cashedOutList" class="openings-list"></div>
-            </div>
+          <!-- One feed for every event on an item — opened, cashed out,
+               shipped, sent — each row tagged with which it was, instead of
+               a tab per kind. -->
+          <div class="account-section toggle-hidden" data-section="history" data-toggle-key="history">
+            <div class="account-section-header"><h3>History <span class="count-badge" id="historyCount">0</span></h3></div>
+            <div id="historyList" class="openings-list"></div>
           </div>
 
-          <div class="account-section toggle-hidden" data-section="shipped" data-toggle-key="shipped">
-            <div class="account-section-header"><h3>Shipped</h3></div>
-            <div id="shippedList" class="market-grid"></div>
-
-            <div class="account-section-header"><h3>Transferred</h3></div>
-            <div id="transfersList" class="openings-list"></div>
+          <div class="account-section toggle-hidden" data-section="clips" data-toggle-key="clips">
+            <div class="account-section-header">
+              <h3>Clips <span class="count-badge" id="clipsCount">0</span></h3>
+              <span class="account-block-note">Clip recording coming soon</span>
+            </div>
+            <div id="clipsGrid" class="clips-grid"></div>
           </div>
 
           <div class="account-section toggle-hidden" data-section="leaderboard" data-toggle-key="leaderboard">

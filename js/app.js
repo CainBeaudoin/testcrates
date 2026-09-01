@@ -211,11 +211,8 @@ const incomingOffersList = document.getElementById("incomingOffersList");
 const myListingsGrid = document.getElementById("myListingsGrid");
 const inventoryGrid = document.getElementById("inventoryGrid");
 const myOffersList = document.getElementById("myOffersList");
-const openingsFilter = document.getElementById("openingsFilter");
-const openingsList = document.getElementById("openingsList");
-const shippedList = document.getElementById("shippedList");
-const cashedOutList = document.getElementById("cashedOutList");
-const transfersList = document.getElementById("transfersList");
+const historyList = document.getElementById("historyList");
+const historyCount = document.getElementById("historyCount");
 const clipsGrid = document.getElementById("clipsGrid");
 const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
@@ -1644,11 +1641,13 @@ navTabs.forEach((tab) => {
 // section keeps its own render function and its own <h3> sub-header
 // (see index.html) — grouping only changes which combination of them is
 // visible at once, nothing about how they're built.
+// Selling's sections live under Activity now — listings, offers and the
+// event log are all things that happened to your items, and splitting them
+// across two tabs meant the same item's story was in two places.
 const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
   holdings: ["vault", "portfolio"],
-  selling: ["listings", "offers"],
-  activity: ["history", "shipped", "clips"],
+  activity: ["listings", "offers", "history", "clips"],
   rewards: ["streaks", "leaderboard", "referral"],
 };
 
@@ -2646,10 +2645,7 @@ function renderAccount() {
     ? myOffers.map((o) => offerRowHTML(o, { showActions: o.status === "countered" ? "counter-received" : null })).join("")
     : `<div class="offers-empty">You haven't made any offers yet.</div>`;
 
-  renderOpeningHistory();
-  renderCashedOut();
-  renderShipped();
-  renderTransfers();
+  renderHistory();
   renderLeaderboard();
   renderReferralPanel();
   renderStreaks();
@@ -2677,103 +2673,69 @@ function renderClips() {
     .join("");
 }
 
-let openingsFilterValue = "all";
-function renderOpeningHistory() {
-  if (openingsFilter.children.length === 0) {
-    openingsFilter.innerHTML = `
-      <button class="market-chip active" data-mult="all">All</button>
-      <button class="market-chip" data-mult="5">5x+</button>
-      <button class="market-chip" data-mult="10">10x+</button>
-    `;
-    openingsFilter.querySelectorAll(".market-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        playClick();
-        openingsFilterValue = chip.dataset.mult;
-        openingsFilter.querySelectorAll(".market-chip").forEach((c) => c.classList.remove("active"));
-        chip.classList.add("active");
-        renderOpeningHistory();
-      });
+// One feed for everything that has happened to an item — opened, cashed
+// out, shipped, sent — merged and sorted by when it happened, each row
+// tagged with which kind it was. Previously these were four tabs, so a
+// single item's story was split across all of them.
+//
+// The 5x/10x multiplier filter is gone: with four event kinds in one list a
+// filter that only applies to one of them reads as broken.
+const HISTORY_TAGS = {
+  opened: { label: "Opened", cls: "opened" },
+  cashedout: { label: "Cashed Out", cls: "cashedout" },
+  shipped: { label: "Shipped", cls: "shipped" },
+  sent: { label: "Sent", cls: "sent" },
+};
+
+function historyEvents() {
+  const events = [];
+
+  player.getHistory().forEach((o) => {
+    events.push({
+      kind: "opened",
+      ts: o.ts ?? 0,
+      name: o.name,
+      image: o.image,
+      value: o.multiplier != null ? `${o.multiplier}x` : "\u2014",
+      big: (o.multiplier ?? 0) >= player.BIG_PULL_MULTIPLIER,
     });
-  }
+  });
 
-  let openings = player.getHistory();
-  if (openingsFilterValue !== "all") {
-    const min = Number(openingsFilterValue);
-    openings = openings.filter((o) => (o.multiplier ?? 0) >= min);
-  }
+  player.getCashedOut().forEach((o) => {
+    const amount = `${o.currency === "cash" ? "$" : ""}${o.amount.toLocaleString()}${o.currency === "credits" ? " cr" : ""}`;
+    events.push({ kind: "cashedout", ts: o.ts ?? 0, name: o.name, image: o.image, value: amount });
+  });
 
-  openingsList.innerHTML = openings.length
-    ? openings
-        .map((o) => {
-          const pinned = (o.multiplier ?? 0) >= player.BIG_PULL_MULTIPLIER;
+  player.getShipped().forEach((o) => {
+    events.push({ kind: "shipped", ts: o.shippedAt ?? 0, name: o.name, image: o.image, value: "" });
+  });
+
+  player.getTransfers().forEach((t) => {
+    events.push({ kind: "sent", ts: t.ts ?? 0, name: t.name, image: t.image, value: `\u2192 ${t.toUsername}` });
+  });
+
+  return events.sort((a, b) => b.ts - a.ts);
+}
+
+function renderHistory() {
+  const events = historyEvents();
+  historyCount.textContent = events.length;
+  historyList.innerHTML = events.length
+    ? events
+        .map((e) => {
+          const tag = HISTORY_TAGS[e.kind];
           return `
-          <div class="opening-row ${pinned ? "pinned" : ""}">
-            <img src="${o.image}" alt="">
-            <span class="opening-row-name">${o.name}</span>
-            <span class="opening-row-mult ${pinned ? "big" : ""}">${o.multiplier != null ? o.multiplier + "x" : "—"}</span>
-            ${pinned ? `<span class="opening-row-pin" title="Pinned — 5x or more">★</span>` : ""}
+          <div class="opening-row ${e.big ? "pinned" : ""}">
+            <img src="${e.image}" alt="">
+            <span class="opening-row-name">${e.name}</span>
+            <span class="history-tag history-tag-${tag.cls}">${tag.label}</span>
+            <span class="opening-row-mult ${e.big ? "big" : ""}">${e.value}</span>
           </div>`;
         })
         .join("")
-    : `<div class="offers-empty">No openings yet.</div>`;
+    : `<div class="offers-empty">Nothing here yet \u2014 open a crate to get started.</div>`;
 }
 
-function renderCashedOut() {
-  const cashedOut = player.getCashedOut();
-  cashedOutList.innerHTML = cashedOut.length
-    ? cashedOut
-        .map(
-          (o) => `
-          <div class="opening-row">
-            <img src="${o.image}" alt="">
-            <span class="opening-row-name">${o.name}</span>
-            <span class="opening-row-mult">${o.currency === "cash" ? "$" : ""}${o.amount.toLocaleString()}${o.currency === "credits" ? " cr" : ""}</span>
-          </div>`
-        )
-        .join("")
-    : `<div class="offers-empty">Nothing cashed out yet.</div>`;
-}
-
-function renderTransfers() {
-  const transfers = player.getTransfers();
-  transfersList.innerHTML = transfers.length
-    ? transfers
-        .map(
-          (t) => `
-          <div class="opening-row">
-            <img src="${t.image}" alt="">
-            <span class="opening-row-name">${t.name}</span>
-            <span class="opening-row-mult">→ ${t.toUsername}</span>
-          </div>`
-        )
-        .join("")
-    : `<div class="offers-empty">Nothing sent yet.</div>`;
-}
-
-function renderShipped() {
-  const shipped = player.getShipped();
-  shippedList.innerHTML = shipped.length
-    ? shipped
-        .map((item) => {
-          const sizeHTML = item.category !== "stocks" ? `<span class="market-item-size">US ${market.sizeForItem(item.name)}</span>` : "";
-          return `
-            <div class="market-item static">
-              <div class="market-item-media">
-                <img src="${item.image}" alt="">
-                ${sizeHTML}
-              </div>
-              <div class="market-item-body">
-                <span class="market-item-name">${item.name}</span>
-                <div class="market-item-divider"></div>
-                <div class="market-item-foot">
-                  <span class="market-item-price">${ICONS.cash}${item.price.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>`;
-        })
-        .join("")
-    : `<div class="market-empty">Nothing shipped yet.</div>`;
-}
 
 function renderLeaderboard() {
   const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
