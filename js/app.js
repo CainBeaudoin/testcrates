@@ -89,6 +89,12 @@ const FAKE_REFERRALS = [
   { username: "RarePairz", baseFees: 460, dailyRate: 0.7 },
 ];
 
+// A referral is "active" once they've opened a drop — fees only start
+// accruing at that point, so a non-zero balance is the same signal.
+function activeReferrals() {
+  return FAKE_REFERRALS.filter((r) => accruedFees(r) > 0).length;
+}
+
 function accruedFees(referral) {
   const days = Math.max(0, Math.floor((Date.now() - REFERRAL_FEES_EPOCH) / 86400000));
   return Math.round(referral.baseFees + referral.dailyRate * days);
@@ -2914,12 +2920,13 @@ function renderLeaderboard() {
 }
 
 function renderReferralPanel() {
-  const referral = player.getReferralTier();
+  const active = activeReferrals();
+  const referral = player.getReferralTier(active);
   const claimable = player.getReferralClaimable();
   const creditsClaimAmount = Math.round(claimable * (1 + player.REFERRAL_CREDITS_BONUS));
   const nextText = referral.next
-    ? `${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
-    : "At the ceiling";
+    ? `${Math.round(referral.next.share * 100)}% at ${referral.next.referrals} active referrals`
+    : "Top tier reached";
 
   referralPanel.innerHTML = `
     <div class="referral-current">
@@ -2948,7 +2955,7 @@ function renderReferralPanel() {
       </div>
     </div>
 
-    <div class="referral-count">${FAKE_REFERRALS.length} referrals</div>
+    <div class="referral-count">${active} active referral${active === 1 ? "" : "s"} <span>\u2014 counts once they open a drop</span></div>
   `;
 
   document.getElementById("referralClaimCashBtn").addEventListener("click", () => {
@@ -2984,13 +2991,55 @@ function getWeeklyRafflePrize() {
 const REWARD_EARN_ICONS = {
   user: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>`,
   link: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>`,
+  clip: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2.5"/><path d="m16 10 6-3.5v11L16 14z"/></svg>`,
   x: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.5 3h3l-6.6 7.5L21.7 21h-5.9l-4.3-5.6L6.5 21H3.4l7-8-6.6-10h6l3.9 5.2zm-1 16h1.6L8.1 4.6H6.4z"/></svg>`,
 };
+
+// Only things still worth doing: signing up and arriving through a link
+// are already true of anyone reading this, so they'd be a checklist of the
+// past. Both of these need a human to check the proof, so they submit and
+// sit pending rather than paying out on the spot.
+const EARN_TASKS = [
+  { key: "xVerify", icon: "x", label: "Verify X account", value: "+5%", placeholder: "Link to your X profile" },
+  { key: "clipPost", icon: "clip", label: "Post a clip", value: "+5%", placeholder: "Link to your post" },
+];
+
+function renderEarnTasks() {
+  const done = player.getEarnTasks();
+  rwEarnList.innerHTML = EARN_TASKS.map((t) => {
+    const task = done[t.key];
+    const state = task
+      ? `<span class="rewards-earn-state ${task.status}">${task.status === "verified" ? "Verified" : "Pending review"}</span>`
+      : `<form class="rewards-earn-form" data-earn-task="${t.key}">
+           <input type="url" class="rewards-earn-input" placeholder="${t.placeholder}" required>
+           <button type="submit" class="rewards-earn-submit">Submit</button>
+         </form>`;
+    return `
+      <div class="rewards-earn-row ${task ? "submitted" : ""}">
+        <span class="rewards-earn-icon">${REWARD_EARN_ICONS[t.icon]}</span>
+        <span class="rewards-earn-label">${t.label}</span>
+        <span class="rewards-earn-value">${t.value}</span>
+        ${state}
+      </div>`;
+  }).join("");
+
+  rwEarnList.querySelectorAll("[data-earn-task]").forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const link = form.querySelector("input").value.trim();
+      if (!link) return;
+      playClick();
+      player.submitEarnTask(form.dataset.earnTask, link);
+      showToast("Submitted for review", ICONS.bell);
+      renderEarnTasks();
+    });
+  });
+}
 
 function renderStreaks() {
   const streak = player.getDailyStreak();
   const goal = player.RAFFLE_STREAK_DAYS;
-  const share = player.getReferralTier().share;
+  const share = player.getReferralTier(activeReferrals()).share;
 
   // Header strip: the three numbers the whole page is about.
   rwStreakStat.textContent = streak;
@@ -3039,20 +3088,7 @@ function renderStreaks() {
     </div>
   `;
 
-  rwEarnList.innerHTML = [
-    { icon: "user", label: "Sign up", value: "10%" },
-    { icon: "link", label: "Arrive through a referral link", value: "+5%" },
-    { icon: "x", label: "Verify X account", value: "+5%" },
-  ]
-    .map(
-      (r) => `
-      <div class="rewards-earn-row">
-        <span class="rewards-earn-icon">${REWARD_EARN_ICONS[r.icon]}</span>
-        <span class="rewards-earn-label">${r.label}</span>
-        <span class="rewards-earn-value">${r.value}</span>
-      </div>`
-    )
-    .join("");
+  renderEarnTasks();
 
 }
 

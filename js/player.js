@@ -32,11 +32,15 @@ export const RAFFLE_STREAK_DAYS = 7;
 
 // Referral ladder from the scope doc, denominated in lifetime crate volume.
 export const REFERRAL_BASE = 0.2; // sign-up 10% + link 5% + X-verify 5%
+// Tiers step on *active* referrals — people you brought who have actually
+// opened a drop — rather than lifetime volume. A dollar target is both
+// unreachable-looking and something you can't act on; "get more people
+// opening crates" is the thing a referrer can actually go and do.
 export const REFERRAL_TIERS = [
-  { volume: 250000, share: 0.25 },
-  { volume: 500000, share: 0.3 },
-  { volume: 1000000, share: 0.35 },
-  { volume: 2000000, share: 0.4 },
+  { referrals: 10, share: 0.25 },
+  { referrals: 25, share: 0.3 },
+  { referrals: 50, share: 0.35 },
+  { referrals: 100, share: 0.4 },
 ];
 
 const DEFAULT_USERNAME = "ODCain";
@@ -74,6 +78,7 @@ function defaultState() {
     cashedOut: [], // liquidated items: {id, name, rarity, price, image, amount, currency, ts}
     transfers: [], // items sent to another account: {id, name, rarity, price, image, toUsername, ts}
     creditEvents: [], // cashback rebate notifications: {amount, tierKey, ts}
+    earnTasks: {}, // {xVerify|clipPost: {link, status, ts}} — see submitEarnTask
     creditEventsSeenTs: 0, // newest ts the user has actually opened the list on — see getUnseenCreditCount
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
@@ -346,24 +351,46 @@ export function getLifetimeVolume() {
   return state.lifetimeVolume;
 }
 
-export function getReferralTier() {
+export function getReferralTier(activeReferrals = 0) {
   let share = REFERRAL_BASE;
   let next = REFERRAL_TIERS[0];
   for (const tier of REFERRAL_TIERS) {
-    if (state.lifetimeVolume >= tier.volume) {
+    if (activeReferrals >= tier.referrals) {
       share = tier.share;
     } else {
       next = tier;
       break;
     }
   }
-  const atCeiling = state.lifetimeVolume >= REFERRAL_TIERS[REFERRAL_TIERS.length - 1].volume;
+  const atCeiling = activeReferrals >= REFERRAL_TIERS[REFERRAL_TIERS.length - 1].referrals;
+  // Bonuses you've claimed on top of the base (see getEarnBonuses).
+  share += getEarnBonus();
   return {
     share,
-    volume: state.lifetimeVolume,
+    activeReferrals,
     next: atCeiling ? null : next,
-    progress: atCeiling ? 1 : Math.min(1, state.lifetimeVolume / next.volume),
+    progress: atCeiling ? 1 : Math.min(1, activeReferrals / next.referrals),
   };
+}
+
+// ---- "How you earn more" bonuses -----------------------------------------
+// Each is worth +5% on the referral share once done. The clip one stores the
+// link the user submits; both are marked pending until someone verifies
+// them, which is a manual step here — there's no backend to check either.
+export const EARN_BONUS_VALUE = 0.05;
+
+export function getEarnTasks() {
+  return state.earnTasks ?? {};
+}
+
+export function submitEarnTask(key, link = "") {
+  state.earnTasks = { ...(state.earnTasks ?? {}), [key]: { link, status: "pending", ts: Date.now() } };
+  save();
+}
+
+// Only verified tasks pay — pending ones are awaiting a manual check.
+function getEarnBonus() {
+  return Object.values(state.earnTasks ?? {}).filter((t) => t.status === "verified").length * EARN_BONUS_VALUE;
 }
 
 // ---- Referral claimable earnings -----------------------------------------

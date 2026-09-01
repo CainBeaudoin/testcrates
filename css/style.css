@@ -2412,6 +2412,56 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .rewards-earn-label { flex: 1; min-width: 0; font-size: 0.76rem; color: var(--text); }
 .rewards-earn-value { font-size: 0.95rem; font-weight: 800; color: var(--text); }
 
+/* Each task carries its own proof: a link goes in, a human checks it. The
+   form wraps below the label on a narrow card rather than squeezing it. */
+.rewards-earn-row { flex-wrap: wrap; }
+.rewards-earn-form {
+  display: flex;
+  gap: 8px;
+  flex: 1 0 100%;
+}
+.rewards-earn-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.7rem;
+}
+.rewards-earn-input:focus { outline: none; border-color: var(--line-strong); }
+.rewards-earn-submit {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.rewards-earn-submit:hover { border-color: var(--line-strong); }
+.rewards-earn-state {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.rewards-earn-state.pending { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.rewards-earn-state.verified { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+
+.referral-count span {
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0.2px;
+}
+
 /* Referral card */
 .referral-share-block { display: flex; flex-direction: column; gap: 2px; }
 .referral-share-label {
