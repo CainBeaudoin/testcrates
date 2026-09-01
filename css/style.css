@@ -2095,10 +2095,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .account-section { display: none; }
 .account-section.active { display: block; }
-/* A nav tab can show more than one of these stacked together now (see
-   ACCOUNT_NAV_GROUPS in app.js) — a divider between them so e.g. Vault's
-   grid and Portfolio's header don't run straight into each other. */
-.account-section.active + .account-section.active {
+/* A divider only where two sections are genuinely stacked and visible.
+   The :not() matters: a group's non-selected sections keep .active and are
+   hidden with .toggle-hidden, and sibling combinators don't care about
+   display — so Referral was inheriting a rule and 33px of offset from the
+   hidden Leaderboard above it, sitting lower than the other two tabs. */
+.account-section.active:not(.toggle-hidden) + .account-section.active:not(.toggle-hidden) {
   margin-top: 8px;
   padding-top: 32px;
   border-top: 1px solid var(--hairline);
