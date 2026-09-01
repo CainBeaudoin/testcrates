@@ -2346,10 +2346,21 @@ function inventoryItemHTML(item) {
   const isListed = listing && listing.price != null;
   const sizeHTML = item.category !== "stocks" ? `<span class="market-item-size">US ${market.sizeForItem(item.name)}</span>` : "";
 
+  // Someone has bid on this one. Sits opposite the size pill so the two
+  // corners read as a pair; vault cards only, the marketplace grid uses a
+  // different builder.
+  const pendingOffers = item.listingId
+    ? market.getOffersForListing(item.listingId).filter((o) => o.status === "pending" && !o.fromIsPlayer)
+    : [];
+  const offerHTML = pendingOffers.length
+    ? `<span class="market-item-offer-flag">${pendingOffers.length > 1 ? `${pendingOffers.length} Offers` : "Offer"}</span>`
+    : "";
+
   return `
-    <div class="market-item" data-item="${item.id}">
+    <div class="market-item ${pendingOffers.length ? "has-offer" : ""}" data-item="${item.id}">
       <div class="market-item-media">
         <img src="${item.image}" alt="">
+        ${offerHTML}
         ${sizeHTML}
       </div>
       <div class="market-item-body">
@@ -2456,13 +2467,35 @@ function openItemDetail(itemId) {
   itemDetailShareBtn.dataset.item = item.id;
   itemDetailDownloadBtn.dataset.item = item.id;
 
+  // Actionable here, not just a read-out: an offer on something in your
+  // vault is the one place you'd want to accept or counter it.
   const peerOffers = item.listingId ? market.getOffersForListing(item.listingId) : [];
   itemDetailPeerOffers.innerHTML = peerOffers.length
-    ? peerOffers.map((o) => offerRowHTML(o)).join("")
+    ? peerOffers
+        .map((o) =>
+          offerRowHTML(o, {
+            showActions: o.status === "pending" && !o.fromIsPlayer ? "incoming" : null,
+          })
+        )
+        .join("")
     : `<div class="offers-empty">No offers from other users yet.</div>`;
 
+  itemDetailModal.dataset.item = item.id;
   itemDetailModal.classList.remove("hidden");
   requestAnimationFrame(() => itemDetailModal.classList.add("visible"));
+}
+
+// Acting on an offer from inside the detail modal has to update the modal
+// too — renderAccount() only rebuilds the grid behind it, which left the
+// Accept/Decline buttons for an offer you'd just answered still sitting
+// there.
+function refreshItemDetail() {
+  if (itemDetailModal.classList.contains("hidden")) return;
+  const id = itemDetailModal.dataset.item;
+  if (!id) return;
+  // Accepting sells the item out of the vault, so there's nothing to show.
+  if (!player.getInventoryItem(id)) closeItemDetail();
+  else openItemDetail(id);
 }
 
 function closeItemDetail() {
@@ -2981,9 +3014,11 @@ document.addEventListener("click", (e) => {
       market.updateOffer(offer.id, { status: "accepted" });
       renderWallet({ pulse: "cash" });
       renderAccount();
+      refreshItemDetail();
     } else if (action === "decline") {
       market.updateOffer(offer.id, { status: "declined" });
       renderAccount();
+      refreshItemDetail();
     } else if (action === "accept-counter") {
       if (player.spendCash(offer.counterAmount) && listing) {
         addOwnedItem({ name: listing.name, rarity: listing.rarity, price: listing.catalogPrice, image: listing.image, category: listing.category });

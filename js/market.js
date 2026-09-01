@@ -305,15 +305,34 @@ export function botDecision(amount, askingPrice) {
 // Occasionally spawns a simulated incoming offer on one of the player's
 // listings that doesn't already have a pending offer — called when the
 // account/marketplace screens render, not on a timer.
+// Ceiling on how much of the vault can be sitting on an offer at once.
+// Without it the per-render roll keeps landing until everything is flagged,
+// and a badge on every card stops meaning anything.
+const MAX_PENDING_OFFER_SHARE = 0.3;
+
 export function maybeSpawnIncomingOffer(chance = 0.2) {
   const myListings = state.listings.filter((l) => l.isPlayer);
   const spawned = [];
+
+  const pending = new Set(
+    state.offers.filter((o) => o.status === "pending" && !o.fromIsPlayer).map((o) => o.listingId)
+  );
+  const ceiling = Math.ceil(myListings.length * MAX_PENDING_OFFER_SHARE);
+
   myListings.forEach((listing) => {
-    const hasPending = state.offers.some((o) => o.listingId === listing.id && o.status === "pending" && !o.fromIsPlayer);
-    if (hasPending) return;
+    // Re-checked per listing, not once per call: a single pass rolls against
+    // every listing, so checking up front let one call blow straight past
+    // the ceiling.
+    if (pending.size >= ceiling) return;
+    if (pending.has(listing.id)) return;
     if (Math.random() > chance) return;
-    const ratio = 0.55 + Math.random() * 0.4; // 55%-95% of asking price
-    const amount = Math.max(1, Math.round(listing.price * ratio));
+    pending.add(listing.id);
+    const ratio = 0.55 + Math.random() * 0.4; // 55%-95% of the reference price
+    // Unlisted vault items are offer-only (price null), so anchor those to
+    // the item's catalog value — multiplying the null was quietly turning
+    // every offer on an unlisted item into $1.
+    const base = listing.price != null ? listing.price : listing.catalogPrice;
+    const amount = Math.max(1, Math.round(base * ratio));
     spawned.push(
       makeOffer({
         listingId: listing.id,

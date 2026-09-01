@@ -1812,6 +1812,24 @@ button.deposit-btn:hover {
 .market-item-size { left: auto; right: 8px; }
 .market-item-size { color: var(--text-dim); }
 
+/* Offer flag on a vault card — opposite corner to the size pill, green so
+   it reads as something waiting on you rather than another spec. */
+.market-item-offer-flag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #052e16;
+  background: #4ade80;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.market-item.has-offer { border-color: rgba(74, 222, 128, 0.35); }
+
 .market-item-body {
   padding: 8px 12px 12px;
 }
