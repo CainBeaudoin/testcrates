@@ -47,7 +47,13 @@ function cacheSet(key, value) {
 // produce one request rather than eight.
 const inflight = new Map();
 
+// The sales routes are subscriber-only. One 403 tells us the whole plan
+// lacks them, so stop asking for the rest of the session rather than
+// spending a request (and a console error) per shoe to relearn it.
+let salesLocked = false;
+
 async function get(params, cacheKey) {
+  if (params.route === "sales" && salesLocked) return null;
   const cached = cacheGet(cacheKey);
   if (cached !== undefined) return cached;
   if (inflight.has(cacheKey)) return inflight.get(cacheKey);
@@ -56,8 +62,10 @@ async function get(params, cacheKey) {
   const p = fetch(url)
     .then(async (r) => {
       if (!r.ok) {
-        // 503 = no key configured. Cache the miss too, so a site running
-        // without a key doesn't re-request on every render.
+        // 503 = no key configured, 403 = the plan doesn't cover this route.
+        // Cache the miss too, so a site without access doesn't re-request on
+        // every render.
+        if (r.status === 403 && params.route === "sales") salesLocked = true;
         cacheSet(cacheKey, null);
         return null;
       }
@@ -87,12 +95,44 @@ function searchTerm(name) {
     .trim();
 }
 
+// When a query matches nothing, KicksDB still returns products — searching
+// "Air Jordan 1 High UNC Patent" came back with "Nike Air Max 90 Off-White
+// Black" as its first result. Taking data[0] on trust would price one shoe
+// off another, so every candidate has to earn the match: at least 60% of the
+// query's words have to appear in the product title.
+const MIN_MATCH = 0.6;
+
+function words(s) {
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+}
+
+function matchScore(query, title) {
+  const q = words(query);
+  if (q.length === 0) return 0;
+  const t = new Set(words(title));
+  return q.filter((w) => t.has(w)).length / q.length;
+}
+
 // Resolves a catalog name to a StockX product, or null if there's no
 // confident match. Cached by name, including the misses.
 export async function findProduct(name) {
-  const json = await get({ route: "search", query: searchTerm(name) }, `find:${name}`);
-  const hit = json?.data?.[0];
-  if (!hit) return null;
+  const term = searchTerm(name);
+  const json = await get({ route: "search", query: term }, `find:${name}`);
+  const results = json?.data;
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  // Best of the page rather than just the first — the top hit is sometimes
+  // ranked on popularity over relevance.
+  let hit = null;
+  let best = 0;
+  for (const r of results) {
+    const score = matchScore(term, r.title || "");
+    if (score > best) {
+      best = score;
+      hit = r;
+    }
+  }
+  if (!hit || best < MIN_MATCH) return null;
   return {
     id: hit.id,
     slug: hit.slug,
@@ -106,11 +146,35 @@ export async function findProduct(name) {
   };
 }
 
+// ---- Market snapshot -----------------------------------------------------
+
+// Live StockX pricing for a shoe: the real lowest ask and the traded range.
+// Unlike the sales history below this is available on the free plan, so it's
+// the reference the charts are captioned with today.
+export async function marketSnapshot(name) {
+  const product = await findProduct(name);
+  if (!product) return null;
+  if (product.minPrice == null && product.avgPrice == null) return null;
+  return {
+    title: product.title,
+    sku: product.sku,
+    link: product.link,
+    lowestAsk: product.minPrice || null,
+    avgPrice: product.avgPrice || null,
+    highestPrice: product.maxPrice || null,
+  };
+}
+
 // ---- Chart series --------------------------------------------------------
 
 // StockX daily sales -> the {date, value} shape buildPriceChartSVG expects.
 // avg_amount is the average sale price that day, which is the honest
 // "what did this actually trade at" line rather than an ask.
+//
+// Both sales routes are subscriber-only — a free key gets 403 here, which
+// get() turns into null, so callers keep their simulated line and caption it
+// with marketSnapshot's real pricing instead. Upgrading the plan lights this
+// up with no code change.
 export async function priceHistory(name, days = 30) {
   const product = await findProduct(name);
   if (!product) return null;

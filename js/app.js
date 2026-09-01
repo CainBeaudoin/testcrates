@@ -2322,11 +2322,28 @@ function renderChart(chartEl, captionEl, fallbackHistory, { name, valueEl, value
   // Tag the request so a slow response for a previously-opened item can't
   // land on whatever the user has open by the time it arrives.
   const token = (chartEl.dataset.chartToken = String(Date.now() + Math.random()));
+  const current = () => chartEl.dataset.chartToken === token;
 
+  // Real StockX pricing (free plan) captions the chart. The line itself
+  // stays simulated until the sales history is reachable, and the caption
+  // says so rather than implying StockX drew it.
+  stockx.marketSnapshot(name).then((snap) => {
+    if (!snap || !current()) return;
+    const bits = [];
+    if (snap.lowestAsk) bits.push(`lowest ask $${snap.lowestAsk.toLocaleString()}`);
+    if (snap.avgPrice) bits.push(`avg $${snap.avgPrice.toLocaleString()}`);
+    if (captionEl && !captionEl.dataset.live) {
+      captionEl.textContent = `Market reference \u00b7 StockX${bits.length ? " \u2014 " + bits.join(" \u00b7 ") : ""}`;
+    }
+  });
+
+  // Subscriber-only; on the free plan this resolves null and the simulated
+  // line stands. When it does resolve, the chart itself becomes StockX data.
   stockx.priceHistory(name).then((live) => {
-    if (!live || chartEl.dataset.chartToken !== token) return;
+    if (!live || !current()) return;
     chartEl.innerHTML = buildPriceChartSVG(live.points);
     if (captionEl) {
+      captionEl.dataset.live = "1";
       captionEl.textContent = `Market reference \u00b7 StockX \u2014 last ${live.points.length} days of sales`;
     }
     if (valueLabelEl) valueLabelEl.textContent = "StockX Last Sale";
