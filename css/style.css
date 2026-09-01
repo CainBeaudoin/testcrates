@@ -4057,9 +4057,19 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   :root {
     --topbar-h: 52px;
     --bottom-nav-h: 60px;
-    /* Height of the floating Account group-icon bar, which the section
-       toggle above it is positioned off. */
+    /* The floating Account group-icon bar, and the section toggle that
+       sits beside it. Both are position:fixed, so they can't flex against
+       each other — the pair is centred with arithmetic instead, which
+       needs the nav's width to be a number rather than max-content.
+       260px is exactly what its five 42px icons come to (5×42 + 4×8 gaps
+       + 8px padding either side + 1px borders), so pinning it changes
+       nothing about how it looks. */
     --account-nav-h: 56px;
+    --account-nav-w: 260px;
+    --account-toggle-w: 66px;
+    --account-dock-gap: 8px;
+    /* How far left the nav moves to keep nav + toggle centred as a pair. */
+    --account-dock-shift: calc((var(--account-toggle-w) + var(--account-dock-gap)) / 2);
   }
 
   /* --- Bottom tab bar ----------------------------------------------- */
@@ -4316,9 +4326,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .activity-row .offer-actions { flex: 1 0 100%; justify-content: flex-start; }
   .activity-row-name { font-size: 0.72rem; }
 
-  /* Clearance for the two control rows now floating over the bottom of
-     the screen (--account-nav-h + the toggle + their gaps). */
-  #screen-account.active { padding-bottom: 112px; }
+  /* Clearance for the control row floating over the bottom of the screen
+     (--account-nav-h plus its gaps — the section toggle rides alongside
+     it rather than above it, so it adds no height). */
+  #screen-account.active { padding-bottom: 64px; }
 
   .account-shell { flex-direction: column; gap: 16px; }
   .account-sidebar { position: static; width: 100%; flex-basis: auto; }
@@ -4335,13 +4346,16 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
      to get around is under your thumb. (The reverse of desktop, where
      they read top-down.) */
   /* Shrink-wrapped and centred rather than spanning the gutters: it holds
-     five icons, so a full-width bar was mostly empty space on both sides. */
+     five icons, so a full-width bar was mostly empty space on both sides.
+     --nav-x carries the centring so the hide-on-scroll rule below can add
+     its translateY without losing it. */
   .account-nav {
     position: fixed;
     left: 50%;
     right: auto;
-    transform: translateX(-50%);
-    width: max-content;
+    --nav-x: -50%;
+    transform: translateX(var(--nav-x));
+    width: var(--account-nav-w);
     max-width: calc(100% - 32px);
     top: auto;
     bottom: calc(var(--bottom-nav-h) + 8px);
@@ -4351,12 +4365,13 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     margin-bottom: 0;
     z-index: 41;
   }
-
-  /* Nav-row hiding is shared with desktop (see the base rule); what's
-     mobile-only is where the toggle then sits. */
-  body:has(.nav-tab[data-account-group="rewards"].active) .account-toggle.toggle-group-active {
-    bottom: calc(var(--bottom-nav-h) + 8px);
+  /* Make room for the section toggle when a group has one, so the two
+     read as one centred dock rather than a centred bar with something
+     hanging off it. */
+  body:has(.account-toggle.toggle-group-active) .account-nav {
+    --nav-x: calc(-50% - var(--account-dock-shift));
   }
+
   body:has(.nav-tab[data-account-group="rewards"].active) #screen-account.active {
     padding-bottom: 56px;
   }
@@ -4368,15 +4383,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .account-toggle.toggle-group-active {
     transition: transform 0.22s ease, opacity 0.22s ease;
   }
+  /* Both keep their horizontal placement on the way out — a bare
+     translateY would drop them back to the left edge. */
   body.is-scrolling.scrolling-down .account-toggle.toggle-group-active {
-    transform: translateY(calc(100% + 16px));
+    transform: translateX(var(--toggle-x)) translateY(calc(100% + 16px));
     opacity: 0;
     pointer-events: none;
   }
-  /* Keeps its centring translate — a bare translateY would drop it back to
-     the left edge on the way out. */
   body.is-scrolling.scrolling-down .account-nav {
-    transform: translateX(-50%) translateY(calc(100% + 16px));
+    transform: translateX(var(--nav-x)) translateY(calc(100% + 16px));
     opacity: 0;
     pointer-events: none;
   }
@@ -4404,17 +4419,29 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .streak-top-row > * { flex: 0 0 auto; }
   .streak-summary-meta { flex: 0 0 auto; }
 
-  /* Second-level toggle (structure is in the base cascade) — the labels
-     have to get down to phone width here, and it rides just above the
-     group icons rather than above the content. */
+  /* Second-level toggle (structure is in the base cascade) — a vertical
+     pill parked on the right end of the group icons, at the same height,
+     instead of a full-width bar stacked above them. The icon bar only
+     needs 260px of a 375px screen, so putting the two options in the
+     space beside it costs a row of screen rather than taking one.
+     --toggle-x puts its left edge one gap past the nav's right edge (see
+     --account-dock-shift, which moves the nav left by half of what this
+     pair adds). */
   .account-toggle.toggle-group-active {
     position: fixed;
-    left: 14px;
-    right: 14px;
-    bottom: calc(var(--bottom-nav-h) + 8px + var(--account-nav-h) + 8px);
+    left: 50%;
+    right: auto;
+    --toggle-x: calc(var(--account-nav-w) / 2 + var(--account-dock-gap) - var(--account-dock-shift));
+    transform: translateX(var(--toggle-x));
+    width: var(--account-toggle-w);
+    height: var(--account-nav-h);
+    bottom: calc(var(--bottom-nav-h) + 8px);
     z-index: 41;
+    flex-direction: column;
+    gap: 2px;
     padding: 4px;
     margin-bottom: 0;
+    border-radius: 14px;
     /* Floating over the grid now, so both bars read as solid rather than
        leaning on a blur the content behind them shows through. */
     background: var(--surface-1);
@@ -4424,7 +4451,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     background: var(--surface-1);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
-  .account-toggle-label { font-size: 0.6rem; letter-spacing: 0.2px; padding: 8px 2px; }
+  .account-toggle-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.2px;
+    padding: 2px;
+    border-radius: 10px;
+  }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
      Funds/Withdraw) instead of that block sitting permanently above
@@ -4447,46 +4479,94 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
      brand blurb/social/support links are still reachable without eating
      permanent scroll space on every screen. */
 
+  /* A sheet, not a takeover: there are three links, three icons and a
+     blurb here, which never filled a phone screen — so it sits in the
+     space between the header and the tab bar, everything centred, rather
+     than stretching that little content over the whole viewport. */
   .app-footer {
     display: none;
     position: fixed;
-    inset: 0;
+    left: 16px;
+    right: 16px;
+    top: calc(var(--topbar-h) + 12px);
+    bottom: calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
     z-index: 200;
-    background: var(--bg);
+    background: var(--surface-1);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    /* Height comes from the content, and the auto block margins centre it
+       in that band — a card sized to the band would be two-thirds empty. */
+    height: max-content;
+    margin: auto 0;
     overflow-y: auto;
-    margin: 0;
     max-width: 100%;
-    /* Bottom padding clears the close button parked over the content. */
-    padding: 24px 16px calc(96px + env(safe-area-inset-bottom));
+    padding: 24px 20px;
   }
-  .app-footer.mobile-visible { display: block; }
-  /* Bottom centre, not the top-right corner: this is a full-screen overlay
-     on a phone, and the corner is the one place a thumb can't reach without
+  /* Centres the block vertically when it's shorter than the sheet, which
+     it always is; the sheet still scrolls if a small screen makes it
+     taller. */
+  .app-footer.mobile-visible {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 24px;
+  }
+  /* Dims the page behind the sheet. -1 keeps it under the sheet's own
+     background but still inside .app-footer's stacking context, so it
+     covers everything below without needing an element of its own. */
+  .app-footer.mobile-visible::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: -1;
+  }
+
+  /* Bottom centre and in flow at the end of the sheet, not the top-right
+     corner: the corner is the one place a thumb can't reach without
      shifting grip. */
   .app-footer-close-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    top: auto;
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    order: 2;
+    position: static;
+    align-self: center;
     width: auto;
     height: auto;
     padding: 12px 32px;
     border-radius: 999px;
     background: var(--surface-2);
     border: 1px solid var(--line);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     color: var(--text);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
-    z-index: 201;
   }
-  .app-footer-main { padding: 24px 0; gap: 24px; }
-  .app-footer-columns { gap: 24px; }
+
+  /* Everything centres on itself here — the desktop row of a brand block
+     and two link columns pushed apart by space-between reads as lopsided
+     once it's this narrow. */
+  .app-footer-main {
+    order: 1;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    gap: 24px;
+    border-top: none;
+  }
+  .app-footer-brand { flex: 0 0 auto; max-width: 100%; }
+  .app-footer-logo { justify-content: center; margin-bottom: 12px; }
+  .app-footer-tagline { font-size: 0.72rem; }
+  .app-footer-columns {
+    width: 100%;
+    justify-content: center;
+    gap: 32px;
+  }
+  .app-footer-col { align-items: center; min-width: 0; }
+  .app-footer-link { align-self: center; text-align: center; }
 }
