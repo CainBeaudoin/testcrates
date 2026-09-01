@@ -316,7 +316,7 @@ const amountModalHint = document.getElementById("amountModalHint");
 const amountInput = document.getElementById("amountInput");
 const amountCancelBtn = document.getElementById("amountCancelBtn");
 const amountConfirmBtn = document.getElementById("amountConfirmBtn");
-const amountMaxBtn = document.getElementById("amountMaxBtn");
+const amountQuickRow = document.getElementById("amountQuickRow");
 
 // ---- Helpers --------------------------------------------------------------
 
@@ -1802,7 +1802,8 @@ function promptAmount(title, hint, defaultValue, { max } = {}) {
   amountInput.value = defaultValue ?? "";
   amountMax = max ?? null;
   amountInput.max = max ?? "";
-  amountMaxBtn.classList.toggle("hidden", max == null);
+  amountQuickRow.classList.toggle("hidden", max == null);
+  markActiveQuick();
   amountModal.classList.remove("hidden");
   requestAnimationFrame(() => amountModal.classList.add("visible"));
   setTimeout(() => amountInput.focus(), 50);
@@ -1810,6 +1811,26 @@ function promptAmount(title, hint, defaultValue, { max } = {}) {
     amountResolver = resolve;
   });
 }
+// Highlights whichever fraction the current value matches, so the row
+// reflects the field rather than just setting it.
+function markActiveQuick() {
+  const value = Number(amountInput.value);
+  amountQuickRow.querySelectorAll(".amount-quick-btn").forEach((b) => {
+    const target = amountMax != null ? Math.round((amountMax * Number(b.dataset.amountPct)) / 100) : null;
+    b.classList.toggle("active", target != null && target === Math.round(value));
+  });
+}
+
+amountQuickRow.querySelectorAll(".amount-quick-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (amountMax == null) return;
+    playClick();
+    amountInput.value = Math.max(1, Math.round((amountMax * Number(btn.dataset.amountPct)) / 100));
+    markActiveQuick();
+  });
+});
+amountInput.addEventListener("input", markActiveQuick);
+
 function closeAmountModal(result) {
   amountModal.classList.remove("visible");
   setTimeout(() => amountModal.classList.add("hidden"), 250);
@@ -1828,12 +1849,6 @@ amountConfirmBtn.addEventListener("click", () => {
 amountCancelBtn.addEventListener("click", () => {
   playClick();
   closeAmountModal(null);
-});
-amountMaxBtn.addEventListener("click", () => {
-  if (amountMax == null) return;
-  playClick();
-  amountInput.value = amountMax;
-  amountInput.focus();
 });
 amountInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") amountConfirmBtn.click();

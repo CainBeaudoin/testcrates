@@ -729,7 +729,15 @@
     <p id="amountModalHint" class="payment-modal-hint"></p>
     <div class="amount-input-row">
       <input id="amountInput" class="amount-input" type="number" min="1" step="1" inputmode="numeric">
-      <button id="amountMaxBtn" class="amount-max-btn hidden">Max</button>
+    </div>
+    <!-- Quick fractions of the holding, so selling a share of a position
+         doesn't mean working out the number yourself. Only shown when the
+         caller passes a max to take a fraction of. -->
+    <div id="amountQuickRow" class="amount-quick-row hidden">
+      <button class="amount-quick-btn" data-amount-pct="25">25%</button>
+      <button class="amount-quick-btn" data-amount-pct="50">50%</button>
+      <button class="amount-quick-btn" data-amount-pct="75">75%</button>
+      <button class="amount-quick-btn" id="amountMaxBtn" data-amount-pct="100">Max</button>
     </div>
     <div class="prize-modal-actions">
       <button id="amountCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>

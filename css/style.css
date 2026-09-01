@@ -2685,6 +2685,57 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
    button placed directly in .detail-content is in a *column* flex instead,
    where that grows it vertically — Sell Share Value came out 228px tall for
    12px of padding. Applies to Remove Listing in the same slot. */
+/* Sell-amount quick fractions. The number input's spinner arrows are
+   removed with them: you either type a figure or take a fraction, and the
+   1-at-a-time steppers were useful for neither. */
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.amount-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+/* Still used by the Withdraw modal's Max button. */
+.amount-max-btn {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.amount-max-btn:hover { background: var(--text); color: #000; }
+
+.amount-quick-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.amount-quick-row.hidden { display: none; }
+.amount-quick-btn {
+  flex: 1;
+  padding: 8px 0;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.amount-quick-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.amount-quick-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(230, 230, 235, 0.5);
+  color: var(--accent);
+}
+
 .detail-content > .modal-btn { flex: 0 0 auto; }
 
 /* Send is an icon on the vault cards — the word sat next to "Ship" and the
@@ -2762,20 +2813,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .amount-input:focus { outline: none; border-color: var(--text); }
 
-.amount-max-btn {
-  flex: 0 0 auto;
-  padding: 0 16px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--text);
-  border-radius: 4px;
-  cursor: pointer;
-}
-.amount-max-btn:hover { background: var(--text); color: #000; }
 
 /* --- Add Funds --- */
 
