@@ -2099,6 +2099,72 @@ button.deposit-btn:hover {
 .account-toggle-label.active { background: var(--accent-dim); color: var(--accent); }
 .toggle-hidden { display: none !important; }
 
+/* --- Account: KicksDB key ------------------------------------------------ */
+
+.api-key-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+.api-key-title {
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.api-key-status {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.4;
+  color: var(--text-faint);
+}
+.api-key-status.ok { color: #4ade80; }
+.api-key-status.warn { color: #f87171; }
+.api-key-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+}
+.api-key-input:focus {
+  outline: none;
+  border-color: var(--line-strong);
+}
+.api-key-actions {
+  display: flex;
+  gap: 8px;
+}
+.api-key-btn {
+  flex: 1;
+  padding: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.api-key-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.api-key-btn:disabled { opacity: 0.5; cursor: default; }
+.api-key-btn-primary { color: var(--text); }
+.api-key-note {
+  margin: 0;
+  font-size: 0.6rem;
+  color: var(--text-faint);
+}
+.api-key-note a { color: var(--text-dim); }
+
 .account-section-header {
   display: flex;
   align-items: baseline;

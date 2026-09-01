@@ -1711,6 +1711,74 @@ document.querySelectorAll(".account-toggle").forEach((toggle) => {
   });
 });
 
+// ---- Account: KicksDB key for live StockX pricing -----------------------
+// Saved to this browser only (see stockx.getKey). Verifying on save is worth
+// the one request: it distinguishes a bad key from a working key on a plan
+// whose sales history is locked, which is exactly what decides whether the
+// charts can ever be live.
+const apiKeyInput = document.getElementById("apiKeyInput");
+const apiKeyStatus = document.getElementById("apiKeyStatus");
+const apiKeySaveBtn = document.getElementById("apiKeySaveBtn");
+const apiKeyClearBtn = document.getElementById("apiKeyClearBtn");
+
+function setKeyStatus(text, state) {
+  apiKeyStatus.textContent = text;
+  apiKeyStatus.className = `api-key-status ${state}`;
+}
+
+function renderApiKeyState() {
+  const key = stockx.getKey();
+  apiKeyInput.value = key;
+  if (!key) {
+    setKeyStatus("Not connected — charts show simulated data.", "idle");
+  } else {
+    setKeyStatus(`Connected · ${key.slice(0, 10)}…`, "ok");
+  }
+}
+
+apiKeySaveBtn.addEventListener("click", async () => {
+  playClick();
+  const key = apiKeyInput.value.trim();
+  if (!key) {
+    setKeyStatus("Enter a key first.", "warn");
+    return;
+  }
+  setKeyStatus("Checking…", "idle");
+  apiKeySaveBtn.disabled = true;
+  const result = await stockx.verifyKey(key);
+  apiKeySaveBtn.disabled = false;
+
+  if (!result.ok) {
+    const why =
+      result.reason === "rejected"
+        ? "Key rejected by KicksDB."
+        : result.reason === "unreachable"
+          ? "Couldn't reach KicksDB."
+          : `KicksDB returned ${result.reason.replace("http_", "")}.`;
+    setKeyStatus(why, "warn");
+    return;
+  }
+
+  stockx.setKey(key);
+  // Sales history is subscriber-only, so a free key still gives real prices
+  // in the chart caption but can't draw the line itself. Say which.
+  setKeyStatus(
+    result.history
+      ? "Connected — live StockX prices, and chart lines drawn from real sales."
+      : "Connected — live StockX prices. Sales history needs a paid plan, so chart lines stay simulated.",
+    "ok"
+  );
+});
+
+apiKeyClearBtn.addEventListener("click", () => {
+  playClick();
+  stockx.setKey("");
+  apiKeyInput.value = "";
+  renderApiKeyState();
+});
+
+renderApiKeyState();
+
 // ---- Generic amount prompt ------------------------------------------------
 
 let amountResolver = null;

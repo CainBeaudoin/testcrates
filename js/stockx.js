@@ -8,6 +8,73 @@
 // data when it arrives.
 
 const PROXY = "/api/stockx";
+const DIRECT = "https://api.kicks.dev";
+const KEY_STORAGE = "kicksdb_key";
+
+// Two ways to reach KicksDB:
+//   - a key saved in this browser (Account -> Market Data), which calls the
+//     API directly. KicksDB sends allow-origin:*, so that works, and the key
+//     stays on this device — it is never committed or served to anyone else.
+//   - otherwise the /api/stockx function, which holds a shared key server
+//     side (KICKSDB_API_KEY) and serves every visitor.
+// A browser key wins when both exist, so you can test your own against a
+// deployment without touching its configuration.
+
+export function getKey() {
+  try {
+    return localStorage.getItem(KEY_STORAGE) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function setKey(key) {
+  try {
+    if (key) localStorage.setItem(KEY_STORAGE, key.trim());
+    else localStorage.removeItem(KEY_STORAGE);
+  } catch {
+    // Private mode — the key just won't persist past this session.
+  }
+  // Anything cached came from the old key (or from having none).
+  resetCache();
+}
+
+function resetCache() {
+  memory = {};
+  salesLocked = false;
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+// Verifies a key, then probes whether its plan actually includes the sales
+// history that a live chart line needs. The plan name comes back in
+// X-Key-Type, but KicksDB sends no Access-Control-Expose-Headers, so that
+// header is unreadable from a browser — asking the endpoint itself is both
+// possible and more honest than reporting a plan we can't see.
+const PROBE_PRODUCT = "dcaa242c-257a-4fb0-a212-5b74d431d17b"; // Foamposite Pro Wolf Grey
+
+export async function verifyKey(key) {
+  const auth = { headers: { Authorization: `Bearer ${key.trim()}` } };
+  try {
+    const r = await fetch(`${DIRECT}/v3/stockx/products?query=nike`, auth);
+    if (r.status === 401 || r.status === 403) return { ok: false, reason: "rejected" };
+    if (!r.ok) return { ok: false, reason: `http_${r.status}` };
+  } catch {
+    return { ok: false, reason: "unreachable" };
+  }
+
+  let history = false;
+  try {
+    const h = await fetch(`${DIRECT}/v3/stockx/products/${PROBE_PRODUCT}/sales/daily`, auth);
+    history = h.ok;
+  } catch {
+    // Leave history false — prices still work.
+  }
+  return { ok: true, history };
+}
 
 // The monthly quota is the scarce resource, so results are cached hard:
 // in memory for the session and in localStorage across sessions. Sneaker
@@ -43,6 +110,30 @@ function cacheSet(key, value) {
   }
 }
 
+// Builds the [url, init] for a call, direct with a browser key or through
+// the proxy without one. The route names map to the same three endpoints
+// either way (see api/stockx.mjs).
+function request(params) {
+  const key = getKey();
+  if (!key) return [`${PROXY}?${new URLSearchParams(params)}`, undefined];
+
+  const q = new URLSearchParams();
+  if (params.query) q.set("query", params.query);
+  let path;
+  if (params.route === "search") {
+    path = "/v3/stockx/products";
+    q.set("display[prices]", "true");
+    q.set("display[variants]", "true");
+  } else if (params.route === "sales") {
+    path = `/v3/stockx/products/${encodeURIComponent(params.id)}/sales/daily`;
+  } else {
+    path = `/v3/stockx/products/${encodeURIComponent(params.id)}`;
+    q.set("display[prices]", "true");
+  }
+  const qs = q.toString();
+  return [`${DIRECT}${path}${qs ? `?${qs}` : ""}`, { headers: { Authorization: `Bearer ${key}` } }];
+}
+
 // A single flight per key, so eight cards asking for the same shoe at once
 // produce one request rather than eight.
 const inflight = new Map();
@@ -58,8 +149,7 @@ async function get(params, cacheKey) {
   if (cached !== undefined) return cached;
   if (inflight.has(cacheKey)) return inflight.get(cacheKey);
 
-  const url = `${PROXY}?${new URLSearchParams(params)}`;
-  const p = fetch(url)
+  const p = fetch(...request(params))
     .then(async (r) => {
       if (!r.ok) {
         // 503 = no key configured, 403 = the plan doesn't cover this route.

@@ -255,6 +255,23 @@
             <button id="accountAddFundsBtn" class="modal-btn deposit-btn">Deposit</button>
             <button id="accountWithdrawBtn" class="modal-btn modal-btn-solid">Withdraw</button>
           </div>
+
+          <!-- KicksDB key for live StockX pricing. Stored in this browser's
+               localStorage only — it is never sent anywhere but KicksDB and
+               never leaves this device, so it doesn't affect other visitors.
+               With no key set the site falls back to the server-side key if
+               one is configured, and to simulated data otherwise. -->
+          <div class="api-key-card">
+            <span class="api-key-title">Market Data</span>
+            <p class="api-key-status" id="apiKeyStatus"></p>
+            <input type="password" id="apiKeyInput" class="api-key-input"
+                   placeholder="KICKS-…" autocomplete="off" spellcheck="false">
+            <div class="api-key-actions">
+              <button id="apiKeySaveBtn" class="api-key-btn api-key-btn-primary">Connect</button>
+              <button id="apiKeyClearBtn" class="api-key-btn">Clear</button>
+            </div>
+            <p class="api-key-note">Stored in this browser only. <a href="https://kicks.dev/register" target="_blank" rel="noopener">Get a key</a></p>
+          </div>
         </aside>
 
         <div class="account-content">
