@@ -3071,20 +3071,28 @@ const REWARD_EARN_ICONS = {
 // past. Both of these need a human to check the proof, so they submit and
 // sit pending rather than paying out on the spot.
 const EARN_TASKS = [
-  { key: "xVerify", icon: "x", label: "Verify X account", placeholder: "Link to your X profile" },
-  { key: "clipPost", icon: "clip", label: "Post a clip", placeholder: "Link to your post", help: "Clips" },
+  // Connecting an account is an authorise-and-return flow, not something you
+  // paste a URL for — only the clip needs a link, because the proof there is
+  // the post itself.
+  { key: "xVerify", icon: "x", label: "Verify X account", kind: "connect", action: "Connect X" },
+  { key: "clipPost", icon: "clip", label: "Post a clip", kind: "link", placeholder: "Link to your post", help: "Clips" },
 ];
 
 function renderEarnTasks() {
   const done = player.getEarnTasks();
   rwEarnList.innerHTML = EARN_TASKS.map((t) => {
     const task = done[t.key];
-    const state = task
-      ? `<span class="rewards-earn-state ${task.status}">${task.status === "verified" ? "Verified" : "Pending review"}</span>`
-      : `<form class="rewards-earn-form" data-earn-task="${t.key}">
+    let state;
+    if (task) {
+      state = `<span class="rewards-earn-state ${task.status}">${task.status === "verified" ? "Verified" : "Pending review"}</span>`;
+    } else if (t.kind === "connect") {
+      state = `<button type="button" class="rewards-earn-connect" data-earn-connect="${t.key}">${t.action}</button>`;
+    } else {
+      state = `<form class="rewards-earn-form" data-earn-task="${t.key}">
            <input type="url" class="rewards-earn-input" placeholder="${t.placeholder}" required>
            <button type="submit" class="rewards-earn-submit">Submit</button>
          </form>`;
+    }
     return `
       <div class="rewards-earn-row ${task ? "submitted" : ""}">
         <span class="rewards-earn-icon">${REWARD_EARN_ICONS[t.icon]}</span>
@@ -3102,6 +3110,17 @@ function renderEarnTasks() {
       playClick();
       document.querySelector('.nav-tab[data-nav="screen-account"]').click();
       showAccountGroup("clips");
+    });
+  });
+
+  rwEarnList.querySelectorAll("[data-earn-connect]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      playClick();
+      // No real OAuth to run here, so it records the intent and waits on the
+      // same manual check the clip does.
+      player.submitEarnTask(btn.dataset.earnConnect);
+      showToast("X account submitted for review", ICONS.bell);
+      renderEarnTasks();
     });
   });
 

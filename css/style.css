@@ -2504,6 +2504,20 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   cursor: pointer;
 }
 .rewards-earn-submit:hover { border-color: var(--line-strong); }
+.rewards-earn-connect {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+.rewards-earn-connect:hover { border-color: var(--line-strong); }
+
 .rewards-earn-state {
   flex: 0 0 auto;
   padding: 4px 12px;
