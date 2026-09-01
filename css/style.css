@@ -2218,6 +2218,221 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .activity-row .offer-actions { flex: 0 0 auto; }
 
+/* --- Rewards: one page ---------------------------------------------------
+   Was a Streaks/Leaderboard/Referral toggle; the three answered the same
+   question, so they're cards on a single grid instead. Two columns on
+   desktop with the wider half carrying the progress/leaderboard/calendar
+   spine; one column on a phone. */
+
+.rewards-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.rewards-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.rewards-stats {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rewards-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 24px;
+}
+.rewards-stat + .rewards-stat { border-left: 1px solid var(--hairline); }
+.rewards-stat b {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.rewards-stat span {
+  font-size: 0.54rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.rewards-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+.rewards-card-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.rewards-card-title em {
+  font-style: normal;
+  margin-left: 8px;
+  color: var(--text-faint);
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+
+/* Weekly progress */
+.rewards-week-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.rewards-week-count { display: flex; flex-direction: column; gap: 4px; }
+.rewards-week-value { font-size: 0.9rem; color: var(--text-dim); }
+.rewards-week-value b { font-size: 2rem; font-weight: 800; color: var(--text); }
+.rewards-week-note { font-size: 0.68rem; color: var(--text-faint); }
+.rewards-week-strip { display: flex; gap: 8px; }
+.rewards-day { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rewards-day-name {
+  font-size: 0.54rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.rewards-day-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+.rewards-day.hit .rewards-day-box {
+  border-color: var(--line-strong);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.rewards-day.future .rewards-day-box { opacity: 0.55; }
+.rewards-week-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.rewards-week-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #fbbf24;
+  transition: width 0.3s ease;
+}
+
+/* Leaderboard card */
+/* These blocks used to sit in a plain block-flow section where
+   `margin: 0 auto` centred them at a max-width. As flex items in a column
+   card, auto side margins shrink-wrap them instead — the leaderboard came
+   out 231px wide in a 660px card. Let them fill their card. */
+.rewards-card > .leaderboard-list,
+.rewards-card > .referral-panel {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+.rewards-leaderboard .leaderboard-list { gap: 8px; }
+.rewards-more {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.rewards-more:hover { color: var(--text); }
+.rewards-more.expanded span { transform: rotate(90deg); }
+.rewards-more span { display: inline-block; transition: transform 0.2s ease; }
+
+/* align-self, not auto margins: on a flex item those shrink-wrap it (the
+   same trap the leaderboard hit above) rather than centring it. */
+.rewards-calendar .streak-calendar-weekdays,
+.rewards-calendar .streak-calendar {
+  align-self: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* How you earn more */
+.rewards-earn-list { display: flex; flex-direction: column; gap: 8px; }
+.rewards-earn-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+.rewards-earn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+.rewards-earn-label { flex: 1; min-width: 0; font-size: 0.76rem; color: var(--text); }
+.rewards-earn-value { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+
+/* Referral card */
+.referral-share-block { display: flex; flex-direction: column; gap: 2px; }
+.referral-share-label {
+  font-size: 0.58rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.referral-count {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+@media (max-width: 900px) {
+  .rewards-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* --- Account: KicksDB key ------------------------------------------------ */
 
 .api-key-card {

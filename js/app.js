@@ -213,9 +213,15 @@ const clipsGrid = document.getElementById("clipsGrid");
 const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
 const referralPanel = document.getElementById("referralPanel");
-const streakDaysValue = document.getElementById("streakDaysValue");
-const streakGoalInline = document.getElementById("streakGoalInline");
-const streakRaffleBadge = document.getElementById("streakRaffleBadge");
+const rwStreakStat = document.getElementById("rwStreakStat");
+const rwRankStat = document.getElementById("rwRankStat");
+const rwShareStat = document.getElementById("rwShareStat");
+const rwWeekDays = document.getElementById("rwWeekDays");
+const rwWeekGoal = document.getElementById("rwWeekGoal");
+const rwWeekNote = document.getElementById("rwWeekNote");
+const rwWeekStrip = document.getElementById("rwWeekStrip");
+const rwWeekFill = document.getElementById("rwWeekFill");
+const rwEarnList = document.getElementById("rwEarnList");
 const streakRafflePrize = document.getElementById("streakRafflePrize");
 const streakMonthLabel = document.getElementById("streakMonthLabel");
 const streakCalendar = document.getElementById("streakCalendar");
@@ -1656,7 +1662,7 @@ const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
   holdings: ["vault", "portfolio"],
   activity: ["activity"],
-  rewards: ["streaks", "leaderboard", "referral"],
+  rewards: ["rewards"],
   clips: ["clips"],
 };
 
@@ -2886,15 +2892,38 @@ function renderActivity() {
 }
 
 
+// Expands the card in place rather than navigating — there's no separate
+// leaderboard route to send anyone to.
+let leaderboardExpanded = false;
+const rwFullLeaderboardBtn = document.getElementById("rwFullLeaderboardBtn");
+rwFullLeaderboardBtn.addEventListener("click", () => {
+  playClick();
+  leaderboardExpanded = !leaderboardExpanded;
+  renderLeaderboard();
+});
+
 function renderLeaderboard() {
   const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
     (a, b) => b.xp - a.xp
   );
-  leaderboardList.innerHTML = rows
+  // Top three plus your own row — the full table lives behind the link
+  // under it, so the card stays the same height as its neighbour.
+  const you = rows.findIndex((r) => r.isPlayer);
+  let shown;
+  if (leaderboardExpanded) {
+    shown = rows;
+  } else {
+    shown = rows.slice(0, 3);
+    if (you >= 3) shown.push(rows[you]);
+  }
+  rwFullLeaderboardBtn.firstChild.nodeValue = leaderboardExpanded ? "Show less " : "View full leaderboard ";
+  rwFullLeaderboardBtn.classList.toggle("expanded", leaderboardExpanded);
+
+  leaderboardList.innerHTML = shown
     .map(
-      (r, i) => `
+      (r) => `
       <div class="leaderboard-row ${r.isPlayer ? "you" : ""}" data-username="${r.username}">
-        <span class="leaderboard-rank">#${i + 1}</span>
+        <span class="leaderboard-rank">#${rows.indexOf(r) + 1}</span>
         <span class="leaderboard-name">${r.isPlayer ? "You" : r.username}</span>
         <span class="leaderboard-xp">${r.xp.toLocaleString()} XP</span>
       </div>`
@@ -2909,15 +2938,19 @@ function renderLeaderboard() {
 
 function renderReferralPanel() {
   const referral = player.getReferralTier();
-  const nextText = referral.next
-    ? `${Math.round(referral.progress * 100)}% to ${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
-    : "At the ceiling";
   const claimable = player.getReferralClaimable();
   const creditsClaimAmount = Math.round(claimable * (1 + player.REFERRAL_CREDITS_BONUS));
+  const nextText = referral.next
+    ? `${Math.round(referral.next.share * 100)}% at $${referral.next.volume.toLocaleString()}`
+    : "At the ceiling";
+
   referralPanel.innerHTML = `
     <div class="referral-current">
-      <div><span class="share">${Math.round(referral.share * 100)}%</span> current share</div>
-      <div class="next">${nextText}</div>
+      <div class="referral-share-block">
+        <span class="share">${Math.round(referral.share * 100)}%</span>
+        <span class="referral-share-label">Current share</span>
+      </div>
+      <span class="next">${nextText}</span>
     </div>
     <div class="referral-progress-track"><div class="referral-progress-fill" style="width:${Math.round(referral.progress * 100)}%"></div></div>
 
@@ -2932,33 +2965,13 @@ function renderReferralPanel() {
           <span class="exit-btn-sub">$${claimable.toLocaleString()}</span>
         </button>
         <button id="referralClaimCreditsBtn" class="exit-btn exit-btn-primary deposit-btn" ${claimable <= 0 ? "disabled" : ""}>
-          <span class="exit-btn-label">Credits <span class="referral-claim-bonus">1.1x</span></span>
-          <span class="exit-btn-sub">${creditsClaimAmount.toLocaleString()} credits</span>
+          <span class="exit-btn-label">Credits</span>
+          <span class="exit-btn-sub">${creditsClaimAmount.toLocaleString()}</span>
         </button>
       </div>
     </div>
 
-    <div class="referral-section-label">Referred by You</div>
-    <table class="referral-table">
-      <thead><tr><th>Username</th><th>Fees</th></tr></thead>
-      <tbody>
-        ${FAKE_REFERRALS.map((r) => `<tr><td>${r.username}</td><td>$${accruedFees(r).toLocaleString()}</td></tr>`).join("")}
-      </tbody>
-    </table>
-
-    <div class="referral-section-label">How Your Share Is Earned</div>
-    <table class="referral-table">
-      <thead><tr><th>Share</th><th>How it's earned</th></tr></thead>
-      <tbody>
-        <tr><td>10%</td><td>Sign up</td></tr>
-        <tr><td>+5%</td><td>Arrive through a referral link</td></tr>
-        <tr><td>+5%</td><td>Verify X account</td></tr>
-        <tr><td>25%</td><td>$250,000 referred volume</td></tr>
-        <tr><td>30%</td><td>$500,000 referred volume</td></tr>
-        <tr><td>35%</td><td>$1,000,000 referred volume</td></tr>
-        <tr><td>40%</td><td>$2,000,000 referred volume — ceiling</td></tr>
-      </tbody>
-    </table>
+    <div class="referral-count">${FAKE_REFERRALS.length} referrals</div>
   `;
 
   document.getElementById("referralClaimCashBtn").addEventListener("click", () => {
@@ -2990,24 +3003,79 @@ function getWeeklyRafflePrize() {
   return THOUSAND_POOL[h % THOUSAND_POOL.length];
 }
 
+// Small glyphs for the "How You Earn More" rows.
+const REWARD_EARN_ICONS = {
+  user: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>`,
+  link: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.5 3h3l-6.6 7.5L21.7 21h-5.9l-4.3-5.6L6.5 21H3.4l7-8-6.6-10h6l3.9 5.2zm-1 16h1.6L8.1 4.6H6.4z"/></svg>`,
+};
+
 function renderStreaks() {
   const streak = player.getDailyStreak();
-  const qualified = streak >= player.RAFFLE_STREAK_DAYS;
-  streakDaysValue.textContent = streak;
-  streakGoalInline.textContent = player.RAFFLE_STREAK_DAYS;
-  streakRaffleBadge.textContent = qualified
-    ? "Entered in this week's raffle"
-    : `${player.RAFFLE_STREAK_DAYS - streak} more day${player.RAFFLE_STREAK_DAYS - streak === 1 ? "" : "s"} to qualify`;
-  streakRaffleBadge.className = `streak-raffle-badge ${qualified ? "qualified" : "pending"}`;
+  const goal = player.RAFFLE_STREAK_DAYS;
+  const share = player.getReferralTier().share;
+
+  // Header strip: the three numbers the whole page is about.
+  rwStreakStat.textContent = streak;
+  rwShareStat.textContent = `${Math.round(share * 100)}%`;
+  const ranked = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
+    (a, b) => b.xp - a.xp
+  );
+  rwRankStat.textContent = `#${ranked.findIndex((r) => r.isPlayer) + 1}`;
+
+  // Week strip: a tick for each day you opened something, the day number
+  // for the rest, so progress toward the raffle is legible at a glance.
+  const activity = player.getDailyActivity();
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  let done = 0;
+  rwWeekStrip.innerHTML = names
+    .map((name, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const hit = (activity[key] ?? 0) > 0;
+      if (hit) done++;
+      const future = d > today;
+      return `
+        <div class="rewards-day ${hit ? "hit" : ""} ${future ? "future" : ""}">
+          <span class="rewards-day-name">${name}</span>
+          <span class="rewards-day-box">${hit ? "\u2713" : i + 1}</span>
+        </div>`;
+    })
+    .join("");
+
+  rwWeekDays.textContent = done;
+  rwWeekGoal.textContent = goal;
+  const left = Math.max(0, goal - done);
+  rwWeekNote.textContent = left === 0 ? "Qualified for this week's raffle" : `${left} more day${left === 1 ? "" : "s"} to qualify`;
+  rwWeekFill.style.width = `${Math.min(100, (done / goal) * 100)}%`;
 
   const prize = getWeeklyRafflePrize();
   streakRafflePrize.innerHTML = `
     <img src="${prize.image}" alt="">
     <div class="streak-raffle-prize-info">
       <span class="streak-raffle-prize-name">${prize.name}</span>
-      <span class="streak-raffle-prize-value">$${prize.price.toLocaleString()} value — drawn from this week's streak qualifiers</span>
+      <span class="streak-raffle-prize-value">$${prize.price.toLocaleString()} value</span>
     </div>
   `;
+
+  rwEarnList.innerHTML = [
+    { icon: "user", label: "Sign up", value: "10%" },
+    { icon: "link", label: "Arrive through a referral link", value: "+5%" },
+    { icon: "x", label: "Verify X account", value: "+5%" },
+  ]
+    .map(
+      (r) => `
+      <div class="rewards-earn-row">
+        <span class="rewards-earn-icon">${REWARD_EARN_ICONS[r.icon]}</span>
+        <span class="rewards-earn-label">${r.label}</span>
+        <span class="rewards-earn-value">${r.value}</span>
+      </div>`
+    )
+    .join("");
 
   renderStreakCalendar();
 }

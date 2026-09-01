@@ -303,45 +303,61 @@
             <div id="portfolioGrid" class="market-grid"></div>
           </div>
 
-          <div class="account-toggle" data-toggle-group="rewards">
-            <button type="button" class="account-toggle-label active" data-toggle-target="streaks">Streaks</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="leaderboard">Leaderboard</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="referral">Referral</button>
-          </div>
-          <div class="account-section" data-section="streaks" data-toggle-key="streaks">
-            <!-- Count and raffle prize sit side by side rather than stacked
-                 down the page, each under its own heading so the two line
-                 up; on mobile the row wraps back to a column. -->
-            <div class="streak-top-row">
-              <div class="streak-panel">
-                <span class="streak-panel-title">Streaks</span>
-                <div class="streak-summary">
-                  <div class="streak-count-block">
-                    <span class="streak-count-value" id="streakDaysValue">0</span>
-                    <span class="streak-count-label">day streak</span>
+          <!-- One Rewards page rather than a Streaks/Leaderboard/Referral
+               toggle: the three answered the same question ("what am I
+               earning?") and made you hunt across tabs to assemble it. -->
+          <div class="account-section" data-section="rewards">
+            <div class="rewards-head">
+              <h2 class="rewards-title">Rewards</h2>
+              <div class="rewards-stats">
+                <div class="rewards-stat"><b id="rwStreakStat">0</b><span>Day Streak</span></div>
+                <div class="rewards-stat"><b id="rwRankStat">#0</b><span>Rank</span></div>
+                <div class="rewards-stat"><b id="rwShareStat">0%</b><span>Referral Share</span></div>
+              </div>
+            </div>
+
+            <div class="rewards-grid">
+              <section class="rewards-card rewards-week">
+                <span class="rewards-card-title">Your Weekly Progress</span>
+                <div class="rewards-week-body">
+                  <div class="rewards-week-count">
+                    <span class="rewards-week-value"><b id="rwWeekDays">0</b> / <span id="rwWeekGoal">7</span> Days</span>
+                    <span class="rewards-week-note" id="rwWeekNote"></span>
                   </div>
-                  <div class="streak-summary-meta">
-                    <p class="streak-explainer">
-                      One drop a day, any tier, keeps it alive — reach <b id="streakGoalInline">7</b> for the weekly raffle.
-                    </p>
-                    <span class="streak-raffle-badge" id="streakRaffleBadge"></span>
-                  </div>
+                  <div class="rewards-week-strip" id="rwWeekStrip"></div>
                 </div>
-              </div>
+                <div class="rewards-week-track"><div class="rewards-week-fill" id="rwWeekFill"></div></div>
+              </section>
 
-              <div class="streak-panel">
-                <span class="streak-panel-title">This Week's Raffle Prize</span>
+              <section class="rewards-card rewards-raffle">
+                <span class="rewards-card-title">This Week's Raffle</span>
                 <div id="streakRafflePrize" class="streak-raffle-prize"></div>
-              </div>
-            </div>
+              </section>
 
-            <div class="account-section-header">
-              <h3>Activity <span id="streakMonthLabel" class="account-block-note"></span></h3>
+              <section class="rewards-card rewards-leaderboard">
+                <span class="rewards-card-title">Leaderboard</span>
+                <div id="leaderboardList" class="leaderboard-list"></div>
+                <button type="button" id="rwFullLeaderboardBtn" class="rewards-more">View full leaderboard <span aria-hidden="true">&rsaquo;</span></button>
+              </section>
+
+              <section class="rewards-card rewards-referral">
+                <span class="rewards-card-title">Referral Rewards</span>
+                <div id="referralPanel" class="referral-panel"></div>
+              </section>
+
+              <section class="rewards-card rewards-calendar">
+                <span class="rewards-card-title">This Month <em id="streakMonthLabel"></em></span>
+                <div class="streak-calendar-weekdays">
+                  <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div id="streakCalendar" class="streak-calendar"></div>
+              </section>
+
+              <section class="rewards-card rewards-earn">
+                <span class="rewards-card-title">How You Earn More</span>
+                <div class="rewards-earn-list" id="rwEarnList"></div>
+              </section>
             </div>
-            <div class="streak-calendar-weekdays">
-              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-            </div>
-            <div id="streakCalendar" class="streak-calendar"></div>
           </div>
 
           <!-- One feed for everything: opened, cashed out, shipped, sent,
@@ -361,15 +377,7 @@
             <div id="clipsGrid" class="clips-grid"></div>
           </div>
 
-          <div class="account-section toggle-hidden" data-section="leaderboard" data-toggle-key="leaderboard">
-            <div class="account-section-header"><h3>Leaderboard</h3></div>
-            <div id="leaderboardList" class="leaderboard-list"></div>
-          </div>
 
-          <div class="account-section toggle-hidden" data-section="referral" data-toggle-key="referral">
-            <div class="account-section-header"><h3>Referral Program</h3></div>
-            <div id="referralPanel" class="referral-panel"></div>
-          </div>
         </div>
       </div>
     </section>
