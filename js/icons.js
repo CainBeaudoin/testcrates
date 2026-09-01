@@ -23,6 +23,7 @@ export const ICONS = {
   volumeMuted: svg(
     `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`
   ),
+  send: svg(`<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>`),
   dice: svg(
     `<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.1" fill="currentColor" stroke="none"/>`
   ),

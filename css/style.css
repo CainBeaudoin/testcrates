@@ -2662,16 +2662,43 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   margin-bottom: 24px;
 }
 
-.portfolio-sell-btn {
-  width: 100%;
+.portfolio-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
   margin-bottom: 16px;
 }
+.portfolio-sell-btn { flex: 1; }
+/* Square icon button beside it — the plane carries the meaning, so no
+   label competing with "Sell Share Value" next to it. */
+.portfolio-send-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  padding: 0;
+}
+.portfolio-send-btn svg { width: 16px; height: 16px; }
 
 /* .modal-btn carries flex:1 so a row of them splits the width evenly. A
    button placed directly in .detail-content is in a *column* flex instead,
    where that grows it vertically — Sell Share Value came out 228px tall for
    12px of padding. Applies to Remove Listing in the same slot. */
 .detail-content > .modal-btn { flex: 0 0 auto; }
+
+/* Send is an icon on the vault cards — the word sat next to "Ship" and the
+   two read as the same action. */
+.item-action-btn.item-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.item-action-btn.item-action-icon svg { width: 14px; height: 14px; }
 
 .item-detail-offers {
   margin-top: 4px;

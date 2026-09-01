@@ -307,6 +307,8 @@ const portfolioDetailChart = document.getElementById("portfolioDetailChart");
 const portfolioDetailChartCaption = document.getElementById("portfolioDetailChartCaption");
 const portfolioDetailLots = document.getElementById("portfolioDetailLots");
 const portfolioDetailSellBtn = document.getElementById("portfolioDetailSellBtn");
+const portfolioDetailSendBtn = document.getElementById("portfolioDetailSendBtn");
+portfolioDetailSendBtn.innerHTML = ICONS.send;
 const portfolioDetailCloseBtn = document.getElementById("portfolioDetailCloseBtn");
 const amountModal = document.getElementById("amountModal");
 const amountModalTitle = document.getElementById("amountModalTitle");
@@ -2377,7 +2379,7 @@ function inventoryItemHTML(item) {
           <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
           <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
           <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
-          <button class="item-action-btn" data-item-action="send" data-item="${item.id}" ${archived ? "disabled" : ""}>Send</button>
+          <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" ${archived ? "disabled" : ""} title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
         </div>
       </div>
     </div>`;
@@ -2607,6 +2609,7 @@ function openPortfolioDetail(ticker) {
     .join("");
 
   portfolioDetailSellBtn.dataset.ticker = ticker;
+  portfolioDetailSendBtn.dataset.ticker = ticker;
   portfolioModal.classList.remove("hidden");
   requestAnimationFrame(() => portfolioModal.classList.add("visible"));
 }
@@ -2634,6 +2637,25 @@ portfolioDetailSellBtn.addEventListener("click", () => {
     closePortfolioDetail();
     renderAccount();
   });
+});
+
+// A position is several lots of the same ticker, so a transfer moves the
+// whole holding rather than asking which lot — the Portfolio never exposes
+// individual lots as separate things you can act on.
+portfolioDetailSendBtn.addEventListener("click", () => {
+  const ticker = portfolioDetailSendBtn.dataset.ticker;
+  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
+  if (!holding) return;
+  const to = prompt(`Transfer your ${ticker} position to which username or wallet address?`);
+  if (!to || !to.trim()) return;
+  playClick();
+  const recipient = to.trim();
+  // Copy first: transferItem removes from inventory as it goes, so
+  // iterating the live array would skip every other lot.
+  [...holding.lots].forEach((lot) => player.transferItem(lot, recipient));
+  showToast(`${ticker} sent to ${recipient}`, ICONS.send);
+  closePortfolioDetail();
+  renderAccount();
 });
 
 // Current simulated value of everything sitting in the Vault right now —
