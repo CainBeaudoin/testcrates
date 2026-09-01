@@ -2069,6 +2069,20 @@ button.deposit-btn:hover {
   }
 }
 
+/* Rewards is its own rail tab: none of Account's chrome belongs to it. The
+   group icons go at every width, and on desktop the sidebar goes too —
+   repeating the profile card and balances beside Streaks was the same
+   duplication mobile never had. */
+body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: none; }
+
+@media (min-width: 641px) {
+  body:has(.nav-tab[data-account-group="rewards"].active) .account-sidebar { display: none; }
+  body:has(.nav-tab[data-account-group="rewards"].active) #screen-account.active {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body:has(.nav-tab[data-account-group="rewards"].active) .account-content { grid-column: 1; }
+}
+
 .account-section { display: none; }
 .account-section.active { display: block; }
 /* A nav tab can show more than one of these stacked together now (see
@@ -3884,11 +3898,8 @@ button.deposit-btn:hover {
     z-index: 41;
   }
 
-  /* Rewards is its own rail tab, so the Account group icons (profile,
-     holdings, activity, clips, •••) don't belong to it — only its own
-     Streaks/Leaderboard/Referral toggle does, which then drops to sit
-     directly on the tab bar. */
-  body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: none; }
+  /* Nav-row hiding is shared with desktop (see the base rule); what's
+     mobile-only is where the toggle then sits. */
   body:has(.nav-tab[data-account-group="rewards"].active) .account-toggle.toggle-group-active {
     bottom: calc(var(--bottom-nav-h) + 8px);
   }
