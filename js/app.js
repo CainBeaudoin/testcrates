@@ -1626,6 +1626,11 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-marketplace") renderMarketplace();
     if (tab.dataset.nav === "screen-account") renderAccount();
     if (tab.dataset.nav === "screen-category") renderCategories();
+    // Two rail tabs land on the Account screen — Rewards opens straight into
+    // its group, plain Account falls back to the first one.
+    if (tab.dataset.nav === "screen-account") {
+      showAccountGroup(tab.dataset.accountGroup || "holdings");
+    }
   });
 });
 
@@ -1650,16 +1655,21 @@ const ACCOUNT_NAV_GROUPS = {
 
 const accountToggles = Array.from(document.querySelectorAll(".account-toggle"));
 
+// Shared by the Account sub-nav and by the rail's Rewards tab, which opens
+// a group that has no sub-nav item of its own to click.
+function showAccountGroup(group) {
+  accountNavItems.forEach((i) => i.classList.toggle("active", i.dataset.group === group));
+  const sections = ACCOUNT_NAV_GROUPS[group] ?? [];
+  accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
+  // The second-level toggle (My Items vs Portfolio, etc.) only makes sense
+  // for whichever group is now showing.
+  accountToggles.forEach((t) => t.classList.toggle("toggle-group-active", t.dataset.toggleGroup === group));
+}
+
 accountNavItems.forEach((item) => {
   item.addEventListener("click", () => {
     playClick();
-    accountNavItems.forEach((i) => i.classList.remove("active"));
-    item.classList.add("active");
-    const sections = ACCOUNT_NAV_GROUPS[item.dataset.group] ?? [];
-    accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
-    // Mobile's second-level toggle (My Items vs Portfolio, etc.) only
-    // makes sense for whichever group is now showing.
-    accountToggles.forEach((t) => t.classList.toggle("toggle-group-active", t.dataset.toggleGroup === item.dataset.group));
+    showAccountGroup(item.dataset.group);
   });
 });
 
@@ -2184,16 +2194,21 @@ avatarBtn.addEventListener("click", () => {
   document.querySelector('.nav-tab[data-nav="screen-account"]').click();
 });
 
+// Rewards is a rail tab now, so these jump straight to it rather than
+// opening Account and then reaching for a sub-tab that no longer exists.
+const railRewardsTab = document.querySelector('.nav-tab[data-account-group="rewards"]');
+
 streakStat.addEventListener("click", () => {
   playClick();
-  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
-  document.querySelector('.account-nav-item[data-group="rewards"]')?.click();
+  railRewardsTab.click();
 });
 
 referralStat.addEventListener("click", () => {
   playClick();
-  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
-  document.querySelector('.account-nav-item[data-group="rewards"]')?.click();
+  railRewardsTab.click();
+  // The pill says Referral, so land on that panel rather than the group's
+  // default (Streaks).
+  document.querySelector('.account-toggle[data-toggle-group="rewards"] [data-toggle-target="referral"]')?.click();
 });
 
 notifBtn.addEventListener("click", () => {
