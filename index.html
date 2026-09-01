@@ -533,11 +533,11 @@
       <div class="detail-content">
         <div class="listing-market-data">
           <div class="listing-market-value-row">
-            <span>Simulated Market Value</span>
+            <span id="listingMarketValueLabel">Market Value</span>
             <span class="listing-market-value" id="listingMarketValue"></span>
           </div>
           <div id="listingChart" class="price-chart"></div>
-          <span class="price-chart-caption">Simulated price action — last 30 days</span>
+          <span class="price-chart-caption" id="listingChartCaption"></span>
         </div>
 
         <div class="prize-modal-actions" id="listingActions">
@@ -596,7 +596,7 @@
       </div>
       <div class="detail-content">
         <div id="itemDetailChart" class="price-chart"></div>
-        <span class="price-chart-caption">Simulated price action — last 30 days</span>
+        <span class="price-chart-caption" id="itemDetailChartCaption"></span>
 
         <div class="item-detail-offers">
           <h4>Offers</h4>
@@ -625,7 +625,7 @@
       </div>
       <div class="detail-content">
         <div id="portfolioDetailChart" class="price-chart"></div>
-        <span class="price-chart-caption">Simulated price action — last 30 days</span>
+        <span class="price-chart-caption" id="portfolioDetailChartCaption"></span>
 
         <button id="portfolioDetailSellBtn" class="modal-btn modal-btn-solid portfolio-sell-btn">Sell Share Value</button>
 

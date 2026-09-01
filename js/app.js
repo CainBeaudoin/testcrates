@@ -8,6 +8,7 @@ import * as player from "./player.js";
 import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from "./sound.js";
 import { ICONS } from "./icons.js";
+import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
 
 // ---- Prize configuration -------------------------------------------------
@@ -277,6 +278,8 @@ const listingOffersList = document.getElementById("listingOffersList");
 const listingCloseBtn = document.getElementById("listingCloseBtn");
 const listingMarketValue = document.getElementById("listingMarketValue");
 const listingChart = document.getElementById("listingChart");
+const listingChartCaption = document.getElementById("listingChartCaption");
+const listingMarketValueLabel = document.getElementById("listingMarketValueLabel");
 const listingPrevBtn = document.getElementById("listingPrevBtn");
 const listingNextBtn = document.getElementById("listingNextBtn");
 const pullDetailModal = document.getElementById("pullDetailModal");
@@ -294,6 +297,7 @@ const itemDetailName = document.getElementById("itemDetailName");
 const itemDetailValue = document.getElementById("itemDetailValue");
 const itemDetailMeta = document.getElementById("itemDetailMeta");
 const itemDetailChart = document.getElementById("itemDetailChart");
+const itemDetailChartCaption = document.getElementById("itemDetailChartCaption");
 const itemDetailBuyout = document.getElementById("itemDetailBuyout");
 const itemDetailBuyoutBtn = document.getElementById("itemDetailBuyoutBtn");
 const itemDetailPeerOffers = document.getElementById("itemDetailPeerOffers");
@@ -307,6 +311,7 @@ const portfolioDetailImage = document.getElementById("portfolioDetailImage");
 const portfolioDetailName = document.getElementById("portfolioDetailName");
 const portfolioDetailValue = document.getElementById("portfolioDetailValue");
 const portfolioDetailChart = document.getElementById("portfolioDetailChart");
+const portfolioDetailChartCaption = document.getElementById("portfolioDetailChartCaption");
 const portfolioDetailLots = document.getElementById("portfolioDetailLots");
 const portfolioDetailSellBtn = document.getElementById("portfolioDetailSellBtn");
 const portfolioDetailCloseBtn = document.getElementById("portfolioDetailCloseBtn");
@@ -1951,7 +1956,11 @@ function openListingModal(id, navIds = null) {
   // Simulated market data — every listing gets this, not just ones the
   // player owns, same deterministic day-by-day model the vault uses.
   listingMarketValue.textContent = `$${market.currentListingValue(listing).toLocaleString()}`;
-  listingChart.innerHTML = buildPriceChartSVG(market.listingPriceHistory(listing));
+  renderChart(listingChart, listingChartCaption, market.listingPriceHistory(listing), {
+    name: listing.name,
+    valueEl: listingMarketValue,
+    valueLabelEl: listingMarketValueLabel,
+  });
 
   listingActions.classList.toggle("hidden", listing.isPlayer);
   listingBuyBtn.classList.toggle("hidden", listing.price == null);
@@ -2297,6 +2306,37 @@ function buildPriceChartSVG(history) {
     </svg>`;
 }
 
+// Charts paint immediately from the app's own simulated series, then swap
+// to StockX's real daily sale averages if that shoe resolves on KicksDB —
+// so a chart is never blank and never blocks on the network. The caption
+// always names whichever source is actually on screen; it only credits
+// StockX once real trades are being drawn.
+const SIMULATED_CAPTION = "Simulated price action \u2014 last 30 days";
+
+function renderChart(chartEl, captionEl, fallbackHistory, { name, valueEl, valueLabelEl } = {}) {
+  chartEl.innerHTML = buildPriceChartSVG(fallbackHistory);
+  if (captionEl) captionEl.textContent = SIMULATED_CAPTION;
+  if (valueLabelEl) valueLabelEl.textContent = "Simulated Market Value";
+  if (!name) return;
+
+  // Tag the request so a slow response for a previously-opened item can't
+  // land on whatever the user has open by the time it arrives.
+  const token = (chartEl.dataset.chartToken = String(Date.now() + Math.random()));
+
+  stockx.priceHistory(name).then((live) => {
+    if (!live || chartEl.dataset.chartToken !== token) return;
+    chartEl.innerHTML = buildPriceChartSVG(live.points);
+    if (captionEl) {
+      captionEl.textContent = `Market reference \u00b7 StockX \u2014 last ${live.points.length} days of sales`;
+    }
+    if (valueLabelEl) valueLabelEl.textContent = "StockX Last Sale";
+    if (valueEl) {
+      const last = live.points[live.points.length - 1].value;
+      valueEl.textContent = `$${last.toLocaleString()}`;
+    }
+  });
+}
+
 function openItemDetail(itemId) {
   const item = player.getInventoryItem(itemId);
   if (!item) return;
@@ -2309,7 +2349,10 @@ function openItemDetail(itemId) {
   itemDetailMeta.classList.toggle("hidden", !itemMeta);
   const value = player.currentMarketValue(item);
   itemDetailValue.textContent = `$${value.toLocaleString()}`;
-  itemDetailChart.innerHTML = buildPriceChartSVG(player.priceHistory(item));
+  renderChart(itemDetailChart, itemDetailChartCaption, player.priceHistory(item), {
+    // Stocks are simulated shares with no StockX comp; sneakers resolve.
+    name: item.category === "stocks" ? null : item.name,
+  });
 
   const buyout = player.cashOutValue(item);
   itemDetailBuyout.textContent = `$${buyout.toLocaleString()}`;
@@ -2416,7 +2459,7 @@ function openPortfolioDetail(ticker) {
   portfolioDetailImage.alt = holding.name;
   portfolioDetailName.textContent = holding.name;
   portfolioDetailValue.textContent = `$${holding.totalValue.toLocaleString()}`;
-  portfolioDetailChart.innerHTML = buildPriceChartSVG(player.portfolioPriceHistory(ticker));
+  renderChart(portfolioDetailChart, portfolioDetailChartCaption, player.portfolioPriceHistory(ticker));
 
   portfolioDetailLots.innerHTML = [...holding.lots]
     .sort((a, b) => b.acquiredAt - a.acquiredAt)
