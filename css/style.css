@@ -3491,6 +3491,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .referral-claim {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -3517,13 +3518,19 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   font-weight: 800;
   color: var(--text);
 }
+/* Info + two buttons + an "or" doesn't fit one line in the column this card
+   sits in — the actions couldn't shrink (flex:0 0 auto, 112px min per
+   button) so Credits ran 42px past the card on desktop and 77px on a
+   phone. They wrap onto their own line and share it. */
 .referral-claim-actions {
   display: flex;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 8px;
 }
 .referral-claim-actions .exit-btn {
-  min-width: 112px;
+  flex: 1;
+  min-width: 0;
 }
 /* The two claims are alternatives, not a pair to collect — one small "or"
    says that without a sentence explaining it. */
@@ -4327,10 +4334,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
      group icons, then that group's section toggle, so everything you tap
      to get around is under your thumb. (The reverse of desktop, where
      they read top-down.) */
+  /* Shrink-wrapped and centred rather than spanning the gutters: it holds
+     five icons, so a full-width bar was mostly empty space on both sides. */
   .account-nav {
     position: fixed;
-    left: 14px;
-    right: 14px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100% - 32px);
     top: auto;
     bottom: calc(var(--bottom-nav-h) + 8px);
     flex-wrap: wrap;
@@ -4356,9 +4368,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .account-toggle.toggle-group-active {
     transition: transform 0.22s ease, opacity 0.22s ease;
   }
-  body.is-scrolling.scrolling-down .account-nav,
   body.is-scrolling.scrolling-down .account-toggle.toggle-group-active {
     transform: translateY(calc(100% + 16px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Keeps its centring translate — a bare translateY would drop it back to
+     the left edge on the way out. */
+  body.is-scrolling.scrolling-down .account-nav {
+    transform: translateX(-50%) translateY(calc(100% + 16px));
     opacity: 0;
     pointer-events: none;
   }
