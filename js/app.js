@@ -1615,6 +1615,11 @@ window.addEventListener(
   { passive: true }
 );
 
+// The wordmark is a way home — same as clicking the Drops tab.
+document.getElementById("brandHomeBtn").addEventListener("click", () => {
+  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
+});
+
 const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
 navTabs.forEach((tab) => {
   tab.addEventListener("click", () => {

@@ -160,9 +160,20 @@ body {
   gap: 8px;
   flex: 0 0 auto;
 }
+/* Clickable (goes to Drops) but deliberately inert-looking — no hover, no
+   press state. It reads as the wordmark, not a button. */
 .brand-logo {
   display: block;
   height: 56px;
+  width: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.brand-logo img {
+  display: block;
+  height: 100%;
   width: auto;
 }
 
@@ -1210,15 +1221,14 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   margin: 64px auto 0;
   padding: 0 32px;
 }
-/* Only on the three main screens — not the crate-opening/reveal flow
-   (#screen-game), where it's just dead scroll weight below a modal-
-   driven flow. min-width so this never fights the mobile media query's
-   own (stricter — Account only) footer rule on specificity; the :has()
-   compound selector here outranks a plain .app-footer{display:none}. */
+/* Drops only. Marketplace and Account are working screens you scroll
+   through, and Rewards shares Account's screen — a footer under any of
+   them is dead weight at the end of a long scroll. min-width so this
+   never fights the mobile media query's own footer rule on specificity;
+   the :has() compound selector here outranks a plain
+   .app-footer{display:none}. */
 @media (min-width: 641px) {
-  main:has(#screen-category.active) + .app-footer,
-  main:has(#screen-marketplace.active) + .app-footer,
-  main:has(#screen-account.active) + .app-footer {
+  main:has(#screen-category.active) + .app-footer {
     display: block;
   }
 }
