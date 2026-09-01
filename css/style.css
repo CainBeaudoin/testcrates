@@ -23,6 +23,9 @@
   --accent-hover: rgba(230, 230, 235, 0.5);
   /* Sticky bars that blur what scrolls under them. */
   --panel-blur: rgba(19, 19, 24, 0.94);
+  /* Not themed: see .reveal-rarity-banner. Same value --line-strong has
+     here, so the reveal is unchanged in dark. */
+  --reveal-banner: rgba(255, 255, 255, 0.4);
   --rail-w: 76px;
   --topbar-h: 60px;
   --surface-1: #131318;
@@ -1562,8 +1565,18 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-weight: 800;
   letter-spacing: 8px;
   text-transform: uppercase;
-  color: var(--rarity-color);
-  text-shadow: 0 0 40px var(--rarity-color), 0 0 90px var(--rarity-color);
+  /* The banner plays over the modal's own black scrim, which is black in
+     both themes, so its type stays light in both.
+
+     It asked for --rarity-color, but nothing ever sets that on the modal
+     itself — app.js sets it on the card and on the .reveal-fx layer, and
+     the banner is a sibling of both. So it always fell through to
+     .prize-modal's default of --line-strong, which is a translucent white
+     in dark (what this has always looked like) and turned near-black the
+     moment a light theme existed. Naming the colour directly keeps dark
+     exactly as it was and stops it riding on that fallback. */
+  color: var(--reveal-banner);
+  text-shadow: 0 0 40px var(--reveal-banner), 0 0 90px var(--reveal-banner);
   animation: rarityBannerPop var(--fx-duration, 1.2s) cubic-bezier(0.25, 0.6, 0.3, 1) forwards;
 }
 
