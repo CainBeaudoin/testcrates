@@ -2099,8 +2099,60 @@ button.deposit-btn:hover {
 .account-toggle-label.active { background: var(--accent-dim); color: var(--accent); }
 .toggle-hidden { display: none !important; }
 
-/* Status tag on a history row — which kind of event it was, since the feed
-   now mixes opened / cashed out / shipped / sent in one list. */
+/* --- Activity feed ------------------------------------------------------
+   One row shape for every kind of event, so a mixed list reads as a single
+   list rather than four stitched together. */
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.activity-row[data-listing] { cursor: pointer; }
+.activity-row[data-listing]:hover { border-color: var(--line); }
+.activity-row.pinned { border-color: rgba(251, 191, 36, 0.45); }
+
+.activity-row img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.activity-row-info { flex: 1; min-width: 0; }
+.activity-row-name {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.activity-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.activity-row-sub,
+.activity-row-time {
+  font-size: 0.62rem;
+  color: var(--text-faint);
+}
+.activity-row-value {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.activity-row-value.big { color: #fbbf24; }
+
+/* Which kind of event the row is. */
 .history-tag {
   flex: 0 0 auto;
   padding: 2px 8px;
@@ -2116,6 +2168,11 @@ button.deposit-btn:hover {
 .history-tag-cashedout { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
 .history-tag-shipped { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
 .history-tag-sent { color: #c4b5fd; background: rgba(196, 181, 253, 0.12); }
+.history-tag-listed { color: #5eead4; background: rgba(94, 234, 212, 0.12); }
+.history-tag-offer-in { color: #fda4af; background: rgba(253, 164, 175, 0.12); }
+.history-tag-offer-out { color: #fdba74; background: rgba(253, 186, 116, 0.12); }
+
+.activity-row .offer-actions { flex: 0 0 auto; }
 
 /* --- Account: KicksDB key ------------------------------------------------ */
 
@@ -3772,6 +3829,12 @@ button.deposit-btn:hover {
      empty Shipped state ~184px, a full offers list the whole 347px).
      Pin both to the full width so switching Clips/History/Cashed Out or
      My Listings/Offers never resizes the container around them. */
+  /* Offer buttons wrap under the row here instead of squeezing the name
+     into nothing. */
+  .activity-row { flex-wrap: wrap; padding: 12px; gap: 8px 12px; }
+  .activity-row .offer-actions { flex: 1 0 100%; justify-content: flex-start; }
+  .activity-row-name { font-size: 0.72rem; }
+
   /* Clearance for the two control rows now floating over the bottom of
      the screen (--account-nav-h + the toggle + their gaps). */
   #screen-account.active { padding-bottom: 112px; }

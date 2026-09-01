@@ -206,13 +206,9 @@ const sidePortfolioValue = document.getElementById("sidePortfolioValue");
 const accountNavItems = Array.from(document.querySelectorAll(".account-nav-item[data-group]"));
 const accountSections = Array.from(document.querySelectorAll(".account-section"));
 const vaultCount = document.getElementById("vaultCount");
-const listingsCount = document.getElementById("listingsCount");
-const incomingOffersList = document.getElementById("incomingOffersList");
-const myListingsGrid = document.getElementById("myListingsGrid");
 const inventoryGrid = document.getElementById("inventoryGrid");
-const myOffersList = document.getElementById("myOffersList");
-const historyList = document.getElementById("historyList");
-const historyCount = document.getElementById("historyCount");
+const activityList = document.getElementById("activityList");
+const activityCount = document.getElementById("activityCount");
 const clipsGrid = document.getElementById("clipsGrid");
 const clipsCount = document.getElementById("clipsCount");
 const leaderboardList = document.getElementById("leaderboardList");
@@ -1647,8 +1643,9 @@ navTabs.forEach((tab) => {
 const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
   holdings: ["vault", "portfolio"],
-  activity: ["listings", "offers", "history", "clips"],
+  activity: ["activity"],
   rewards: ["streaks", "leaderboard", "referral"],
+  clips: ["clips"],
 };
 
 const accountToggles = Array.from(document.querySelectorAll(".account-toggle"));
@@ -2611,21 +2608,6 @@ function renderAccount() {
   market.maybeSpawnIncomingOffer();
   renderHeaderStats();
 
-  const incoming = market.getIncomingOffers();
-  incomingOffersList.innerHTML = incoming.length
-    ? incoming.map((o) => offerRowHTML(o, { showActions: "incoming" })).join("")
-    : `<div class="offers-empty">No incoming offers right now.</div>`;
-
-  const myListings = market.getListings().filter((l) => l.isPlayer && l.price != null);
-  listingsCount.textContent = myListings.length;
-  myListingsGrid.innerHTML = myListings.length
-    ? myListings.map(marketItemCardHTML).join("")
-    : `<div class="market-empty">You haven't listed anything yet.</div>`;
-  const myListingIds = myListings.map((l) => l.id);
-  myListingsGrid.querySelectorAll(".market-item").forEach((el) => {
-    el.addEventListener("click", () => openListingModal(el.dataset.listing, myListingIds));
-  });
-
   const collectibles = player.getInventory().filter((i) => i.category !== "stocks");
   vaultCount.textContent = collectibles.length;
   inventoryGrid.innerHTML = collectibles.length
@@ -2640,12 +2622,7 @@ function renderAccount() {
 
   renderPortfolio();
 
-  const myOffers = market.getMyOffers();
-  myOffersList.innerHTML = myOffers.length
-    ? myOffers.map((o) => offerRowHTML(o, { showActions: o.status === "countered" ? "counter-received" : null })).join("")
-    : `<div class="offers-empty">You haven't made any offers yet.</div>`;
-
-  renderHistory();
+  renderActivity();
   renderLeaderboard();
   renderReferralPanel();
   renderStreaks();
@@ -2673,24 +2650,25 @@ function renderClips() {
     .join("");
 }
 
-// One feed for everything that has happened to an item — opened, cashed
-// out, shipped, sent — merged and sorted by when it happened, each row
-// tagged with which kind it was. Previously these were four tabs, so a
-// single item's story was split across all of them.
-//
-// The 5x/10x multiplier filter is gone: with four event kinds in one list a
-// filter that only applies to one of them reads as broken.
-const HISTORY_TAGS = {
-  opened: { label: "Opened", cls: "opened" },
-  cashedout: { label: "Cashed Out", cls: "cashedout" },
-  shipped: { label: "Shipped", cls: "shipped" },
-  sent: { label: "Sent", cls: "sent" },
+// One feed for every event on your items — opened, cashed out, shipped,
+// sent, listed, and offers in both directions — ordered by when each
+// happened. These used to be five separate lists, which meant a single
+// item's sequence (opened -> listed -> offer -> sold) was never visible in
+// one place. Every row carries a tag saying which kind of event it was.
+const ACTIVITY_TAGS = {
+  opened: "Opened",
+  cashedout: "Cashed Out",
+  shipped: "Shipped",
+  sent: "Sent",
+  listed: "Listed",
+  "offer-in": "Offer In",
+  "offer-out": "Offer Sent",
 };
 
-function historyEvents() {
+function activityEvents() {
   const events = [];
 
-  player.getHistory().forEach((o) => {
+  player.getHistory().forEach((o) =>
     events.push({
       kind: "opened",
       ts: o.ts ?? 0,
@@ -2698,42 +2676,123 @@ function historyEvents() {
       image: o.image,
       value: o.multiplier != null ? `${o.multiplier}x` : "\u2014",
       big: (o.multiplier ?? 0) >= player.BIG_PULL_MULTIPLIER,
+    })
+  );
+
+  player.getCashedOut().forEach((o) =>
+    events.push({
+      kind: "cashedout",
+      ts: o.ts ?? 0,
+      name: o.name,
+      image: o.image,
+      value: `${o.currency === "cash" ? "$" : ""}${o.amount.toLocaleString()}${o.currency === "credits" ? " cr" : ""}`,
+    })
+  );
+
+  player.getShipped().forEach((o) =>
+    events.push({ kind: "shipped", ts: o.shippedAt ?? 0, name: o.name, image: o.image, value: "" })
+  );
+
+  player.getTransfers().forEach((t) =>
+    events.push({ kind: "sent", ts: t.ts ?? 0, name: t.name, image: t.image, value: `\u2192 ${t.toUsername}` })
+  );
+
+  market
+    .getListings()
+    .filter((l) => l.isPlayer && l.price != null)
+    .forEach((l) =>
+      events.push({
+        kind: "listed",
+        ts: l.ts ?? 0,
+        name: l.name,
+        image: l.image,
+        value: `$${l.price.toLocaleString()}`,
+        listingId: l.id,
+      })
+    );
+
+  market.getIncomingOffers().forEach((o) => {
+    const listing = market.getListing(o.listingId);
+    events.push({
+      kind: "offer-in",
+      ts: o.ts ?? 0,
+      name: listing ? listing.name : "Item",
+      image: listing ? listing.image : "",
+      sub: `from ${o.fromUsername}`,
+      value: `$${o.amount.toLocaleString()}`,
+      // The delegated [data-offer-action] handler picks these up wherever
+      // they render, so acting on an offer still works inside the feed.
+      actions: `
+        <div class="offer-actions">
+          <button class="offer-btn accept" data-offer-action="accept" data-offer="${o.id}">Accept</button>
+          <button class="offer-btn" data-offer-action="counter" data-offer="${o.id}">Counter</button>
+          <button class="offer-btn decline" data-offer-action="decline" data-offer="${o.id}">Decline</button>
+        </div>`,
     });
   });
 
-  player.getCashedOut().forEach((o) => {
-    const amount = `${o.currency === "cash" ? "$" : ""}${o.amount.toLocaleString()}${o.currency === "credits" ? " cr" : ""}`;
-    events.push({ kind: "cashedout", ts: o.ts ?? 0, name: o.name, image: o.image, value: amount });
-  });
-
-  player.getShipped().forEach((o) => {
-    events.push({ kind: "shipped", ts: o.shippedAt ?? 0, name: o.name, image: o.image, value: "" });
-  });
-
-  player.getTransfers().forEach((t) => {
-    events.push({ kind: "sent", ts: t.ts ?? 0, name: t.name, image: t.image, value: `\u2192 ${t.toUsername}` });
+  market.getMyOffers().forEach((o) => {
+    const listing = market.getListing(o.listingId);
+    events.push({
+      kind: "offer-out",
+      ts: o.ts ?? 0,
+      name: listing ? listing.name : "Item",
+      image: listing ? listing.image : "",
+      sub: `to ${o.toUsername}`,
+      value: `$${o.amount.toLocaleString()}`,
+      actions:
+        o.status === "countered"
+          ? `<div class="offer-actions">
+               <button class="offer-btn accept" data-offer-action="accept-counter" data-offer="${o.id}">Accept $${o.counterAmount}</button>
+               <button class="offer-btn decline" data-offer-action="decline" data-offer="${o.id}">Decline</button>
+             </div>`
+          : `<span class="offer-status ${o.status}">${o.status}</span>`,
+    });
   });
 
   return events.sort((a, b) => b.ts - a.ts);
 }
 
-function renderHistory() {
-  const events = historyEvents();
-  historyCount.textContent = events.length;
-  historyList.innerHTML = events.length
+function relativeTime(ts) {
+  if (!ts) return "";
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function renderActivity() {
+  const events = activityEvents();
+  activityCount.textContent = events.length;
+  activityList.innerHTML = events.length
     ? events
-        .map((e) => {
-          const tag = HISTORY_TAGS[e.kind];
-          return `
-          <div class="opening-row ${e.big ? "pinned" : ""}">
+        .map(
+          (e) => `
+          <div class="activity-row ${e.big ? "pinned" : ""}" ${e.listingId ? `data-listing="${e.listingId}"` : ""}>
             <img src="${e.image}" alt="">
-            <span class="opening-row-name">${e.name}</span>
-            <span class="history-tag history-tag-${tag.cls}">${tag.label}</span>
-            <span class="opening-row-mult ${e.big ? "big" : ""}">${e.value}</span>
-          </div>`;
-        })
+            <div class="activity-row-info">
+              <span class="activity-row-name">${e.name}</span>
+              <span class="activity-row-meta">
+                <span class="history-tag history-tag-${e.kind}">${ACTIVITY_TAGS[e.kind]}</span>
+                ${e.sub ? `<span class="activity-row-sub">${e.sub}</span>` : ""}
+                <span class="activity-row-time">${relativeTime(e.ts)}</span>
+              </span>
+            </div>
+            <span class="activity-row-value ${e.big ? "big" : ""}">${e.value}</span>
+            ${e.actions || ""}
+          </div>`
+        )
         .join("")
     : `<div class="offers-empty">Nothing here yet \u2014 open a crate to get started.</div>`;
+
+  activityList.querySelectorAll(".activity-row[data-listing]").forEach((row) => {
+    row.addEventListener("click", (ev) => {
+      if (ev.target.closest("button")) return;
+      openListingModal(row.dataset.listing);
+    });
+  });
 }
 
 

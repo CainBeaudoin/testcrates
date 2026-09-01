@@ -221,6 +221,10 @@
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4"/><path d="M17 6h3a2 2 0 0 1-2 4"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
           <span class="account-nav-item-label">Rewards</span>
         </button>
+        <button class="account-nav-item" data-group="clips" title="Clips">
+          <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="14" height="14" rx="2.5"/><path d="m16 10 6-3.5v11L16 14z"/></svg>
+          <span class="account-nav-item-label">Clips</span>
+        </button>
         <button class="account-nav-item" id="accountMoreBtn" title="More">
           <svg class="account-nav-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>
           <span class="account-nav-item-label">More</span>
@@ -338,42 +342,16 @@
             <div id="streakCalendar" class="streak-calendar"></div>
           </div>
 
-          <!-- Selling folded in here: listings, offers and the event log are
-               all "things that happened to your items", so they share one tab
-               and one toggle rather than being split across two groups. -->
-          <div class="account-toggle" data-toggle-group="activity">
-            <button type="button" class="account-toggle-label active" data-toggle-target="listings">My Listings</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="offers-incoming">Incoming Offers</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="offers-sent">Sent Offers</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="history">History</button>
-            <button type="button" class="account-toggle-label" data-toggle-target="clips">Clips</button>
+          <!-- One feed for everything: opened, cashed out, shipped, sent,
+               listed, and offers both ways, ordered by when each happened.
+               No toggle — splitting these apart is what hid the sequence of
+               events on a single item in the first place. -->
+          <div class="account-section" data-section="activity">
+            <div class="account-section-header"><h3>Activity <span class="count-badge" id="activityCount">0</span></h3></div>
+            <div id="activityList" class="openings-list"></div>
           </div>
 
-          <div class="account-section" data-section="listings" data-toggle-key="listings">
-            <div class="account-section-header"><h3>My Listings <span class="count-badge" id="listingsCount">0</span></h3></div>
-            <div id="myListingsGrid" class="market-grid"></div>
-          </div>
-
-          <div class="account-section toggle-hidden" data-section="offers" data-toggle-key="offers-incoming offers-sent">
-            <div class="account-subsection" data-toggle-key="offers-incoming">
-              <div class="account-section-header"><h3>Incoming Offers</h3></div>
-              <div id="incomingOffersList" class="offers-list"></div>
-            </div>
-            <div class="account-subsection toggle-hidden" data-toggle-key="offers-sent">
-              <div class="account-section-header"><h3>Sent Offers</h3></div>
-              <div id="myOffersList" class="offers-list"></div>
-            </div>
-          </div>
-
-          <!-- One feed for every event on an item — opened, cashed out,
-               shipped, sent — each row tagged with which it was, instead of
-               a tab per kind. -->
-          <div class="account-section toggle-hidden" data-section="history" data-toggle-key="history">
-            <div class="account-section-header"><h3>History <span class="count-badge" id="historyCount">0</span></h3></div>
-            <div id="historyList" class="openings-list"></div>
-          </div>
-
-          <div class="account-section toggle-hidden" data-section="clips" data-toggle-key="clips">
+          <div class="account-section" data-section="clips">
             <div class="account-section-header">
               <h3>Clips <span class="count-badge" id="clipsCount">0</span></h3>
               <span class="account-block-note">Clip recording coming soon</span>
