@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gotcha Machine</title>
+<script>
+// Runs before the stylesheet paints so a reload in light mode never flashes
+// the dark palette first — which it would if this waited for app.js at the
+// end of the body. The toggle that writes this lives in the rail.
+try {
+  if (localStorage.getItem("gotcha_theme") === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+} catch (e) {
+  // Private mode — dark, the default, is what you get.
+}
+</script>
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
 {
@@ -69,6 +81,14 @@
         </button>
       </div>
       <div class="rail-bottom">
+        <!-- Sits above the sound toggle and matches it: two small utility
+             switches, not navigation. Both icons ship; CSS shows whichever
+             belongs to the theme that isn't running, so the button always
+             pictures what clicking it will do. -->
+        <button id="themeBtn" class="mute-btn theme-btn" aria-label="Toggle light mode" title="Toggle light mode">
+          <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg>
+          <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
+        </button>
         <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
           <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
           <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>

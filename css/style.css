@@ -19,11 +19,141 @@
      pills, in place of the old centered hero header. */
   --accent: #e6e6eb;
   --accent-dim: rgba(230, 230, 235, 0.16);
+  --accent-line: rgba(230, 230, 235, 0.5);
+  --accent-hover: rgba(230, 230, 235, 0.5);
+  /* Sticky bars that blur what scrolls under them. */
+  --panel-blur: rgba(19, 19, 24, 0.94);
   --rail-w: 76px;
   --topbar-h: 60px;
   --surface-1: #131318;
   --surface-2: #1a1a20;
+
+  /* --- Theme-aware neutrals -------------------------------------------
+     These were hardcoded until the light theme existed, and the values
+     here are exactly what they were, so the dark theme renders the same
+     as it did before there was anything to switch. The light theme
+     redefines them (and only them) below. */
+  color-scheme: dark;
+  --text-inverse: #000;                  /* type on a --text/--accent fill */
+  --text-inverse-dim: rgba(0, 0, 0, 0.55);
+  --inverse-tint: rgba(0, 0, 0, 0.12);   /* a chip sitting on such a fill */
+  --well: #000;                          /* photo backdrop, and the reveal stage */
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-bg-strong: rgba(255, 255, 255, 0.08);
+  --hover-surface: #171717;              /* opaque hover on a card */
+  --track: rgba(255, 255, 255, 0.08);    /* progress/meter groove */
+  --shadow-card: rgba(0, 0, 0, 0.65);
+  --shadow-modal: rgba(0, 0, 0, 0.85);
+  --shadow-toast: rgba(0, 0, 0, 0.5);
+  /* Money and status. Bright on black, too pale on white — the light
+     theme darkens them rather than picking different hues. */
+  --positive: #4ade80;
+  --negative: #f87171;
+  --warning: #fbbf24;
+  --gold: #f2b84b;
 }
+
+/* --- Light theme ------------------------------------------------------
+   Set by the rail's theme toggle, which writes data-theme on <html> and
+   remembers it. Nothing outside this block knows which theme is running:
+   the whole switch is these values.
+
+   Surfaces still step *up* from the page, as they do in dark — the page
+   is the grey and cards are white, rather than the page being white and
+   cards being outlined. That keeps elevation carrying the component
+   boundaries in both themes instead of introducing borders in one. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f2f5;
+  --panel: #ffffff;
+  --panel-2: #ffffff;
+  --hairline: rgba(16, 16, 20, 0.08);
+  --line: rgba(16, 16, 20, 0.16);
+  --line-strong: rgba(16, 16, 20, 0.42);
+  --text: #101014;
+  --text-dim: rgba(16, 16, 20, 0.6);
+  --text-faint: rgba(16, 16, 20, 0.45);
+  --glow: 0 0 40px rgba(16, 16, 20, 0.1);
+  --accent: #101014;
+  --accent-dim: rgba(16, 16, 20, 0.08);
+  --accent-line: rgba(16, 16, 20, 0.28);
+  --accent-hover: rgba(16, 16, 20, 0.12);
+  --panel-blur: rgba(255, 255, 255, 0.92);
+  --surface-1: #ffffff;
+  --surface-2: #f4f4f7;
+
+  --text-inverse: #ffffff;
+  --text-inverse-dim: rgba(255, 255, 255, 0.66);
+  --inverse-tint: rgba(255, 255, 255, 0.18);
+  /* Product shots are mostly cut out on white, so a near-white well keeps
+     them from sitting in a black box on a white page. */
+  --well: #f4f4f7;
+  --hover-bg: rgba(16, 16, 20, 0.05);
+  --hover-bg-strong: rgba(16, 16, 20, 0.08);
+  --hover-surface: #f4f4f7;
+  --track: rgba(16, 16, 20, 0.1);
+  /* Far lighter than the dark theme's: a 0.85-alpha black shadow that
+     reads as depth on near-black reads as soot on white. */
+  --shadow-card: rgba(16, 16, 20, 0.16);
+  --shadow-modal: rgba(16, 16, 20, 0.22);
+  --shadow-toast: rgba(16, 16, 20, 0.18);
+  --positive: #15803d;
+  --negative: #dc2626;
+  --warning: #b45309;
+  --gold: #96701d;
+}
+
+/* Colours that can't come from a token, because they're written straight
+   onto the element by JS from RARITY_META — five hues picked to glow on
+   black, three of which are close to invisible on white. Darkening the
+   rendered element keeps each rarity's hue (and so the learned colour
+   coding) instead of duplicating the palette in JS and having two places
+   to keep in step. The border on these chips is the same colour, and a
+   filter takes it along. */
+:root[data-theme="light"] .price-card-rarity,
+:root[data-theme="light"] .prize-modal-rarity,
+:root[data-theme="light"] #pullDetailRarity {
+  filter: brightness(0.62) saturate(1.45);
+}
+
+/* Held for the two frames it takes to swap themes. Two reasons, and the
+   second is the load-bearing one:
+     - a theme change should land at once, not as fifty elements easing
+       between palettes at their own durations, which reads as a smear
+     - elements that transition a property fed by a custom property (the
+       rail's tabs and the sound button, which ease background/border/
+       colour) don't get re-resolved when the attribute driving those
+       properties is removed from :root — they keep the old theme's
+       colours until something else forces a recalc. Taking the
+       transition away for the swap is what makes them update. */
+:root.theme-switching,
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+  transition: none !important;
+}
+
+/* The wordmark is a white-artwork PNG on a transparent ground, so on a
+   light topbar it disappears. Inverting it is exactly right for a mark
+   that's a single flat colour, and beats shipping and cache-busting a
+   second asset. */
+:root[data-theme="light"] .brand-logo img { filter: invert(1); }
+
+/* Tier hues are metals — silver in particular is a light grey, which on a
+   white card is nothing at all. */
+:root[data-theme="light"] .tier-name-bronze,
+:root[data-theme="light"] .tier-badge-bronze { color: #9c5526; }
+:root[data-theme="light"] .tier-name-silver,
+:root[data-theme="light"] .tier-badge-silver { color: #5f6672; }
+:root[data-theme="light"] .tier-name-gold,
+:root[data-theme="light"] .tier-badge-gold { color: #8a6a10; }
+
+/* The streak heatmap ramps up in opacity toward the accent, which means
+   toward white in dark and toward black in light — the one place the ramp
+   has to be restated rather than tokenised. */
+:root[data-theme="light"] .streak-tile.level-1 { background: rgba(16, 16, 20, 0.1); border-color: rgba(16, 16, 20, 0.16); }
+:root[data-theme="light"] .streak-tile.level-2 { background: rgba(16, 16, 20, 0.3); }
+:root[data-theme="light"] .streak-tile.level-3 { background: rgba(16, 16, 20, 0.55); border-color: rgba(16, 16, 20, 0.62); color: var(--text-inverse); }
 
 * { box-sizing: border-box; }
 
@@ -96,10 +226,10 @@ body {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .nav-tab .icon { width: 18px; height: 18px; }
-.nav-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.nav-tab:hover { color: var(--text); background: var(--hover-bg); }
 .nav-tab.active {
   background: var(--accent-dim);
-  border-color: rgba(230, 230, 235, 0.5);
+  border-color: var(--accent-line);
   color: var(--accent);
   font-weight: 700;
 }
@@ -130,6 +260,13 @@ body {
 .mute-btn.muted .icon-volume { display: none; }
 .mute-btn.muted .icon-volume-muted { display: block; }
 
+/* Theme toggle — same 36px circle as the sound button; it's the same kind
+   of control. The icon shows the theme you'd switch *to*, so in dark you
+   see a sun. */
+.theme-btn .icon-theme-moon { display: none; }
+:root[data-theme="light"] .theme-btn .icon-theme-sun { display: none; }
+:root[data-theme="light"] .theme-btn .icon-theme-moon { display: block; }
+
 .shell-main {
   flex: 1;
   min-width: 0;
@@ -149,7 +286,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 0 24px;
-  background: rgba(19, 19, 24, 0.94);
+  background: var(--panel-blur);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hairline);
 }
@@ -207,7 +344,7 @@ body {
   display: inline-block;
 }
 .wallet-item b.pulse {
-  color: #f2b84b;
+  color: var(--gold);
   transform: scale(1.2);
 }
 
@@ -391,7 +528,7 @@ body {
   cursor: pointer;
 }
 .fairness-badge:hover { border-color: var(--line-strong); color: var(--text); }
-.fairness-badge.verified { color: #4ade80; border-color: rgba(74, 222, 128, 0.4); }
+.fairness-badge.verified { color: var(--positive); border-color: rgba(74, 222, 128, 0.4); }
 
 .fairness-modal-card { max-width: 380px; text-align: left; }
 .fairness-modal-card .payment-modal-title { text-align: center; }
@@ -426,7 +563,7 @@ body {
   text-align: center;
 }
 .fairness-status.pending { background: var(--surface-2); color: var(--text-faint); }
-.fairness-status.verified { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+.fairness-status.verified { background: rgba(74, 222, 128, 0.12); color: var(--positive); }
 
 .fairness-note {
   font-size: 0.66rem;
@@ -446,13 +583,13 @@ body {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: #f5f5f5;
-  color: #000;
+  background: var(--text);
+  color: var(--text-inverse);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   border-radius: 999px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 30px var(--shadow-toast);
   opacity: 0;
   transform: translate(-50%, -16px);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -544,7 +681,7 @@ body {
 .category-tier-name.tier-name-bronze { color: #d0895a; }
 .category-tier-name.tier-name-silver { color: #c7ccd6; }
 .category-tier-name.tier-name-gold { color: #f0c14b; }
-.category-tier-name.tier-name-stocks { color: #4ade80; }
+.category-tier-name.tier-name-stocks { color: var(--positive); }
 
 .category-tier-price {
   font-size: 1.05rem;
@@ -587,7 +724,7 @@ body {
   line-height: 1;
   cursor: pointer;
 }
-.qty-btn:hover { background: var(--text); color: #000; }
+.qty-btn:hover { background: var(--text); color: var(--text-inverse); }
 
 .qty-value {
   min-width: 22px;
@@ -609,13 +746,13 @@ body {
   cursor: pointer;
 }
 .qty-max-btn:hover { color: var(--text); border-color: var(--text); }
-.qty-max-btn.active { background: var(--text); color: #000; border-color: var(--text); }
+.qty-max-btn.active { background: var(--text); color: var(--text-inverse); border-color: var(--text); }
 
 .category-open-btn {
   margin-top: 16px;
   padding: 12px 0;
   background: var(--text);
-  color: #000;
+  color: var(--text-inverse);
   border: none;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -643,7 +780,7 @@ body {
 .pity-bar-track {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--track);
   overflow: hidden;
 }
 .pity-bar-fill {
@@ -847,7 +984,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--hairline);
 }
 .prize-row:last-child { border-bottom: none; }
 
@@ -855,7 +992,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   width: 36px;
   height: 36px;
   object-fit: contain;
-  background: #000;
+  background: var(--well);
   border-radius: 3px;
   flex: 0 0 auto;
 }
@@ -943,7 +1080,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   width: 104px;
   height: 104px;
   object-fit: contain;
-  background: #000;
+  background: var(--well);
   border-radius: 6px;
   margin: 0 auto 12px;
   display: block;
@@ -1015,8 +1152,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   z-index: 2;
   pointer-events: none;
 }
-.reel::before { left: 0; background: linear-gradient(90deg, #000 0%, transparent 100%); }
-.reel::after { right: 0; background: linear-gradient(270deg, #000 0%, transparent 100%); }
+.reel::before { left: 0; background: linear-gradient(90deg, var(--well) 0%, transparent 100%); }
+.reel::after { right: 0; background: linear-gradient(270deg, var(--well) 0%, transparent 100%); }
 
 .reel-track {
   position: absolute;
@@ -1121,11 +1258,11 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   z-index: 3;
   width: 168px;
   padding: 16px 12px;
-  background: #000;
+  background: var(--well);
   border: 1px solid var(--rarity-color);
   border-radius: 4px;
   text-align: center;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 22px -4px var(--rarity-color);
+  box-shadow: 0 12px 30px var(--shadow-card), 0 0 22px -4px var(--rarity-color);
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 10px) scale(0.82);
@@ -1146,8 +1283,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 }
 
 @keyframes nearMissPulse {
-  0%, 100% { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 22px -4px var(--rarity-color); }
-  30% { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 40px 4px var(--rarity-color); }
+  0%, 100% { box-shadow: 0 12px 30px var(--shadow-card), 0 0 22px -4px var(--rarity-color); }
+  30% { box-shadow: 0 12px 30px var(--shadow-card), 0 0 40px 4px var(--rarity-color); }
 }
 
 .price-card-rarity {
@@ -1164,7 +1301,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 68px;
   object-fit: contain;
   margin: 0 auto 8px;
-  background: #000;
+  background: var(--well);
 }
 
 /* The name is the only part of the card whose height varies, so it's what
@@ -1206,7 +1343,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #000;
+  color: var(--text-inverse);
   background: var(--text);
   border: none;
   border-radius: 2px;
@@ -1347,7 +1484,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   border-radius: 6px;
   padding: 32px 32px 32px;
   text-align: center;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 40px -6px var(--rarity-color);
+  box-shadow: 0 24px 70px var(--shadow-modal), 0 0 40px -6px var(--rarity-color);
   opacity: 1;
   transform: scale(0.85) translateY(8px);
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
@@ -1387,7 +1524,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-size: 0.7rem;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #f2b84b;
+  color: var(--gold);
 }
 
 /* --- Fullscreen reveal FX (vortex / particles / shockwave) --------------
@@ -1555,7 +1692,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 150px;
   object-fit: contain;
   margin: 0 auto 16px;
-  background: #000;
+  background: var(--well);
   border-radius: 18px;
 }
 
@@ -1592,7 +1729,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 
 .modal-btn-solid {
   background: var(--text);
-  color: #000;
+  color: var(--text-inverse);
   border: none;
 }
 
@@ -1657,7 +1794,7 @@ button.deposit-btn:hover {
 .payment-option:hover {
   border-color: var(--line-strong);
   transform: translateY(-2px);
-  background: #171717;
+  background: var(--hover-surface);
 }
 .payment-option-icon { font-size: 1.6rem; }
 .payment-option-label {
@@ -1760,7 +1897,7 @@ button.deposit-btn:hover {
   background: var(--accent-dim);
   color: var(--accent);
   font-weight: 700;
-  border-color: rgba(230, 230, 235, 0.5);
+  border-color: var(--accent-line);
 }
 
 .market-grid {
@@ -1792,7 +1929,7 @@ button.deposit-btn:hover {
 .market-item-media {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: #000;
+  background: var(--well);
 }
 .market-item img {
   width: 100%;
@@ -1957,7 +2094,7 @@ button.deposit-btn:hover {
   gap: 8px;
   padding: 8px 16px;
   background: var(--accent-dim);
-  border: 1px solid rgba(230, 230, 235, 0.5);
+  border: 1px solid var(--accent-line);
   border-radius: 999px;
   color: var(--accent);
   font-size: 0.66rem;
@@ -1965,7 +2102,7 @@ button.deposit-btn:hover {
   letter-spacing: 0.3px;
   cursor: pointer;
 }
-.referral-link-btn:hover { background: rgba(230, 230, 235, 0.5); }
+.referral-link-btn:hover { background: var(--accent-hover); }
 
 .account-wallet-card {
   background: var(--surface-1);
@@ -1982,7 +2119,7 @@ button.deposit-btn:hover {
   color: var(--text-faint);
 }
 .wallet-card-row b { color: var(--text); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
-.wallet-card-row b.positive { color: #4ade80; }
+.wallet-card-row b.positive { color: var(--positive); }
 .wallet-card-divider { height: 1px; background: var(--hairline); }
 
 .account-wallet-actions {
@@ -1996,7 +2133,7 @@ button.deposit-btn:hover {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 4px;
-  background: rgba(19, 19, 24, 0.94);
+  background: var(--panel-blur);
   backdrop-filter: blur(10px);
   border: 1px solid var(--hairline);
   border-radius: 10px;
@@ -2023,7 +2160,7 @@ button.deposit-btn:hover {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.account-nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
+.account-nav-item:hover { background: var(--hover-bg); color: var(--text); }
 .account-nav-item.active { background: var(--accent-dim); color: var(--accent); }
 
 /* Icon is mobile-only (see the mobile media query near the end of this
@@ -2194,7 +2331,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.activity-row-value.big { color: #fbbf24; }
+.activity-row-value.big { color: var(--warning); }
 
 /* Which kind of event the row is. */
 .history-tag {
@@ -2209,8 +2346,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text-faint);
 }
 .history-tag-opened { color: #93c5fd; background: rgba(147, 197, 253, 0.12); }
-.history-tag-cashedout { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
-.history-tag-shipped { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.history-tag-cashedout { color: var(--positive); background: rgba(74, 222, 128, 0.12); }
+.history-tag-shipped { color: var(--warning); background: rgba(251, 191, 36, 0.12); }
 .history-tag-sent { color: #c4b5fd; background: rgba(196, 181, 253, 0.12); }
 .history-tag-listed { color: #5eead4; background: rgba(94, 234, 212, 0.12); }
 .history-tag-offer-in { color: #fda4af; background: rgba(253, 164, 175, 0.12); }
@@ -2527,8 +2664,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
-.rewards-earn-state.pending { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
-.rewards-earn-state.verified { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+.rewards-earn-state.pending { color: var(--warning); background: rgba(251, 191, 36, 0.12); }
+.rewards-earn-state.verified { color: var(--positive); background: rgba(74, 222, 128, 0.12); }
 
 .referral-count span {
   color: var(--text-faint);
@@ -2591,8 +2728,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   line-height: 1.4;
   color: var(--text-faint);
 }
-.api-key-status.ok { color: #4ade80; }
-.api-key-status.warn { color: #f87171; }
+.api-key-status.ok { color: var(--positive); }
+.api-key-status.warn { color: var(--negative); }
 .api-key-input {
   width: 100%;
   padding: 8px 12px;
@@ -2685,7 +2822,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 40px;
   height: 40px;
   object-fit: contain;
-  background: #000;
+  background: var(--well);
   border-radius: 4px;
   flex: 0 0 auto;
 }
@@ -2713,9 +2850,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border: 1px solid var(--line-strong);
   color: var(--text-dim);
 }
-.offer-status.accepted { color: #4ade80; border-color: #4ade80; }
-.offer-status.declined { color: #f87171; border-color: #f87171; }
-.offer-status.countered { color: #f2b84b; border-color: #f2b84b; }
+.offer-status.accepted { color: var(--positive); border-color: var(--positive); }
+.offer-status.declined { color: var(--negative); border-color: var(--negative); }
+.offer-status.countered { color: var(--gold); border-color: var(--gold); }
 
 .offer-actions {
   display: flex;
@@ -2733,10 +2870,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text);
   cursor: pointer;
 }
-.offer-btn:hover { background: var(--text); color: #000; }
-.offer-btn.accept { border-color: #4ade80; color: #4ade80; }
+.offer-btn:hover { background: var(--text); color: var(--text-inverse); }
+.offer-btn.accept { border-color: var(--positive); color: var(--positive); }
 .offer-btn.accept:hover { background: #4ade80; color: #000; }
-.offer-btn.decline { border-color: #f87171; color: #f87171; }
+.offer-btn.decline { border-color: var(--negative); color: var(--negative); }
 .offer-btn.decline:hover { background: #f87171; color: #000; }
 
 .offers-empty {
@@ -2801,7 +2938,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   justify-content: center;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
-.listing-nav-arrow:hover { background: var(--text); color: #000; }
+.listing-nav-arrow:hover { background: var(--text); color: var(--text-inverse); }
 .listing-nav-arrow:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
 .listing-nav-prev { left: 3vw; }
 .listing-nav-next { right: 3vw; }
@@ -2898,7 +3035,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.detail-media-btn:hover { background: var(--text); color: #000; }
+.detail-media-btn:hover { background: var(--text); color: var(--text-inverse); }
 .detail-media-btn:disabled { opacity: 0.5; cursor: default; }
 .detail-media-btn:disabled:hover { background: transparent; color: var(--text-dim); }
 
@@ -3003,6 +3140,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   margin: -8px 0 4px;
 }
 .price-chart-svg { width: 100%; height: 100%; display: block; }
+/* Direction comes from the class buildPriceChartSVG puts on the <svg>; the
+   colour comes from the theme. */
+.price-chart-svg.up { fill: var(--positive); stroke: var(--positive); }
+.price-chart-svg.down { fill: var(--negative); stroke: var(--negative); }
 .price-chart-caption {
   display: block;
   font-size: 0.6rem;
@@ -3058,7 +3199,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border-radius: 4px;
   cursor: pointer;
 }
-.amount-max-btn:hover { background: var(--text); color: #000; }
+.amount-max-btn:hover { background: var(--text); color: var(--text-inverse); }
 
 .amount-quick-row {
   display: flex;
@@ -3081,7 +3222,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .amount-quick-btn:hover { color: var(--text); border-color: var(--line-strong); }
 .amount-quick-btn.active {
   background: var(--accent-dim);
-  border-color: rgba(230, 230, 235, 0.5);
+  border-color: var(--accent-line);
   color: var(--accent);
 }
 
@@ -3170,7 +3311,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text);
   border-color: var(--line-strong);
 }
-.add-funds-btn:hover { background: var(--text); color: #000; }
+.add-funds-btn:hover { background: var(--text); color: var(--text-inverse); }
 
 .wallet-cash-btn {
   font-family: inherit;
@@ -3194,7 +3335,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .tier-badge-bronze { color: #d0895a; background: rgba(208, 137, 90, 0.14); }
 .tier-badge-silver { color: #c7ccd6; background: rgba(199, 204, 214, 0.14); }
 .tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
-.tier-badge-stocks { color: #4ade80; background: rgba(74, 222, 128, 0.14); }
+.tier-badge-stocks { color: var(--positive); background: rgba(74, 222, 128, 0.14); }
 
 /* --- Reveal exits: Cash Out / Keep --- */
 
@@ -3211,7 +3352,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text);
   letter-spacing: 0.5px;
 }
-.multiplier-badge.positive { color: #4ade80; }
+.multiplier-badge.positive { color: var(--positive); }
 .multiplier-badge-arrow { width: 12px; height: 12px; }
 
 .exits-grid {
@@ -3250,10 +3391,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .exit-btn-primary {
   background: var(--text);
-  color: #000;
+  color: var(--text-inverse);
   border-color: var(--text);
 }
-.exit-btn-primary .exit-btn-sub { color: rgba(0, 0, 0, 0.55); }
+.exit-btn-primary .exit-btn-sub { color: var(--text-inverse-dim); }
 .exit-btn-primary:hover { background: var(--text); opacity: 0.9; }
 
 /* --- Payment error --- */
@@ -3261,7 +3402,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .payment-modal-error {
   margin: -8px 0 16px;
   font-size: 0.72rem;
-  color: #f87171;
+  color: var(--negative);
 }
 
 .payment-option.insufficient {
@@ -3331,8 +3472,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text-faint);
   margin-bottom: 8px;
 }
-.item-archival.soon { color: #f2b84b; }
-.item-archival.archived { color: #f87171; }
+.item-archival.soon { color: var(--gold); }
+.item-archival.archived { color: var(--negative); }
 
 .item-cashout-today {
   display: block;
@@ -3357,7 +3498,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border-radius: 999px;
   cursor: pointer;
 }
-.item-action-btn:hover { background: var(--text); color: #000; }
+.item-action-btn:hover { background: var(--text); color: var(--text-inverse); }
 .item-action-btn:disabled { opacity: 0.3; cursor: default; }
 .item-action-btn:disabled:hover { background: transparent; color: var(--text); }
 
@@ -3379,12 +3520,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border: 1px solid var(--hairline);
   border-radius: 6px;
 }
-.opening-row.pinned { border-color: #f2b84b; }
+.opening-row.pinned { border-color: var(--gold); }
 .opening-row img {
   width: 36px;
   height: 36px;
   object-fit: contain;
-  background: #000;
+  background: var(--well);
   border-radius: 4px;
 }
 .opening-row-name { flex: 1; font-size: 0.75rem; color: var(--text); }
@@ -3394,8 +3535,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   font-weight: 700;
   color: var(--text);
 }
-.opening-row-mult.big { color: #f2b84b; }
-.opening-row-pin { font-size: 0.85rem; color: #f2b84b; }
+.opening-row-mult.big { color: var(--gold); }
+.opening-row-pin { font-size: 0.85rem; color: var(--gold); }
 
 /* --- Leaderboard --- */
 
@@ -3459,7 +3600,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .referral-progress-track {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--track);
   overflow: hidden;
   margin-bottom: 24px;
 }
@@ -3549,11 +3690,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 1px 8px;
   border-radius: 999px;
   background: rgba(74, 222, 128, 0.18);
-  color: #4ade80;
+  color: var(--positive);
   font-size: 0.6rem;
   font-weight: 800;
 }
-.exit-btn-primary .referral-claim-bonus { background: rgba(0, 0, 0, 0.12); color: #1f9d55; }
+.exit-btn-primary .referral-claim-bonus { background: var(--inverse-tint); color: #1f9d55; }
 .deposit-btn .referral-claim-bonus { background: rgba(4, 22, 12, 0.18); color: #04160c; }
 
 .referral-section-label {
@@ -3653,7 +3794,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border-radius: 999px;
   white-space: nowrap;
 }
-.streak-raffle-badge.qualified { color: #4ade80; background: rgba(74, 222, 128, 0.14); border: 1px solid rgba(74, 222, 128, 0.4); }
+.streak-raffle-badge.qualified { color: var(--positive); background: rgba(74, 222, 128, 0.14); border: 1px solid rgba(74, 222, 128, 0.4); }
 .streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: 1px solid var(--hairline); }
 
 .streak-raffle-prize {
@@ -3669,7 +3810,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 56px;
   height: 56px;
   object-fit: contain;
-  background: #000;
+  background: var(--well);
   border-radius: 6px;
   flex: 0 0 auto;
 }
@@ -3726,9 +3867,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .streak-tile.empty { background: transparent; border-color: transparent; }
 .streak-tile.level-1 { background: rgba(230, 230, 235, 0.22); border-color: rgba(230, 230, 235, 0.3); color: var(--text-dim); }
-.streak-tile.level-2 { background: rgba(230, 230, 235, 0.42); border-color: rgba(230, 230, 235, 0.5); color: var(--text); }
+.streak-tile.level-2 { background: rgba(230, 230, 235, 0.42); border-color: var(--accent-line); color: var(--text); }
 .streak-tile.level-3 { background: rgba(230, 230, 235, 0.66); border-color: rgba(230, 230, 235, 0.75); color: var(--text); }
-.streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.streak-tile.level-4 { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); font-weight: 700; }
 .streak-tile.today { outline: 2px solid var(--text); outline-offset: 1px; }
 
 /* --- Clips: recorded pull videos (session-only) --- */
@@ -3752,7 +3893,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: var(--well);
   color: var(--text-faint);
 }
 
@@ -3905,7 +4046,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border-radius: 999px;
   cursor: pointer;
 }
-.deposit-copy-btn:hover { background: var(--text); color: #000; }
+.deposit-copy-btn:hover { background: var(--text); color: var(--text-inverse); }
 
 .add-funds-card-actions {
   display: flex;
@@ -3999,7 +4140,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 /* --- Credit-earned notifications --- */
 
-.credits-earned-amount { color: #4ade80; font-weight: 700; }
+.credits-earned-amount { color: var(--positive); font-weight: 700; }
 
 /* Cashback history grows to 50 entries, which ran the card far past both
    ends of the viewport with no way to scroll it. Cap the card to the

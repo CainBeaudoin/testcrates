@@ -1670,6 +1670,43 @@ muteBtn.addEventListener("click", () => {
 });
 refreshMuteBtn();
 
+// ---- Theme -------------------------------------------------------------
+// Dark is the default and the only theme the app had; light is the whole of
+// the [data-theme="light"] block in style.css. The attribute goes on <html>
+// rather than <body> so the inline script in <head> can set it before the
+// stylesheet paints (see index.html) — this handler only takes over once
+// the page is interactive.
+const THEME_KEY = "gotcha_theme";
+const themeBtn = document.getElementById("themeBtn");
+
+function applyTheme(theme) {
+  const light = theme === "light";
+  const root = document.documentElement;
+  // See .theme-switching in style.css — without this the rail's tabs and the
+  // sound button keep the outgoing theme's colours, because they transition
+  // properties that a custom property feeds.
+  root.classList.add("theme-switching");
+  if (light) root.setAttribute("data-theme", "light");
+  else root.removeAttribute("data-theme");
+  // Two frames: one for the new values to be applied, one before transitions
+  // are allowed back.
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
+  themeBtn.setAttribute("aria-label", light ? "Switch to dark mode" : "Switch to light mode");
+  themeBtn.setAttribute("title", light ? "Dark mode" : "Light mode");
+  try {
+    localStorage.setItem(THEME_KEY, light ? "light" : "dark");
+  } catch {
+    // Not persisting is survivable; the switch still works for this session.
+  }
+}
+
+themeBtn.addEventListener("click", () => {
+  playClick();
+  applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+});
+// Sync the label with whatever the head script already applied.
+applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+
 // On mobile the bottom tab bar is Drops/Market/Account only — mute moves
 // into the footer's Social Media row instead (same button/click handler,
 // just reparented) so it's not competing with real navigation. Desktop
@@ -2512,11 +2549,15 @@ function buildPriceChartSVG(history) {
   const stepX = w / (values.length - 1);
   const points = values.map((v, i) => `${(i * stepX).toFixed(2)},${(h - ((v - min) / range) * h).toFixed(2)}`).join(" ");
   const up = values[values.length - 1] >= values[0];
-  const color = up ? "#4ade80" : "#f87171";
+  // Direction as a class rather than a baked-in hex, so the line takes its
+  // colour from the theme's --positive/--negative — a chart drawn in dark
+  // mode recolours on the spot when you switch, instead of keeping a green
+  // that's too pale to read on white.
+  const dir = up ? "up" : "down";
   return `
-    <svg class="price-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <polygon points="0,${h} ${points} ${w},${h}" fill="${color}" opacity="0.14"></polygon>
-      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>
+    <svg class="price-chart-svg ${dir}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <polygon points="0,${h} ${points} ${w},${h}" opacity="0.14"></polygon>
+      <polyline points="${points}" fill="none" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>
     </svg>`;
 }
 
