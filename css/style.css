@@ -23,6 +23,9 @@
   --accent-hover: rgba(230, 230, 235, 0.5);
   /* Sticky bars that blur what scrolls under them. */
   --panel-blur: rgba(19, 19, 24, 0.94);
+  /* Type on a pill over a photo. Not themed: that pill keeps its dark
+     scrim in both themes, so its type stays light in both. */
+  --scrim-text: rgba(245, 245, 245, 0.55);
   --rail-w: 76px;
   --topbar-h: 60px;
   --surface-1: #131318;
@@ -141,12 +144,9 @@
 
 /* Tier hues are metals — silver in particular is a light grey, which on a
    white card is nothing at all. */
-:root[data-theme="light"] .tier-name-bronze,
-:root[data-theme="light"] .tier-badge-bronze { color: #9c5526; }
-:root[data-theme="light"] .tier-name-silver,
-:root[data-theme="light"] .tier-badge-silver { color: #5f6672; }
-:root[data-theme="light"] .tier-name-gold,
-:root[data-theme="light"] .tier-badge-gold { color: #8a6a10; }
+/* The tier metals are left exactly as the dark theme has them. Darkening
+   them for contrast made them read as dimmed, and these are meant to look
+   like bronze, silver and gold. */
 
 /* The streak heatmap ramps up in opacity toward the accent, which means
    toward white in dark and toward black in light — the one place the ramp
@@ -1893,6 +1893,7 @@ button.deposit-btn:hover {
   cursor: pointer;
 }
 .market-chip:hover { border-color: var(--line-strong); color: var(--text); }
+:root[data-theme="light"] .market-chip { background: var(--panel); }
 .market-chip.active {
   background: var(--accent-dim);
   color: var(--accent);
@@ -1957,7 +1958,7 @@ button.deposit-btn:hover {
   border: 1px solid currentColor;
 }
 .market-item-size { left: auto; right: 8px; }
-.market-item-size { color: var(--text-dim); }
+.market-item-size { color: var(--scrim-text); }
 
 /* Offer flag on a vault card — opposite corner to the size pill, green so
    it reads as something waiting on you rather than another spec. */
@@ -2490,7 +2491,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .rewards-week-fill {
   height: 100%;
   border-radius: 999px;
-  background: #fbbf24;
+  background: linear-gradient(90deg, #5eead4, #16a34a);
   transition: width 0.3s ease;
 }
 
@@ -3606,7 +3607,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .referral-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #f2b84b);
+  background: linear-gradient(90deg, #5eead4, #16a34a);
 }
 .referral-table {
   width: 100%;
