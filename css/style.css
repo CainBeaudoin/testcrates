@@ -379,8 +379,7 @@ body {
   .topbar { padding: 0 14px; gap: 8px; }
   .rail { margin-left: 0; }
   .nav-tab { padding: 8px 8px; letter-spacing: 0.3px; }
-  #streakStat, #addFundsBtn, #topUsername { display: none; }
-  .avatar-btn { padding: 4px; gap: 0; }
+  #streakStat, #addFundsBtn { display: none; }
 }
 /* Just above the phone breakpoint, where the four words themselves are
    most of the bar. */
@@ -451,20 +450,20 @@ body {
 }
 
 
+/* Just the profile picture: no name beside it, so a long username can't
+   push the wallet around. */
 .avatar-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px 4px 4px;
-  background: var(--surface-2);
-  border-radius: 999px;
+  padding: 0;
+  background: none;
+  border-radius: 50%;
   cursor: pointer;
-  color: var(--text);
-  font-size: 0.7rem;
-  font-weight: 600;
   border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.avatar-btn:hover { background: var(--control-fill-hover); }
+.avatar-btn:hover { transform: scale(1.06); box-shadow: 0 0 0 2px var(--line-strong); }
+.avatar-btn .avatar-circle { width: 32px; height: 32px; }
 
 .avatar-circle {
   display: inline-flex;
@@ -1893,7 +1892,7 @@ button.deposit-btn:hover {
 .market-filter-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .market-chip {
@@ -1914,6 +1913,25 @@ button.deposit-btn:hover {
   color: var(--accent);
   font-weight: 700;
   border-color: var(--accent-line);
+}
+/* The value chips wear the same solid colours as the verdict badges on
+   the cards, so the filter and what it filters for read as one thing:
+   compact pills, dimmed until picked, a ring when on. */
+#marketFmvFilter .market-chip {
+  padding: 5px 10px;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+#marketFmvFilter .fmv-chip { color: #fff; opacity: 0.55; }
+#marketFmvFilter .fmv-chip:hover { color: #fff; opacity: 0.85; }
+#marketFmvFilter .fmv-good-deal { background: #15803d; --chip-color: #15803d; }
+#marketFmvFilter .fmv-fair { background: #5f6672; --chip-color: #5f6672; }
+#marketFmvFilter .fmv-chip.active {
+  color: #fff;
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--chip-color);
 }
 
 .market-grid {
@@ -4247,7 +4265,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .topbar-stats { flex-wrap: nowrap; gap: 4px; overflow-x: auto; scrollbar-width: none; }
   .topbar-stats::-webkit-scrollbar { display: none; }
   .wallet-item, .avatar-btn { font-size: 0.62rem; padding: 4px 8px; white-space: nowrap; }
-  #topUsername { display: none; }
   .avatar-btn { padding: 4px; gap: 0; }
 
   .screen-title { font-size: 1.05rem; margin-bottom: 16px; }

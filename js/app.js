@@ -318,7 +318,6 @@ const rwWeekFill = document.getElementById("rwWeekFill");
 const rwEarnList = document.getElementById("rwEarnList");
 const streakRafflePrize = document.getElementById("streakRafflePrize");
 const topAvatar = document.getElementById("topAvatar");
-const topUsername = document.getElementById("topUsername");
 const avatarBtn = document.getElementById("avatarBtn");
 const addFundsModal = document.getElementById("addFundsModal");
 const chainFilter = document.getElementById("chainFilter");
@@ -2312,11 +2311,11 @@ function renderMarketplace() {
     // dead label.
     const fmvBands = [
       { key: "all", label: "All" },
-      { key: "good-deal", label: "Very Good", color: "#4ade80" },
-      { key: "fair", label: "Good", color: "#AFBAC4" },
+      { key: "good-deal", label: "Very Good" },
+      { key: "fair", label: "Good" },
     ];
     marketFmvFilter.innerHTML = fmvBands
-      .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ""}" data-fmv="${b.key}" ${b.color ? `style="--rarity-color:${b.color}"` : ""}>${b.label}</button>`)
+      .map((b) => `<button class="market-chip${b.key === "all" ? " active" : ` fmv-chip fmv-${b.key}`}" data-fmv="${b.key}">${b.label}</button>`)
       .join("");
     marketFmvFilter.querySelectorAll("button.market-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
@@ -2594,7 +2593,9 @@ function renderAvatarInto(el, username) {
 function renderIdentity() {
   const username = player.getUsername();
   [topAvatar, accountAvatar].forEach((el) => renderAvatarInto(el, username));
-  topUsername.textContent = username;
+  // Just the picture in the header (a long name would crowd the bar); the
+  // name is still there on hover.
+  avatarBtn.title = username;
   usernameBtn.textContent = username;
 }
 
