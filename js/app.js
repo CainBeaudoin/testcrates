@@ -21,6 +21,20 @@ import * as liveActivity from "./liveActivity.js";
 // the price point (and therefore the pool's price band) differs. Opening a
 // crate costs its tier price, paid from whichever balance you choose.
 
+// A dearer crate cut from the top of a line's own pool: everything at or
+// above `minPrice`, re-banded into the five rarities by price (fifths,
+// cheapest to dearest). The same items as the base crate's upper end, so
+// no new stock is invented; the crate just skips the cheap bottom.
+const RARITY_WEIGHTS = { common: 5.0, uncommon: 3.12, rare: 1.88, epic: 1.5, legendary: 1.0 };
+function upperBand(pool, minPrice) {
+  const band = pool.filter((p) => p.price >= minPrice).sort((a, b) => a.price - b.price);
+  const bands = Object.keys(RARITY_WEIGHTS);
+  return band.map((p, i) => {
+    const rarity = bands[Math.min(4, Math.floor((i * 5) / band.length))];
+    return { ...p, rarity, weight: RARITY_WEIGHTS[rarity] };
+  });
+}
+
 const CATEGORIES = {
   stocks: {
     label: "$25",
@@ -71,6 +85,46 @@ const CATEGORIES = {
     pool: SNEAKER_1000_POOL,
     poweredBy: "ODTO",
   },
+  streetwear250: {
+    label: "$250",
+    badge: "Streetwear",
+    line: "streetwear",
+    price: 250,
+    pool: upperBand(STREETWEAR_POOL, 176),
+    poweredBy: "ODTO",
+  },
+  streetwear500: {
+    label: "$500",
+    badge: "Streetwear",
+    line: "streetwear",
+    price: 500,
+    pool: upperBand(STREETWEAR_POOL, 330),
+    poweredBy: "ODTO",
+  },
+  collectibles250: {
+    label: "$250",
+    badge: "Collectibles",
+    line: "collectibles",
+    price: 250,
+    pool: upperBand(COLLECTIBLES_POOL, 206),
+    poweredBy: "ODTO",
+  },
+  collectibles500: {
+    label: "$500",
+    badge: "Collectibles",
+    line: "collectibles",
+    price: 500,
+    pool: upperBand(COLLECTIBLES_POOL, 367),
+    poweredBy: "ODTO",
+  },
+};
+
+// One line under each section's title on Drops.
+const LINE_TAGLINES = {
+  stocks: "Real shares, printed on the spot. Settles in USDC.",
+  sneakers: "Grails from ODTO's shelves, from Dunks to Off-White Chicagos.",
+  streetwear: "Supreme, BAPE, Denim Tears and the rest of the rack.",
+  collectibles: "Bearbricks, KAWS and the things people keep in cases.",
 };
 
 // The product line a crate belongs to (Sneakers, Streetwear, ...).
@@ -1460,13 +1514,33 @@ function orderedCrates() {
 }
 
 function renderDropLines() {
-  const chips = [["all", "All"], ...CRATE_LINES.map((l) => [l, CATEGORIES[l].badge])];
+  const chips = [["all", "All Packs"], ...CRATE_LINES.map((l) => [l, CATEGORIES[l].badge])];
   dropLinesEl.innerHTML = chips
     .map(([l, label]) => {
       const n = l === "all" ? Object.keys(CATEGORIES).length : Object.keys(CATEGORIES).filter((k) => lineOf(k) === l).length;
       return `<button class="drop-line${l === dropLine ? " active" : ""}" data-line="${l}" role="tab" aria-selected="${l === dropLine}">${label}${n > 1 && l !== "all" ? ` <span>${n}</span>` : ""}</button>`;
     })
     .join("");
+}
+
+function dropSectionHead(line) {
+  const n = Object.keys(CATEGORIES).filter((k) => lineOf(k) === line).length;
+  const head = document.createElement("div");
+  head.className = "drop-section-head";
+  head.innerHTML = `
+    <div>
+      <h3 class="drop-section-title category-tier-name tier-name-${line}">${CATEGORIES[line].badge}</h3>
+      <p class="drop-section-sub">${LINE_TAGLINES[line] ?? ""}</p>
+    </div>
+    <span class="drop-section-count">${n} ${n === 1 ? "pack" : "packs"}</span>
+    ${dropLine === "all" && n > 1 ? `<button class="drop-section-more" data-line="${line}">View all &rsaquo;</button>` : ""}`;
+  head.querySelector(".drop-section-more")?.addEventListener("click", () => {
+    playClick();
+    dropLine = line;
+    renderCategories();
+    window.scrollTo({ top: 0 });
+  });
+  return head;
 }
 
 dropLinesEl.addEventListener("click", (e) => {
@@ -1484,10 +1558,17 @@ function renderCategories() {
   categoryBoxViewers = [];
   renderDropLines();
 
+  let lastLine = null;
   orderedCrates().forEach(([key, cat]) => {
     // Only the chosen line's crates are built at all (each is a live 3D
     // box, and a browser only hands out so many of those).
     if (dropLine !== "all" && lineOf(key) !== dropLine) return;
+    // A titled section per line: its name, a line about it, how many
+    // packs, and (on All Packs) a way to just that line.
+    if (lineOf(key) !== lastLine) {
+      lastLine = lineOf(key);
+      categoryList.appendChild(dropSectionHead(lastLine));
+    }
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
     wrap.dataset.tier = key;

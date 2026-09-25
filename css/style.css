@@ -6052,13 +6052,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 /* --- Drops: title + line filter ------------------------------------------ */
-.drops-head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  margin-bottom: 20px;
-}
+.drops-head { display: flex; }
 .drops-head .screen-title { margin-bottom: 0; }
 .drop-lines { display: flex; flex-wrap: wrap; gap: 6px; }
 .drop-line {
@@ -6085,4 +6079,55 @@ body.drop-detail-open .drop-lines { display: none; }
   .drop-lines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
   .drop-lines::-webkit-scrollbar { display: none; }
   .drop-line { flex: 0 0 auto; }
+}
+
+/* --- Drops: page header, tabs, and a titled section per line ------------
+   Header: title and a line under it, then the tab row (All Packs + one
+   per line) on its own row. On All Packs each line gets a heading that
+   spans the grid: its name in its colour, a line about it, the pack count,
+   and View all. */
+.drops-head { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+.drops-head-sub { margin: 6px 0 0; font-size: 0.86rem; color: var(--text-dim); }
+.drop-line { padding: 9px 16px; font-size: 0.78rem; }
+.drop-section-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 4px 2px 0;
+}
+.drop-section-head:not(:first-child) { margin-top: 24px; }
+.drop-section-head > div { flex: 1; min-width: 0; }
+.drop-section-title { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: 0.2px; }
+.drop-section-sub { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-dim); }
+.drop-section-count {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--control-fill);
+  color: var(--text-dim);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.drop-section-more {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.drop-section-more:hover { text-decoration: underline; }
+body.drop-detail-open .drop-section-head,
+body.drop-detail-open .drops-head-sub { display: none; }
+@media (max-width: 640px) {
+  .drops-head { gap: 12px; margin-bottom: 18px; }
+  .drops-head-sub { font-size: 0.78rem; }
+  .drop-section-head { flex-wrap: wrap; gap: 6px 10px; }
+  .drop-section-head:not(:first-child) { margin-top: 16px; }
+  .drop-section-title { font-size: 1.1rem; }
+  .drop-section-sub { font-size: 0.72rem; }
 }
