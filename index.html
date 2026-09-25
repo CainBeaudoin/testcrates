@@ -854,6 +854,81 @@ try {
 </div>
 
 <!-- Generic amount prompt (list price / make offer / counter-offer) -->
+<!-- Ship: a checkout-style address form, then the order's tracker.
+     Same modal, two views, so confirming flows straight into tracking. -->
+<div id="shipModal" class="prize-modal hidden">
+  <div class="prize-modal-card ship-modal-card">
+    <button id="shipCloseBtn" class="back-btn listing-close-btn ship-close-btn">Close</button>
+
+    <div class="ship-item">
+      <img id="shipItemImage" alt="">
+      <div>
+        <span class="ship-item-name" id="shipItemName"></span>
+        <span class="ship-item-meta" id="shipItemMeta"></span>
+      </div>
+    </div>
+
+    <form id="shipForm" class="ship-form" novalidate>
+      <h3 class="ship-title">Shipping details</h3>
+      <div class="ship-grid">
+        <label class="ship-field ship-span-2">Full name
+          <input name="name" autocomplete="name" required>
+        </label>
+        <label class="ship-field">Phone
+          <input name="phone" type="tel" autocomplete="tel" required>
+        </label>
+        <label class="ship-field">Email
+          <input name="email" type="email" autocomplete="email" required>
+        </label>
+        <label class="ship-field ship-span-2">Address
+          <input name="line1" autocomplete="address-line1" placeholder="Street address" required>
+        </label>
+        <label class="ship-field ship-span-2"><span>Apartment, suite, etc. <span class="ship-optional">(optional)</span></span>
+          <input name="line2" autocomplete="address-line2">
+        </label>
+        <label class="ship-field">City
+          <input name="city" autocomplete="address-level2" required>
+        </label>
+        <label class="ship-field">State / Province
+          <input name="region" autocomplete="address-level1" required>
+        </label>
+        <label class="ship-field">ZIP / Postal code
+          <input name="postal" autocomplete="postal-code" required>
+        </label>
+        <label class="ship-field">Country
+          <select name="country" autocomplete="country-name" required>
+            <option>United States</option>
+            <option>Canada</option>
+            <option>United Kingdom</option>
+            <option>Australia</option>
+            <option>Germany</option>
+            <option>France</option>
+            <option>Japan</option>
+          </select>
+        </label>
+      </div>
+      <label class="ship-save"><input type="checkbox" name="save" checked> Save this address for next time</label>
+      <p class="ship-error hidden" id="shipError"></p>
+      <p class="add-funds-note">Demo only. Nothing is actually shipped, and the address stays in this browser.</p>
+      <div class="prize-modal-actions">
+        <button type="button" id="shipCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
+        <button type="submit" class="modal-btn modal-btn-solid">Confirm shipment</button>
+      </div>
+    </form>
+
+    <div id="shipTracking" class="ship-tracking hidden">
+      <h3 class="ship-title">Order <span id="shipOrderId"></span></h3>
+      <p class="ship-status-line" id="shipStatusLine"></p>
+      <ol class="ship-steps" id="shipSteps"></ol>
+      <div class="ship-address">
+        <span class="ship-address-label">Shipping to</span>
+        <p id="shipAddressText"></p>
+      </div>
+      <button type="button" id="shipDoneBtn" class="modal-btn modal-btn-solid ship-done-btn">Done</button>
+    </div>
+  </div>
+</div>
+
 <div id="amountModal" class="prize-modal hidden">
   <div class="prize-modal-card amount-modal-card">
     <h3 id="amountModalTitle" class="payment-modal-title"></h3>

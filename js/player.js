@@ -683,20 +683,44 @@ export function sellStock(ticker, amount) {
 
 // ---- Shipping (claim physical item) --------------------------------------
 
-export function shipItem(item) {
-  state.shipped.unshift({
+// `address` is the checkout form's { name, phone, email, line1, line2,
+// city, region, postal, country }. Each shipment gets an order number;
+// its tracking stages are derived from shippedAt (see app.js
+// shipmentStage), so there's no status field to go stale.
+export function shipItem(item, address = null) {
+  const shipment = {
     id: item.id,
+    orderId: `CH-${Date.now().toString(36).toUpperCase().slice(-6)}`,
     name: item.name,
     rarity: item.rarity,
     price: item.price,
     image: item.image,
+    category: item.category,
+    address,
     shippedAt: Date.now(),
-  });
+  };
+  state.shipped.unshift(shipment);
   removeFromInventory(item.id);
+  return shipment;
 }
 
 export function getShipped() {
   return state.shipped;
+}
+
+export function getShipment(id) {
+  return state.shipped.find((s) => s.id === id) || null;
+}
+
+// The last address used with "Save this address" ticked, to pre-fill the
+// next checkout.
+export function getShippingAddress() {
+  return state.shippingAddress ?? null;
+}
+
+export function saveShippingAddress(address) {
+  state.shippingAddress = address;
+  save();
 }
 
 // ---- Cashed out (liquidated) history --------------------------------------

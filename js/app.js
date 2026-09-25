@@ -3133,7 +3133,15 @@ function activityEvents() {
   );
 
   player.getShipped().forEach((o) =>
-    events.push({ kind: "shipped", ts: o.shippedAt ?? 0, name: o.name, image: o.image, value: "" })
+    events.push({
+      kind: "shipped",
+      ts: o.shippedAt ?? 0,
+      name: o.name,
+      image: o.image,
+      sub: o.orderId ?? "",
+      value: SHIP_STAGES[shipmentStage(o)].label,
+      shipmentId: o.id,
+    })
   );
 
   player.getTransfers().forEach((t) =>
@@ -3213,7 +3221,7 @@ function renderActivity() {
     ? events
         .map(
           (e) => `
-          <div class="activity-row ${e.big ? "pinned" : ""}" ${e.listingId ? `data-listing="${e.listingId}"` : ""}>
+          <div class="activity-row ${e.big ? "pinned" : ""}" ${e.listingId ? `data-listing="${e.listingId}"` : ""} ${e.shipmentId ? `data-shipment="${e.shipmentId}"` : ""}>
             <img src="${e.image}" alt="">
             <div class="activity-row-info">
               <span class="activity-row-name">${e.name}</span>
@@ -3234,6 +3242,15 @@ function renderActivity() {
     row.addEventListener("click", (ev) => {
       if (ev.target.closest("button")) return;
       openListingModal(row.dataset.listing);
+    });
+  });
+  // A shipment's row opens its tracker.
+  activityList.querySelectorAll(".activity-row[data-shipment]").forEach((row) => {
+    row.addEventListener("click", () => {
+      const shipment = player.getShipment(row.dataset.shipment);
+      if (!shipment) return;
+      playClick();
+      showShipTracking(shipment);
     });
   });
 }
@@ -3569,9 +3586,7 @@ document.addEventListener("click", (e) => {
       renderAccount();
     } else if (action === "ship") {
       playClick();
-      if (item.listingId) market.removeListing(item.listingId);
-      player.shipItem(item);
-      renderAccount();
+      openShipForm(item);
     } else if (action === "list") {
       promptAmount("List for Sale", `${item.name}. Catalog value $${item.price.toLocaleString()}.`, item.price).then((price) => {
         if (!price) return;
@@ -3589,6 +3604,171 @@ document.addEventListener("click", (e) => {
       renderAccount();
     }
   }
+});
+
+// ---- Ship: checkout form, then order tracking ----------------------------
+// Ship opens an address form like any store's checkout; confirming takes
+// the item out of the vault and flips the same modal to its tracker. The
+// stages are worked out from how long ago it shipped rather than stored,
+// on a compressed clock so a demo visitor actually sees them move.
+
+const SHIP_STAGES = [
+  { key: "placed", label: "Order placed", at: 0 },
+  { key: "preparing", label: "Preparing", at: 20 * 1000 },
+  { key: "shipped", label: "Shipped", at: 90 * 1000 },
+  { key: "delivered", label: "Delivered", at: 4 * 60 * 1000 },
+];
+
+// Index of the latest stage this shipment has reached.
+function shipmentStage(shipment) {
+  const elapsed = Date.now() - (shipment.shippedAt ?? 0);
+  let idx = 0;
+  SHIP_STAGES.forEach((st, i) => {
+    if (elapsed >= st.at) idx = i;
+  });
+  return idx;
+}
+
+const shipModal = document.getElementById("shipModal");
+const shipForm = document.getElementById("shipForm");
+const shipTracking = document.getElementById("shipTracking");
+const shipError = document.getElementById("shipError");
+let shipItemId = null;
+let shipTrackingTimer = null;
+
+function fillShipHeader(entry) {
+  document.getElementById("shipItemImage").src = entry.image;
+  document.getElementById("shipItemName").textContent = entry.name;
+  const meta = itemMetaText(entry.name, entry.category);
+  document.getElementById("shipItemMeta").textContent = meta || `Value $${(entry.price ?? 0).toLocaleString()}`;
+}
+
+function showShipModal() {
+  shipModal.classList.remove("hidden");
+  requestAnimationFrame(() => shipModal.classList.add("visible"));
+}
+
+function closeShipModal() {
+  clearInterval(shipTrackingTimer);
+  shipModal.classList.remove("visible");
+  setTimeout(() => shipModal.classList.add("hidden"), 250);
+}
+
+const SHIP_FIELDS = ["name", "phone", "email", "line1", "line2", "city", "region", "postal", "country"];
+
+function openShipForm(item) {
+  shipItemId = item.id;
+  fillShipHeader(item);
+  shipForm.reset();
+  const saved = player.getShippingAddress();
+  if (saved) {
+    SHIP_FIELDS.forEach((k) => {
+      if (saved[k] != null) shipForm.elements[k].value = saved[k];
+    });
+  }
+  shipForm.querySelectorAll(".invalid").forEach((el) => el.classList.remove("invalid"));
+  shipError.classList.add("hidden");
+  shipForm.classList.remove("hidden");
+  shipTracking.classList.add("hidden");
+  showShipModal();
+  setTimeout(() => shipForm.elements.name.focus(), 260);
+}
+
+function readShipForm() {
+  const address = {};
+  SHIP_FIELDS.forEach((k) => (address[k] = shipForm.elements[k].value.trim()));
+  const bad = ["name", "line1", "city", "region", "postal", "country"].filter((k) => !address[k]);
+  if (address.phone.replace(/\D/g, "").length < 7) bad.push("phone");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.email)) bad.push("email");
+  SHIP_FIELDS.forEach((k) => shipForm.elements[k].classList.toggle("invalid", bad.includes(k)));
+  return bad.length ? null : address;
+}
+
+shipForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const item = player.getInventoryItem(shipItemId);
+  if (!item) return closeShipModal();
+  const address = readShipForm();
+  if (!address) {
+    shipError.textContent = "Please fill in the highlighted fields.";
+    shipError.classList.remove("hidden");
+    shipForm.querySelector(".invalid")?.focus();
+    return;
+  }
+  playClick();
+  if (shipForm.elements.save.checked) player.saveShippingAddress(address);
+  if (item.listingId) market.removeListing(item.listingId);
+  const shipment = player.shipItem(item, address);
+  renderAccount();
+  showToast("Order placed", ICONS.bell);
+  showShipTracking(shipment);
+});
+
+// Clear a field's red outline as soon as it's edited.
+shipForm.addEventListener("input", (e) => e.target.classList.remove("invalid"));
+
+function formatShipTime(ts) {
+  return new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function renderShipTracking(shipment) {
+  const reached = shipmentStage(shipment);
+  document.getElementById("shipOrderId").textContent = shipment.orderId ?? "";
+  document.getElementById("shipStatusLine").textContent =
+    reached === SHIP_STAGES.length - 1
+      ? "Delivered. Enjoy it."
+      : `${SHIP_STAGES[reached].label}. Next: ${SHIP_STAGES[reached + 1].label.toLowerCase()}.`;
+  document.getElementById("shipSteps").innerHTML = SHIP_STAGES.map((st, i) => {
+    const last = SHIP_STAGES.length - 1;
+    const state = i < reached || (i === last && reached === last) ? "done" : i === reached ? "current" : "todo";
+    const when = shipment.shippedAt + st.at;
+    return `<li class="ship-step ${state}">
+        <span class="ship-step-dot"></span>
+        <span class="ship-step-label">${st.label}</span>
+        <span class="ship-step-time">${i <= reached ? formatShipTime(when) : `Expected ${formatShipTime(when)}`}</span>
+      </li>`;
+  }).join("");
+
+  // Typed by the user, so built as text nodes, never as HTML.
+  const a = shipment.address;
+  const addrEl = document.getElementById("shipAddressText");
+  addrEl.textContent = "";
+  const lines = a
+    ? [a.name, a.line1, a.line2, `${a.city}, ${a.region} ${a.postal}`, a.country, a.phone].filter(Boolean)
+    : ["Address on file"];
+  lines.forEach((line, i) => {
+    if (i) addrEl.appendChild(document.createElement("br"));
+    addrEl.appendChild(document.createTextNode(line));
+  });
+  return reached;
+}
+
+function showShipTracking(shipment) {
+  fillShipHeader(shipment);
+  shipForm.classList.add("hidden");
+  shipTracking.classList.remove("hidden");
+  renderShipTracking(shipment);
+  showShipModal();
+  // Tick while it's open so the steps visibly advance.
+  clearInterval(shipTrackingTimer);
+  shipTrackingTimer = setInterval(() => {
+    const reached = renderShipTracking(shipment);
+    if (reached === SHIP_STAGES.length - 1) clearInterval(shipTrackingTimer);
+  }, 1000);
+}
+
+document.getElementById("shipCloseBtn").addEventListener("click", () => {
+  playClick();
+  closeShipModal();
+});
+document.getElementById("shipCancelBtn").addEventListener("click", () => {
+  playClick();
+  closeShipModal();
+});
+document.getElementById("shipDoneBtn").addEventListener("click", () => {
+  playClick();
+  closeShipModal();
+  renderAccount();
 });
 
 // ---- Home -----------------------------------------------------------------
