@@ -4014,23 +4014,188 @@ document.querySelectorAll("[data-home-go]").forEach((btn) => {
 // timer, so hovering (which pauses the animation) pauses the rotation with
 // it, a hidden tab doesn't flip through slides nobody is watching, and
 // reduced motion — no animation at all — means it simply stays put.
+//
+// The media side is a small show: the slide's crate, live in 3D, turns to
+// face you and pops its lid, and its prizes burst out of it, cut out of
+// their white backgrounds, fanning into a floating group with the grail
+// on top. On the next slide they drop back in, the crate goes, and the
+// next one comes in and does the same.
 let homeHeroIndex = 0;
 let homeHeroBuilt = false;
+let heroViewer = null;
+let heroShowToken = 0;
+const heroTimers = [];
+const heroReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+// Where each burst item lands, as a share of the stage (x, y = its centre),
+// how big (share of stage width), and a slight tilt. The first slot is the
+// slide's grail: biggest, and highest.
+const HERO_BURST_SLOTS = [
+  { x: 0.5, y: 0.22, s: 0.36, r: -4 },
+  { x: 0.16, y: 0.5, s: 0.24, r: -10 },
+  { x: 0.84, y: 0.48, s: 0.24, r: 9 },
+  { x: 0.24, y: 0.16, s: 0.2, r: 7 },
+  { x: 0.77, y: 0.14, s: 0.2, r: -6 },
+];
+// The box's mouth, where everything comes out of and goes back into.
+const HERO_MOUTH = { x: 0.5, y: 0.76 };
+
+// Product shots are cut out on white. For them to fly free of a box they
+// need that white gone: flood-fill from the edges through near-white
+// pixels, clear them, and soften the rim so the edge isn't jagged. Runs
+// once per image on a downscaled copy, cached as a PNG data URL.
+const cutoutCache = new Map();
+function cutoutImage(src, max = 420) {
+  if (cutoutCache.has(src)) return cutoutCache.get(src);
+  const job = new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * k));
+        const h = Math.max(1, Math.round(img.naturalHeight * k));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, w, h);
+        const data = ctx.getImageData(0, 0, w, h);
+        const px = data.data;
+        // How "background" a pixel is: bright and colourless.
+        const bgScore = (i) => {
+          const r = px[i], g = px[i + 1], b = px[i + 2];
+          const lo = Math.min(r, g, b), hi = Math.max(r, g, b);
+          return lo >= 226 && hi - lo <= 22;
+        };
+        const seen = new Uint8Array(w * h);
+        const stack = [];
+        for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+        for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+        while (stack.length) {
+          const p = stack.pop();
+          if (seen[p]) continue;
+          seen[p] = 1;
+          if (!bgScore(p * 4)) continue;
+          seen[p] = 2; // background
+          const x = p % w, y = (p / w) | 0;
+          if (x > 0) stack.push(p - 1);
+          if (x < w - 1) stack.push(p + 1);
+          if (y > 0) stack.push(p - w);
+          if (y < h - 1) stack.push(p + w);
+        }
+        for (let p = 0; p < w * h; p++) {
+          if (seen[p] === 2) {
+            px[p * 4 + 3] = 0;
+            continue;
+          }
+          // Feather: a kept pixel touching the cleared background fades by
+          // how close to white it is, which is what hides the halo.
+          const x = p % w, y = (p / w) | 0;
+          const edge =
+            (x > 0 && seen[p - 1] === 2) || (x < w - 1 && seen[p + 1] === 2) ||
+            (y > 0 && seen[p - w] === 2) || (y < h - 1 && seen[p + w] === 2);
+          if (edge) {
+            const i = p * 4;
+            const lo = Math.min(px[i], px[i + 1], px[i + 2]);
+            px[i + 3] = Math.round(255 * Math.min(1, Math.max(0.25, (255 - lo) / 60)));
+          }
+        }
+        ctx.putImageData(data, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(src); // tainted or failed: the plain shot is still fine
+      }
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+  cutoutCache.set(src, job);
+  return job;
+}
+
+// The grail first, then the crate's next most valuable pieces.
+function heroBurstPrizes(slide) {
+  const pool = CATEGORIES[slide.tier].pool;
+  const grail = heroPrize(slide);
+  const rest = [...pool].sort(byPriceDesc).filter((p) => p.name !== grail.name).slice(0, HERO_BURST_SLOTS.length - 1);
+  return [grail, ...rest];
+}
+
+function clearHeroTimers() {
+  heroTimers.splice(0).forEach(clearTimeout);
+}
+function heroLater(fn, ms) {
+  heroTimers.push(setTimeout(fn, ms));
+}
+
+// Puts the slide's crate on stage and plays the burst. Anything still
+// running from the last slide is cancelled by the token.
+async function playHeroShow(i) {
+  const token = ++heroShowToken;
+  clearHeroTimers();
+  const slide = HOME_HERO_SLIDES[i];
+  const stage = document.getElementById("homeHeroStage");
+  const burst = document.getElementById("homeHeroBurst");
+  const canvasHost = document.getElementById("homeHeroBox");
+
+  // Send the last slide's prizes back into the box, then lose the box.
+  const leaving = [...burst.children];
+  leaving.forEach((el, n) => {
+    el.style.setProperty("--d", `${n * 40}ms`);
+    el.classList.remove("is-out");
+    el.classList.add("is-in");
+  });
+  canvasHost.classList.add("is-away");
+  await new Promise((r) => setTimeout(r, leaving.length ? 520 : 0));
+  if (token !== heroShowToken) return;
+  leaving.forEach((el) => el.remove());
+
+  // The next crate: a fresh viewer in this slide's skin (one live context
+  // at a time, rather than one per slide held open).
+  if (heroViewer) heroViewer.dispose();
+  heroViewer = null;
+  canvasHost.innerHTML = "";
+  const canvas = document.createElement("canvas");
+  canvasHost.appendChild(canvas);
+  const cat = CATEGORIES[slide.tier];
+  const viewer = await createBoxViewer(canvas, slide.tier, cat.boxKind ?? "box");
+  if (token !== heroShowToken) return viewer.dispose();
+  heroViewer = viewer;
+  canvasHost.classList.remove("is-away");
+
+  // The prizes, cut out, waiting inside the box.
+  const prizes = heroBurstPrizes(slide);
+  const urls = await Promise.all(prizes.map((p) => (p.category === "stocks" ? p.image : cutoutImage(p.image))));
+  if (token !== heroShowToken) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  prizes.forEach((p, n) => {
+    const slot = HERO_BURST_SLOTS[n];
+    const el = document.createElement("div");
+    el.className = "hero-burst-item";
+    el.style.cssText =
+      `left:${slot.x * 100}%;top:${slot.y * 100}%;width:${slot.s * 100}%;` +
+      `--from-x:${(HERO_MOUTH.x - slot.x) * w}px;--from-y:${(HERO_MOUTH.y - slot.y) * h}px;` +
+      `--r:${slot.r}deg;--d:${n * 90}ms;--bob:${3.2 + n * 0.45}s;`;
+    el.innerHTML = `<img src="${urls[n]}" alt="">`;
+    el.title = p.name;
+    burst.appendChild(el);
+  });
+
+  // Face forward, lid up, and out they come.
+  if (heroReducedMotion.matches) {
+    burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out"));
+    return;
+  }
+  heroLater(() => viewer.setPaused(true), 350);
+  heroLater(() => viewer.open(), 1000);
+  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 1350);
+}
 
 function buildHomeHero() {
   const hero = document.getElementById("homeHero");
-  const media = document.getElementById("homeHeroMedia");
   const dots = document.getElementById("homeHeroDots");
 
   HOME_HERO_SLIDES.forEach((slide, i) => {
-    const prize = heroPrize(slide);
-    const img = document.createElement("img");
-    img.className = "home-hero-img";
-    img.src = prize.image;
-    img.alt = prize.name;
-    img.dataset.slide = i;
-    media.insertBefore(img, media.firstChild);
-
     const dot = document.createElement("button");
     dot.className = "home-hero-dot";
     dot.setAttribute("role", "tab");
@@ -4057,10 +4222,14 @@ function buildHomeHero() {
     playClick();
     homeSeeCrate(HOME_HERO_SLIDES[homeHeroIndex].tier);
   });
-  media.addEventListener("click", () => {
+  document.getElementById("homeHeroMedia").addEventListener("click", () => {
     playClick();
     homeSeeCrate(HOME_HERO_SLIDES[homeHeroIndex].tier);
   });
+
+  // Cut the other slides' prizes out ahead of time, so they're ready when
+  // their turn comes.
+  HOME_HERO_SLIDES.forEach((slide) => heroBurstPrizes(slide).forEach((p) => p.category !== "stocks" && cutoutImage(p.image)));
 
   homeHeroBuilt = true;
   showHomeSlide(0, { instant: true });
@@ -4078,9 +4247,7 @@ function showHomeSlide(i, { instant = false } = {}) {
   hero.style.setProperty("--hero-accent", slide.accent);
   hero.style.setProperty("--hero-accent2", slide.accent2);
 
-  hero.querySelectorAll(".home-hero-img").forEach((img) => {
-    img.classList.toggle("is-active", Number(img.dataset.slide) === i);
-  });
+  playHeroShow(i);
   // Restart the fill on the new dot: dropping and re-adding the class is
   // what makes a CSS animation run again from zero.
   hero.querySelectorAll(".home-hero-dot").forEach((dot, d) => {

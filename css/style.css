@@ -5123,20 +5123,77 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   transition: color 0.7s ease;
   pointer-events: none;
 }
-.home-hero-img {
+/* The show: a stage filling the media half, the crate low and centred,
+   the prizes above it. Items are placed by their centre (left/top) and
+   start at the crate's mouth via --from-x/--from-y (set in app.js). */
+.home-hero-stage {
   position: absolute;
+  inset: 4% 4% 2% 2%;
   z-index: 1;
-  inset: 5% 4% 5% 0;
-  width: 96%;
-  height: 90%;
-  object-fit: contain;
-  mix-blend-mode: multiply;
-  opacity: 0;
-  transform: translateX(48px) scale(0.95);
-  transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.home-hero-img.is-active { opacity: 1; transform: none; }
-.home-hero-media:hover .home-hero-img.is-active { transform: scale(1.025); }
+.home-hero-box {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 48%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-hero-box canvas { display: block; width: 100%; height: 100%; }
+.home-hero-box.is-away { opacity: 0; transform: translateX(-50%) translateY(24px) scale(0.92); }
+.home-hero-burst { position: absolute; inset: 0; pointer-events: none; }
+
+.hero-burst-item {
+  position: absolute;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  opacity: 0;
+  transform: translate(var(--from-x), var(--from-y)) scale(0.12) rotate(0deg);
+  will-change: transform, opacity;
+}
+.hero-burst-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 22px rgba(22, 19, 15, 0.22));
+}
+/* Out: an arc up out of the box with a little overshoot, then a slow bob
+   on the image so the group never sits dead still. */
+.hero-burst-item.is-out {
+  animation: heroBurstOut 0.9s cubic-bezier(0.2, 1.25, 0.35, 1) var(--d) forwards;
+}
+.hero-burst-item.is-out img {
+  animation: heroBob var(--bob) ease-in-out calc(var(--d) + 0.9s) infinite;
+}
+/* In: back down into the box, quicker than they came out. */
+.hero-burst-item.is-in {
+  opacity: 1;
+  transform: none;
+  rotate: var(--r);
+  animation: heroBurstIn 0.45s cubic-bezier(0.5, 0, 0.75, 0) var(--d) forwards;
+}
+@keyframes heroBurstOut {
+  0% { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.12) rotate(0deg); }
+  18% { opacity: 1; }
+  100% { opacity: 1; transform: none; rotate: var(--r); }
+}
+@keyframes heroBurstIn {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.12); }
+}
+@keyframes heroBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-9px) rotate(1.5deg); }
+}
+.home-hero.is-paused .hero-burst-item.is-out img { animation-play-state: paused; }
+.home-hero-media:hover .home-hero-stage { transform: scale(1.02); }
+.home-hero-stage { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-burst-item.is-out { animation: none; opacity: 1; transform: none; rotate: var(--r); }
+  .hero-burst-item.is-out img { animation: none; }
+}
 
 /* Progress bars, not dots: each one fills while its slide is up, and the
    fill ending is what turns the page (see buildHomeHero). */
@@ -5160,7 +5217,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .home-hero-dot::before { content: ""; right: 0; background: rgba(22, 19, 15, 0.14); }
 .home-hero-dot-fill { width: 0; background: var(--hero-ink); }
-.home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 6s linear forwards; }
+.home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 7s linear forwards; }
 .home-hero.is-paused .home-hero-dot-fill { animation-play-state: paused; }
 @keyframes homeHeroFill {
   from { width: 0; }
@@ -5524,7 +5581,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 @media (prefers-reduced-motion: reduce) {
   .home-hero-dot.is-active .home-hero-dot-fill { animation: none; width: 100%; }
-  .home-hero-img { transition: opacity 0.2s ease; transform: none; }
   .home-live-pip { animation: none; }
 }
 
@@ -5541,7 +5597,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .home-hero::before { background: radial-gradient(ellipse 70% 40% at 50% 26%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 72%); }
   .home-hero-media { order: -1; height: 290px; min-height: 0; }
   .home-hero-media::before { font-size: 6.5rem; right: 50%; transform: translateX(50%); bottom: 0; }
-  .home-hero-img { inset: 6% 8% 4%; width: 84%; height: 90%; }
+  .home-hero-media { height: 340px; }
+  .home-hero-stage { inset: 2% 3% 0; }
+  .home-hero-box { width: 46%; }
   .home-hero-copy { padding: 4px 22px 26px; }
   .home-hero-eyebrow { font-size: 0.92rem; margin-bottom: 10px; }
   .home-hero-title { font-size: 3.1rem; margin-bottom: 14px; }
