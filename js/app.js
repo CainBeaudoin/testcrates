@@ -4025,10 +4025,11 @@ document.getElementById("shipDoneBtn").addEventListener("click", () => {
 // advertise something the app doesn't actually have.
 
 const HOME_HERO_SLIDES = [
+  // The $1,000 crate leads: its grail is the most valuable thing on the site.
+  { tier: "sneakers1000", pick: "Nike SB Dunk Low Supreme Black Cement", tint: "#ecebe8", accent: "#1c1813", accent2: "#a07a2c" },
   { tier: "sneakers", pick: "Nike SB Dunk Low Supreme Stars Hyper Royal", tint: "#e6eafa", accent: "#2f45c8", accent2: "#8a5cf0" },
   { tier: "streetwear", pick: "Supreme The North Face Statue Of Liberty Mountain Jacket Red", tint: "#f8e4df", accent: "#c8321f", accent2: "#e27a2a" },
   { tier: "collectibles", pick: "Medicom Bearbrick 3125C Objective Edc 1000%", tint: "#f7eadb", accent: "#b0680f", accent2: "#d9a02b" },
-  { tier: "sneakers1000", pick: "Nike SB Dunk Low Supreme Black Cement", tint: "#ecebe8", accent: "#1c1813", accent2: "#a07a2c" },
 ];
 // The photographic crates. Stocks is a real crate, but its "photos" are
 // generated ticker cards — right in a crate card, wrong as a grail.
@@ -4437,7 +4438,7 @@ function homeGrailList(count) {
 // The wall shows five, drawn from a deeper pool, and every few seconds one
 // tile flips over like a card and comes back as a different grail. One
 // tile at a time, in a shuffled order, never a grail that's already up.
-const GRAIL_SHOWN = 10;
+const GRAIL_SHOWN = 5;
 const GRAIL_POOL = 30;
 const GRAIL_FLIP_EVERY_MS = 2800;
 let grailTimer = null;
