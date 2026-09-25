@@ -4010,10 +4010,10 @@ document.querySelectorAll("[data-home-go]").forEach((btn) => {
 });
 
 // ---- The billboard ----
-// Advances when the active dot's fill animation finishes rather than on a
-// timer, so hovering (which pauses the animation) pauses the rotation with
-// it, a hidden tab doesn't flip through slides nobody is watching, and
-// reduced motion — no animation at all — means it simply stays put.
+// Advances when the active dot's fill animation (7s) finishes rather than
+// on a timer, so a hidden tab doesn't flip through slides nobody is
+// watching, and reduced motion — no animation at all — means it simply
+// stays put.
 //
 // The media side is a small show: the slide's crate, live in 3D, turns to
 // face you and pops its lid, and its prizes burst out of it, cut out of
@@ -4037,6 +4037,9 @@ const HERO_BURST_SLOTS = [
   { x: 0.24, y: 0.16, s: 0.2, r: 7 },
   { x: 0.77, y: 0.14, s: 0.2, r: -6 },
 ];
+// Sky above the crate in its canvas, so the lid has room to swing up
+// (must match .home-hero-box's aspect-ratio: 1 / (1 + this)).
+const HERO_BOX_HEADROOM = 0.45;
 // The box's mouth, where everything comes out of and goes back into.
 const HERO_MOUTH = { x: 0.5, y: 0.76 };
 
@@ -4146,7 +4149,7 @@ async function playHeroShow(i) {
     el.classList.add("is-in");
   });
   canvasHost.classList.add("is-away");
-  await new Promise((r) => setTimeout(r, leaving.length ? 520 : 0));
+  await new Promise((r) => setTimeout(r, leaving.length ? 380 : 0));
   if (token !== heroShowToken) return;
   leaving.forEach((el) => el.remove());
 
@@ -4158,7 +4161,7 @@ async function playHeroShow(i) {
   const canvas = document.createElement("canvas");
   canvasHost.appendChild(canvas);
   const cat = CATEGORIES[slide.tier];
-  const viewer = await createBoxViewer(canvas, slide.tier, cat.boxKind ?? "box");
+  const viewer = await createBoxViewer(canvas, slide.tier, cat.boxKind ?? "box", { headroom: HERO_BOX_HEADROOM });
   if (token !== heroShowToken) return viewer.dispose();
   heroViewer = viewer;
   canvasHost.classList.remove("is-away");
@@ -4186,9 +4189,9 @@ async function playHeroShow(i) {
     burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out"));
     return;
   }
-  heroLater(() => viewer.setPaused(true), 350);
-  heroLater(() => viewer.open(), 1000);
-  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 1350);
+  heroLater(() => viewer.setPaused(true), 150);
+  heroLater(() => viewer.open(), 600);
+  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 850);
 }
 
 function buildHomeHero() {
@@ -4211,8 +4214,9 @@ function buildHomeHero() {
     dots.appendChild(dot);
   });
 
-  hero.addEventListener("mouseenter", () => hero.classList.add("is-paused"));
-  hero.addEventListener("mouseleave", () => hero.classList.remove("is-paused"));
+  // No pause on hover: the show turns over every 7s whatever the pointer
+  // is doing, so it never sits on one crate just because the mouse is
+  // resting on the billboard.
 
   document.getElementById("homeHeroOpen").addEventListener("click", () => {
     playClick();

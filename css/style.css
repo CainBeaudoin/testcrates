@@ -5136,7 +5136,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   left: 50%;
   bottom: 0;
   width: 48%;
-  aspect-ratio: 1;
+  /* Taller than wide: the crate sits in the bottom square, and the space
+     above (HERO_BOX_HEADROOM in app.js) is where the lid swings up to. */
+  aspect-ratio: 1 / 1.45;
   transform: translateX(-50%);
   transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -5187,7 +5189,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-9px) rotate(1.5deg); }
 }
-.home-hero.is-paused .hero-burst-item.is-out img { animation-play-state: paused; }
 .home-hero-media:hover .home-hero-stage { transform: scale(1.02); }
 .home-hero-stage { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) {
@@ -5218,7 +5219,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .home-hero-dot::before { content: ""; right: 0; background: rgba(22, 19, 15, 0.14); }
 .home-hero-dot-fill { width: 0; background: var(--hero-ink); }
 .home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 7s linear forwards; }
-.home-hero.is-paused .home-hero-dot-fill { animation-play-state: paused; }
 @keyframes homeHeroFill {
   from { width: 0; }
   to { width: 100%; }

@@ -423,7 +423,11 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
  * built, not a separate component.
  * Returns a small controller: { setPaused, open, reset, dispose }.
  */
-export async function createBoxViewer(canvas, tierKey = "", kind = "box") {
+// `headroom` (a share of the canvas width) extends the view straight up
+// without moving or resizing the prop: the square framing is kept and the
+// extra height is sky above it. For a box that opens where its lid would
+// otherwise swing out past the top edge of a square canvas.
+export async function createBoxViewer(canvas, tierKey = "", kind = "box", { headroom = 0 } = {}) {
   const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
   if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
@@ -445,7 +449,14 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box") {
     const h = canvas.clientHeight;
     if (w === 0 || h === 0) return;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    if (headroom > 0) {
+      // Frame the prop as in a w x w square, then widen the window upward
+      // to the canvas's full height: a view offset above the square.
+      camera.aspect = 1;
+      camera.setViewOffset(w, w, 0, w - h, w, h);
+    } else {
+      camera.aspect = w / h;
+    }
     camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize);
