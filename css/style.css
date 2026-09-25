@@ -5758,3 +5758,86 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     transform: translate(-50%, calc(var(--slot) * -0.5)) scale(1);
   }
 }
+
+/* --- Pinned page headers (desktop) ---------------------------------------
+   Market: the title row stays under the top bar and the filters pin below
+   it; only the grid scrolls. Account: the tab bar and the profile sidebar
+   stay, the My Items/Portfolio switch pins under the tab bar, and only
+   the section content scrolls. Each pinned strip carries a band of page
+   colour over the gap above it, so cards scrolling up disappear behind it
+   instead of showing through. --market-head-h and --acct-nav-h are
+   measured in app.js. */
+@media (min-width: 641px) {
+  /* Where main's content starts (top bar + main's 32px top padding), so
+     the pinned strips stick exactly where they already sit and never
+     shift at all. */
+  :root { --pin-top: calc(var(--topbar-h) + 32px); }
+  .market-title-row {
+    position: sticky;
+    top: var(--pin-top);
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    margin: 0 0 4px;
+    padding: 0 0 12px;
+    background: var(--bg);
+  }
+  .market-title-row .screen-title { margin-bottom: 0; }
+  .market-title-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 34px;
+    background: var(--bg);
+  }
+  .market-filters {
+    top: calc(var(--pin-top) + var(--market-head-h, 52px) + 4px);
+    max-height: calc(100vh - var(--pin-top) - var(--market-head-h, 52px) - 24px);
+    overflow-y: auto;
+  }
+
+  /* The strip's own fill moves to ::after so ::before can sit under it
+     as a square band of page colour: from the top bar down to the next
+     pinned piece. Its rounded corners then have page behind them, not
+     whatever is scrolling past. Both pseudo-elements sit at z-index -1
+     inside the strip's own stacking context: behind its buttons, in
+     front of the page. */
+  .account-nav {
+    top: var(--pin-top);
+    margin-bottom: 10px;
+    background: none;
+    backdrop-filter: none;
+  }
+  .account-nav::before,
+  .account-nav::after,
+  .account-toggle.toggle-group-active::before,
+  .account-toggle.toggle-group-active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .account-nav::before { top: -34px; bottom: -10px; background: var(--bg); }
+  .account-nav::after { inset: 0; border-radius: 10px; background: var(--surface-1); }
+  .account-sidebar {
+    top: var(--pin-top);
+    max-height: calc(100vh - var(--pin-top) - 16px);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .account-sidebar::-webkit-scrollbar { display: none; }
+
+  .account-toggle.toggle-group-active {
+    position: sticky;
+    top: calc(var(--pin-top) + var(--acct-nav-h, 50px) + 10px);
+    z-index: 9;
+    margin-bottom: 16px;
+    background: none;
+  }
+  .account-toggle.toggle-group-active::before { top: -10px; bottom: -16px; background: var(--bg); }
+  .account-toggle.toggle-group-active::after { inset: 0; border-radius: 999px; background: var(--surface-2); }
+}

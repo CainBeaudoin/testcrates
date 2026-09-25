@@ -527,7 +527,7 @@ function releaseOwnedItem(item) {
 // DEMO_SEED_VERSION tops up accounts seeded under an older set (adding
 // only what they're short of, by name and count) exactly once. Cash and
 // Credits are only ever granted on the very first seed.
-const DEMO_SEED_VERSION = 2;
+const DEMO_SEED_VERSION = 3;
 const DEMO_VAULT_ITEM_NAMES = [
   "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
   "Air Jordan 1 Low Travis Scott Velvet Brown", // Sneakers, Legendary
@@ -582,7 +582,87 @@ function seedDemoInventory() {
     player.addCash(DEMO_STARTING_CASH);
     player.addCredits(DEMO_STARTING_CREDITS);
   }
+  if (version < 3) seedDemoActivity();
   player.setDemoSeedVersion(DEMO_SEED_VERSION);
+}
+
+// About thirty back-dated events over the last two weeks, so Activity has
+// a history to scroll: opens (a couple of them big wins), cash-outs, items
+// sent to friends, and shipments that have long since been delivered.
+// Deterministic, like the rest of the demo set.
+const DEMO_ACTIVITY = {
+  opened: [
+    ["sneakers", "Air Jordan 1 Low Travis Scott Velvet Brown", 2],
+    ["collectibles", "KAWS Companion Plush Brown", 5],
+    ["streetwear", "Supreme Box Logo Hoodie Sage (fw16)", 9],
+    ["sneakers", "Air Jordan 4 Red Cement", 20],
+    ["stocks", "NVDA · Nvidia Corp", 28],
+    ["collectibles", "POP Mart Labubu The Monster Let's Checkmate", 33],
+    ["streetwear", "BAPE 1st Camo Crazy By Bathing Ape Tee Black", 47],
+    ["sneakers", "Yeezy Slide Glow Green", 60],
+    ["stocks", "TSLA · Tesla Inc", 75],
+    ["collectibles", "Bearbrick BAPE Mickey Monotone 1000%", 96],
+  ],
+  cashedOut: [
+    ["sneakers", "Air Jordan 1 Mid GS Wear-Away", 14],
+    ["streetwear", "Supreme Greetings Tee Red", 40],
+    ["collectibles", "Supreme Spin Skateboard Green", 70],
+    ["sneakers", "Yeezy Slide Slate Grey", 110],
+    ["streetwear", "Essentials Fw23 Hoodie Cloud Dance", 150],
+    ["collectibles", "Supreme Inflatable Blimp", 190],
+    ["sneakers", "Air Jordan 1 Low GS Ice Blue", 230],
+    ["streetwear", "Supreme Wrench Tee Orange", 260],
+  ],
+  transfers: [
+    ["streetwear", "Supreme Blood Tee Black", "KicksAndCo", 55],
+    ["collectibles", "Supreme Ebony Zippo", "VaultKid", 140],
+    ["sneakers", "Air Jordan 1 High GS Yellow Toe", "GrailChaser22", 250],
+  ],
+  shipped: [
+    ["sneakers", "Air Jordan 5 Fire Red", 100],
+    ["collectibles", "Bearbrick Marvel Wolverine 400%", 200],
+    ["streetwear", "Supreme Cherry Aqua Short Brown", 300],
+  ],
+};
+
+function seedDemoActivity() {
+  const HOUR = 60 * 60 * 1000;
+  const now = Date.now();
+  const find = (tier, name) => CATEGORIES[tier].pool.find((p) => p.name === name);
+  const base = (p) => ({ name: p.name, rarity: p.rarity, price: p.price, image: p.image });
+  const opened = [];
+  DEMO_ACTIVITY.opened.forEach(([tier, name, hoursAgo]) => {
+    const p = find(tier, name);
+    if (!p) return;
+    const tierPrice = CATEGORIES[tier].price;
+    opened.push({ ...base(p), multiplier: +(p.price / tierPrice).toFixed(2), tierKey: tier, ts: now - hoursAgo * HOUR });
+  });
+  const cashedOut = [];
+  DEMO_ACTIVITY.cashedOut.forEach(([tier, name, hoursAgo]) => {
+    const p = find(tier, name);
+    if (!p) return;
+    const amount = Math.round(p.price * player.cashOutMultiplier(p.category));
+    cashedOut.push({ ...base(p), amount, currency: "cash", ts: now - hoursAgo * HOUR });
+  });
+  const transfers = [];
+  DEMO_ACTIVITY.transfers.forEach(([tier, name, toUsername, hoursAgo]) => {
+    const p = find(tier, name);
+    if (p) transfers.push({ ...base(p), toUsername, ts: now - hoursAgo * HOUR });
+  });
+  const saved = player.getShippingAddress();
+  const shipped = [];
+  DEMO_ACTIVITY.shipped.forEach(([tier, name, hoursAgo], i) => {
+    const p = find(tier, name);
+    if (!p) return;
+    shipped.push({
+      ...base(p),
+      category: p.category,
+      orderId: `CH-${(0x1a2b3c + i * 7919).toString(36).toUpperCase()}`,
+      address: saved,
+      shippedAt: now - hoursAgo * HOUR,
+    });
+  });
+  player.seedDemoActivity({ opened, cashedOut, transfers, shipped });
 }
 
 const DEMO_STREAK_DAYS = 3;
@@ -2027,6 +2107,23 @@ function placeMuteBtn(isMobile) {
 }
 placeMuteBtn(mobileNavQuery.matches);
 mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
+
+// ---- Pinned page headers -----------------------------------------------------
+// On desktop, Market's title and Account's tab bar stay put while the
+// items scroll, and what sits under them (Market's filters, Account's
+// sidebar and My Items/Portfolio switch) pins just below. Their heights
+// feed the CSS offsets, measured rather than guessed so a font or wrap
+// change can't open a gap or overlap.
+const pinnedHeights = [
+  [document.querySelector(".market-title-row"), "--market-head-h"],
+  [document.querySelector(".account-nav"), "--acct-nav-h"],
+];
+const pinnedObserver = new ResizeObserver(() => {
+  pinnedHeights.forEach(([el, prop]) => {
+    if (el && el.offsetHeight) document.documentElement.style.setProperty(prop, `${el.offsetHeight}px`);
+  });
+});
+pinnedHeights.forEach(([el]) => el && pinnedObserver.observe(el));
 
 // ---- Nav tabs (Boxes / Marketplace / Account) -----------------------------
 

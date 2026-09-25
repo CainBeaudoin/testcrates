@@ -735,6 +735,23 @@ export function getCashedOut() {
   return state.cashedOut;
 }
 
+// ---- Demo activity ---------------------------------------------------------
+// Back-dated events so a demo account's Activity feed has some history to
+// scroll. Each list is merged into what's already there, newest first.
+export function seedDemoActivity({ opened = [], cashedOut = [], transfers = [], shipped = [] }) {
+  opened.forEach((e) => {
+    state.history.push(e);
+    if (e.multiplier != null && e.multiplier >= BIG_PULL_MULTIPLIER) state.bigPulls.push(e);
+  });
+  const byNewest = (a, b) => (b.ts ?? b.shippedAt) - (a.ts ?? a.shippedAt);
+  state.history = state.history.sort(byNewest).slice(0, OPENING_HISTORY_ROLLING);
+  state.bigPulls = state.bigPulls.sort(byNewest).slice(0, 100);
+  state.cashedOut = [...state.cashedOut, ...cashedOut.map((c) => ({ id: uid(), ...c }))].sort(byNewest).slice(0, 50);
+  state.transfers = [...state.transfers, ...transfers.map((t) => ({ id: uid(), ...t }))].sort(byNewest).slice(0, 50);
+  state.shipped = [...state.shipped, ...shipped.map((s) => ({ id: uid(), ...s }))].sort(byNewest);
+  save();
+}
+
 // ---- Transfers (send an item to another account) --------------------------
 
 export function transferItem(item, toUsername) {
