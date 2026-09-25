@@ -451,6 +451,14 @@ function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
+// What pops out of an opened crate: the rendered slab for things you can
+// photograph, and for a stock just its paper certificate, which tilts
+// toward the pointer the same way (attachTiltRow / the reveal's paper).
+function revealImageFor(prize, tierKey = currentCategoryKey) {
+  if (prize.category === "stocks") return Promise.resolve(prize.image);
+  return renderSlabImage(slabInfoFor(prize, tierKey));
+}
+
 // What the case needs to print one prize. Stocks go in with their paper
 // share certificate as the "photo", the same one shown everywhere else and
 // fed out of the printer, so the slab you get matches what printed.
@@ -1640,7 +1648,7 @@ async function startRound(key, currency) {
   // Rendering at the moment a lid opens shows the previous round's still and
   // swaps a beat later; they share one scene and queue internally, so this
   // costs one WebGL context for all three.
-  boxPrizes.forEach((prize) => renderSlabImage(slabInfoFor(prize, key)));
+  boxPrizes.forEach((prize) => revealImageFor(prize, key));
   selectedIndex = null;
   roundLocked = false;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
@@ -1781,9 +1789,10 @@ function openSlot(index, { isYours, revealCard = true }) {
   // Pre-rendered at the start of the round (see preloadSlabStills), so this
   // is a cache hit and the case is there the instant the lid opens rather
   // than a beat later.
-  renderSlabImage(slabInfoFor(prize)).then((url) => {
+  revealImageFor(prize).then((url) => {
     imgEl.src = url;
   });
+  slot.querySelector(".price-card").classList.toggle("is-paper", prize.category === "stocks");
 
   slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
@@ -1809,6 +1818,24 @@ function prizeSlabViewer() {
   return prizeSlab;
 }
 
+// The reveal's paper certificate leans toward the pointer anywhere on the
+// overlay, like the live case does; left alone it drifts on a slow CSS lean.
+const prizePaper = document.getElementById("prizePaper");
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+prizeModal.addEventListener("pointermove", (e) => {
+  if (prizePaper.classList.contains("hidden") || reducedMotionQuery.matches) return;
+  const r = prizePaper.getBoundingClientRect();
+  if (!r.width) return;
+  const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (innerWidth / 2)));
+  const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (innerHeight / 2)));
+  prizePaper.classList.add("is-tracking");
+  prizePaper.style.transform = `perspective(900px) rotateY(${nx * 22}deg) rotateX(${-ny * 16}deg)`;
+});
+prizeModal.addEventListener("pointerleave", () => {
+  prizePaper.classList.remove("is-tracking");
+  prizePaper.style.transform = "";
+});
+
 async function showPrizeModal(prize, { streak, multiplier } = {}) {
   const meta = RARITY_META[prize.rarity];
   prizeModal.style.setProperty("--rarity-color", meta.color);
@@ -1816,7 +1843,17 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   revealBannerEl.textContent = meta.label;
 
-  prizeSlabViewer().setItem(slabInfoFor(prize));
+  // A stock is just its paper certificate, not a case: the slab canvas
+  // steps aside and the paper takes its place.
+  const isPaper = prize.category === "stocks";
+  prizePaper.classList.toggle("hidden", !isPaper);
+  document.getElementById("prizeSlabCanvas").classList.toggle("hidden", isPaper);
+  if (isPaper) {
+    prizePaper.src = prize.image;
+    prizePaper.alt = prize.name;
+  } else {
+    prizeSlabViewer().setItem(slabInfoFor(prize));
+  }
 
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);

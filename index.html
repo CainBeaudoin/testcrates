@@ -597,7 +597,9 @@ try {
     <!-- The case prints the name itself; this is the same name for screen
          readers, kept out of the layout. -->
     <h3 class="slab-sr prize-modal-name"></h3>
-    <div class="slab-stage"><canvas id="prizeSlabCanvas"></canvas></div>
+    <!-- Stocks show their paper certificate here instead of the case; it
+         tilts toward the pointer the same way (see showPrizeModal). -->
+    <div class="slab-stage"><canvas id="prizeSlabCanvas"></canvas><img id="prizePaper" class="paper-reveal hidden" alt=""></div>
     <p class="slab-price prize-modal-price"></p>
     <p id="prizeModalMeta" class="slab-note"></p>
     <span id="multiplierBadge" class="multiplier-badge hidden"></span>
