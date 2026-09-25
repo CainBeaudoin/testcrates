@@ -4777,7 +4777,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     padding: 0 10px 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
   }
 
   /* Collapsed: the header is the whole widget. */
@@ -4807,45 +4807,23 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .pull-dock-crate::after { content: "→"; font-size: 0.7rem; opacity: 0.6; }
 }
 
-/* The case. The bezel is a conic gradient for the metal with a fine
-   repeating stripe over it for the knurling — a flat gold ring at this size
-   reads as paint. */
-.pull-face { display: flex; justify-content: center; }
-
-.pull-face-bezel {
-  position: relative;
-  padding: 6px;
-  border-radius: 20px;
-  background:
-    repeating-linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.16) 0 1px,
-      rgba(0, 0, 0, 0.1) 1px 3px
-    ),
-    conic-gradient(
-      from 210deg,
-      #8a6a10, #e6c866 18%, #f6e6ae 26%, #c9a227 42%,
-      #7d5f0d 58%, #d8b64a 74%, #f3e0a0 84%, #8a6a10
-    );
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
-    inset 0 0 10px rgba(0, 0, 0, 0.35);
-}
+/* No bezel and no display any more: the prize is a rounded tile on the
+   dock's own surface. The gold ring was doing the work of a frame around
+   something that already reads as an object, and the dark screen behind a
+   cut-out product shot was mostly empty. */
+.pull-face { display: block; }
 
 .pull-face-screen {
   position: relative;
-  width: 156px;
-  height: 156px;
-  border-radius: 15px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
   overflow: hidden;
-  /* Not themed: the face is a screen in both. */
-  background: radial-gradient(120% 100% at 50% 0%, #1b1b21 0%, #08080a 70%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--well);
 }
 
 /* Absolutely placed so the outgoing and incoming prizes cross in the same
-   space. The product fills the screen and the price sits over it: the face
-   is about the prize, so nothing else is given room. */
+   space. */
 .pull-face-card {
   position: absolute;
   inset: 0;
@@ -4858,39 +4836,42 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .pull-face-card img {
   position: absolute;
-  inset: 6px;
-  width: calc(100% - 12px);
-  height: calc(100% - 12px);
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
   object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.55));
 }
 
+/* The price sits under the tile on the dock's surface rather than on a
+   gradient over the product — over the shot it had to carry its own scrim
+   and a shadow just to stay legible, which is a lot of treatment for four
+   characters. */
 .pull-face-price {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 14px 8px 7px;
-  font-size: 0.94rem;
+  display: block;
+  padding: 7px 2px 1px;
+  font-size: 1.02rem;
   font-weight: 800;
-  color: #f5f5f5;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  /* Carries the number clear of the product without a panel over it. */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), transparent);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  letter-spacing: -0.2px;
 }
 
 .pull-face-user {
   position: absolute;
-  top: 6px;
-  left: 8px;
+  top: 7px;
+  left: 9px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--chip-over-media);
+  backdrop-filter: blur(6px);
   font-size: 0.5rem;
+  font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: rgba(245, 245, 245, 0.5);
+  color: var(--text-dim);
 }
-.pull-face-user.you { color: #4ade80; font-weight: 700; }
+.pull-face-user.you { color: var(--positive); }
 
 /* A swipe: the new prize in from the right, the last one out to the left,
    both in the same 0.5s so they cross rather than queue. No fill-mode on
@@ -4912,4 +4893,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 @media (prefers-reduced-motion: reduce) {
   .pull-face-card.is-entering,
   .pull-face-card.is-leaving { animation-duration: 0.01s; }
+}
+
+/* A new tile in the carousel pops in where it lands; the rest of the row
+   just shifts along. */
+.recent-pull-item.is-new { animation: recentPullIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes recentPullIn {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recent-pull-item.is-new { animation: none; }
 }

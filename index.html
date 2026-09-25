@@ -108,6 +108,14 @@ try {
       <input type="checkbox" id="prizeListToggleAll" class="prize-list-toggle-input">
       <div id="categoryList" class="category-list"></div>
 
+      <!-- The full feed, as a carousel under the crates. The corner dock
+           shows one prize at a time wherever you are; this is the same feed
+           at length, in the one place there's room for it. -->
+      <div id="recentPulls" class="recent-pulls hidden">
+        <h3 id="recentPullsTitle">Recent Pulls</h3>
+        <div class="recent-pulls-viewport">
+          <div id="recentPullsList" class="recent-pulls-list"></div>
+        </div>
       </div>
     </section>
 
@@ -789,9 +797,8 @@ try {
   </div>
   <div class="pull-dock-body">
     <div class="pull-face">
-      <div class="pull-face-bezel">
-        <div class="pull-face-screen" id="pullFaceScreen" aria-live="polite"></div>
-      </div>
+      <div class="pull-face-screen" id="pullFaceScreen" aria-live="polite"></div>
+      <span class="pull-face-price" id="pullDockPrice"></span>
     </div>
     <button class="pull-dock-crate" id="pullDockCrate"></button>
   </div>

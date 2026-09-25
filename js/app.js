@@ -230,10 +230,14 @@ const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const pullFaceScreen = document.getElementById("pullFaceScreen");
+const recentPulls = document.getElementById("recentPulls");
+const recentPullsList = document.getElementById("recentPullsList");
+const recentPullsTitle = document.getElementById("recentPullsTitle");
 const pullDock = document.getElementById("pullDock");
 const pullDockHead = document.getElementById("pullDockHead");
 const pullDockMin = document.getElementById("pullDockMin");
 const pullDockCrate = document.getElementById("pullDockCrate");
+const pullDockPrice = document.getElementById("pullDockPrice");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
 const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
@@ -887,15 +891,64 @@ function livePullFeed(limit, tierKey = null) {
   return scoped.sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
-// One prize on a watch face in the corner, on every screen. The newest
-// arrival swipes in and the previous one swipes out of the same square.
+// Two views of one feed. The carousel under the crates is the feed at
+// length, on the one screen with room for it; the corner dock is a single
+// prize, condensed, and it follows you onto Market, Account and Rewards.
+function renderRecentPulls() {
+  renderPullsCarousel();
+  renderPullDock();
+}
+
+function renderPullsCarousel() {
+  const feed = livePullFeed(16, recentPullsTierKey);
+
+  recentPullsTitle.textContent = recentPullsTierKey
+    ? `Recent ${CATEGORIES[recentPullsTierKey].badge} Pulls`
+    : "Recent Pulls";
+
+  recentPulls.classList.toggle("hidden", feed.length === 0);
+  if (feed.length === 0) {
+    recentPullsList.innerHTML = "";
+    return;
+  }
+
+  // Which tiles were already on screen, so only genuinely new ones pop in
+  // rather than the whole row flickering on every tick.
+  const known = new Set(
+    [...recentPullsList.querySelectorAll("[data-pull-ts]")].map((el) => el.dataset.pullTs)
+  );
+
+  recentPullsList.innerHTML = feed
+    .map((p) => {
+      const cat = tierOf(p.tierKey);
+      return `
+      <div class="recent-pull-item${known.has(String(p.ts)) ? "" : " is-new"}" data-pull-ts="${p.ts}">
+        <img src="${p.image}" alt="">
+        <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
+        <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
+        <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
+      </div>`;
+    })
+    .join("");
+
+  recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
+    el.addEventListener("click", () => {
+      playClick();
+      openPullDetail(feed[i]);
+    });
+  });
+}
+
+// One prize in the corner, on every screen. The newest arrival swipes in
+// and the previous one swipes out of the same square.
 let pullFaceTs = null;
 
-function renderRecentPulls() {
+function renderPullDock() {
   const [pull] = livePullFeed(1, recentPullsTierKey);
   if (!pull) {
     pullFaceScreen.innerHTML = "";
     pullDockCrate.textContent = "";
+    pullDockPrice.textContent = "";
     pullFaceTs = null;
     return;
   }
@@ -906,7 +959,8 @@ function renderRecentPulls() {
   const isFirst = pullFaceTs === null;
   pullFaceTs = pull.ts;
 
-  // The action under the case follows whatever is on it.
+  // The price and the action under the tile follow whatever is on it.
+  pullDockPrice.textContent = `$${pull.price.toLocaleString()}`;
   pullDockCrate.textContent = cat.badge;
   pullDockCrate.title = `Open the ${cat.badge} crate`;
   pullDockCrate.dataset.tier = tierKey;
@@ -917,8 +971,7 @@ function renderRecentPulls() {
   card.title = `${pull.name} — ${RARITY_META[pull.rarity].label}`;
   card.innerHTML = `
     <span class="pull-face-user ${pull.isPlayer ? "you" : ""}">${pull.isPlayer ? "You" : pull.username}</span>
-    <img src="${pull.image}" alt="${pull.name}">
-    <span class="pull-face-price">$${pull.price.toLocaleString()}</span>`;
+    <img src="${pull.image}" alt="${pull.name}">`;
   card.addEventListener("click", () => {
     playClick();
     openPullDetail(pull);
