@@ -230,7 +230,7 @@ const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
 const recentPulls = document.getElementById("recentPulls");
-const recentPullsList = document.getElementById("recentPullsList");
+const pullFaceScreen = document.getElementById("pullFaceScreen");
 const recentPullsTitle = document.getElementById("recentPullsTitle");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
@@ -893,69 +893,70 @@ function livePullFeed(limit, tierKey = null) {
   return scoped.sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
+// One pull on a display, not a row of them. The newest arrival swipes in
+// and the previous one swipes out of the same 232px square, so the section
+// stays one object however many pulls land — and a pull is legible at a
+// glance instead of being one of sixteen thumbnails.
+let pullFaceTs = null;
+
 function renderRecentPulls() {
-  const feed = livePullFeed(16, recentPullsTierKey);
+  const [pull] = livePullFeed(1, recentPullsTierKey);
 
   recentPullsTitle.textContent = recentPullsTierKey
     ? `Recent ${CATEGORIES[recentPullsTierKey].badge} Pulls`
     : "Recent Pulls";
 
-  if (feed.length === 0) {
+  if (!pull) {
     recentPulls.classList.add("hidden");
+    pullFaceScreen.innerHTML = "";
+    pullFaceTs = null;
     return;
   }
   recentPulls.classList.remove("hidden");
+  if (pull.ts === pullFaceTs && pullFaceScreen.firstElementChild) return;
 
-  // FLIP-animate the update instead of a flat innerHTML swap: record where
-  // every currently-rendered tile sits (keyed by its pull's timestamp, a
-  // stable per-pull id) before touching the DOM.
-  const priorLeft = new Map();
-  recentPullsList.querySelectorAll(".recent-pull-item[data-pull-ts]").forEach((el) => {
-    priorLeft.set(el.dataset.pullTs, el.getBoundingClientRect().left);
+  const tierKey = tierKeyOf(pull.tierKey);
+  const cat = CATEGORIES[tierKey];
+  const isFirst = pullFaceTs === null;
+  pullFaceTs = pull.ts;
+
+  const card = document.createElement("div");
+  card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
+  card.dataset.pullTs = pull.ts;
+  card.innerHTML = `
+    <button class="pull-face-crate tier-badge-${cat.badge.toLowerCase()}"
+            title="Open the ${cat.badge} crate">${cat.badge}</button>
+    <img src="${pull.image}" alt="">
+    <span class="pull-face-price">$${pull.price.toLocaleString()}</span>
+    <span class="pull-face-name">${pull.name}</span>
+    <span class="pull-face-user ${pull.isPlayer ? "you" : ""}">${pull.isPlayer ? "You" : pull.username}</span>`;
+
+  card.addEventListener("click", (e) => {
+    // The crate label goes somewhere else — see below.
+    if (e.target.closest(".pull-face-crate")) return;
+    playClick();
+    openPullDetail(pull);
   });
 
-  const itemHTML = (p) => {
-    const badge = tierOf(p.tierKey).badge;
-    return `
-      <div class="recent-pull-item" data-pull-ts="${p.ts}">
-        <img src="${p.image}" alt="">
-        <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
-        <span class="tier-badge tier-badge-${badge.toLowerCase()}">${badge}</span>
-        <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
-      </div>`;
-  };
-
-  recentPullsList.innerHTML = feed.map(itemHTML).join("");
-
-  recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
-    el.addEventListener("click", () => openPullDetail(feed[i]));
-
-    const wasAt = priorLeft.get(el.dataset.pullTs);
-    if (wasAt == null) {
-      // A genuinely new pull — it appears in place (pops in), it never
-      // slides in from off to one side.
-      el.style.transition = "none";
-      el.style.opacity = "0";
-      el.style.transform = "scale(0.82)";
-      void el.offsetWidth; // force the browser to commit the styles above before...
-      el.style.transition = "opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)";
-      el.style.opacity = "1";
-      el.style.transform = "scale(1)"; // ...transitioning to these, so it actually animates.
-    } else {
-      // An existing pull that just got bumped rightward by the new one
-      // landing to its left — FLIP: jump it back to its old spot with no
-      // transition, then transition it forward to its real (rightward)
-      // position, so it visibly slides over.
-      const delta = wasAt - el.getBoundingClientRect().left;
-      if (delta !== 0) {
-        el.style.transition = "none";
-        el.style.transform = `translateX(${delta}px)`;
-        void el.offsetWidth; // force-commit the jump before transitioning back, same reason as above
-        el.style.transition = "transform 0.35s ease";
-        el.style.transform = "";
-      }
-    }
+  // The label is the shortcut to the crate that produced this pull.
+  card.querySelector(".pull-face-crate").addEventListener("click", () => {
+    playClick();
+    const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
+    if (wrap) openTierDetail(wrap);
   });
+
+  // Whatever is on screen swipes out as this one swipes in; they cross in
+  // the same space, so the outgoing card is removed once its run is done
+  // rather than left stacked underneath.
+  const outgoing = pullFaceScreen.firstElementChild;
+  pullFaceScreen.appendChild(card);
+  if (outgoing) {
+    outgoing.classList.remove("is-entering");
+    outgoing.classList.add("is-leaving");
+    outgoing.addEventListener("animationend", () => outgoing.remove(), { once: true });
+    // A tab that was hidden never fires the animation, so this is the floor.
+    setTimeout(() => outgoing.remove(), 700);
+  }
 }
 
 // ---- Live pulls dock ----------------------------------------------------

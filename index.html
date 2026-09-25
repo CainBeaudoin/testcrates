@@ -115,10 +115,16 @@ try {
       <input type="checkbox" id="prizeListToggleAll" class="prize-list-toggle-input">
       <div id="categoryList" class="category-list"></div>
 
+      <!-- One pull at a time, on a watch-face-style display: the newest
+           arrival swipes in and the one before it swipes out. The crate
+           label in the corner is its own button — it takes you to the crate
+           that produced the pull. -->
       <div id="recentPulls" class="recent-pulls hidden">
         <h3 id="recentPullsTitle">Recent Pulls</h3>
-        <div class="recent-pulls-viewport">
-          <div id="recentPullsList" class="recent-pulls-list"></div>
+        <div class="pull-face">
+          <div class="pull-face-bezel">
+            <div class="pull-face-screen" id="pullFaceScreen" aria-live="polite"></div>
+          </div>
         </div>
       </div>
     </section>
