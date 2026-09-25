@@ -6,62 +6,43 @@
 // spread across the tier's $15-$300 price range per band.
 //
 // There's no product photo for a ticker the way there is for a sneaker, so
-// each "image" is a small generated SVG — a worn share certificate on aged
-// paper, printed in the ticker's ink colour: procedural, like the rest of
-// this app's graphics, rather than pulling in real company logos or a
-// stock photo. The grain, stains and crease are SVG filters, seeded per
-// ticker so no two sheets are quite the same.
+// each "image" is a small generated SVG: a share certificate on thick,
+// warm off-white card stock, printed in the ticker's ink colour.
+// Procedural, like the rest of this app's graphics, rather than pulling in
+// real company logos or a stock photo. Square to the frame and clean, to
+// sit with the rest of the site; the paper grain is an SVG filter.
 
 function stockCardSVG(ticker, company, hue) {
   const seed = [...ticker].reduce((n, c) => n * 31 + c.charCodeAt(0), 7) % 997;
-  const tilt = ((seed % 7) - 3) * 0.6; // a degree or two, like a sheet dropped on a table
-  const ink = `hsl(${hue},45%,24%)`;
-  const inkSoft = `hsl(${hue},35%,34%)`;
-  const tickerSize = ticker.length > 4 ? 50 : 62;
+  const ink = `hsl(${hue},42%,28%)`;
+  const inkSoft = `hsl(${hue},30%,45%)`;
+  const tickerSize = ticker.length > 4 ? 52 : 64;
   const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
     <defs>
       <filter id="grain" x="0" y="0" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="${seed}"/>
-        <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.12  0 0 0 0.22 0"/>
+        <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${seed}"/>
+        <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0 0.32  0 0 0 0.09 0"/>
         <feComposite in2="SourceGraphic" operator="in"/>
       </filter>
-      <filter id="stain" x="0" y="0" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="${seed + 11}"/>
-        <feColorMatrix values="0 0 0 0 0.55  0 0 0 0 0.38  0 0 0 0 0.16  0 0 0 1.4 -0.62"/>
-        <feComposite in2="SourceGraphic" operator="in"/>
-      </filter>
-      <radialGradient id="age" cx="50%" cy="46%" r="72%">
-        <stop offset="55%" stop-color="#8a6230" stop-opacity="0"/>
-        <stop offset="100%" stop-color="#8a6230" stop-opacity="0.42"/>
-      </radialGradient>
-      <linearGradient id="fold" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#5a3e1c" stop-opacity="0"/>
-        <stop offset="0.47" stop-color="#5a3e1c" stop-opacity="0.16"/>
-        <stop offset="0.5" stop-color="#fff8e6" stop-opacity="0.5"/>
-        <stop offset="0.53" stop-color="#5a3e1c" stop-opacity="0.08"/>
-        <stop offset="1" stop-color="#5a3e1c" stop-opacity="0"/>
+      <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity="0.55"/>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"/>
       </linearGradient>
-      <clipPath id="sheet"><rect x="22" y="16" width="256" height="268" rx="3"/></clipPath>
     </defs>
-    <g transform="rotate(${tilt} 150 150)">
-      <rect x="24" y="19" width="256" height="268" rx="3" fill="#000" opacity="0.12"/>
-      <g clip-path="url(#sheet)">
-        <rect x="22" y="16" width="256" height="268" fill="#ecdfc2"/>
-        <rect x="22" y="16" width="256" height="268" fill="#fff" filter="url(#stain)"/>
-        <rect x="22" y="16" width="256" height="268" fill="#fff" filter="url(#grain)"/>
-        <rect x="22" y="16" width="256" height="268" fill="url(#age)"/>
-        <rect x="${108 + (seed % 30)}" y="16" width="44" height="268" fill="url(#fold)"/>
-        <rect x="36" y="30" width="228" height="240" fill="none" stroke="${ink}" stroke-width="2.5" opacity="0.8"/>
-        <rect x="42" y="36" width="216" height="228" fill="none" stroke="${inkSoft}" stroke-width="1" stroke-dasharray="2 3" opacity="0.7"/>
-        <g font-family="Georgia, 'Times New Roman', serif" text-anchor="middle" fill="${ink}">
-          <text x="150" y="72" font-size="13" letter-spacing="3" opacity="0.85">SHARE CERTIFICATE</text>
-          <line x1="96" y1="84" x2="204" y2="84" stroke="${ink}" stroke-width="1" opacity="0.6"/>
-          <text x="150" y="${150 + tickerSize * 0.18}" font-size="${tickerSize}" font-weight="700" opacity="0.9">${esc(ticker)}</text>
-          <text x="150" y="196" font-size="${company.length > 20 ? 12 : 14}" font-style="italic" opacity="0.85">${esc(company)}</text>
-          <text x="150" y="238" font-size="10" letter-spacing="2" opacity="0.7">ONE SIMULATED SHARE</text>
-        </g>
-      </g>
+    <rect x="30" y="24" width="240" height="258" rx="6" fill="#000" opacity="0.07"/>
+    <rect x="30" y="21" width="240" height="258" rx="6" fill="#e9e4d9"/>
+    <rect x="30" y="18" width="240" height="258" rx="6" fill="#f6f3ec"/>
+    <rect x="30" y="18" width="240" height="258" rx="6" fill="#fff" filter="url(#grain)"/>
+    <rect x="30" y="18" width="240" height="60" rx="6" fill="url(#sheen)"/>
+    <rect x="44" y="32" width="212" height="230" rx="3" fill="none" stroke="${ink}" stroke-width="1.5" opacity="0.55"/>
+    <g font-family="${font}" text-anchor="middle" fill="${ink}">
+      <text x="150" y="70" font-size="10" font-weight="700" letter-spacing="3" opacity="0.7">SHARE CERTIFICATE</text>
+      <text x="150" y="${150 + tickerSize * 0.2}" font-size="${tickerSize}" font-weight="800" letter-spacing="-1">${esc(ticker)}</text>
+      <text x="150" y="194" font-size="${company.length > 20 ? 12 : 14}" font-weight="500" fill="${inkSoft}">${esc(company)}</text>
+      <line x1="120" y1="222" x2="180" y2="222" stroke="${ink}" stroke-width="1" opacity="0.35"/>
+      <text x="150" y="242" font-size="9" font-weight="700" letter-spacing="2" opacity="0.55">ONE SIMULATED SHARE</text>
     </g>
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
