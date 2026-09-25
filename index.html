@@ -127,7 +127,7 @@ try {
         <div class="home-block-head">
           <div>
             <h2 class="home-block-title">Pick your crate</h2>
-            <p class="home-block-sub">Four crates. Every pull is a real item.</p>
+            <p class="home-block-sub">Four kinds of crate, from $25 up to $1,000. Every pull is a real item.</p>
           </div>
           <button class="home-more" data-home-go="drops">All drops</button>
         </div>
@@ -223,7 +223,12 @@ try {
 
     <!-- SCREEN 1: category select -->
     <section id="screen-category" class="screen">
-      <h2 class="screen-title">Time to Choose</h2>
+      <div class="drops-head">
+        <h2 class="screen-title">Time to Choose</h2>
+        <!-- One chip per product line; picking one narrows the crates to
+             that line's price points (e.g. Sneakers $125 / $250 / $1,000). -->
+        <div class="drop-lines" id="dropLines" role="tablist" aria-label="Crate type"></div>
+      </div>
       <!-- Mobile only: tapping a tier card turns that tier into its own
            page (see .drop-detail-open in the mobile media query); this is
            the way back out. Hidden at every other time. -->

@@ -648,9 +648,11 @@ body {
 }
 .credit-toast-icon { font-size: 1rem; }
 
+/* Three across: the six crates make two even rows, and a line's three
+   price points (Sneakers $125 / $250 / $1,000) make one. */
 .category-list {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
 }
@@ -6047,4 +6049,40 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 @media (prefers-reduced-motion: reduce) {
   .home-grail.is-flipping, .home-grail.is-flipping .home-grail-media img { animation: none; }
+}
+
+/* --- Drops: title + line filter ------------------------------------------ */
+.drops-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 20px;
+}
+.drops-head .screen-title { margin-bottom: 0; }
+.drop-lines { display: flex; flex-wrap: wrap; gap: 6px; }
+.drop-line {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--control-fill);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.drop-line span { margin-left: 4px; opacity: 0.55; font-weight: 700; }
+.drop-line:hover { color: var(--text); background: var(--control-fill-hover); }
+.drop-line.active { background: var(--text); color: var(--text-inverse); }
+.drop-line.active span { opacity: 0.7; }
+/* A single crate's page has its own back button; the filter would just
+   be noise there. */
+body.drop-detail-open .drop-lines { display: none; }
+@media (max-width: 640px) {
+  .drops-head { gap: 10px; margin-bottom: 16px; }
+  .drop-lines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .drop-lines::-webkit-scrollbar { display: none; }
+  .drop-line { flex: 0 0 auto; }
 }

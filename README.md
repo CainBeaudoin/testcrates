@@ -115,6 +115,14 @@ structure (studied for reference, not copied).
 
 ## Prize catalog
 
+Crates are grouped into product lines (Stocks, Sneakers, Streetwear,
+Collectibles); a line can have several price points. Sneakers comes in
+$125, $250 and $1,000 crates: the two dearer ones (`prizeDataSneakers250.js`,
+`prizeDataSneakers1000.js`) are higher price bands of the same ODTO
+footwear scrape, topping out around $11,000. A crate's `line` in
+`CATEGORIES` ties it to its base crate; Drops has a filter row by line,
+and Home shows one card per line.
+
 `js/prizeDataSneakers.js` / `prizeDataStreetwear.js` /
 `prizeDataCollectibles.js` are each generated from a scrape of the matching
 ODTO collection ([footwear](https://odto.com/collections/footwear),

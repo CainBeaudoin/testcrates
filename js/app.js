@@ -5,6 +5,8 @@ import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
 import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
 import { PRIZE_POOL as COLLECTIBLES_POOL } from "./prizeDataCollectibles.js";
 import { PRIZE_POOL as STOCKS_POOL } from "./prizeDataStocks.js";
+import { PRIZE_POOL as SNEAKER_250_POOL } from "./prizeDataSneakers250.js";
+import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
@@ -50,7 +52,33 @@ const CATEGORIES = {
     pool: COLLECTIBLES_POOL,
     poweredBy: "ODTO",
   },
+  // Higher price bands of the same line. `line` groups them with their
+  // base crate (the Drops filter, and Home's one-card-per-line row); a
+  // crate without one is its own line.
+  sneakers250: {
+    label: "$250",
+    badge: "Sneakers",
+    line: "sneakers",
+    price: 250,
+    pool: SNEAKER_250_POOL,
+    poweredBy: "ODTO",
+  },
+  sneakers1000: {
+    label: "$1,000",
+    badge: "Sneakers",
+    line: "sneakers",
+    price: 1000,
+    pool: SNEAKER_1000_POOL,
+    poweredBy: "ODTO",
+  },
 };
+
+// The product line a crate belongs to (Sneakers, Streetwear, ...).
+function lineOf(key) {
+  return CATEGORIES[key].line ?? key;
+}
+// The lines, in CATEGORIES order, each with its crates cheapest first.
+const CRATE_LINES = [...new Set(Object.keys(CATEGORIES).map(lineOf))];
 
 // Crates used to be price tiers (Bronze $100 / Silver $250 / Gold $1000)
 // cut out of one footwear pool. They're product categories now, so a saved
@@ -89,9 +117,11 @@ function rankOf(rarity) {
 const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
 
 // Full catalog across every crate, used to seed simulated marketplace listings.
-const ALL_CATALOG = [...STOCKS_POOL, ...SNEAKER_POOL, ...STREETWEAR_POOL, ...COLLECTIBLES_POOL];
+// Deduped by name: a shoe can sit in more than one Sneakers crate.
+const uniqueByName = (items) => [...new Map(items.map((p) => [p.name, p])).values()];
+const ALL_CATALOG = uniqueByName(Object.values(CATEGORIES).flatMap((c) => c.pool));
 // ODTO crates only (no stocks) — used to demo-seed the Vault.
-const SNEAKER_CATALOG = [...SNEAKER_POOL, ...STREETWEAR_POOL, ...COLLECTIBLES_POOL];
+const SNEAKER_CATALOG = uniqueByName(Object.values(CATEGORIES).filter((c) => !c.boxKind).flatMap((c) => c.pool));
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
@@ -433,6 +463,10 @@ const allScreens = Array.from(document.querySelectorAll(".screen"));
 function showScreen(el) {
   allScreens.forEach((s) => s.classList.remove("active"));
   el.classList.add("active");
+  // Home's live boxes (its crate row and the billboard) are rebuilt when
+  // Home is shown again; holding their WebGL contexts open elsewhere would
+  // crowd out the Drops and opening screens.
+  if (el.id !== "screen-home") releaseHomeViewers();
   // Leaving Drops (or coming back to it, e.g. after an open) always lands
   // on the tier list rather than whichever tier page was last open.
   closeTierDetail();
@@ -1114,7 +1148,7 @@ function renderPullDock() {
     pullDockCrate.dataset.tier = tierKey;
     // The crate's own box, from the same renderer the Drops cards use.
     // Cached per crate, so this is a map hit after the first pull from it.
-    getBoxSnapshot(cat.badge.toLowerCase(), cat.boxKind ?? "box").then((url) => {
+    getBoxSnapshot(tierKey, cat.boxKind ?? "box").then((url) => {
       if (pullDockCrate.dataset.tier === tierKey) pullDockCrateBox.src = url;
     });
   };
@@ -1401,6 +1435,8 @@ function closeTierDetail() {
 // fetched beforehand is a detached node, which left the page on an empty
 // tier list with only that crate's pulls carousel showing.
 function openCratePage(tierKey) {
+  // The filter mustn't hide the crate being opened.
+  if (dropLine !== "all" && CATEGORIES[tierKey] && lineOf(tierKey) !== dropLine) dropLine = "all";
   document.querySelector('.nav-tab[data-nav="screen-category"]').click();
   const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
   if (wrap) openTierDetail(wrap);
@@ -1411,12 +1447,47 @@ dropDetailBackBtn.addEventListener("click", () => {
   closeTierDetail();
 });
 
+// ---- Drops: filter by line ------------------------------------------------
+// "All", then one chip per product line. A line's crates sit together,
+// cheapest first, so Sneakers reads $125 / $250 / $1,000.
+let dropLine = "all";
+const dropLinesEl = document.getElementById("dropLines");
+
+function orderedCrates() {
+  return Object.entries(CATEGORIES).sort(
+    ([a, ca], [b, cb]) => CRATE_LINES.indexOf(lineOf(a)) - CRATE_LINES.indexOf(lineOf(b)) || ca.price - cb.price
+  );
+}
+
+function renderDropLines() {
+  const chips = [["all", "All"], ...CRATE_LINES.map((l) => [l, CATEGORIES[l].badge])];
+  dropLinesEl.innerHTML = chips
+    .map(([l, label]) => {
+      const n = l === "all" ? Object.keys(CATEGORIES).length : Object.keys(CATEGORIES).filter((k) => lineOf(k) === l).length;
+      return `<button class="drop-line${l === dropLine ? " active" : ""}" data-line="${l}" role="tab" aria-selected="${l === dropLine}">${label}${n > 1 && l !== "all" ? ` <span>${n}</span>` : ""}</button>`;
+    })
+    .join("");
+}
+
+dropLinesEl.addEventListener("click", (e) => {
+  const chip = e.target.closest(".drop-line");
+  if (!chip || chip.dataset.line === dropLine) return;
+  playClick();
+  dropLine = chip.dataset.line;
+  closeTierDetail();
+  renderCategories();
+});
+
 function renderCategories() {
   categoryList.innerHTML = "";
   categoryBoxViewers.forEach((v) => v.dispose());
   categoryBoxViewers = [];
+  renderDropLines();
 
-  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+  orderedCrates().forEach(([key, cat]) => {
+    // Only the chosen line's crates are built at all (each is a live 3D
+    // box, and a browser only hands out so many of those).
+    if (dropLine !== "all" && lineOf(key) !== dropLine) return;
     const wrap = document.createElement("div");
     wrap.className = "category-wrap";
     wrap.dataset.tier = key;
@@ -1509,7 +1580,7 @@ function renderCategories() {
     categoryList.appendChild(wrap);
 
     // Decorative only — idles and spins forever, .open() is never called on it.
-    createBoxViewer(card.querySelector(".category-box-canvas"), cat.badge.toLowerCase(), cat.boxKind ?? "box").then((viewer) => {
+    createBoxViewer(card.querySelector(".category-box-canvas"), key, cat.boxKind ?? "box").then((viewer) => {
       categoryBoxViewers.push(viewer);
     });
   });
@@ -1652,7 +1723,7 @@ function resetSlotsUI() {
 
 async function mountViewers() {
   const cat = CATEGORIES[currentCategoryKey];
-  const skin = cat.badge.toLowerCase();
+  const skin = currentCategoryKey;
   const kind = cat.boxKind ?? "box";
   const canvases = slots.map((s) => s.querySelector(".box-canvas"));
   const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind)));
@@ -1775,7 +1846,7 @@ async function startRound(key, currency) {
 
   showScreen(screenGame);
 
-  const snapshotUrl = await getBoxSnapshot(cat.badge.toLowerCase(), cat.boxKind ?? "box");
+  const snapshotUrl = await getBoxSnapshot(key, cat.boxKind ?? "box");
   buildReel(snapshotUrl);
   await spinReel();
 
@@ -3957,10 +4028,11 @@ const HOME_HERO_SLIDES = [
   { tier: "sneakers", pick: "Nike SB Dunk Low Supreme Stars Hyper Royal", tint: "#e6eafa", accent: "#2f45c8", accent2: "#8a5cf0" },
   { tier: "streetwear", pick: "Supreme The North Face Statue Of Liberty Mountain Jacket Red", tint: "#f8e4df", accent: "#c8321f", accent2: "#e27a2a" },
   { tier: "collectibles", pick: "Medicom Bearbrick 3125C Objective Edc 1000%", tint: "#f7eadb", accent: "#b0680f", accent2: "#d9a02b" },
+  { tier: "sneakers1000", pick: "Nike SB Dunk Low Supreme Black Cement", tint: "#ecebe8", accent: "#1c1813", accent2: "#a07a2c" },
 ];
 // The photographic crates. Stocks is a real crate, but its "photos" are
 // generated ticker cards — right in a crate card, wrong as a grail.
-const HOME_PHOTO_TIERS = ["sneakers", "streetwear", "collectibles"];
+const HOME_PHOTO_TIERS = ["sneakers1000", "sneakers250", "sneakers", "streetwear", "collectibles"];
 
 const byPriceDesc = (a, b) => b.price - a.price;
 
@@ -4265,10 +4337,10 @@ function showHomeSlide(i, { instant = false } = {}) {
   // back in, so the copy never describes the product that's leaving.
   const write = () => {
     document.getElementById("homeHeroMedia").dataset.word = cat.badge;
-    document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}`;
+    document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}${cat.line ? ` · ${cat.label} crate` : ""}`;
     document.getElementById("homeHeroSub").innerHTML =
-      `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()}, and it&rsquo;s sitting in a $${cat.price} crate.`;
-    document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · $${cat.price}`;
+      `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()}, and it&rsquo;s sitting in a ${cat.label} crate.`;
+    document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · ${cat.label}`;
     hero.classList.remove("is-swapping");
   };
   clearTimeout(homeHeroSwapTimer);
@@ -4284,11 +4356,23 @@ function showHomeSlide(i, { instant = false } = {}) {
 // re-render (every visit to Home) can release the old WebGL contexts first.
 let homeBoxViewers = [];
 
+function releaseHomeViewers() {
+  homeBoxViewers.forEach((v) => v.dispose());
+  homeBoxViewers = [];
+  if (heroViewer) {
+    heroViewer.dispose();
+    heroViewer = null;
+  }
+}
+
 function renderHomeCrates() {
   const el = document.getElementById("homeCrates");
   homeBoxViewers.forEach((v) => v.dispose());
   homeBoxViewers = [];
+  // One card per line (its entry crate); the dearer crates of a line are
+  // one click further, on Drops.
   el.innerHTML = Object.entries(CATEGORIES)
+    .filter(([, cat]) => !cat.line)
     .map(([key, cat]) => {
       const top = [...cat.pool].sort(byPriceDesc);
       return `
@@ -4338,9 +4422,13 @@ function renderHomeCrates() {
 function homeGrailList(count) {
   const ranked = HOME_PHOTO_TIERS.map((k) => [...CATEGORIES[k].pool].sort(byPriceDesc).map((p) => ({ p, k })));
   const out = [];
+  const seen = new Set(); // a shoe can sit in more than one Sneakers crate
   for (let i = 0; out.length < count && i < 40; i++) {
     ranked.forEach((list) => {
-      if (list[i] && out.length < count) out.push(list[i]);
+      if (list[i] && out.length < count && !seen.has(list[i].p.name)) {
+        seen.add(list[i].p.name);
+        out.push(list[i]);
+      }
     });
   }
   return out;
@@ -4349,8 +4437,8 @@ function homeGrailList(count) {
 // The wall shows five, drawn from a deeper pool, and every few seconds one
 // tile flips over like a card and comes back as a different grail. One
 // tile at a time, in a shuffled order, never a grail that's already up.
-const GRAIL_SHOWN = 5;
-const GRAIL_POOL = 15;
+const GRAIL_SHOWN = 10;
+const GRAIL_POOL = 30;
 const GRAIL_FLIP_EVERY_MS = 2800;
 let grailTimer = null;
 let grailOrder = [];
@@ -4360,11 +4448,11 @@ function grailTileInner({ p, k }) {
   return `
         <span class="home-grail-media"><img src="${p.image}" alt=""></span>
         <span class="home-grail-info">
-          <span class="tier-badge tier-badge-${k}">${cat.badge}</span>
+          <span class="tier-badge tier-badge-${lineOf(k)}">${cat.badge}</span>
           <span class="home-grail-name">${p.name}</span>
           <span class="home-grail-foot">
             <b>$${p.price.toLocaleString()}</b>
-            <span>$${cat.price} crate</span>
+            <span>${cat.label} crate</span>
           </span>
         </span>`;
 }
@@ -4521,6 +4609,8 @@ function renderHomeMarket() {
 
 function renderHome() {
   if (!homeHeroBuilt) buildHomeHero();
+  // Back on Home after its viewers were released: put the crate back.
+  else if (!heroViewer) playHeroShow(homeHeroIndex);
   renderHomeCrates();
   renderHomeGrails();
   renderHomeSteps();
