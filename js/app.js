@@ -451,20 +451,14 @@ function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-// Size + condition line shown on the reveal, Vault item detail, and
-// Marketplace listing detail — so a size mismatch is obvious immediately,
-// before spending an exit on something that won't fit. Stocks have
-// neither. Condition is always "New" (no used/worn inventory in this
-// catalog) but still stated explicitly rather than assumed.
-// What the case needs to print one prize. Stocks have no photograph, so
-// they print their ticker instead ("NVDA — Nvidia Corp" -> "NVDA"); the
-// slab handles the rest.
+// What the case needs to print one prize. Stocks go in with their paper
+// share certificate as the "photo", the same one shown everywhere else and
+// fed out of the printer, so the slab you get matches what printed.
 function slabInfoFor(prize, tierKey = currentCategoryKey) {
   const meta = RARITY_META[prize.rarity];
-  const isStock = prize.category === "stocks";
   return {
-    image: isStock ? null : prize.image,
-    symbol: isStock ? prize.name.split(" ")[0] : null,
+    image: prize.image,
+    symbol: null,
     name: prize.name,
     size: market.sizeLabelFor(prize.name, prize.category),
     rarityLabel: meta.label,
@@ -473,6 +467,11 @@ function slabInfoFor(prize, tierKey = currentCategoryKey) {
   };
 }
 
+// Size + condition line shown on the reveal, Vault item detail, and
+// Marketplace listing detail — so a size mismatch is obvious immediately,
+// before spending an exit on something that won't fit. Stocks have
+// neither. Condition is always "New" (no used/worn inventory in this
+// catalog) but still stated explicitly rather than assumed.
 function itemMetaText(name, category) {
   if (category === "stocks") return "";
   const size = market.sizeLabelFor(name, category);
@@ -1789,6 +1788,8 @@ function openSlot(index, { isYours, revealCard = true }) {
   slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
   if (revealCard) slot.classList.add("open");
+  // The printer's sheet comes out printed with this slot's certificate.
+  if (viewers[index]?.setPaper) viewers[index].setPaper(prize.image);
   if (viewers[index]) viewers[index].open();
 }
 

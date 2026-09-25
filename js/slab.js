@@ -180,8 +180,16 @@ function printedFace({ name, size, price, rarityLabel, color, brand, symbol }) {
   ctx.letterSpacing = "0px";
   ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(CW / 2 + 60, M + 26); ctx.lineTo(CW / 2 + 60, M + 96); ctx.stroke();
-  ctx.fillStyle = "#fff"; ctx.font = `800 58px ${FONT}`; ctx.textAlign = "right";
-  ctx.letterSpacing = "2px"; ctx.fillText(brand, CW - M - 46, M + 61); ctx.letterSpacing = "0px";
+  // Shrink the wordmark to fit its half of the header: a long one
+  // ("Robinhood Chain") at full size ran into the rarity label.
+  ctx.fillStyle = "#fff"; ctx.textAlign = "right"; ctx.letterSpacing = "2px";
+  const brandRoom = CW - M - 46 - (CW / 2 + 60) - 28;
+  let brandSize = 58;
+  do {
+    ctx.font = `800 ${brandSize}px ${FONT}`;
+    brandSize -= 2;
+  } while (ctx.measureText(brand).width > brandRoom && brandSize > 24);
+  ctx.fillText(brand, CW - M - 46, M + 61); ctx.letterSpacing = "0px";
 
   // The window is square and inset from the card's sides, so the item is
   // never squashed to fit and the frame around it has room to breathe.

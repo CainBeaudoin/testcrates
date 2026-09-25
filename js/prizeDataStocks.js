@@ -19,7 +19,7 @@ function stockCardSVG(ticker, company, hue) {
   const tickerSize = ticker.length > 4 ? 52 : 64;
   const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="600" height="600">
     <defs>
       <filter id="grain" x="0" y="0" width="100%" height="100%">
         <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${seed}"/>

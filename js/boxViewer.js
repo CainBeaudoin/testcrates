@@ -313,37 +313,24 @@ function buildRig(root) {
 // mostly inside the printer's silhouette (so the body occludes it) and
 // slid up-and-forward on print(), rather than needing a real output-slot
 // node baked into the source model.
+// The sheet the Stocks printer feeds out. Shaped like the share
+// certificate (see prizeDataStocks.js), plain paper until setPaper() prints
+// the actual certificate for that slot onto it.
+const CERT_CROP = { x: 30, y: 18, w: 240, h: 258 }; // the card within the 300x300 certificate art
+
 function buildPaperSheet(bounds) {
   const width = Math.max(0.5, bounds.width * 0.46);
-  const height = width * 1.3;
+  const height = width * (CERT_CROP.h / CERT_CROP.w);
 
   const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = Math.round(256 * (height / width));
+  canvas.width = 480;
+  canvas.height = Math.round(480 * (height / width));
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f4f2ec";
+  ctx.fillStyle = "#f6f3ec";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "rgba(30,30,30,0.55)";
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 5; i++) {
-    const y = canvas.height * (0.16 + i * 0.09);
-    ctx.beginPath();
-    ctx.moveTo(canvas.width * 0.14, y);
-    ctx.lineTo(canvas.width * (0.5 + (i % 2) * 0.3), y);
-    ctx.stroke();
-  }
-  // A little sparkline, since it's meant to read as a printed stock report.
-  ctx.strokeStyle = "#4ade80";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  const py = canvas.height * 0.72;
-  ctx.moveTo(canvas.width * 0.14, py + 14);
-  ctx.lineTo(canvas.width * 0.3, py - 4);
-  ctx.lineTo(canvas.width * 0.46, py + 8);
-  ctx.lineTo(canvas.width * 0.62, py - 18);
-  ctx.lineTo(canvas.width * 0.8, py - 30);
-  ctx.stroke();
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
 
   const sheet = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
@@ -355,7 +342,25 @@ function buildPaperSheet(bounds) {
   sheet.position.set(0, parkedY, bounds.maxZ * 0.35);
   sheet.rotation.x = -0.3;
 
-  return { sheet, parkedY, printedY };
+  // Resolves once the certificate is on the sheet (or failed to load, in
+  // which case the plain paper stays).
+  function print(imageUrl) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const k = img.naturalWidth / 300;
+        ctx.fillStyle = "#f6f3ec";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, CERT_CROP.x * k, CERT_CROP.y * k, CERT_CROP.w * k, CERT_CROP.h * k, 0, 0, canvas.width, canvas.height);
+        texture.needsUpdate = true;
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = imageUrl;
+    });
+  }
+
+  return { sheet, parkedY, printedY, print };
 }
 
 function configureRenderer(renderer) {
@@ -507,6 +512,10 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box") {
     setPaused(v) {
       paused = v;
       facing = v;
+    },
+    // Printer only: print this certificate on the sheet before it feeds out.
+    setPaper(imageUrl) {
+      if (paper && imageUrl) paper.print(imageUrl);
     },
     // Only ever called from an explicit click handler.
     open() {

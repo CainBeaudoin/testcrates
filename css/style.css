@@ -5719,3 +5719,39 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 @media (prefers-reduced-motion: reduce) {
   .ship-step.current .ship-step-dot { animation: none; }
 }
+
+/* --- Picking screen scale -------------------------------------------------
+   The reel and the three crates are sized from one number, --slot, that
+   grows with the viewport (it was a fixed 190px, which left the crates
+   small in a lot of empty screen). Everything that has to line up with a
+   crate (the reel's height and width, the gaps, the slab that pops out of
+   an opened crate and how far it rises) is a fraction of it, so the reel
+   still hands off to the crates at the same height and size. */
+#screen-game {
+  --slot: clamp(190px, min(24vw, 36vh), 320px);
+}
+#screen-game .reel {
+  height: var(--slot);
+  max-width: calc(var(--slot) * 3 + var(--slot) * 0.26);
+  margin-top: calc(var(--slot) * 0.42);
+}
+#screen-game .box-row {
+  column-gap: calc(var(--slot) * 0.13);
+  padding-top: calc(var(--slot) * 0.42);
+}
+#screen-game .box-slot { width: var(--slot); }
+#screen-game .box-canvas { width: var(--slot); height: var(--slot); }
+#screen-game .price-card { width: calc(var(--slot) * 0.88); }
+#screen-game .box-slot.open .price-card {
+  transform: translate(-50%, calc(var(--slot) * -0.35)) scale(1);
+}
+@media (max-width: 640px) {
+  /* Three across, filling the width between the 16px gutters. */
+  #screen-game { --slot: min(150px, calc((100vw - 48px) / 3)); }
+  #screen-game .box-row { column-gap: 8px; padding-top: calc(var(--slot) * 0.54); }
+  #screen-game .reel { max-width: calc(var(--slot) * 3 + 16px); margin-top: calc(var(--slot) * 0.54); }
+  #screen-game .price-card { width: var(--slot); }
+  #screen-game .box-slot.open .price-card {
+    transform: translate(-50%, calc(var(--slot) * -0.5)) scale(1);
+  }
+}
