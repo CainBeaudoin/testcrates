@@ -252,19 +252,6 @@ function angleToZero(angle) {
   return a;
 }
 
-function makeShadowTexture() {
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  const grd = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grd.addColorStop(0, "rgba(0,0,0,0.5)");
-  grd.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(canvas);
-}
-
 // Shared scene/camera/lighting setup so the reel snapshot and the live,
 // interactive viewers are pixel-for-pixel the same shot — that's what makes
 // the reel-to-slot handoff read as the same box rather than a swap. Works
@@ -300,14 +287,6 @@ function buildRig(root) {
 
   const group = new THREE.Group();
   group.add(root);
-
-  const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2),
-    new THREE.MeshBasicMaterial({ map: makeShadowTexture(), transparent: true, depthWrite: false })
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = box.min.y * scale - center.y * scale - 0.02;
-  group.add(shadow);
 
   const scene = new THREE.Scene();
   scene.add(group);

@@ -5201,7 +5201,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   place-items: center;
   aspect-ratio: 4 / 3;
   border-radius: 14px;
-  background: radial-gradient(ellipse at 50% 62%, var(--surface-2), transparent 72%);
 }
 .home-crate-box {
   display: block;
