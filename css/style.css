@@ -5115,31 +5115,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .home-hero .home-btn-ghost { color: var(--hero-ink); }
 .home-btn-inverse { background: var(--text-inverse); color: var(--text); }
 
-/* --- Facts -------------------------------------------------------------- */
-.home-facts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-.home-fact {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: var(--surface-1);
-}
-.home-fact b {
-  font-family: Anton, "Arial Narrow", Impact, sans-serif;
-  font-weight: 400;
-  font-size: 1.7rem;
-  line-height: 1.1;
-  letter-spacing: 0.5px;
-  color: var(--text);
-}
-.home-fact span { font-size: 0.78rem; line-height: 1.4; color: var(--text-dim); }
-
 /* --- Section heads ------------------------------------------------------ */
 .home-block { margin-top: 64px; }
 .home-block-head {
@@ -5475,10 +5450,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .home-cta-sub { margin: 0 0 28px; font-size: 1rem; color: var(--text-inverse-dim); }
 
-/* The dock repeats the Live pulls band, and parked bottom-left it would sit
-   on the billboard's copy. Home has the feed at full size already. */
-body:has(#screen-home.active) .pull-dock { display: none; }
-
 @media (prefers-reduced-motion: reduce) {
   .home-hero-dot.is-active .home-hero-dot-fill { animation: none; width: 100%; }
   .home-hero-img { transition: opacity 0.2s ease; transform: none; }
@@ -5489,7 +5460,6 @@ body:has(#screen-home.active) .pull-dock { display: none; }
 @media (max-width: 1000px) and (min-width: 641px) {
   .home-hero-copy { padding: 44px 0 40px 40px; }
   .home-crates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-board-row { grid-template-columns: 26px 30px minmax(0, 1fr) 80px; }
   .home-board-bar { display: none; }
 }
@@ -5510,10 +5480,6 @@ body:has(#screen-home.active) .pull-dock { display: none; }
   /* It wraps under the solid button here; flush left so the two line up. */
   .home-btn-ghost { padding-left: 2px; }
 
-  .home-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
-  .home-fact { padding: 14px; border-radius: 14px; }
-  .home-fact b { font-size: 1.3rem; }
-  .home-fact span { font-size: 0.7rem; }
 
   .home-block { margin-top: 44px; }
   .home-block-head { margin-bottom: 14px; }

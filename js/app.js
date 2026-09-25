@@ -3684,21 +3684,7 @@ function showHomeSlide(i, { instant = false } = {}) {
   }
 }
 
-// ---- Facts, crates, grails ----
-function renderHomeFacts() {
-  const photoItems = HOME_PHOTO_TIERS.flatMap((k) => CATEGORIES[k].pool);
-  const top = [...photoItems].sort(byPriceDesc)[0];
-  const facts = [
-    [ALL_CATALOG.length.toLocaleString(), "prizes across four crates"],
-    [`$${top.price.toLocaleString()}`, "the top item in a crate right now"],
-    [`${Math.round(player.CASHOUT_HAIRCUT * 100)}%`, "back in cash, instantly, on any pull"],
-    ["Provably fair", "every result is hashed before a box opens"],
-  ];
-  document.getElementById("homeFacts").innerHTML = facts
-    .map(([big, small]) => `<div class="home-fact"><b>${big}</b><span>${small}</span></div>`)
-    .join("");
-}
-
+// ---- Crates, grails ----
 function renderHomeCrates() {
   const el = document.getElementById("homeCrates");
   el.innerHTML = Object.entries(CATEGORIES)
@@ -3886,7 +3872,6 @@ function renderHomeMarket() {
 
 function renderHome() {
   if (!homeHeroBuilt) buildHomeHero();
-  renderHomeFacts();
   renderHomeCrates();
   renderHomeGrails();
   renderHomeSteps();
