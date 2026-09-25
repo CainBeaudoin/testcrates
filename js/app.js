@@ -229,9 +229,11 @@ const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
 const muteBtn = document.getElementById("muteBtn");
-const recentPulls = document.getElementById("recentPulls");
 const pullFaceScreen = document.getElementById("pullFaceScreen");
-const recentPullsTitle = document.getElementById("recentPullsTitle");
+const pullDock = document.getElementById("pullDock");
+const pullDockHead = document.getElementById("pullDockHead");
+const pullDockMin = document.getElementById("pullDockMin");
+const pullDockCrate = document.getElementById("pullDockCrate");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
 const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
@@ -877,8 +879,7 @@ function seedSimulatedPulls() {
 function tickSimulatedPulls() {
   simulatedPulls.unshift(generateSimulatedPull(Date.now()));
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
-  if (screenCategory.classList.contains("active")) renderRecentPulls();
-  renderPullsDock(); // the dock is on every screen, not just Drops
+  renderRecentPulls(); // the dock is on every screen, not just Drops
 }
 
 // Set while a tier page is open, so the carousel under it shows that
@@ -895,26 +896,18 @@ function livePullFeed(limit, tierKey = null) {
   return scoped.sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
-// One pull on a display, not a row of them. The newest arrival swipes in
-// and the previous one swipes out of the same 232px square, so the section
-// stays one object however many pulls land — and a pull is legible at a
-// glance instead of being one of sixteen thumbnails.
+// One prize on a watch face in the corner, on every screen. The newest
+// arrival swipes in and the previous one swipes out of the same square.
 let pullFaceTs = null;
 
 function renderRecentPulls() {
   const [pull] = livePullFeed(1, recentPullsTierKey);
-
-  recentPullsTitle.textContent = recentPullsTierKey
-    ? `Recent ${CATEGORIES[recentPullsTierKey].badge} Pulls`
-    : "Recent Pulls";
-
   if (!pull) {
-    recentPulls.classList.add("hidden");
     pullFaceScreen.innerHTML = "";
+    pullDockCrate.textContent = "";
     pullFaceTs = null;
     return;
   }
-  recentPulls.classList.remove("hidden");
   if (pull.ts === pullFaceTs && pullFaceScreen.firstElementChild) return;
 
   const tierKey = tierKeyOf(pull.tierKey);
@@ -922,116 +915,128 @@ function renderRecentPulls() {
   const isFirst = pullFaceTs === null;
   pullFaceTs = pull.ts;
 
+  // The action under the case follows whatever is on it.
+  pullDockCrate.textContent = cat.badge;
+  pullDockCrate.title = `Open the ${cat.badge} crate`;
+  pullDockCrate.dataset.tier = tierKey;
+
   const card = document.createElement("div");
   card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
   card.dataset.pullTs = pull.ts;
+  card.title = `${pull.name} — ${RARITY_META[pull.rarity].label}`;
   card.innerHTML = `
-    <button class="pull-face-crate tier-badge-${cat.badge.toLowerCase()}"
-            title="Open the ${cat.badge} crate">${cat.badge}</button>
-    <img src="${pull.image}" alt="">
-    <span class="pull-face-price">$${pull.price.toLocaleString()}</span>
-    <span class="pull-face-name">${pull.name}</span>
-    <span class="pull-face-user ${pull.isPlayer ? "you" : ""}">${pull.isPlayer ? "You" : pull.username}</span>`;
-
-  card.addEventListener("click", (e) => {
-    // The crate label goes somewhere else — see below.
-    if (e.target.closest(".pull-face-crate")) return;
+    <span class="pull-face-user ${pull.isPlayer ? "you" : ""}">${pull.isPlayer ? "You" : pull.username}</span>
+    <img src="${pull.image}" alt="${pull.name}">
+    <span class="pull-face-price">$${pull.price.toLocaleString()}</span>`;
+  card.addEventListener("click", () => {
     playClick();
     openPullDetail(pull);
   });
 
-  // The label is the shortcut to the crate that produced this pull.
-  card.querySelector(".pull-face-crate").addEventListener("click", () => {
-    playClick();
-    const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
-    if (wrap) openTierDetail(wrap);
-  });
-
-  // Whatever is on screen swipes out as this one swipes in; they cross in
-  // the same space, so the outgoing card is removed once its run is done
-  // rather than left stacked underneath.
   const outgoing = pullFaceScreen.firstElementChild;
   pullFaceScreen.appendChild(card);
   if (outgoing) {
     outgoing.classList.remove("is-entering");
     outgoing.classList.add("is-leaving");
     outgoing.addEventListener("animationend", () => outgoing.remove(), { once: true });
-    // A tab that was hidden never fires the animation, so this is the floor.
+    // A hidden tab never fires the animation, so this is the floor.
     setTimeout(() => outgoing.remove(), 700);
   }
 }
 
-// ---- Live pulls dock ----------------------------------------------------
-// The same feed as the Drops strip, parked bottom-left on every screen so
-// you don't have to be on Drops (or scroll) to see that something landed.
-// Collapses to its own header bar, and remembers that between visits.
+// ---- The dock: collapse, and drag it wherever ---------------------------
+// Anchored bottom-left by default; dragging switches it to explicit
+// left/top, which is what gets remembered.
+const PULL_DOCK_KEY = "gotcha_pull_dock";
 
-const pullsDock = document.getElementById("pullsDock");
-const pullsDockList = document.getElementById("pullsDockList");
-const pullsDockToggle = document.getElementById("pullsDockToggle");
-const PULLS_DOCK_KEY = "gotcha_pulls_dock";
-const PULLS_DOCK_ROWS = 10;
-
-// Only the row that wasn't there last render animates in — re-animating the
-// whole list on every tick would make the corner of the screen twitch every
-// four seconds.
-let pullsDockTopTs = null;
-
-function renderPullsDock() {
-  const feed = livePullFeed(PULLS_DOCK_ROWS);
-  if (feed.length === 0) {
-    pullsDockList.innerHTML = "";
-    return;
-  }
-  const newest = feed[0].ts;
-  const isFirstPaint = pullsDockTopTs === null;
-
-  pullsDockList.innerHTML = feed
-    .map((p) => {
-      const cat = tierOf(p.tierKey);
-      const fresh = !isFirstPaint && p.ts > pullsDockTopTs;
-      return `
-      <button class="pulls-dock-row${fresh ? " is-new" : ""}" data-pull-ts="${p.ts}">
-        <img src="${p.image}" alt="">
-        <span class="pulls-dock-row-main">
-          <span class="pulls-dock-row-name">${p.name}</span>
-          <span class="pulls-dock-row-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username} · ${cat.badge}</span>
-        </span>
-        <span class="pulls-dock-row-price">$${p.price.toLocaleString()}</span>
-      </button>`;
-    })
-    .join("");
-
-  pullsDockList.querySelectorAll(".pulls-dock-row").forEach((el, i) => {
-    el.addEventListener("click", () => {
-      playClick();
-      openPullDetail(feed[i]);
-    });
-  });
-  pullsDockTopTs = newest;
+function setPullDockCollapsed(collapsed) {
+  pullDock.classList.toggle("collapsed", collapsed);
+  pullDockMin.setAttribute("aria-expanded", String(!collapsed));
+  pullDockMin.setAttribute("aria-label", collapsed ? "Expand recent pulls" : "Collapse recent pulls");
+  savePullDock();
 }
 
-function setPullsDockCollapsed(collapsed) {
-  pullsDock.classList.toggle("collapsed", collapsed);
-  pullsDockToggle.setAttribute("aria-expanded", String(!collapsed));
-  pullsDockToggle.title = collapsed ? "Show live pulls" : "Hide live pulls";
+function clampPullDock(x, y) {
+  const r = pullDock.getBoundingClientRect();
+  return [
+    Math.min(Math.max(x, 8), Math.max(8, innerWidth - r.width - 8)),
+    Math.min(Math.max(y, 8), Math.max(8, innerHeight - r.height - 8)),
+  ];
+}
+
+function placePullDock(x, y) {
+  const [cx, cy] = clampPullDock(x, y);
+  pullDock.style.left = `${cx}px`;
+  pullDock.style.top = `${cy}px`;
+  pullDock.style.bottom = "auto";
+}
+
+function savePullDock() {
   try {
-    localStorage.setItem(PULLS_DOCK_KEY, collapsed ? "collapsed" : "open");
+    const hasPos = pullDock.style.top !== "";
+    localStorage.setItem(PULL_DOCK_KEY, JSON.stringify({
+      collapsed: pullDock.classList.contains("collapsed"),
+      x: hasPos ? parseFloat(pullDock.style.left) : null,
+      y: hasPos ? parseFloat(pullDock.style.top) : null,
+    }));
   } catch {
-    // Not persisting is survivable — it just reopens next visit.
+    // Not persisting is survivable — it goes back to the corner next visit.
   }
 }
 
-pullsDockToggle.addEventListener("click", () => {
+pullDockMin.addEventListener("click", () => {
   playClick();
-  setPullsDockCollapsed(!pullsDock.classList.contains("collapsed"));
+  setPullDockCollapsed(!pullDock.classList.contains("collapsed"));
+});
+
+// Drag from the header. Pointer capture rather than document listeners, so
+// a fast drag that outruns the cursor doesn't drop the dock mid-air.
+let dockDrag = null;
+pullDockHead.addEventListener("pointerdown", (e) => {
+  if (e.target.closest(".pull-dock-min")) return; // that's the collapse button
+  const r = pullDock.getBoundingClientRect();
+  dockDrag = { dx: e.clientX - r.left, dy: e.clientY - r.top, moved: false };
+  pullDockHead.setPointerCapture(e.pointerId);
+  pullDock.classList.add("is-dragging");
+});
+pullDockHead.addEventListener("pointermove", (e) => {
+  if (!dockDrag) return;
+  dockDrag.moved = true;
+  placePullDock(e.clientX - dockDrag.dx, e.clientY - dockDrag.dy);
+});
+function endDockDrag(e) {
+  if (!dockDrag) return;
+  pullDock.classList.remove("is-dragging");
+  if (dockDrag.moved) savePullDock();
+  dockDrag = null;
+  if (e && pullDockHead.hasPointerCapture?.(e.pointerId)) pullDockHead.releasePointerCapture(e.pointerId);
+}
+pullDockHead.addEventListener("pointerup", endDockDrag);
+pullDockHead.addEventListener("pointercancel", endDockDrag);
+
+// A dock parked near an edge shouldn't end up off-screen when the window
+// shrinks under it.
+addEventListener("resize", () => {
+  if (pullDock.style.top === "") return;
+  placePullDock(parseFloat(pullDock.style.left), parseFloat(pullDock.style.top));
 });
 
 try {
-  setPullsDockCollapsed(localStorage.getItem(PULLS_DOCK_KEY) === "collapsed");
+  const saved = JSON.parse(localStorage.getItem(PULL_DOCK_KEY) || "{}");
+  if (saved.collapsed) pullDock.classList.add("collapsed");
+  pullDockMin.setAttribute("aria-expanded", String(!saved.collapsed));
+  if (typeof saved.x === "number" && typeof saved.y === "number") placePullDock(saved.x, saved.y);
 } catch {
-  setPullsDockCollapsed(false);
+  // Fall back to the corner the CSS anchors it to.
 }
+
+pullDockCrate.addEventListener("click", () => {
+  playClick();
+  const wrap = categoryList.querySelector(`.category-wrap[data-tier="${pullDockCrate.dataset.tier}"]`);
+  if (!wrap) return;
+  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
+  openTierDetail(wrap);
+});
 
 function openPullDetail(pull) {
   const meta = RARITY_META[pull.rarity];
@@ -1167,7 +1172,7 @@ function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
-  // The carousel stays put below the card, narrowed to this tier's pulls.
+  // The corner dock narrows to this tier's pulls while its page is open.
   recentPullsTierKey = wrap.dataset.tier;
   renderRecentPulls();
   window.scrollTo({ top: 0 });
@@ -1572,7 +1577,7 @@ function onPick(index) {
   const finalPrize = boxPrizes[index]; // duplicate-guard already resolved at round start, see startRound
 
   const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, CATEGORIES[currentCategoryKey].price);
-  renderPullsDock(); // your own pull should land in the dock immediately
+  renderRecentPulls(); // your own pull should land in the dock immediately
 
   // Result is known — the Live Activity switches from OPENING to the rarity.
   // Deliberately fired here rather than after the modal animation: the point
@@ -3607,7 +3612,7 @@ if (profileParam) {
   seedSimulatedPulls();
   seedDemoInventory();
   renderCategories();
-  renderPullsDock();
+  renderRecentPulls();
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.
