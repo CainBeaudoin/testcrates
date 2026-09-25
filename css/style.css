@@ -391,36 +391,6 @@ body {
   background: var(--surface-2);
 }
 
-.notif-btn {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-dim);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-}
-.notif-btn:hover { color: var(--text); background: var(--control-fill-hover); }
-.notif-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #1cb954;
-  color: #04160c;
-  font-size: 0.55rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .avatar-btn {
   display: flex;
@@ -4128,50 +4098,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .field-input:focus { outline: none; border-color: var(--text); }
 
-/* --- Credit-earned notifications --- */
-
-.credits-earned-amount { color: var(--positive); font-weight: 700; }
-
-/* Cashback history grows to 50 entries, which ran the card far past both
-   ends of the viewport with no way to scroll it. Cap the card to the
-   screen and let the list — and only the list — scroll inside it, so the
-   title and the buttons stay put at either end. */
-.credits-earned-modal-card {
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 40px);
-  padding-bottom: 24px;
-}
-.credits-earned-list {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  margin: 0 -8px;
-  padding: 0 8px;
-}
-.credits-earned-actions {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--hairline);
-}
-.credits-earned-actions .listing-close-btn { margin: 0; }
-.credits-earned-clear-btn {
-  padding: 8px 16px;
-  background: var(--surface-2);
-  border: none;
-  border-radius: 999px;
-  color: var(--text-dim);
-  font-size: 0.68rem;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-}
-.credits-earned-clear-btn:hover { color: var(--text); border-color: var(--line-strong); }
-
 .hidden { display: none !important; }
 
 /* ==========================================================================
@@ -4244,7 +4170,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     padding: 16px 16px calc(var(--bottom-nav-h) + 24px);
   }
 
-  /* --- Condensed header — logo, balances, notifications, avatar; the
+  /* --- Condensed header — logo, balances, avatar; the
      gamification stats and secondary actions live in their own screens
      already (Streaks/Referral tabs, Account's Add Funds button). --- */
 
@@ -4256,7 +4182,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .wallet-item, .avatar-btn { font-size: 0.62rem; padding: 4px 8px; white-space: nowrap; }
   #topUsername { display: none; }
   .avatar-btn { padding: 4px; gap: 0; }
-  .notif-btn { width: 28px; height: 28px; }
 
   .screen-title { font-size: 1.05rem; margin-bottom: 16px; }
 

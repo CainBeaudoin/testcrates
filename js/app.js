@@ -314,12 +314,6 @@ const streakRafflePrize = document.getElementById("streakRafflePrize");
 const topAvatar = document.getElementById("topAvatar");
 const topUsername = document.getElementById("topUsername");
 const avatarBtn = document.getElementById("avatarBtn");
-const notifBtn = document.getElementById("notifBtn");
-const notifBadge = document.getElementById("notifBadge");
-const creditsEarnedModal = document.getElementById("creditsEarnedModal");
-const creditsEarnedList = document.getElementById("creditsEarnedList");
-const creditsEarnedCloseBtn = document.getElementById("creditsEarnedCloseBtn");
-const creditsEarnedClearBtn = document.getElementById("creditsEarnedClearBtn");
 const addFundsModal = document.getElementById("addFundsModal");
 const chainFilter = document.getElementById("chainFilter");
 const depositChainName = document.getElementById("depositChainName");
@@ -346,9 +340,6 @@ const withdrawCloseBtn = document.getElementById("withdrawCloseBtn");
 const streakStat = document.getElementById("streakStat");
 const streakRing = document.getElementById("streakRing");
 const streakValue = document.getElementById("streakValue");
-const referralStat = document.getElementById("referralStat");
-const referralRing = document.getElementById("referralRing");
-const referralValue = document.getElementById("referralValue");
 const listingModal = document.getElementById("listingModal");
 const listingImage = document.getElementById("listingImage");
 const listingName = document.getElementById("listingName");
@@ -1351,6 +1342,11 @@ function tryPurchase(currency) {
     return false;
   }
   player.addCredits(result.rebate);
+  // Still recorded, but nothing reads it any more: the only screen that
+  // showed this history was the topbar bell's list, and the bell is gone.
+  // The wallet toast below is what tells you about the cashback now. Kept
+  // because it's the record of what was paid — re-surfacing it is a render
+  // away (Rewards is the natural home).
   player.logCreditEarned(result.rebate, key);
   renderWallet({ pulse: currency });
   showWalletToast(result.rebate, "credits");
@@ -2546,55 +2542,6 @@ streakStat.addEventListener("click", () => {
   railRewardsTab.click();
 });
 
-referralStat.addEventListener("click", () => {
-  playClick();
-  railRewardsTab.click();
-  // The pill says Referral, so land on that panel rather than the group's
-  // default (Streaks).
-  document.querySelector('.account-toggle[data-toggle-group="rewards"] [data-toggle-target="referral"]')?.click();
-});
-
-notifBtn.addEventListener("click", () => {
-  playClick();
-  openCreditsEarnedModal();
-});
-
-function openCreditsEarnedModal() {
-  const events = player.getCreditEvents();
-  creditsEarnedList.innerHTML = events.length
-    ? events
-        .map((e) => {
-          const cat = e.tierKey ? tierOf(e.tierKey) : null;
-          return `
-          <div class="opening-row">
-            <span class="opening-row-name">${cat ? cat.label : "Crate"} purchase</span>
-            <span class="opening-row-mult credits-earned-amount">+${e.amount.toLocaleString()} cr</span>
-          </div>`;
-        })
-        .join("")
-    : `<div class="offers-empty">Open a crate to start earning cashback credits.</div>`;
-
-  creditsEarnedClearBtn.classList.toggle("hidden", events.length === 0);
-
-  // Opening the list is what marks it read — the badge counts arrivals
-  // since the last look, so it clears here rather than growing forever.
-  player.markCreditEventsSeen();
-  renderHeaderStats();
-
-  creditsEarnedModal.classList.remove("hidden");
-  requestAnimationFrame(() => creditsEarnedModal.classList.add("visible"));
-}
-creditsEarnedClearBtn.addEventListener("click", () => {
-  playClick();
-  player.clearCreditEvents();
-  openCreditsEarnedModal();
-});
-creditsEarnedCloseBtn.addEventListener("click", () => {
-  playClick();
-  creditsEarnedModal.classList.remove("visible");
-  setTimeout(() => creditsEarnedModal.classList.add("hidden"), 250);
-});
-
 referralLinkBtn.addEventListener("click", async () => {
   const link = `${location.origin}${location.pathname}?ref=${encodeURIComponent(player.getUsername())}`;
   try {
@@ -2667,14 +2614,6 @@ function renderHeaderStats() {
   const streak = player.getStreak();
   streakValue.textContent = streak;
   streakRing.style.setProperty("--pct", Math.min(100, (streak / 5) * 100));
-
-  const referral = player.getReferralTier();
-  referralValue.textContent = `${Math.round(referral.share * 100)}%`;
-  referralRing.style.setProperty("--pct", Math.round(referral.progress * 100));
-
-  const unseen = player.getUnseenCreditCount();
-  notifBadge.textContent = unseen;
-  notifBadge.classList.toggle("hidden", unseen === 0);
 }
 
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you

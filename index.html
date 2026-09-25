@@ -45,19 +45,12 @@ try {
       <button class="stat-pill" id="streakStat" title="Rare+ pulls in a row — view your Streaks">
         <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
       </button>
-      <button class="stat-pill" id="referralStat" title="Referral share, from lifetime crate volume — view Referral">
-        <span class="ring" id="referralRing"></span> Referral <b id="referralValue">20%</b>
-      </button>
       <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards — how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
       <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Withdraw">
         <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b>
       </button>
       <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
         <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-      <button id="notifBtn" class="notif-btn" title="Incoming offers">
-        <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span id="notifBadge" class="notif-badge hidden">0</span>
       </button>
       <button id="avatarBtn" class="avatar-btn">
         <span class="avatar-circle" id="topAvatar"></span>
@@ -687,18 +680,6 @@ try {
 </div>
 
 <!-- Credits earned notifications -->
-<div id="creditsEarnedModal" class="prize-modal hidden">
-  <div class="prize-modal-card listing-modal-card credits-earned-modal-card">
-    <h3 class="payment-modal-title">Credits Earned</h3>
-    <p class="payment-modal-hint">A bit of cashback lands in Credits on every crate purchase — here's your recent history.</p>
-    <div id="creditsEarnedList" class="openings-list credits-earned-list"></div>
-    <div class="credits-earned-actions">
-      <button id="creditsEarnedClearBtn" class="credits-earned-clear-btn">Clear notifications</button>
-      <button id="creditsEarnedCloseBtn" class="back-btn listing-close-btn">Close</button>
-    </div>
-  </div>
-</div>
-
 <!-- Add funds: simulated crypto deposit or card/Apple Pay -->
 <div id="addFundsModal" class="prize-modal hidden">
   <div class="prize-modal-card add-funds-modal-card">
