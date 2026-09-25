@@ -3975,6 +3975,11 @@ if (profileParam) {
   seedSimulatedPulls();
   seedDemoInventory();
   player.seedDemoStreak(DEMO_STREAK_DAYS);
+  // Saved stock items keep the card image from when they were saved; bring
+  // them up to the current certificate art.
+  const stockImages = new Map(STOCKS_POOL.map((p) => [p.name, p.image]));
+  player.refreshImages(stockImages);
+  market.refreshImages(stockImages);
   renderCategories();
   renderHome();
   renderRecentPulls();

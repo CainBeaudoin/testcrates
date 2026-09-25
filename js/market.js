@@ -97,6 +97,26 @@ function save() {
   }
 }
 
+// Stored items carry a copy of their image from when they were saved, so a
+// redrawn catalog image (e.g. the Stocks certificates) would never reach
+// them. Swaps in the current image for any saved item whose name is in
+// `imagesByName`, wherever it lives in the saved state.
+export function refreshImages(imagesByName) {
+  let changed = false;
+  const walk = (v) => {
+    if (Array.isArray(v)) return v.forEach(walk);
+    if (!v || typeof v !== "object") return;
+    const fresh = typeof v.name === "string" && typeof v.image === "string" && imagesByName.get(v.name);
+    if (fresh && v.image !== fresh) {
+      v.image = fresh;
+      changed = true;
+    }
+    Object.values(v).forEach(walk);
+  };
+  walk(state);
+  if (changed) save();
+}
+
 // ---- Seeding (simulated other-seller listings) ---------------------------
 // Runs once ever. Picks a spread of real catalog items and lists them at a
 // price near (but not exactly) their catalog value, under a fake username,
