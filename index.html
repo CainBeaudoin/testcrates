@@ -41,25 +41,11 @@ try {
     <div class="topbar-brand">
       <button id="brandHomeBtn" class="brand-logo" aria-label="Go to Drops">CHOSEN</button>
     </div>
-    <div id="walletBar" class="topbar-stats">
-      <button class="stat-pill" id="streakStat" title="Rare+ pulls in a row — view your Streaks">
-        <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
-      </button>
-      <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards — how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
-      <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Withdraw">
-        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b>
-      </button>
-      <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
-        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-      <button id="avatarBtn" class="avatar-btn">
-        <span class="avatar-circle" id="topAvatar"></span>
-        <span id="topUsername"></span>
-      </button>
-    </div>
-  </header>
-
-  <div class="shell-body">
+    <!-- Primary nav. Four words in the header: on a site with four
+         destinations an icon is a picture of a word you can simply write,
+         and the left rail it used to live in cost 76px of every screen for
+         them. The icons stay in the markup for the mobile tab bar, where a
+         bottom row is icon-led. -->
     <nav id="mainNav" class="rail">
       <div class="rail-nav">
         <button class="nav-tab active" data-nav="screen-category">
@@ -79,21 +65,41 @@ try {
           Rewards
         </button>
       </div>
-      <div class="rail-bottom">
-        <!-- Sits above the sound toggle and matches it: two small utility
-             switches, not navigation. Both icons ship; CSS shows whichever
-             belongs to the theme that isn't running, so the button always
-             pictures what clicking it will do. -->
-        <button id="themeBtn" class="mute-btn theme-btn" aria-label="Toggle light mode" title="Toggle light mode">
-          <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg>
-          <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
-        </button>
-        <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
-          <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-        </button>
-      </div>
     </nav>
+    <div id="walletBar" class="topbar-stats">
+      <button class="stat-pill" id="streakStat" title="Rare+ pulls in a row — view your Streaks">
+        <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
+      </button>
+      <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards — how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
+      <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Withdraw">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b>
+      </button>
+      <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds — not a real deposit">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button id="avatarBtn" class="avatar-btn">
+        <span class="avatar-circle" id="topAvatar"></span>
+        <span id="topUsername"></span>
+      </button>
+    </div>
+    <div class="rail-bottom">
+      <!-- Two small utility switches at the end of the header, not
+           navigation — which is why they keep the circle treatment while the
+           nav is plain type. Both theme icons ship; CSS shows whichever
+           belongs to the theme that isn't running, so the button always
+           pictures what clicking it will do. -->
+      <button id="themeBtn" class="mute-btn theme-btn" aria-label="Toggle light mode" title="Toggle light mode">
+        <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg>
+        <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
+      </button>
+      <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
+        <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="shell-body">
 
     <div class="shell-main">
     <main>
@@ -801,13 +807,12 @@ try {
     </div>
     <span class="pull-face-name" id="pullDockName"></span>
     <!-- Which crate it came out of, and the way into it: the crate's own
-         box, its name, and who pulled it. -->
+         box and its name, and nothing else. Who pulled it and how long ago
+         were two more lines of small grey type in a panel that is meant to
+         be read at a glance. -->
     <button class="pull-dock-crate" id="pullDockCrate">
       <img class="pull-dock-crate-box" id="pullDockCrateBox" alt="">
-      <span class="pull-dock-crate-text">
-        <span class="pull-dock-crate-name" id="pullDockCrateName"></span>
-        <span class="pull-dock-crate-sub" id="pullDockCrateSub"></span>
-      </span>
+      <span class="pull-dock-crate-name" id="pullDockCrateName"></span>
       <svg class="pull-dock-crate-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
     </button>
   </div>

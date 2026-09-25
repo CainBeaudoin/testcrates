@@ -15,8 +15,8 @@
   --text-dim: rgba(245, 245, 245, 0.55);
   --text-faint: rgba(245, 245, 245, 0.32);
   --glow: 0 0 40px rgba(255, 255, 255, 0.12);
-  /* Dense terminal-style shell: fixed icon rail + slim topbar of stat
-     pills, in place of the old centered hero header. */
+  /* Dense terminal-style shell: one slim fixed topbar carrying wordmark,
+     nav and stat pills, in place of the old centered hero header. */
   --accent: #e6e6eb;
   --accent-dim: rgba(230, 230, 235, 0.16);
   --accent-line: rgba(230, 230, 235, 0.5);
@@ -26,7 +26,6 @@
   /* Not themed: see .reveal-rarity-banner. Same value --line-strong has
      here, so the reveal is unchanged in dark. */
   --reveal-banner: rgba(255, 255, 255, 0.4);
-  --rail-w: 76px;
   --topbar-h: 60px;
   --surface-1: #131318;
   --surface-2: #1a1a20;
@@ -171,10 +170,10 @@ body {
   position: relative;
 }
 
-/* --- App shell: fixed icon rail + slim topbar ---------------------------
-   Dense, data-forward layout in place of the old centered hero header —
-   nav lives in a persistent left rail, account/wallet state lives in a
-   thin always-visible topbar of stat pills. */
+/* --- App shell: one fixed header, nothing down the side -----------------
+   Dense, data-forward layout in place of the old centered hero header. One
+   bar holds all of it: wordmark, nav, wallet state, and the two utility
+   switches. Below it the content column has the full width to centre in. */
 
 .shell {
   display: flex;
@@ -191,27 +190,16 @@ body {
   padding-top: var(--topbar-h);
 }
 
-.rail {
-  flex: 0 0 var(--rail-w);
-  width: var(--rail-w);
-  height: calc(100vh - var(--topbar-h));
-  position: sticky;
-  top: var(--topbar-h);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--surface-1);
-  padding: 16px 0;
-  z-index: 20;
-}
+/* --- Nav ------------------------------------------------------------------
+   A row of words in the header. It was a 76px icon rail down the left,
+   which charged every screen the same 76px forever so that four
+   destinations could be pictures instead of their own names — and pushed
+   the centred content off-centre by half of it. Mobile keeps the element as
+   a fixed bottom tab bar (see the mobile query); everything horizontal here
+   is scoped to desktop so the two don't have to argue. */
 
-.rail-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  align-items: center;
-}
+.rail { display: flex; align-items: center; }
+.rail-nav { display: flex; align-items: center; }
 
 .nav-tab {
   display: flex;
@@ -223,7 +211,9 @@ body {
   background: transparent;
   border: none;
   border-radius: 10px;
-  color: var(--text-faint);
+  /* dim, not faint: with the icon gone the word is the whole target, and
+     faint sits at 2.75:1 on the dark bar. */
+  color: var(--text-dim);
   font-size: 0.58rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -238,12 +228,27 @@ body {
   font-weight: 700;
 }
 
+@media (min-width: 641px) {
+  .rail { flex: 0 0 auto; margin-left: 10px; }
+  .rail-nav { gap: 2px; }
+  .nav-tab {
+    flex-direction: row;
+    width: auto;
+    gap: 0;
+    padding: 8px 13px;
+    font-size: 0.68rem;
+    letter-spacing: 0.8px;
+  }
+  /* Written out, the glyph is a second name for the same thing. */
+  .nav-tab .icon { display: none; }
+}
+
+/* Theme and sound: the tail of the header, past the wallet. */
 .rail-bottom {
-  margin-top: auto;
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .mute-btn {
@@ -291,6 +296,18 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 0 24px;
+}
+/* The blur is painted by a layer inside the bar rather than by the bar
+   itself, because backdrop-filter makes an element the containing block for
+   any fixed-position descendant — and the nav now lives in here, where
+   mobile still needs it to pin itself to the bottom of the viewport as a tab
+   bar. On the pseudo-element it blurs exactly the same pixels and traps
+   nothing. */
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--panel-blur);
   backdrop-filter: blur(10px);
 }
@@ -328,6 +345,31 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+/* A bar of fixed height can't afford a second row, so the wallet never
+   wraps — and it never shrinks either, because a squeezed flex line would
+   spill its pills leftward over the nav rather than narrow them. */
+@media (min-width: 641px) {
+  .topbar { gap: 12px; }
+  .topbar-stats { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; }
+}
+
+/* Between the phone breakpoint and a comfortable desktop, four groups want
+   one 60px line and there isn't room for all of them at full size. Nav and
+   balances are what the bar is for; the streak pill, the add-funds plus and
+   the username are each one click away inside Account. */
+@media (min-width: 641px) and (max-width: 1010px) {
+  .topbar { padding: 0 14px; gap: 8px; }
+  .rail { margin-left: 0; }
+  .nav-tab { padding: 8px 8px; letter-spacing: 0.3px; }
+  #streakStat, #addFundsBtn, #topUsername { display: none; }
+  .avatar-btn { padding: 4px; gap: 0; }
+}
+/* Just above the phone breakpoint, where the four words themselves are
+   most of the bar. */
+@media (min-width: 641px) and (max-width: 740px) {
+  .topbar { padding: 0 10px; gap: 6px; }
+  .nav-tab { padding: 8px 6px; }
 }
 
 .icon { vertical-align: -2px; flex: 0 0 auto; }
@@ -428,10 +470,13 @@ body {
 }
 .avatar-lg { width: 56px; height: 56px; font-size: 1.1rem; }
 
+/* 1180 was drawn around a 76px rail eating the left edge; with the rail
+   gone the same number left a wide empty margin down both sides instead of
+   giving the grids the room. */
 .shell-main main {
   flex: 1;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 32px 32px 48px;
 }
@@ -1302,7 +1347,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 
 .app-footer {
   display: none;
-  max-width: 1180px;
+  max-width: 1360px;
   margin: 64px auto 0;
   padding: 0 32px;
 }
@@ -1776,8 +1821,6 @@ button.deposit-btn:hover {
   display: flex;
   align-items: flex-start;
   gap: 24px;
-  max-width: 1180px;
-  margin: 0 auto;
 }
 
 .market-filters {
@@ -4142,6 +4185,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
   /* --- Bottom tab bar ----------------------------------------------- */
 
+  /* The nav element lives in the header now, so its own background and
+     padding come from here rather than from a desktop rail base. It pins
+     itself to the bottom of the viewport: the header paints its blur on a
+     pseudo-element precisely so a fixed child like this one still escapes
+     it. */
   .rail {
     position: fixed;
     top: auto;
@@ -4153,6 +4201,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    background: var(--surface-1);
     padding: 8px 8px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     border-right: none;
@@ -4166,7 +4215,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     justify-content: space-around;
     gap: 0;
   }
+  /* Icon over label: a bottom bar is read by shape, not by reading. */
   .nav-tab {
+    flex-direction: column;
     width: auto;
     flex: 1;
     padding: 4px 2px;
@@ -4810,26 +4861,21 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
      Drops page — so the thumbnail is the actual crate, wearing its own
      product collage, not a generic icon. */
   .pull-dock-crate-box {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     flex: 0 0 auto;
     object-fit: contain;
   }
 
-  .pull-dock-crate-text { flex: 1; min-width: 0; }
+  /* One line, so it can be read rather than scanned — the crate name is
+     the whole label now that the pulled-by line is gone. */
   .pull-dock-crate-name {
-    display: block;
-    font-size: 0.64rem;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.84rem;
     font-weight: 700;
+    letter-spacing: 0.2px;
     color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .pull-dock-crate-sub {
-    display: block;
-    font-size: 0.56rem;
-    color: var(--text-faint);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4886,22 +4932,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* When, over the shot — the one thing that makes a feed read as live. */
-.pull-face-time {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  z-index: 2;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--chip-over-media);
-  backdrop-filter: blur(6px);
-  font-size: 0.52rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  color: var(--text-dim);
 }
 
 /* A swipe: the new prize in from the right, the last one out to the left,

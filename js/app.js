@@ -240,7 +240,6 @@ const pullDockCrate = document.getElementById("pullDockCrate");
 const pullDockName = document.getElementById("pullDockName");
 const pullDockCrateBox = document.getElementById("pullDockCrateBox");
 const pullDockCrateName = document.getElementById("pullDockCrateName");
-const pullDockCrateSub = document.getElementById("pullDockCrateSub");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
 const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
@@ -959,7 +958,6 @@ function renderPullDock() {
     pullFaceCurrent = null;
     pullDockName.textContent = "";
     pullDockCrateName.textContent = "";
-    pullDockCrateSub.textContent = "";
     pullFaceTs = null;
     return;
   }
@@ -981,7 +979,6 @@ function renderPullDock() {
     pullDockName.textContent = pull.name;
     pullDockName.title = pull.name;
     pullDockCrateName.textContent = cat.badge;
-    pullDockCrateSub.textContent = pull.isPlayer ? "You pulled this" : `Pulled by ${pull.username}`;
     pullDockCrate.title = `Open the ${cat.badge} crate`;
     pullDockCrate.dataset.tier = tierKey;
     // The crate's own box, from the same renderer the Drops cards use.
@@ -998,9 +995,7 @@ function renderPullDock() {
   card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
   card.dataset.pullTs = pull.ts;
   card.title = `${pull.name} — ${RARITY_META[pull.rarity].label}`;
-  card.innerHTML = `
-    <span class="pull-face-time">${relativeTime(pull.ts)}</span>
-    <img src="${pull.image}" alt="${pull.name}">`;
+  card.innerHTML = `<img src="${pull.image}" alt="${pull.name}">`;
   card.addEventListener("click", () => {
     playClick();
     openPullDetail(pull);
