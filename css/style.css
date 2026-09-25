@@ -1132,7 +1132,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 104px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 6px;
+  border-radius: 10px;
   margin: 0 auto 12px;
   display: block;
 }
@@ -4959,6 +4959,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: calc(100% - 16px);
   height: calc(100% - 16px);
   object-fit: contain;
+  /* Rounded like the frame around it (12px, less the 8px inset, plus a
+     little so the curve reads at this size). */
+  border-radius: 8px;
 }
 
 /* The name, not the price. A number is what you'd compare listings by;
