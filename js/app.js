@@ -3580,14 +3580,6 @@ function heroPrize(slide) {
   return pool.find((p) => p.name === slide.pick) ?? [...pool].sort(byPriceDesc)[0];
 }
 
-// "1 in N" for one item: its share of its crate's total weight. The same
-// numbers weightedPick draws with, so the odds on the tile are the odds.
-function oneIn(prize, tierKey) {
-  const pool = CATEGORIES[tierKey].pool;
-  const total = pool.reduce((sum, p) => sum + p.weight, 0);
-  return Math.max(1, Math.round(total / prize.weight));
-}
-
 function goHome() {
   navTabs.forEach((t) => t.classList.remove("active"));
   showScreen(document.getElementById("screen-home"));
@@ -3717,8 +3709,6 @@ function showHomeSlide(i, { instant = false } = {}) {
     document.getElementById("homeHeroSub").innerHTML =
       `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()} &mdash; and it&rsquo;s sitting in a $${cat.price} crate.`;
     document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · $${cat.price}`;
-    document.getElementById("homeHeroTag").textContent =
-      `${RARITY_META[prize.rarity].label} · 1 in ${oneIn(prize, slide.tier).toLocaleString()}`;
     hero.classList.remove("is-swapping");
   };
   clearTimeout(homeHeroSwapTimer);
@@ -3810,7 +3800,7 @@ function renderHomeGrails() {
           <span class="home-grail-name">${p.name}</span>
           <span class="home-grail-foot">
             <b>$${p.price.toLocaleString()}</b>
-            <span>1 in ${oneIn(p, k).toLocaleString()} · $${cat.price} crate</span>
+            <span>$${cat.price} crate</span>
           </span>
         </span>
       </button>`;

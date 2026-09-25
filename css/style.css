@@ -5053,13 +5053,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
    cutting, so for a moment it says nothing instead of the wrong thing. */
 .home-hero-eyebrow,
 .home-hero-sub,
-.home-hero-tag,
 #homeHeroOpen {
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 .home-hero.is-swapping .home-hero-eyebrow,
 .home-hero.is-swapping .home-hero-sub,
-.home-hero.is-swapping .home-hero-tag,
 .home-hero.is-swapping #homeHeroOpen {
   opacity: 0;
   transform: translateY(6px);
@@ -5102,21 +5100,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .home-hero-img.is-active { opacity: 1; transform: none; }
 .home-hero-media:hover .home-hero-img.is-active { transform: scale(1.025); }
-
-.home-hero-tag {
-  position: absolute;
-  right: 28px;
-  bottom: 28px;
-  z-index: 2;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(8px);
-  color: var(--hero-ink);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
 
 /* Progress bars, not dots: each one fills while its slide is up, and the
    fill ending is what turns the page (see buildHomeHero). */
@@ -5522,7 +5505,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .home-hero-media { order: -1; height: 290px; min-height: 0; }
   .home-hero-media::before { font-size: 6.5rem; right: 50%; transform: translateX(50%); bottom: 0; }
   .home-hero-img { inset: 6% 8% 4%; width: 84%; height: 90%; }
-  .home-hero-tag { right: 14px; bottom: 12px; }
   .home-hero-copy { padding: 4px 22px 26px; }
   .home-hero-eyebrow { font-size: 0.92rem; margin-bottom: 10px; }
   .home-hero-title { font-size: 3.1rem; margin-bottom: 14px; }
