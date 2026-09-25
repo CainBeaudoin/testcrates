@@ -44,6 +44,10 @@
   --hover-bg: rgba(255, 255, 255, 0.05);
   --hover-bg-strong: rgba(255, 255, 255, 0.08);
   --hover-surface: #171717;              /* opaque hover on a card */
+  --control-fill: rgba(255, 255, 255, 0.06); /* a button, instead of an outline */
+  --control-fill-hover: rgba(255, 255, 255, 0.12);
+  /* A label sitting on a product photo. */
+  --chip-over-media: rgba(11, 11, 14, 0.74);
   --track: rgba(255, 255, 255, 0.08);    /* progress/meter groove */
   --shadow-card: rgba(0, 0, 0, 0.65);
   --shadow-modal: rgba(0, 0, 0, 0.85);
@@ -103,6 +107,9 @@
   --hover-bg: rgba(38, 32, 22, 0.05);
   --hover-bg-strong: rgba(38, 32, 22, 0.08);
   --hover-surface: #f3efe7;
+  --control-fill: rgba(38, 32, 22, 0.05);
+  --control-fill-hover: rgba(38, 32, 22, 0.1);
+  --chip-over-media: rgba(255, 253, 249, 0.92);
   --track: rgba(38, 32, 22, 0.1);
   /* Far lighter than the dark theme's: a 0.85-alpha black shadow that
      reads as depth on near-black reads as soot on white. Warm-tinted, so
@@ -213,7 +220,7 @@ body {
   width: 58px;
   padding: 8px 4px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: 10px;
   color: var(--text-faint);
   font-size: 0.58rem;
@@ -226,7 +233,6 @@ body {
 .nav-tab:hover { color: var(--text); background: var(--hover-bg); }
 .nav-tab.active {
   background: var(--accent-dim);
-  border-color: var(--accent-line);
   color: var(--accent);
   font-weight: 700;
 }
@@ -243,16 +249,16 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--panel);
+  background: var(--control-fill);
   color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  border: none;
 }
-.mute-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.mute-btn:hover { color: var(--text); background: var(--control-fill-hover); }
 .mute-btn .icon-volume-muted { display: none; }
 .mute-btn.muted .icon-volume { display: none; }
 .mute-btn.muted .icon-volume-muted { display: block; }
@@ -331,7 +337,7 @@ body {
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 999px;
   font-size: 0.7rem;
   letter-spacing: 0.3px;
@@ -355,7 +361,6 @@ body {
   gap: 8px;
   padding: 8px 12px 8px 8px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: 999px;
   font: inherit;
   font-size: 0.68rem;
@@ -363,8 +368,9 @@ body {
   letter-spacing: 0.3px;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
+  border: none;
 }
-.stat-pill:hover { border-color: var(--line-strong); color: var(--text); }
+.stat-pill:hover { background: var(--control-fill-hover); color: var(--text); }
 .stat-pill b { color: var(--text); font-variant-numeric: tabular-nums; }
 
 .ring {
@@ -389,15 +395,15 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid var(--line);
   background: var(--surface-2);
   color: var(--text-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
 }
-.notif-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.notif-btn:hover { color: var(--text); background: var(--control-fill-hover); }
 .notif-badge {
   position: absolute;
   top: -3px;
@@ -421,14 +427,14 @@ body {
   gap: 8px;
   padding: 4px 8px 4px 4px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: 999px;
   cursor: pointer;
   color: var(--text);
   font-size: 0.7rem;
   font-weight: 600;
+  border: none;
 }
-.avatar-btn:hover { border-color: var(--line-strong); }
+.avatar-btn:hover { background: var(--control-fill-hover); }
 
 .avatar-circle {
   display: inline-flex;
@@ -511,8 +517,8 @@ body {
   color: var(--text-dim);
   letter-spacing: 0.5px;
   padding: 4px 12px;
-  border: 1px solid var(--hairline);
   border-radius: 999px;
+  border: none;
 }
 
 .fairness-badge {
@@ -524,9 +530,9 @@ body {
   color: var(--text-dim);
   padding: 4px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: 999px;
   cursor: pointer;
+  border: none;
 }
 .fairness-badge:hover { border-color: var(--line-strong); color: var(--text); }
 .fairness-badge.verified { color: var(--positive); border-color: rgba(74, 222, 128, 0.4); }
@@ -722,12 +728,12 @@ body {
   height: 28px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line-strong);
   color: var(--text);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  border: none;
 }
 .qty-btn:hover { background: var(--text); color: var(--text-inverse); }
 
@@ -744,14 +750,14 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--line-strong);
+  background: var(--control-fill);
   border-radius: 999px;
   color: var(--text-dim);
   cursor: pointer;
+  border: none;
 }
-.qty-max-btn:hover { color: var(--text); border-color: var(--text); }
-.qty-max-btn.active { background: var(--text); color: var(--text-inverse); border-color: var(--text); }
+.qty-max-btn:hover { color: var(--text); background: var(--control-fill-hover); }
+.qty-max-btn.active { background: var(--text); color: var(--text-inverse); }
 
 .category-open-btn {
   margin-top: 16px;
@@ -821,13 +827,13 @@ body {
   height: 24px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text-faint);
   cursor: pointer;
+  border: none;
 }
 .odds-toggle-btn svg { width: 13px; height: 13px; }
-.odds-toggle-btn:hover { color: var(--text); border-color: var(--line-strong); }
-.odds-toggle-btn.active { color: var(--text); background: var(--surface-1); border-color: var(--line-strong); }
+.odds-toggle-btn:hover { color: var(--text); background: var(--control-fill-hover); }
+.odds-toggle-btn.active { color: var(--text); background: var(--surface-2); }
 
 .odds-panel {
   padding: 16px 16px;
@@ -1262,12 +1268,11 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   left: 50%;
   z-index: 3;
   width: 168px;
-  padding: 16px 12px;
-  background: var(--well);
-  border: 1px solid var(--rarity-color);
-  border-radius: 4px;
   text-align: center;
-  box-shadow: 0 12px 30px var(--shadow-card), 0 0 22px -4px var(--rarity-color);
+  /* No background, no border: the card is a rendered slab on a transparent
+     ground, so the chrome would be a second box around it. drop-shadow
+     follows the slab's own silhouette; a box-shadow would ring the PNG. */
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.32));
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 10px) scale(0.82);
@@ -1287,9 +1292,16 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   animation: nearMissPulse 1.4s ease-out 1;
 }
 
+/* Keyframes beat a plain declaration, so while this ran it painted the
+   rectangular box-shadow straight back over the transparent PNG — which is
+   exactly what the frame around the glow was. drop-shadow stacks and
+   respects alpha, so the rarity light blooms off the case's edge. */
 @keyframes nearMissPulse {
-  0%, 100% { box-shadow: 0 12px 30px var(--shadow-card), 0 0 22px -4px var(--rarity-color); }
-  30% { box-shadow: 0 12px 30px var(--shadow-card), 0 0 40px 4px var(--rarity-color); }
+  0%, 100% { filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.32)); }
+  30% {
+    filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.32))
+            drop-shadow(0 0 14px var(--rarity-color));
+  }
 }
 
 .helper-text {
@@ -1409,12 +1421,12 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 32px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text-dim);
   cursor: pointer;
   text-decoration: none;
+  border: none;
 }
-.app-footer-social-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.app-footer-social-btn:hover { color: var(--text); background: var(--control-fill-hover); }
 
 /* --- Won-prize modal --- */
 
@@ -1756,11 +1768,11 @@ button.deposit-btn:hover {
   gap: 8px;
   padding: 16px 8px;
   background: var(--panel-2);
-  border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  border: none;
 }
 .payment-option:hover {
   border-color: var(--line-strong);
@@ -1855,15 +1867,15 @@ button.deposit-btn:hover {
 .market-chip {
   padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
+  background: var(--control-fill);
   color: var(--text-dim);
   font-size: 0.66rem;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   cursor: pointer;
+  border: none;
 }
-.market-chip:hover { border-color: var(--line-strong); color: var(--text); }
+.market-chip:hover { background: var(--control-fill-hover); color: var(--text); }
 :root[data-theme="light"] .market-chip { background: var(--panel); }
 .market-chip.active {
   background: var(--accent-dim);
@@ -1924,19 +1936,15 @@ button.deposit-btn:hover {
   text-transform: uppercase;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  border: 1px solid currentColor;
+  /* Its own surface, not an outline over the photo: a frosted chip in the
+     theme's own paper, so a busy product shot can't read through the label.
+     No border — the surface is the boundary. */
+  background: var(--chip-over-media);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .market-item-size { left: auto; right: 8px; }
 .market-item-size { color: var(--text-dim); }
-:root[data-theme="light"] .market-item-rarity,
-:root[data-theme="light"] .market-item-fmv,
-:root[data-theme="light"] .market-item-size {
-  background: transparent;
-  backdrop-filter: none;
-}
-
 /* Offer flag on a vault card — opposite corner to the size pill, green so
    it reads as something waiting on you rather than another spec. */
 .market-item-offer-flag {
@@ -2072,13 +2080,13 @@ button.deposit-btn:hover {
   gap: 8px;
   padding: 8px 16px;
   background: var(--accent-dim);
-  border: 1px solid var(--accent-line);
   border-radius: 999px;
   color: var(--accent);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
+  border: none;
 }
 .referral-link-btn:hover { background: var(--accent-hover); }
 
@@ -2532,13 +2540,13 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 28px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   color: var(--text);
   font-size: 0.9rem;
   line-height: 1;
   cursor: pointer;
+  border: none;
 }
-.leaderboard-page-btn:hover:not(:disabled) { border-color: var(--line-strong); }
+.leaderboard-page-btn:hover:not(:disabled) { background: var(--control-fill-hover); }
 .leaderboard-page-btn:disabled { opacity: 0.35; cursor: default; }
 
 /* How you earn more */
@@ -2567,8 +2575,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .rewards-earn-help {
   flex: 0 0 auto;
   padding: 4px 12px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  background: var(--control-fill);
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.58rem;
@@ -2576,8 +2583,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.5px;
   text-transform: uppercase;
   cursor: pointer;
+  border: none;
 }
-.rewards-earn-help:hover { color: var(--text); border-color: var(--line-strong); }
+.rewards-earn-help:hover { color: var(--text); background: var(--control-fill-hover); }
 
 .rewards-earn-value {
   flex: 0 0 auto;
@@ -2609,29 +2617,29 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .rewards-earn-submit {
   flex: 0 0 auto;
   padding: 8px 16px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  background: var(--control-fill);
   border-radius: 999px;
   color: var(--text);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
+  border: none;
 }
-.rewards-earn-submit:hover { border-color: var(--line-strong); }
+.rewards-earn-submit:hover { background: var(--control-fill-hover); }
 .rewards-earn-connect {
   flex: 0 0 auto;
   padding: 8px 16px;
-  background: var(--surface-1);
-  border: 1px solid var(--line);
+  background: var(--control-fill);
   border-radius: 999px;
   color: var(--text);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
+  border: none;
 }
-.rewards-earn-connect:hover { border-color: var(--line-strong); }
+.rewards-earn-connect:hover { background: var(--control-fill-hover); }
 
 .rewards-earn-state {
   flex: 0 0 auto;
@@ -2730,15 +2738,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 1;
   padding: 8px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   cursor: pointer;
+  border: none;
 }
-.api-key-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.api-key-btn:hover { color: var(--text); background: var(--control-fill-hover); }
 .api-key-btn:disabled { opacity: 0.5; cursor: default; }
 .api-key-btn-primary { color: var(--text); }
 .api-key-note {
@@ -3345,15 +3353,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   justify-content: center;
   gap: 4px;
   padding: 12px 8px;
-  background: transparent;
-  border: 1px solid var(--line-strong);
+  background: var(--control-fill);
   border-radius: 4px;
   color: var(--text);
   cursor: pointer;
   text-align: center;
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  border: none;
 }
-.exit-btn:hover { transform: translateY(-2px); border-color: var(--text); }
+.exit-btn:hover { transform: translateY(-2px); background: var(--control-fill-hover); }
 .exit-btn-label {
   font-size: 0.78rem;
   font-weight: 700;
@@ -3468,11 +3476,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   font-size: 0.58rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--line-strong);
+  background: var(--control-fill);
   color: var(--text);
   border-radius: 999px;
   cursor: pointer;
+  border: none;
 }
 .item-action-btn:hover { background: var(--text); color: var(--text-inverse); }
 .item-action-btn:disabled { opacity: 0.3; cursor: default; }
@@ -4305,7 +4313,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
      of them landed on top of each other and the outer two ran off the
      side of the screen. Sized to sit inside the 118px slot pitch, with
      the contents scaled to match. */
-  .price-card { width: 104px; padding: 8px; border-radius: 8px; }
+  .price-card { width: 104px; }
   .box-slot.open .price-card { transform: translate(-50%, -52px) scale(1); }
 
   /* No "Go to Drops" arrow here — the bottom tab bar is the way back, and
@@ -4863,12 +4871,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 /* A crate that's been opened shows a rendered still of the same case. The
    card chrome goes: the slab is already an object with its own frame, and
    a panel around it is a second box around the same thing. */
-.price-card {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
 .price-card-slab {
   display: block;
   width: 100%;
