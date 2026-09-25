@@ -636,10 +636,18 @@ try {
 </div>
 
 <!-- Marketplace listing detail -->
-<div id="listingModal" class="prize-modal hidden">
-  <button id="listingPrevBtn" class="listing-nav-arrow listing-nav-prev" aria-label="Previous item">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-  </button>
+<div id="listingModal" class="prize-modal listing-modal hidden">
+  <!-- Every item in the grid you opened this from, as thumbnails across
+       the top: jump straight to any of them, or step with the arrows. -->
+  <div class="listing-strip" id="listingStrip">
+    <button id="listingPrevBtn" class="listing-nav-arrow listing-nav-prev" aria-label="Previous item">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="listing-strip-thumbs" id="listingStripThumbs"></div>
+    <button id="listingNextBtn" class="listing-nav-arrow listing-nav-next" aria-label="Next item">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
   <div class="prize-modal-card listing-modal-card detail-modal-card">
     <button id="listingCloseBtn" class="back-btn listing-close-btn detail-close-btn">Close</button>
     <div class="detail-layout">
@@ -672,9 +680,6 @@ try {
       </div>
     </div>
   </div>
-  <button id="listingNextBtn" class="listing-nav-arrow listing-nav-next" aria-label="Next item">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-  </button>
 </div>
 
 <!-- Recent pull detail -->

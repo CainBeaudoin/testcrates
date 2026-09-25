@@ -2892,31 +2892,79 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text);
 }
 
-.listing-nav-arrow {
+/* Thumbnail strip across the top of the listing modal: step arrows either
+   side of a scrolling row of every item in the grid it was opened from. */
+.listing-strip {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 3;
-  width: 44px;
-  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 84px;
+  padding: 0 24px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.listing-strip-thumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+  scrollbar-width: none;
+}
+.listing-strip-thumbs::-webkit-scrollbar { display: none; }
+.listing-strip-thumb {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.listing-strip-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.listing-strip-thumb:hover { opacity: 1; transform: translateY(-2px); }
+.listing-strip-thumb.active { opacity: 1; border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+
+.listing-nav-arrow {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--surface-2);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
-  color: var(--text);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.listing-nav-arrow:hover { background: var(--text); color: var(--text-inverse); }
+.listing-nav-arrow:hover { background: #fff; color: #000; }
 .listing-nav-arrow:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
-.listing-nav-prev { left: 3vw; }
-.listing-nav-next { right: 3vw; }
+/* Room for the strip above the card. */
+.listing-modal.has-strip { padding-top: 108px; }
+.listing-modal.has-strip .detail-modal-card { max-height: calc(100vh - 132px); }
 @media (max-width: 640px) {
-  .listing-nav-arrow { width: 36px; height: 36px; }
-  .listing-nav-prev { left: 8px; }
-  .listing-nav-next { right: 8px; }
+  .listing-strip { height: 68px; padding: 0 8px; gap: 6px; }
+  .listing-strip-thumb { width: 44px; height: 44px; }
+  .listing-nav-arrow { width: 32px; height: 32px; }
+  .listing-modal.has-strip { padding-top: 84px; }
+  .listing-modal.has-strip .detail-modal-card { max-height: calc(100vh - 104px); }
 }
 
 .listing-offers {

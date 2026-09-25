@@ -364,6 +364,8 @@ const listingChartCaption = document.getElementById("listingChartCaption");
 const listingMarketValueLabel = document.getElementById("listingMarketValueLabel");
 const listingPrevBtn = document.getElementById("listingPrevBtn");
 const listingNextBtn = document.getElementById("listingNextBtn");
+const listingStrip = document.getElementById("listingStrip");
+const listingStripThumbs = document.getElementById("listingStripThumbs");
 const pullDetailModal = document.getElementById("pullDetailModal");
 const pullDetailRarity = document.getElementById("pullDetailRarity");
 const pullDetailImage = document.getElementById("pullDetailImage");
@@ -2343,20 +2345,21 @@ let listingNavIds = []; // the grid's current order, so arrows step through what
 let listingNavIndex = -1;
 
 // `navIds` is the full ordered list of listing ids from whichever grid was
-// clicked (marketplace or My Listings) — omit it and the arrows just hide.
+// clicked — omit it and the thumbnail strip and arrows just hide.
 function openListingModal(id, navIds = null) {
   const listing = market.getListing(id);
   if (!listing) return;
   openListingId = listing.id;
 
-  if (navIds) listingNavIds = navIds;
+  listingNavIds = navIds ?? [];
   listingNavIndex = listingNavIds.indexOf(id);
 
   const hasNav = listingNavIds.length > 1 && listingNavIndex !== -1;
-  listingPrevBtn.classList.toggle("hidden", !hasNav);
-  listingNextBtn.classList.toggle("hidden", !hasNav);
+  listingStrip.classList.toggle("hidden", !hasNav);
+  listingModal.classList.toggle("has-strip", hasNav);
   listingPrevBtn.disabled = hasNav && listingNavIndex === 0;
   listingNextBtn.disabled = hasNav && listingNavIndex === listingNavIds.length - 1;
+  if (hasNav) renderListingStrip();
 
   // Rarity is deliberately not shown here — it's a tier-relative concept
   // that loses meaning once everything is pooled into one marketplace, so
@@ -2393,15 +2396,53 @@ function openListingModal(id, navIds = null) {
   requestAnimationFrame(() => listingModal.classList.add("visible"));
 }
 
+// The row of thumbnails across the top of the modal. Built once per grid
+// (the ids don't change while the modal is open) and then only the active
+// marker moves, so stepping through doesn't reload every image.
+let listingStripKey = "";
+function renderListingStrip() {
+  const key = listingNavIds.join(",");
+  if (key !== listingStripKey) {
+    listingStripKey = key;
+    listingStripThumbs.innerHTML = listingNavIds
+      .map((lid) => {
+        const l = market.getListing(lid);
+        if (!l) return "";
+        return `<button class="listing-strip-thumb" data-listing="${lid}" title="${l.name.replace(/"/g, "&quot;")}" aria-label="${l.name.replace(/"/g, "&quot;")}"><img src="${l.image}" alt="" loading="lazy"></button>`;
+      })
+      .join("");
+  }
+  let active = null;
+  listingStripThumbs.querySelectorAll(".listing-strip-thumb").forEach((btn) => {
+    const on = btn.dataset.listing === openListingId;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-current", on ? "true" : "false");
+    if (on) active = btn;
+  });
+  // Keep the current item in view, centred, as you step past the edge.
+  if (active) {
+    const strip = listingStripThumbs;
+    const left = active.offsetLeft - strip.clientWidth / 2 + active.offsetWidth / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+  }
+}
+
+listingStripThumbs.addEventListener("click", (e) => {
+  const btn = e.target.closest(".listing-strip-thumb");
+  if (!btn || btn.dataset.listing === openListingId) return;
+  playClick();
+  openListingModal(btn.dataset.listing, listingNavIds);
+});
+
 listingPrevBtn.addEventListener("click", () => {
   if (listingNavIndex <= 0) return;
   playClick();
-  openListingModal(listingNavIds[listingNavIndex - 1]);
+  openListingModal(listingNavIds[listingNavIndex - 1], listingNavIds);
 });
 listingNextBtn.addEventListener("click", () => {
   if (listingNavIndex === -1 || listingNavIndex >= listingNavIds.length - 1) return;
   playClick();
-  openListingModal(listingNavIds[listingNavIndex + 1]);
+  openListingModal(listingNavIds[listingNavIndex + 1], listingNavIds);
 });
 
 function renderListingOffers(listingId) {
