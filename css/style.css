@@ -221,11 +221,12 @@ body {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .nav-tab .icon { width: 18px; height: 18px; }
-.nav-tab:hover { color: var(--text); background: var(--hover-bg); }
+/* No pill: the tab you're on is simply the dark word among grey ones.
+   Weight stays put so the words don't shift sideways on click. */
+.nav-tab:hover { color: var(--text); background: transparent; }
 .nav-tab.active {
-  background: var(--accent-dim);
-  color: var(--accent);
-  font-weight: 700;
+  background: transparent;
+  color: var(--text);
 }
 
 @media (min-width: 641px) {
