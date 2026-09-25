@@ -1368,14 +1368,13 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   margin: 64px auto 0;
   padding: 0 32px;
 }
-/* Drops only. Marketplace and Account are working screens you scroll
-   through, and Rewards shares Account's screen — a footer under any of
-   them is dead weight at the end of a long scroll. min-width so this
-   never fights the mobile media query's own footer rule on specificity;
-   the :has() compound selector here outranks a plain
-   .app-footer{display:none}. */
+/* Home only. Drops, Marketplace and Account are working screens you
+   scroll through, and Rewards shares Account's screen — a footer under any
+   of them is dead weight at the end of a long scroll; Home is the site's
+   front page, which is where it belongs. min-width so this never fights
+   the mobile media query's own footer rule on specificity; the :has()
+   compound selector here outranks a plain .app-footer{display:none}. */
 @media (min-width: 641px) {
-  main:has(#screen-category.active) + .app-footer,
   main:has(#screen-home.active) + .app-footer {
     display: block;
   }
@@ -1930,7 +1929,7 @@ button.deposit-btn:hover {
 .market-item {
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -1943,10 +1942,15 @@ button.deposit-btn:hover {
 .market-item.static { cursor: default; }
 .market-item.static:hover { transform: none; box-shadow: none; }
 
+/* One card, one surface: the photo sits inset in the card's own fill with
+   the same margin all round, its corners following the card's. A separate
+   backdrop behind the photo (--well) was nearly the page colour in light
+   mode, so the card read as a narrow photo perched on a wider, lighter,
+   square-shouldered slab. */
 .market-item-media {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: var(--well);
+  padding: 8px 8px 0;
 }
 .market-item img {
   width: 100%;
@@ -1954,7 +1958,8 @@ button.deposit-btn:hover {
   object-fit: contain;
   display: block;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: 10px;
+  background: #fff;
 }
 
 /* Labels live in the card body, not over the photograph. On the shot they
