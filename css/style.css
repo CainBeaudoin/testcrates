@@ -5890,3 +5890,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .pull-face.is-legendary.is-shaking,
   .pull-face.is-legendary:not(.is-shaking) { animation: none; }
 }
+
+/* Try Again sat flush under the "Your Box/Stock" caption on desktop;
+   give it room so it reads as the next step, not part of the caption.
+   (Phones already have their own 32px, set in the mobile block.) */
+@media (min-width: 641px) {
+  #playAgainBtn { margin-top: 44px; }
+}
