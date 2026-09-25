@@ -1000,28 +1000,19 @@ function setPullDockCollapsed(collapsed) {
   savePullDock();
 }
 
-function clampPullDock(x, y) {
+function placePullDock(x, bottom) {
   const r = pullDock.getBoundingClientRect();
-  return [
-    Math.min(Math.max(x, 8), Math.max(8, innerWidth - r.width - 8)),
-    Math.min(Math.max(y, 8), Math.max(8, innerHeight - r.height - 8)),
-  ];
-}
-
-function placePullDock(x, y) {
-  const [cx, cy] = clampPullDock(x, y);
-  pullDock.style.left = `${cx}px`;
-  pullDock.style.top = `${cy}px`;
-  pullDock.style.bottom = "auto";
+  pullDock.style.left = `${Math.min(Math.max(x, 8), Math.max(8, innerWidth - r.width - 8))}px`;
+  pullDock.style.bottom = `${Math.min(Math.max(bottom, 8), Math.max(8, innerHeight - r.height - 8))}px`;
 }
 
 function savePullDock() {
   try {
-    const hasPos = pullDock.style.top !== "";
+    const moved = pullDock.style.left !== "";
     localStorage.setItem(PULL_DOCK_KEY, JSON.stringify({
       collapsed: pullDock.classList.contains("collapsed"),
-      x: hasPos ? parseFloat(pullDock.style.left) : null,
-      y: hasPos ? parseFloat(pullDock.style.top) : null,
+      x: moved ? parseFloat(pullDock.style.left) : null,
+      b: moved ? parseFloat(pullDock.style.bottom) : null,
     }));
   } catch {
     // Not persisting is survivable — it goes back to the corner next visit.
@@ -1039,14 +1030,15 @@ let dockDrag = null;
 pullDockHead.addEventListener("pointerdown", (e) => {
   if (e.target.closest(".pull-dock-min")) return; // that's the collapse button
   const r = pullDock.getBoundingClientRect();
-  dockDrag = { dx: e.clientX - r.left, dy: e.clientY - r.top, moved: false };
+  // Offsets to the left and *bottom* edges, matching how it's anchored.
+  dockDrag = { dx: e.clientX - r.left, db: r.bottom - e.clientY, moved: false };
   pullDockHead.setPointerCapture(e.pointerId);
   pullDock.classList.add("is-dragging");
 });
 pullDockHead.addEventListener("pointermove", (e) => {
   if (!dockDrag) return;
   dockDrag.moved = true;
-  placePullDock(e.clientX - dockDrag.dx, e.clientY - dockDrag.dy);
+  placePullDock(e.clientX - dockDrag.dx, innerHeight - (e.clientY + dockDrag.db));
 });
 function endDockDrag(e) {
   if (!dockDrag) return;
@@ -1061,15 +1053,15 @@ pullDockHead.addEventListener("pointercancel", endDockDrag);
 // A dock parked near an edge shouldn't end up off-screen when the window
 // shrinks under it.
 addEventListener("resize", () => {
-  if (pullDock.style.top === "") return;
-  placePullDock(parseFloat(pullDock.style.left), parseFloat(pullDock.style.top));
+  if (pullDock.style.left === "") return;
+  placePullDock(parseFloat(pullDock.style.left), parseFloat(pullDock.style.bottom));
 });
 
 try {
   const saved = JSON.parse(localStorage.getItem(PULL_DOCK_KEY) || "{}");
   if (saved.collapsed) pullDock.classList.add("collapsed");
   pullDockMin.setAttribute("aria-expanded", String(!saved.collapsed));
-  if (typeof saved.x === "number" && typeof saved.y === "number") placePullDock(saved.x, saved.y);
+  if (typeof saved.x === "number" && typeof saved.b === "number") placePullDock(saved.x, saved.b);
 } catch {
   // Fall back to the corner the CSS anchors it to.
 }
