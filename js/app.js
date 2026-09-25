@@ -1078,6 +1078,7 @@ let pullFaceDescribeTimer = null;
 // card hadn't been cleaned up yet, that was a stale one, so the wrong card
 // got marked as leaving and two live prizes ended up stacked.
 let pullFaceCurrent = null;
+const SPECIAL_PULL_RARITIES = new Set(["rare", "epic", "legendary"]);
 
 function renderPullDock() {
   const [pull] = livePullFeed(1, recentPullsTierKey);
@@ -1119,8 +1120,13 @@ function renderPullDock() {
   if (isFirst) describe();
   else pullFaceDescribeTimer = setTimeout(describe, 250);
 
+  // Rare and up light the face in their rarity's colour (blue, purple,
+  // gold) and give it a little shake once the swipe lands: something good
+  // just came out of a crate. Common and Uncommon stay plain.
+  const special = SPECIAL_PULL_RARITIES.has(pull.rarity);
   const card = document.createElement("div");
-  card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
+  card.className = `pull-face-card${isFirst ? "" : " is-entering"}${special ? " is-special" : ""}`;
+  if (special) card.style.setProperty("--rarity-color", RARITY_META[pull.rarity].color);
   card.dataset.pullTs = pull.ts;
   card.title = `${pull.name} · ${RARITY_META[pull.rarity].label}`;
   card.innerHTML = `<img src="${pull.image}" alt="${pull.name}">`;
@@ -1132,6 +1138,18 @@ function renderPullDock() {
   const outgoing = pullFaceCurrent;
   pullFaceScreen.appendChild(card);
   pullFaceCurrent = card;
+
+  const face = pullFaceScreen.parentElement;
+  face.classList.remove("is-special", "is-shaking", "is-legendary");
+  if (special) {
+    face.style.setProperty("--rarity-color", RARITY_META[pull.rarity].color);
+    face.classList.add("is-special");
+    face.classList.toggle("is-legendary", pull.rarity === "legendary");
+    if (!isFirst) {
+      void face.offsetWidth; // restart the shake if the last one was special too
+      face.classList.add("is-shaking");
+    }
+  }
   if (outgoing) {
     outgoing.classList.remove("is-entering");
     outgoing.classList.add("is-leaving");

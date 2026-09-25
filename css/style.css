@@ -5841,3 +5841,52 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .account-toggle.toggle-group-active::before { top: -10px; bottom: -16px; background: var(--bg); }
   .account-toggle.toggle-group-active::after { inset: 0; border-radius: 999px; background: var(--surface-2); }
 }
+
+/* --- Recent pulls dock: special pulls ------------------------------------
+   Rare and up: the tile glows in its rarity colour from the inside, the
+   frame picks up a soft halo, and the whole face shakes briefly once the
+   new card has swiped in (0.5s). Legendary shakes harder and its glow
+   keeps breathing while it's up. */
+.pull-face { position: relative; border-radius: 12px; transition: box-shadow 0.4s ease; }
+.pull-face.is-special {
+  box-shadow: 0 0 0 2px var(--rarity-color), 0 0 18px -2px var(--rarity-color);
+}
+/* Over the photo, not under it: the product shots are on solid white, so a
+   glow behind them only showed in the margin. An inset shadow laid over
+   the edges tints the shot's own border instead. */
+.pull-face-card.is-special::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rarity-color) 60%, transparent),
+              inset 0 0 26px 2px color-mix(in srgb, var(--rarity-color) 50%, transparent);
+  pointer-events: none;
+}
+.pull-face.is-shaking { animation: pullShake 0.62s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.45s both; }
+.pull-face.is-legendary.is-shaking {
+  animation: pullShakeBig 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.45s both,
+             pullGlow 1.8s ease-in-out 1.3s infinite;
+}
+.pull-face.is-legendary:not(.is-shaking) { animation: pullGlow 1.8s ease-in-out infinite; }
+@keyframes pullShake {
+  10%, 90% { transform: translateX(-1px) rotate(-0.6deg); }
+  20%, 80% { transform: translateX(2px) rotate(0.8deg); }
+  30%, 50%, 70% { transform: translateX(-3px) rotate(-1.2deg); }
+  40%, 60% { transform: translateX(3px) rotate(1.2deg); }
+}
+@keyframes pullShakeBig {
+  10%, 90% { transform: translateX(-2px) rotate(-1deg) scale(1.02); }
+  20%, 80% { transform: translateX(3px) rotate(1.4deg) scale(1.03); }
+  30%, 50%, 70% { transform: translateX(-4px) rotate(-2deg) scale(1.04); }
+  40%, 60% { transform: translateX(4px) rotate(2deg) scale(1.04); }
+}
+@keyframes pullGlow {
+  50% { box-shadow: 0 0 0 2px var(--rarity-color), 0 0 30px 2px var(--rarity-color); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pull-face.is-shaking,
+  .pull-face.is-legendary.is-shaking,
+  .pull-face.is-legendary:not(.is-shaking) { animation: none; }
+}
