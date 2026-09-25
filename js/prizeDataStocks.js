@@ -125,7 +125,7 @@ const WEIGHT_BY_RARITY = { common: 5.0, uncommon: 3.12, rare: 1.88, epic: 1.5, l
 
 export const PRIZE_POOL = Object.entries(RAW).flatMap(([rarity, entries]) =>
   entries.map(([ticker, company, price, hue]) => ({
-    name: `${ticker} — ${company}`,
+    name: `${ticker} · ${company}`,
     price,
     rarity,
     weight: WEIGHT_BY_RARITY[rarity],

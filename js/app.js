@@ -465,7 +465,7 @@ function slabInfoFor(prize, tierKey = currentCategoryKey) {
   const isStock = prize.category === "stocks";
   return {
     image: isStock ? null : prize.image,
-    symbol: isStock ? prize.name.split("—")[0].trim() : null,
+    symbol: isStock ? prize.name.split(" ")[0] : null,
     name: prize.name,
     size: market.sizeLabelFor(prize.name, prize.category),
     rarityLabel: meta.label,
@@ -524,9 +524,9 @@ const DEMO_VAULT_ITEM_NAMES = [
   "Medicom Bearbrick 3125C Objective Edc 1000%", // Collectibles, Legendary
 ];
 const DEMO_PORTFOLIO_ITEM_NAMES = [
-  "NVDA — Nvidia Corp",
-  "NVDA — Nvidia Corp", // two lots on purpose — demos Portfolio consolidation
-  "AAPL — Apple Inc",
+  "NVDA · Nvidia Corp",
+  "NVDA · Nvidia Corp", // two lots on purpose — demos Portfolio consolidation
+  "AAPL · Apple Inc",
 ];
 const DEMO_STARTING_CASH = 2000; // added on top of the base $500 starting balance
 const DEMO_STARTING_CREDITS = 25;
@@ -737,7 +737,7 @@ function renderWithdrawAddressList() {
             </button>`;
         })
         .join("")
-    : `<p class="withdraw-address-empty">No whitelisted wallets yet — add one below.</p>`;
+    : `<p class="withdraw-address-empty">No whitelisted wallets yet. Add one below.</p>`;
 
   withdrawAddressList.querySelectorAll(".withdraw-address-item").forEach((el) => {
     el.addEventListener("click", () => {
@@ -829,7 +829,7 @@ withdrawConfirmBtn.addEventListener("click", () => {
   }
   const address = player.getWithdrawAddresses().find((a) => a.id === selectedWithdrawAddressId);
   if (!player.withdrawCash(amount, selectedWithdrawAddressId)) {
-    showWithdrawError("Withdrawal failed — try again.");
+    showWithdrawError("Withdrawal failed. Try again.");
     return;
   }
   renderWallet({ pulse: "cash" });
@@ -1004,7 +1004,7 @@ function renderPullDock() {
   const card = document.createElement("div");
   card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
   card.dataset.pullTs = pull.ts;
-  card.title = `${pull.name} — ${RARITY_META[pull.rarity].label}`;
+  card.title = `${pull.name} · ${RARITY_META[pull.rarity].label}`;
   card.innerHTML = `<img src="${pull.image}" alt="${pull.name}">`;
   card.addEventListener("click", () => {
     playClick();
@@ -1281,9 +1281,9 @@ function renderCategories() {
     wrap.dataset.tier = key;
 
     const paymentBadgesHTML = cat.cashOnly
-      ? `<span class="category-icon-badge" title="Cash only — settles in real USDC">${ICONS.cash}</span>`
-      : `<span class="category-icon-badge" title="Buy with Cash — cashback pays back in Cash">${ICONS.cash}</span>
-         <span class="category-icon-badge" title="Buy with Credits — cashback pays back in Credits">${ICONS.card}</span>`;
+      ? `<span class="category-icon-badge" title="Cash only. Settles in real USDC">${ICONS.cash}</span>`
+      : `<span class="category-icon-badge" title="Buy with Cash. Cashback pays back in Cash">${ICONS.cash}</span>
+         <span class="category-icon-badge" title="Buy with Credits. Cashback pays back in Credits">${ICONS.card}</span>`;
 
     const card = document.createElement("div");
     card.className = "category-card";
@@ -1424,7 +1424,7 @@ function tryPurchase(currency) {
     // an error — Credits can't be topped up directly, but Cash can, and
     // topping up Cash is the only way forward either way.
     closePaymentPicker();
-    showToast(`Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label} — add funds to continue`, ICONS.bell);
+    showToast(`Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label}. Add funds to continue`, ICONS.bell);
     openAddFundsModal();
     return false;
   }
@@ -1566,7 +1566,7 @@ async function openFairnessModal() {
     const recomputed = await computeHash(fairnessPayload(boxPrizes) + currentFairness.nonce);
     fairnessRecomputedValue.textContent = recomputed;
     const verified = recomputed === currentFairness.hash;
-    fairnessStatus.textContent = verified ? "Verified — matches the committed hash" : "Mismatch — this should never happen";
+    fairnessStatus.textContent = verified ? "Verified: matches the committed hash" : "Mismatch: this should never happen";
     fairnessStatus.className = `fairness-status ${verified ? "verified" : "pending"}`;
     if (verified) {
       fairnessBadgeLabel.textContent = "Verified";
@@ -1715,7 +1715,7 @@ function revealOthers() {
             // straight into the next crate rather than waiting on "Try Again".
             batchRemaining -= 1;
             batchIndex += 1;
-            helperText.textContent = `Next crate — ${batchIndex} of ${batchTotal}…`;
+            helperText.textContent = `Next crate: ${batchIndex} of ${batchTotal}…`;
             setTimeout(() => startRound(currentCategoryKey, roundCurrency), 1300);
           } else {
             helperText.classList.add("hidden");
@@ -1747,7 +1747,7 @@ function openSlot(index, { isYours, revealCard = true }) {
   slot.querySelector(".price-card").style.setProperty("--rarity-color", meta.color);
 
   const imgEl = slot.querySelector(".price-card-slab");
-  imgEl.alt = `${prize.name} — ${meta.label}, ${formatPrice(prize)}`;
+  imgEl.alt = `${prize.name}, ${meta.label}, ${formatPrice(prize)}`;
   // Pre-rendered at the start of the round (see preloadSlabStills), so this
   // is a cache hit and the case is there the instant the lid opens rather
   // than a beat later.
@@ -2481,7 +2481,7 @@ listingOfferBtn.addEventListener("click", async () => {
   const listing = market.getListing(openListingId);
   if (!listing) return;
   const reference = listing.price ?? listing.catalogPrice;
-  const amount = await promptAmount("Make an Offer", `${listing.name} — comp value $${listing.catalogPrice.toLocaleString()}.`, Math.round(reference * 0.8));
+  const amount = await promptAmount("Make an Offer", `${listing.name}. Comp value $${listing.catalogPrice.toLocaleString()}.`, Math.round(reference * 0.8));
   if (!amount) return;
 
   const offer = market.makeOffer({
@@ -2676,7 +2676,7 @@ function inventoryItemHTML(item) {
   const archived = player.isArchived(item);
   const daysLeft = player.daysUntilArchival(item);
   const archivalClass = archived ? "archived" : daysLeft <= 30 ? "soon" : "";
-  const archivalText = archived ? "Archived — cash out only" : `${daysLeft}d to archival`;
+  const archivalText = archived ? "Archived: cash out only" : `${daysLeft}d to archival`;
   const cashOutToday = player.cashOutValue(item);
   const listing = item.listingId ? market.getListing(item.listingId) : null;
   const isListed = listing && listing.price != null;
@@ -2743,7 +2743,7 @@ function buildPriceChartSVG(history) {
 // so a chart is never blank and never blocks on the network. The caption
 // always names whichever source is actually on screen; it only credits
 // StockX once real trades are being drawn.
-const SIMULATED_CAPTION = "Simulated price action \u2014 last 30 days";
+const SIMULATED_CAPTION = "Simulated price action, last 30 days";
 
 function renderChart(chartEl, captionEl, fallbackHistory, { name, valueEl, valueLabelEl } = {}) {
   chartEl.innerHTML = buildPriceChartSVG(fallbackHistory);
@@ -2765,7 +2765,7 @@ function renderChart(chartEl, captionEl, fallbackHistory, { name, valueEl, value
     if (snap.lowestAsk) bits.push(`lowest ask $${snap.lowestAsk.toLocaleString()}`);
     if (snap.avgPrice) bits.push(`avg $${snap.avgPrice.toLocaleString()}`);
     if (captionEl && !captionEl.dataset.live) {
-      captionEl.textContent = `Market reference \u00b7 StockX${bits.length ? " \u2014 " + bits.join(" \u00b7 ") : ""}`;
+      captionEl.textContent = `Market reference \u00b7 StockX${bits.length ? " \u00b7 " + bits.join(" \u00b7 ") : ""}`;
     }
   });
 
@@ -2776,7 +2776,7 @@ function renderChart(chartEl, captionEl, fallbackHistory, { name, valueEl, value
     chartEl.innerHTML = buildPriceChartSVG(live.points);
     if (captionEl) {
       captionEl.dataset.live = "1";
-      captionEl.textContent = `Market reference \u00b7 StockX \u2014 last ${live.points.length} days of sales`;
+      captionEl.textContent = `Market reference \u00b7 StockX \u00b7 last ${live.points.length} days of sales`;
     }
     if (valueLabelEl) valueLabelEl.textContent = "StockX Last Sale";
     if (valueEl) {
@@ -2961,7 +2961,7 @@ portfolioDetailSellBtn.addEventListener("click", () => {
   const ticker = portfolioDetailSellBtn.dataset.ticker;
   const holding = player.getPortfolio().find((h) => h.ticker === ticker);
   if (!holding) return;
-  promptAmount("Sell Share Value", `${holding.name} — you hold $${holding.totalValue.toLocaleString()}.`, holding.totalValue, { max: holding.totalValue }).then((amount) => {
+  promptAmount("Sell Share Value", `${holding.name}. You hold $${holding.totalValue.toLocaleString()}.`, holding.totalValue, { max: holding.totalValue }).then((amount) => {
     if (!amount) return;
     playClick();
     const sold = player.sellStock(ticker, amount);
@@ -3195,7 +3195,7 @@ function renderActivity() {
           </div>`
         )
         .join("")
-    : `<div class="offers-empty">Nothing here yet \u2014 open a crate to get started.</div>`;
+    : `<div class="offers-empty">Nothing here yet. Open a crate to get started.</div>`;
 
   activityList.querySelectorAll(".activity-row[data-listing]").forEach((row) => {
     row.addEventListener("click", (ev) => {
@@ -3293,7 +3293,7 @@ function renderReferralPanel() {
       </div>
     </div>
 
-    <div class="referral-count">${active} active referral${active === 1 ? "" : "s"} <span>\u2014 counts once they open a drop</span></div>
+    <div class="referral-count">${active} active referral${active === 1 ? "" : "s"} <span>(counts once they open a drop)</span></div>
   `;
 
   document.getElementById("referralClaimCashBtn").addEventListener("click", () => {
@@ -3540,7 +3540,7 @@ document.addEventListener("click", (e) => {
       player.shipItem(item);
       renderAccount();
     } else if (action === "list") {
-      promptAmount("List for Sale", `${item.name} — catalog value $${item.price.toLocaleString()}.`, item.price).then((price) => {
+      promptAmount("List for Sale", `${item.name}. Catalog value $${item.price.toLocaleString()}.`, item.price).then((price) => {
         if (!price) return;
         playClick();
         market.updateListing(item.listingId, { price });
@@ -3707,7 +3707,7 @@ function showHomeSlide(i, { instant = false } = {}) {
     document.getElementById("homeHeroMedia").dataset.word = cat.badge;
     document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}`;
     document.getElementById("homeHeroSub").innerHTML =
-      `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()} &mdash; and it&rsquo;s sitting in a $${cat.price} crate.`;
+      `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()}, and it&rsquo;s sitting in a $${cat.price} crate.`;
     document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · $${cat.price}`;
     hero.classList.remove("is-swapping");
   };
@@ -3940,7 +3940,7 @@ document.querySelectorAll("[data-footer-nav]").forEach((btn) => {
 document.querySelectorAll("[data-footer-link]").forEach((btn) => {
   btn.addEventListener("click", () => {
     playClick();
-    showToast(`${btn.dataset.footerLink} — coming soon`, ICONS.bell);
+    showToast(`${btn.dataset.footerLink}: coming soon`, ICONS.bell);
   });
 });
 
@@ -3975,11 +3975,17 @@ if (profileParam) {
   seedSimulatedPulls();
   seedDemoInventory();
   player.seedDemoStreak(DEMO_STREAK_DAYS);
-  // Saved stock items keep the card image from when they were saved; bring
-  // them up to the current certificate art.
-  const stockImages = new Map(STOCKS_POOL.map((p) => [p.name, p.image]));
-  player.refreshImages(stockImages);
-  market.refreshImages(stockImages);
+  // Saved stock items keep the name and card image from when they were
+  // saved; bring them up to the current ones. Names used to read
+  // "NVDA — Nvidia Corp", so the old spelling maps too.
+  const stockItems = new Map();
+  STOCKS_POOL.forEach((p) => {
+    const cur = { name: p.name, image: p.image };
+    stockItems.set(p.name, cur);
+    stockItems.set(p.name.replace(" · ", " — "), cur);
+  });
+  player.refreshItems(stockItems);
+  market.refreshItems(stockItems);
   renderCategories();
   renderHome();
   renderRecentPulls();

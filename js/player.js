@@ -113,18 +113,20 @@ function save() {
   }
 }
 
-// Stored items carry a copy of their image from when they were saved, so a
-// redrawn catalog image (e.g. the Stocks certificates) would never reach
-// them. Swaps in the current image for any saved item whose name is in
-// `imagesByName`, wherever it lives in the saved state.
-export function refreshImages(imagesByName) {
+// Stored items carry a copy of their name and image from when they were
+// saved, so a renamed or redrawn catalog item (e.g. the Stocks
+// certificates) would never reach them. `current` maps a saved name (old
+// or current) to the catalog's current { name, image }; every saved item
+// with a matching name is brought up to date, wherever it lives in state.
+export function refreshItems(current) {
   let changed = false;
   const walk = (v) => {
     if (Array.isArray(v)) return v.forEach(walk);
     if (!v || typeof v !== "object") return;
-    const fresh = typeof v.name === "string" && typeof v.image === "string" && imagesByName.get(v.name);
-    if (fresh && v.image !== fresh) {
-      v.image = fresh;
+    const fresh = typeof v.name === "string" && typeof v.image === "string" && current.get(v.name);
+    if (fresh && (v.name !== fresh.name || v.image !== fresh.image)) {
+      v.name = fresh.name;
+      v.image = fresh.image;
       changed = true;
     }
     Object.values(v).forEach(walk);
@@ -619,7 +621,7 @@ export function cashOutValue(item) {
 // lots, and lets you redeem a dollar amount instead of a whole lot.
 
 function tickerOf(item) {
-  return item.name.split(" — ")[0];
+  return item.name.split(" ")[0];
 }
 
 export function getPortfolio() {
