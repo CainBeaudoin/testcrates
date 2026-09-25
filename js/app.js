@@ -545,6 +545,8 @@ function seedDemoInventory() {
   player.markDemoSeeded();
 }
 
+const DEMO_STREAK_DAYS = 3;
+
 // ---- Wallet: Credits + Cash (USDC) balances --------------------------
 
 function renderWallet({ pulse } = {}) {
@@ -2620,9 +2622,11 @@ function renderPublicProfile(username) {
 // topbar, visible from every screen — refreshed alongside the wallet and
 // whenever the account screen (offers) changes.
 function renderHeaderStats() {
-  const streak = player.getStreak();
+  // Days in a row with an open — the same number Rewards leads with — with
+  // the ring filling toward the raffle's streak goal.
+  const streak = player.getDailyStreak();
   streakValue.textContent = streak;
-  streakRing.style.setProperty("--pct", Math.min(100, (streak / 5) * 100));
+  streakRing.style.setProperty("--pct", Math.min(100, (streak / player.RAFFLE_STREAK_DAYS) * 100));
 }
 
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you
@@ -3685,14 +3689,20 @@ function showHomeSlide(i, { instant = false } = {}) {
 }
 
 // ---- Crates, grails ----
+// Live 3D boxes, the same spinning props as the Drops cards. Kept so a
+// re-render (every visit to Home) can release the old WebGL contexts first.
+let homeBoxViewers = [];
+
 function renderHomeCrates() {
   const el = document.getElementById("homeCrates");
+  homeBoxViewers.forEach((v) => v.dispose());
+  homeBoxViewers = [];
   el.innerHTML = Object.entries(CATEGORIES)
     .map(([key, cat]) => {
       const top = [...cat.pool].sort(byPriceDesc);
       return `
       <div class="home-crate" data-tier="${key}">
-        <div class="home-crate-stage"><img class="home-crate-box" alt=""></div>
+        <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
         <div class="home-crate-row">
           <span class="category-tier-name tier-name-${key}">${cat.badge}</span>
           <span class="home-crate-price">$${cat.price}</span>
@@ -3710,8 +3720,14 @@ function renderHomeCrates() {
   el.querySelectorAll(".home-crate").forEach((card) => {
     const key = card.dataset.tier;
     const cat = CATEGORIES[key];
-    getBoxSnapshot(key, cat.boxKind ?? "box").then((url) => {
-      card.querySelector(".home-crate-box").src = url;
+    const canvas = card.querySelector(".home-crate-box");
+    createBoxViewer(canvas, key, cat.boxKind ?? "box").then((viewer) => {
+      // Rendered over again before this one finished loading — drop it.
+      if (!canvas.isConnected) return viewer.dispose();
+      homeBoxViewers.push(viewer);
+      // Hover turns it to face you, like the Drops cards.
+      card.addEventListener("mouseenter", () => viewer.setPaused(true));
+      card.addEventListener("mouseleave", () => viewer.setPaused(false));
     });
     card.addEventListener("click", () => {
       playClick();
@@ -3741,7 +3757,7 @@ function homeGrailList(count) {
 
 function renderHomeGrails() {
   const el = document.getElementById("homeGrails");
-  const grails = homeGrailList(10);
+  const grails = homeGrailList(5);
   el.innerHTML = grails
     .map(({ p, k }) => {
       const cat = CATEGORIES[k];
@@ -3927,6 +3943,7 @@ if (profileParam) {
   renderIdentity();
   seedSimulatedPulls();
   seedDemoInventory();
+  player.seedDemoStreak(DEMO_STREAK_DAYS);
   renderCategories();
   renderHome();
   renderRecentPulls();

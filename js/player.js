@@ -82,6 +82,7 @@ function defaultState() {
     xp: 0,
     lifetimeVolume: 0, // sum of crate prices purchased — drives referral tier
     demoSeeded: false, // Vault/Portfolio pre-populated once per fresh session — see app.js seedDemoInventory
+    demoStreakSeeded: false, // daily streak pre-filled once — see seedDemoStreak
     referralClaimable: 2269, // demo starting balance from referred volume — see claimReferralCash/claimReferralCredits
     withdrawAddresses: [], // whitelisted payout wallets: {id, chain, address, nickname} — see addWithdrawAddress
   };
@@ -452,6 +453,21 @@ export function hasSeededDemoInventory() {
 
 export function markDemoSeeded() {
   state.demoSeeded = true;
+  save();
+}
+
+// A demo account starts a few days into its daily streak, ending today, so
+// the header and Rewards don't open on a zero. Seeded once, on its own flag,
+// so accounts that were seeded before this existed still get it.
+export function seedDemoStreak(days) {
+  if (state.demoStreakSeeded) return;
+  const cursor = new Date();
+  for (let i = 0; i < days; i++) {
+    const key = dateKey(cursor);
+    state.dailyActivity[key] = Math.max(state.dailyActivity[key] ?? 0, 1);
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  state.demoStreakSeeded = true;
   save();
 }
 

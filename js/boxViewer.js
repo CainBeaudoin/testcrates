@@ -94,6 +94,45 @@ function seeded(seed) {
 const COLLAGE_SIZE = 1024;
 const COLLAGE_COLS = 4;
 
+// Brown kraft board: a flat base, soft blotches of darker and lighter pulp,
+// the faint vertical ribs of the corrugation underneath, and fibre flecks.
+// Painted, not loaded, so there's no extra asset to fetch.
+function paintCardboard(ctx, size, rand) {
+  ctx.fillStyle = "#86592f";
+  ctx.fillRect(0, 0, size, size);
+
+  for (let i = 0; i < 90; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const r = 30 + rand() * 120;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const dark = rand() < 0.5;
+    g.addColorStop(0, dark ? "rgba(120, 80, 40, 0.10)" : "rgba(230, 200, 150, 0.10)");
+    g.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  const rib = size / 64;
+  for (let x = 0; x < size; x += rib) {
+    ctx.fillStyle = "rgba(90, 55, 20, 0.05)";
+    ctx.fillRect(x, 0, rib / 2, size);
+  }
+
+  for (let i = 0; i < 2600; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const len = 2 + rand() * 7;
+    const a = rand() * Math.PI;
+    ctx.strokeStyle = rand() < 0.6 ? "rgba(95, 60, 25, 0.22)" : "rgba(240, 215, 170, 0.25)";
+    ctx.lineWidth = 0.6 + rand() * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+    ctx.stroke();
+  }
+}
+
 async function buildCollageTexture(tierKey) {
   const images = collageArt.get(tierKey);
   if (!images || images.length === 0) return null;
@@ -110,19 +149,9 @@ async function buildCollageTexture(tierKey) {
   canvas.width = canvas.height = COLLAGE_SIZE;
   const ctx = canvas.getContext("2d");
 
-  // Warm paper ground, so gaps between cut-out shots read as box board
-  // rather than as holes, washed with the crate's own hue — product shots
-  // are nearly all cut out on white, and on a white ground the box read as
-  // a plain white box with a few specks on it.
-  ctx.fillStyle = "#efe9df";
-  ctx.fillRect(0, 0, COLLAGE_SIZE, COLLAGE_SIZE);
-  const tint = TIER_SKINS[tierKey];
-  if (tint) {
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#" + tint.color.toString(16).padStart(6, "0");
-    ctx.fillRect(0, 0, COLLAGE_SIZE, COLLAGE_SIZE);
-    ctx.globalAlpha = 1;
-  }
+  // Kraft cardboard ground, so the crate reads as a real shipping box with
+  // its contents printed on it.
+  paintCardboard(ctx, COLLAGE_SIZE, rand);
 
   const cell = COLLAGE_SIZE / COLLAGE_COLS;
   loaded.forEach((img, i) => {
@@ -137,6 +166,10 @@ async function buildCollageTexture(tierKey) {
     ctx.save();
     ctx.translate(cx + cell / 2, cy + cell / 2);
     ctx.rotate((rand() - 0.5) * 0.24); // a few degrees each way — a collage, not a contact sheet
+    // Multiply, like ink printed on board: the product shots are cut out on
+    // white, and multiplied white leaves the cardboard showing through
+    // instead of a white rectangle round every item.
+    ctx.globalCompositeOperation = "multiply";
     ctx.drawImage(img, -w / 2, -h / 2, w, h);
     ctx.restore();
   });
@@ -168,12 +201,12 @@ function applyTierSkin(root, tierKey, collage = null) {
     if (!node.isMesh || !node.material) return;
     const mat = node.material.clone();
     if (collage) {
-      // Printed board, not polished metal: a mirror finish over product art
-      // blows the shots out to white at most angles.
+      // Printed cardboard, not polished metal: matte, so the board and the
+      // shots on it read at every angle instead of blowing out to white.
       mat.map = collage;
       mat.color.setHex(0xffffff);
-      mat.metalness = 0.08;
-      mat.roughness = 0.62;
+      mat.metalness = 0;
+      mat.roughness = 0.88;
       mat.envMapIntensity = 1;
       node.material = mat;
       return;

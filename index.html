@@ -67,7 +67,7 @@ try {
       </div>
     </nav>
     <div id="walletBar" class="topbar-stats">
-      <button class="stat-pill" id="streakStat" title="Rare+ pulls in a row — view your Streaks">
+      <button class="stat-pill" id="streakStat" title="Days in a row you&rsquo;ve opened a crate — view your Streaks">
         <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
       </button>
       <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards — how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
@@ -298,6 +298,15 @@ try {
           </label>
 
           <div class="market-filter-group">
+            <span class="market-filter-label">Sort</span>
+            <select id="marketSort" class="market-filter-select">
+              <option value="new">Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
+
+          <div class="market-filter-group">
             <span class="market-filter-label">Value</span>
             <div id="marketFmvFilter" class="market-filter-chips"></div>
           </div>
@@ -329,15 +338,6 @@ try {
           <div class="market-filter-group">
             <span class="market-filter-label">Clothing Size</span>
             <select id="marketClothingSizeFilter" class="market-filter-select"></select>
-          </div>
-
-          <div class="market-filter-group">
-            <span class="market-filter-label">Sort</span>
-            <select id="marketSort" class="market-filter-select">
-              <option value="new">Newest</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
           </div>
         </aside>
 

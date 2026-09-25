@@ -5199,12 +5199,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   background: radial-gradient(ellipse at 50% 62%, var(--surface-2), transparent 72%);
 }
 .home-crate-box {
-  width: 82%;
+  display: block;
+  width: 100%;
   height: 100%;
-  object-fit: contain;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.home-crate:hover .home-crate-box { transform: scale(1.07) rotate(-2deg); }
+.home-crate:hover .home-crate-box { transform: scale(1.05); }
 .home-crate-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .home-crate .category-tier-name { font-size: 1.2rem; }
 .home-crate-price { font-size: 1.1rem; font-weight: 800; color: var(--text); }
