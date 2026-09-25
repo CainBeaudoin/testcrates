@@ -18,7 +18,13 @@ try {
   document.documentElement.setAttribute("data-theme", "light");
 }
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<!-- The slab reveal ships its own stylesheet; kept separate from style.css
+     so the package stays updatable in one drop. -->
+<link rel="stylesheet" href="css/slab.css">
 <script type="importmap">
 {
   "imports": {
@@ -33,9 +39,7 @@ try {
 <div class="shell">
   <header class="topbar">
     <div class="topbar-brand">
-      <button id="brandHomeBtn" class="brand-logo" aria-label="Go to Drops">
-        <img src="assets/brand/chosenclear.png" alt="Chosen">
-      </button>
+      <button id="brandHomeBtn" class="brand-logo" aria-label="Go to Drops">CHOSEN</button>
     </div>
     <div id="walletBar" class="topbar-stats">
       <button class="stat-pill" id="streakStat" title="Rare+ pulls in a row — view your Streaks">
@@ -142,32 +146,17 @@ try {
 
       <div id="boxRow" class="box-row hidden">
         <div class="box-slot" data-index="0">
-          <div class="price-card">
-            <span class="price-card-rarity"></span>
-            <img class="price-card-image" alt="">
-            <span class="price-card-name"></span>
-            <span class="price-card-price"></span>
-          </div>
+          <div class="price-card"><img class="price-card-slab" alt=""></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 1</div>
         </div>
         <div class="box-slot" data-index="1">
-          <div class="price-card">
-            <span class="price-card-rarity"></span>
-            <img class="price-card-image" alt="">
-            <span class="price-card-name"></span>
-            <span class="price-card-price"></span>
-          </div>
+          <div class="price-card"><img class="price-card-slab" alt=""></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 2</div>
         </div>
         <div class="box-slot" data-index="2">
-          <div class="price-card">
-            <span class="price-card-rarity"></span>
-            <img class="price-card-image" alt="">
-            <span class="price-card-name"></span>
-            <span class="price-card-price"></span>
-          </div>
+          <div class="price-card"><img class="price-card-slab" alt=""></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 3</div>
         </div>
@@ -481,27 +470,26 @@ try {
 </div>
 
 <!-- Won-prize hero modal -->
-<div id="prizeModal" class="prize-modal hidden">
+<div id="prizeModal" class="prize-modal slab-reveal hidden">
   <div class="reveal-fx"></div>
   <div class="reveal-rarity-banner"><span></span></div>
-  <div class="prize-modal-card exits-modal-card">
-    <span class="prize-modal-rarity"></span>
-    <div class="prize-modal-content">
-      <img class="prize-modal-image" alt="">
-      <h3 class="prize-modal-name"></h3>
-      <p class="prize-modal-price"></p>
-      <p id="prizeModalMeta" class="detail-meta"></p>
-      <span id="multiplierBadge" class="multiplier-badge hidden"></span>
-      <span id="streakBadge" class="streak-badge hidden"></span>
-      <div class="exits-grid">
-        <button id="cashOutBtn" class="exit-btn deposit-btn">
-          <span class="exit-btn-label">Cash Out</span>
-          <span class="exit-btn-sub" id="cashOutSub"></span>
-        </button>
-        <button id="vaultKeepBtn" class="exit-btn exit-btn-primary">
-          <span class="exit-btn-label">Keep</span>
-        </button>
-      </div>
+  <div class="slab-reveal-body">
+    <!-- The case prints the name itself; this is the same name for screen
+         readers, kept out of the layout. -->
+    <h3 class="slab-sr prize-modal-name"></h3>
+    <div class="slab-stage"><canvas id="prizeSlabCanvas"></canvas></div>
+    <p class="slab-price prize-modal-price"></p>
+    <p id="prizeModalMeta" class="slab-note"></p>
+    <span id="multiplierBadge" class="multiplier-badge hidden"></span>
+    <span id="streakBadge" class="streak-badge hidden"></span>
+    <div class="exits-grid">
+      <button id="cashOutBtn" class="exit-btn deposit-btn">
+        <span class="exit-btn-label">Cash Out</span>
+        <span class="exit-btn-sub" id="cashOutSub"></span>
+      </button>
+      <button id="vaultKeepBtn" class="exit-btn exit-btn-primary">
+        <span class="exit-btn-label">Keep</span>
+      </button>
     </div>
   </div>
 </div>

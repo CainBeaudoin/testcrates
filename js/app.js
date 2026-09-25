@@ -1,4 +1,5 @@
 import { createBoxViewer, getBoxSnapshot, registerTierArt } from "./boxViewer.js";
+import { createSlabViewer, renderSlabImage, attachTiltRow } from "./slab.js";
 import { RARITY_META } from "./rarity.js";
 import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
 import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
@@ -453,6 +454,23 @@ function fmt(n) {
 // before spending an exit on something that won't fit. Stocks have
 // neither. Condition is always "New" (no used/worn inventory in this
 // catalog) but still stated explicitly rather than assumed.
+// What the case needs to print one prize. Stocks have no photograph, so
+// they print their ticker instead ("NVDA — Nvidia Corp" -> "NVDA"); the
+// slab handles the rest.
+function slabInfoFor(prize, tierKey = currentCategoryKey) {
+  const meta = RARITY_META[prize.rarity];
+  const isStock = prize.category === "stocks";
+  return {
+    image: isStock ? null : prize.image,
+    symbol: isStock ? prize.name.split("—")[0].trim() : null,
+    name: prize.name,
+    size: market.sizeLabelFor(prize.name, prize.category),
+    rarityLabel: meta.label,
+    color: meta.color,
+    brand: tierOf(tierKey).poweredBy ?? "ODTO",
+  };
+}
+
 function itemMetaText(name, category) {
   if (category === "stocks") return "";
   const size = market.sizeLabelFor(name, category);
@@ -1393,10 +1411,9 @@ function resetSlotsUI() {
   slots.forEach((slot) => {
     slot.classList.remove("open", "you", "locked", "near-miss");
     slot.querySelector(".price-card").style.removeProperty("--rarity-color");
-    slot.querySelector(".price-card-rarity").textContent = "";
-    slot.querySelector(".price-card-image").src = "";
-    slot.querySelector(".price-card-name").textContent = "";
-    slot.querySelector(".price-card-price").textContent = "";
+    const slab = slot.querySelector(".price-card-slab");
+    slab.removeAttribute("src");
+    slab.alt = "";
     slot.querySelector(".box-caption").textContent = `${noun} ${Number(slot.dataset.index) + 1}`;
   });
 }
@@ -1498,6 +1515,11 @@ async function startRound(key, currency) {
   // box gets picked — final contents have to be locked in before the
   // fairness commitment below, or the hash couldn't be trusted.
   boxPrizes = boxPrizes.map((p) => player.rerollIfDuplicate(key, p, cat.pool));
+  // Start rendering the three cases now, while the reel is still spinning.
+  // Rendering at the moment a lid opens shows the previous round's still and
+  // swaps a beat later; they share one scene and queue internally, so this
+  // costs one WebGL context for all three.
+  boxPrizes.forEach((prize) => renderSlabImage(slabInfoFor(prize, key)));
   selectedIndex = null;
   roundLocked = false;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
@@ -1570,6 +1592,10 @@ function onPick(index) {
   }, MODAL_DELAY_MS);
 }
 
+// Pointer tilt across the row of opened crates, plus the idle lean. The
+// row exists from load; only its contents change.
+attachTiltRow(boxRow, ".price-card-slab");
+
 function revealOthers() {
   const others = shuffledOthers(selectedIndex, SLOT_COUNT);
   const yourRank = rankOf(boxPrizes[selectedIndex].rarity);
@@ -1628,16 +1654,16 @@ function openSlot(index, { isYours, revealCard = true }) {
   const meta = RARITY_META[prize.rarity];
 
   slot.querySelector(".price-card").style.setProperty("--rarity-color", meta.color);
-  const rarityEl = slot.querySelector(".price-card-rarity");
-  rarityEl.textContent = meta.label;
-  rarityEl.style.color = meta.color;
 
-  const imgEl = slot.querySelector(".price-card-image");
-  imgEl.src = prize.image;
-  imgEl.alt = prize.name;
+  const imgEl = slot.querySelector(".price-card-slab");
+  imgEl.alt = `${prize.name} — ${meta.label}, ${formatPrice(prize)}`;
+  // Pre-rendered at the start of the round (see preloadSlabStills), so this
+  // is a cache hit and the case is there the instant the lid opens rather
+  // than a beat later.
+  renderSlabImage(slabInfoFor(prize)).then((url) => {
+    imgEl.src = url;
+  });
 
-  slot.querySelector(".price-card-name").textContent = prize.name;
-  slot.querySelector(".price-card-price").textContent = formatPrice(prize);
   slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
   if (revealCard) slot.classList.add("open");
@@ -1647,21 +1673,27 @@ function openSlot(index, { isYours, revealCard = true }) {
 // ---- Won-prize modal (four exits) --------------------------------------
 // Only ever called for the crate the player picked.
 
+// One live case for the whole session. A browser hands out about sixteen
+// WebGL contexts and this one is mounted on every reveal, so building it
+// per open would exhaust them within a session's worth of crates.
+let prizeSlab = null;
+function prizeSlabViewer() {
+  if (!prizeSlab) {
+    // Tracked over the whole overlay, not the canvas — the case should
+    // answer to the pointer anywhere on the reveal.
+    prizeSlab = createSlabViewer(document.getElementById("prizeSlabCanvas"), prizeModal);
+  }
+  return prizeSlab;
+}
+
 async function showPrizeModal(prize, { streak, multiplier } = {}) {
   const meta = RARITY_META[prize.rarity];
-  prizeModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
+  prizeModal.style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
-
-  const rarityEl = prizeModal.querySelector(".prize-modal-rarity");
-  rarityEl.textContent = meta.label;
-  rarityEl.style.color = meta.color;
-  rarityEl.style.borderColor = meta.color;
 
   revealBannerEl.textContent = meta.label;
 
-  const imgEl = prizeModal.querySelector(".prize-modal-image");
-  imgEl.src = prize.image;
-  imgEl.alt = prize.name;
+  prizeSlabViewer().setItem(slabInfoFor(prize));
 
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
@@ -1693,7 +1725,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   prizeModal.classList.add("revealing");
   prizeModal.classList.remove("hidden");
-  requestAnimationFrame(() => prizeModal.classList.add("visible"));
+  requestAnimationFrame(() => prizeModal.classList.add("visible", "is-open"));
 
   vibrate(prize.rarity);
 
@@ -1703,7 +1735,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 }
 
 function hidePrizeModal() {
-  prizeModal.classList.remove("visible", "revealing");
+  prizeModal.classList.remove("visible", "is-open", "revealing");
   setTimeout(() => {
     prizeModal.classList.add("hidden");
     revealFxEl.innerHTML = "";
@@ -2104,7 +2136,9 @@ function marketItemCardHTML(listing) {
     listing.price != null
       ? `<span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>`
       : `<span class="market-item-offer-only">Offer only</span>`;
-  const fmvHTML = fmv ? `<span class="market-item-fmv" style="color:${fmv.color}">${fmv.label}</span>` : "";
+  // Class, not an inline colour: the rating reads differently on a dark
+  // scrim than on a light one, and only CSS knows which theme is running.
+  const fmvHTML = fmv ? `<span class="market-item-fmv fmv-${fmv.key}">${fmv.label}</span>` : "";
   // Computed live from the name rather than read off listing.size — older
   // listings seeded before that field existed would otherwise silently go
   // without a size badge, showing sizes only on ones created afterward.

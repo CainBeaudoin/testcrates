@@ -1,0 +1,131 @@
+/* The Chosen slab — everything the reveal needs, and nothing from the host
+   app's design system. Colours come from the two variables at the top, so
+   this drops into a project with its own palette without a rewrite.
+
+   Three parts, take what you need:
+     1. the reveal overlay (no dialog around it — the case is the object)
+     2. the big price
+     3. a row of rendered stills that lean                                */
+
+.slab-reveal {
+  --slab-scrim: rgba(0, 0, 0, 0.82);
+  --slab-text: #f4f4f6;
+  --slab-text-dim: #9a9aa4;
+}
+
+/* ---- 1. The reveal ------------------------------------------------------
+   No panel, no border, no card. Framing the case in a dialog puts a second
+   box around an object whose whole point is being an object; the dimmed
+   backdrop is what says the page is still there underneath. */
+
+.slab-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--slab-scrim);
+  backdrop-filter: blur(6px);
+  color: var(--slab-text);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.slab-reveal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.slab-reveal-body {
+  width: 100%;
+  max-width: 420px;
+  transform: scale(0.9);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.slab-reveal.is-open .slab-reveal-body { transform: scale(1); }
+
+/* The canvas the case is drawn on. Height in vh as well as px so a long
+   card can't push the buttons off a short screen. */
+.slab-stage {
+  position: relative;
+  width: min(300px, 74vw);
+  height: min(400px, 52vh);
+  margin: 0 auto 20px;
+}
+.slab-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* The tilt is tracked across the whole overlay, so the canvas must not
+     eat the pointer on its way to the buttons underneath it. */
+  pointer-events: none;
+}
+
+/* ---- 2. The price -------------------------------------------------------
+   Printed on the card it renders a couple of millimetres tall. It's the
+   number the reveal is about, so it goes here instead. */
+
+.slab-price {
+  margin: 2px 0 14px;
+  font-size: 2.7rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+}
+.slab-note {
+  margin: 0 0 16px;
+  font-size: 0.82rem;
+  color: var(--slab-text-dim);
+}
+
+/* Whatever the item is called, kept for screen readers and out of the
+   layout — the case already says it, and saying it twice reads as a caption
+   for something that just spoke. */
+.slab-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- 3. A row of stills -------------------------------------------------
+   Rendered cases sitting still. The lean is two rotations at two periods
+   with a different duration per item, so a row drifts in and out of phase
+   instead of marching in step. attachTiltRow() takes over on hover. */
+
+.slab-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.slab-row img {
+  width: 152px;
+  height: auto;
+  will-change: transform;
+  animation: slabLean 11s ease-in-out infinite alternate;
+}
+.slab-row img:nth-child(2) { animation-duration: 13.5s; animation-delay: -4s; }
+.slab-row img:nth-child(3) { animation-duration: 9.5s; animation-delay: -7s; }
+
+@keyframes slabLean {
+  from { transform: perspective(900px) rotateY(-9deg) rotateX(2.5deg); }
+  to   { transform: perspective(900px) rotateY(9deg) rotateX(-3deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slab-row img { animation: none; }
+  .slab-reveal, .slab-reveal-body { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .slab-price { font-size: 2.2rem; }
+  .slab-row img { width: 112px; }
+}
