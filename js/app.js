@@ -1050,8 +1050,10 @@ function renderPullsCarousel() {
 // are the same object in two places, not two designs that drift.
 function pullTileHTML(p, isNew) {
   const cat = tierOf(p.tierKey);
+  // Rare and up glow in their rarity colour, same as the corner dock.
+  const special = SPECIAL_PULL_RARITIES.has(p.rarity);
   return `
-      <div class="recent-pull-item${isNew ? " is-new" : ""}" data-pull-ts="${p.ts}">
+      <div class="recent-pull-item${isNew ? " is-new" : ""}${special ? " is-special" : ""}" data-pull-ts="${p.ts}"${special ? ` style="--rarity-color:${RARITY_META[p.rarity].color}"` : ""}>
         <img src="${p.image}" alt="">
         <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
         <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
@@ -1363,7 +1365,10 @@ function buildPityHTML(tierKey) {
 }
 
 let categoryBoxViewers = [];
-const batchQuantities = { stocks: 1, hundred: 1, twoFifty: 1, thousand: 1 };
+// One per crate, built from CATEGORIES so a renamed crate can't be left
+// without a quantity (the old price-tier keys left three of four blank and
+// their +/- buttons producing NaN).
+const batchQuantities = Object.fromEntries(Object.keys(CATEGORIES).map((k) => [k, 1]));
 
 // ---- Tier detail page ----------------------------------------------------
 // Promotes one tier to a page of its own — its odds and full prize list
@@ -2116,12 +2121,17 @@ applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "li
 // just reparented) so it's not competing with real navigation. Desktop
 // keeps it in the bottom-right corner stack. Re-parenting (not cloning) means the listener
 // above stays attached wherever the node ends up.
+// Theme goes with it, into its own Display & Sound row, so dark mode is
+// reachable on a phone at all.
 const railBottom = document.querySelector(".rail-bottom");
-const footerSocial = document.querySelector(".app-footer-social");
+const footerPrefs = document.querySelector(".app-footer-prefs");
 const mobileNavQuery = window.matchMedia("(max-width: 640px)");
 function placeMuteBtn(isMobile) {
-  const target = isMobile ? footerSocial : railBottom;
-  if (target && muteBtn.parentElement !== target) target.appendChild(muteBtn);
+  const target = isMobile ? footerPrefs : railBottom;
+  if (!target) return;
+  [themeBtn, muteBtn].forEach((btn) => {
+    if (btn.parentElement !== target) target.appendChild(btn);
+  });
 }
 placeMuteBtn(mobileNavQuery.matches);
 mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
@@ -2244,6 +2254,19 @@ appFooterCloseBtn.addEventListener("click", () => {
   playClick();
   appFooter.classList.remove("mobile-visible");
 });
+// A tap outside the open sheet closes it, and goes no further: the page
+// behind is dimmed, so it shouldn't also be pressed.
+document.addEventListener(
+  "click",
+  (e) => {
+    if (!appFooter.classList.contains("mobile-visible")) return;
+    if (appFooter.contains(e.target) || e.target.closest("#accountMoreBtn")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    appFooter.classList.remove("mobile-visible");
+  },
+  true
+);
 
 // ---- Account: mobile-only second-level toggle within a nav group ---------
 // e.g. Holdings' "My Items" vs "Portfolio" — a generic handler so it

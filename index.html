@@ -73,7 +73,7 @@ try {
     </nav>
     <div id="walletBar" class="topbar-stats">
       <button class="stat-pill" id="streakStat" title="Days in a row you&rsquo;ve opened a crate. View your Streaks">
-        <span class="ring" id="streakRing"></span> Streak <b id="streakValue">0</b>
+        <span class="ring" id="streakRing"></span> <span class="stat-pill-label">Streak</span> <b id="streakValue">0</b>
       </button>
       <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards: how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
       <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Withdraw">
@@ -559,6 +559,14 @@ try {
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l6 3-6 3z" fill="currentColor" stroke="none"/></svg>
               </button>
             </div>
+          </div>
+
+          <!-- Phones only: the theme and sound switches that sit in the
+               bottom-right corner on desktop are moved in here by app.js,
+               since that corner is taken by the tab bar and floating bars. -->
+          <div class="app-footer-col app-footer-prefs-col">
+            <h4>Display &amp; Sound</h4>
+            <div class="app-footer-prefs"></div>
           </div>
 
           <div class="app-footer-col">
