@@ -199,7 +199,6 @@ body {
   flex-direction: column;
   align-items: center;
   background: var(--surface-1);
-  border-right: 1px solid var(--hairline);
   padding: 16px 0;
   z-index: 20;
 }
@@ -631,7 +630,7 @@ body {
   flex-direction: column;
   flex: 1;
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 4px;
   padding: 24px 32px 32px;
   text-align: center;
@@ -660,7 +659,7 @@ body {
   justify-content: center;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   color: var(--text-dim);
 }
 .category-icon-badge svg { width: 15px; height: 15px; }
@@ -803,7 +802,7 @@ body {
 
 .prize-dropdown {
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -861,7 +860,7 @@ body {
   gap: 4px;
   padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 6px;
 }
 .odds-bucket-rarity {
@@ -910,7 +909,7 @@ body {
   margin-bottom: 16px;
   padding: 8px 16px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.7rem;
@@ -1077,7 +1076,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   width: 168px;
   padding: 16px 16px 16px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   text-align: center;
   cursor: pointer;
@@ -1148,7 +1147,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   margin: 80px auto 32px;
   overflow: hidden;
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 4px;
   box-shadow: var(--glow);
 }
@@ -1719,7 +1718,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .modal-btn-outline {
   background: transparent;
   color: var(--text);
-  border: 1px solid var(--line-strong);
+  border: none;
+  background: var(--control-fill);
 }
 
 /* The one accent color in an otherwise monochrome app (neon-leaning
@@ -1816,7 +1816,7 @@ button.deposit-btn:hover {
   flex-direction: column;
   gap: 16px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   padding: 16px;
 }
@@ -1845,7 +1845,7 @@ button.deposit-btn:hover {
 .market-filter-select {
   width: 100%;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   color: var(--text);
   border-radius: 6px;
   padding: 8px 8px;
@@ -1896,7 +1896,7 @@ button.deposit-btn:hover {
 
 .market-item {
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -2042,7 +2042,7 @@ button.deposit-btn:hover {
 
 .account-avatar-block {
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   padding: 24px 16px;
   display: flex;
@@ -2092,7 +2092,7 @@ button.deposit-btn:hover {
 
 .account-wallet-card {
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   padding: 8px 16px;
 }
@@ -2121,7 +2121,7 @@ button.deposit-btn:hover {
   gap: 4px;
   background: var(--panel-blur);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   padding: 8px;
   margin-bottom: 24px;
@@ -2243,7 +2243,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: flex;
   gap: 2px;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 999px;
   padding: 4px;
   margin-bottom: 24px;
@@ -2276,7 +2276,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 12px;
   padding: 12px 16px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -2367,7 +2367,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: flex;
   align-items: stretch;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -2411,7 +2411,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   padding: 24px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
 }
 .rewards-card-title {
@@ -2457,7 +2457,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 40px;
   border-radius: 8px;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   font-size: 0.76rem;
   color: var(--text-faint);
 }
@@ -2608,7 +2608,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   min-width: 0;
   padding: 8px 12px;
   background: var(--surface-1);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 8px;
   color: var(--text);
   font-size: 0.7rem;
@@ -2698,7 +2698,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 8px;
   padding: 16px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
 }
 .api-key-title {
@@ -2720,7 +2720,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 100%;
   padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 8px;
   color: var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -2781,7 +2781,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   color: var(--text-faint);
 }
 
@@ -2799,7 +2799,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 12px;
   padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 6px;
   flex-wrap: wrap;
 }
@@ -2833,8 +2833,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   text-transform: uppercase;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
+  border: none;
   color: var(--text-dim);
+  background: var(--control-fill);
 }
 .offer-status.accepted { color: var(--positive); border-color: var(--positive); }
 .offer-status.declined { color: var(--negative); border-color: var(--negative); }
@@ -2851,10 +2852,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.5px;
   text-transform: uppercase;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
+  border: none;
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  background: var(--control-fill);
 }
 .offer-btn:hover { background: var(--text); color: var(--text-inverse); }
 .offer-btn.accept { border-color: var(--positive); color: var(--positive); }
@@ -2916,7 +2918,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 44px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: 1px solid var(--line-strong);
+  border: none;
   color: var(--text);
   cursor: pointer;
   display: flex;
@@ -3012,7 +3014,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 8px;
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid var(--line-strong);
+  border: none;
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.66rem;
@@ -3020,6 +3022,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.3px;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
+  background: var(--control-fill);
 }
 .detail-media-btn:hover { background: var(--text); color: var(--text-inverse); }
 .detail-media-btn:disabled { opacity: 0.5; cursor: default; }
@@ -3180,10 +3183,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.5px;
   text-transform: uppercase;
   background: transparent;
-  border: 1px solid var(--line-strong);
+  border: none;
   color: var(--text);
   border-radius: 4px;
   cursor: pointer;
+  background: var(--control-fill);
 }
 .amount-max-btn:hover { background: var(--text); color: var(--text-inverse); }
 
@@ -3197,7 +3201,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 1;
   padding: 8px 0;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.66rem;
@@ -3280,7 +3284,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 100%;
   padding: 12px 16px;
   background: var(--panel-2);
-  border: 1px solid var(--line-strong);
+  border: none;
   border-radius: 4px;
   color: var(--text);
   font-size: 1.1rem;
@@ -3417,7 +3421,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 72px;
   padding: 8px 8px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 4px;
   color: var(--text);
   font-size: 0.72rem;
@@ -3501,7 +3505,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 12px;
   padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 6px;
 }
 .opening-row.pinned { border-color: var(--gold); }
@@ -3537,7 +3541,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   padding: 8px 16px;
   background: var(--panel);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 6px;
   font-size: 0.8rem;
   cursor: pointer;
@@ -3568,7 +3572,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   justify-content: space-between;
   padding: 16px 24px;
   background: var(--panel);
-  border: 1px solid var(--line-strong);
+  border: none;
   border-radius: 6px;
   margin-bottom: 16px;
 }
@@ -3622,7 +3626,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   padding: 16px 24px;
   background: var(--panel);
-  border: 1px solid var(--line-strong);
+  border: none;
   border-radius: 6px;
   margin-bottom: 24px;
   text-align: left;
@@ -3727,7 +3731,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex-wrap: wrap;
   padding: 16px 24px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
 }
 .streak-summary-meta {
@@ -3779,7 +3783,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   white-space: nowrap;
 }
 .streak-raffle-badge.qualified { color: var(--positive); background: rgba(74, 222, 128, 0.14); border: 1px solid rgba(74, 222, 128, 0.4); }
-.streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: 1px solid var(--hairline); }
+.streak-raffle-badge.pending { color: var(--text-faint); background: var(--surface-2); border: none; }
 
 .streak-raffle-prize {
   display: flex;
@@ -3787,7 +3791,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   padding: 16px 16px;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
 }
 .streak-raffle-prize img {
@@ -3847,7 +3851,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   font-size: 0.62rem;
   color: var(--text-faint);
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
 }
 .streak-tile.empty { background: transparent; border-color: transparent; }
 .streak-tile.level-1 { background: rgba(230, 230, 235, 0.22); border-color: rgba(230, 230, 235, 0.3); color: var(--text-dim); }
@@ -3866,7 +3870,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .clip-card {
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -3909,7 +3913,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   max-width: 420px;
   text-align: center;
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 14px;
   padding: 32px 32px;
 }
@@ -3927,7 +3931,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   grid-template-columns: 1fr 1fr;
   gap: 1px;
   background: var(--hairline);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 32px;
@@ -3990,7 +3994,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .deposit-address-box {
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
@@ -4025,7 +4029,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   letter-spacing: 0.5px;
   text-transform: uppercase;
   background: transparent;
-  border: 1px solid var(--line-strong);
+  border: none;
   color: var(--text);
   border-radius: 999px;
   cursor: pointer;
@@ -4069,7 +4073,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 100%;
   padding: 8px 12px;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: none;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
@@ -4115,7 +4119,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 100%;
   padding: 8px 12px;
   background: var(--panel-2);
-  border: 1px solid var(--line-strong);
+  border: none;
   border-radius: 6px;
   color: var(--text);
   font-size: 0.76rem;
@@ -4157,7 +4161,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .credits-earned-clear-btn {
   padding: 8px 16px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 999px;
   color: var(--text-dim);
   font-size: 0.68rem;
@@ -4373,7 +4377,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     margin: 0;
     padding: 8px 24px;
     background: var(--surface-2);
-    border: 1px solid var(--line-strong);
+    border: none;
     border-radius: 999px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     color: var(--text);
@@ -4612,7 +4616,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     bottom: calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
     z-index: 200;
     background: var(--surface-1);
-    border: 1px solid var(--hairline);
+    border: none;
     border-radius: 16px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
     /* Height comes from the content, and the auto block margins centre it
@@ -4659,7 +4663,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     padding: 12px 32px;
     border-radius: 999px;
     background: var(--surface-2);
-    border: 1px solid var(--line);
+    border: none;
     color: var(--text);
     font-size: 0.7rem;
     font-weight: 700;
@@ -4717,7 +4721,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     max-height: min(34vh, 300px);
     background: var(--panel-blur);
     backdrop-filter: blur(10px);
-    border: 1px solid var(--hairline);
+    border: none;
     border-radius: 12px;
     box-shadow: 0 12px 32px var(--shadow-card);
     overflow: hidden;
@@ -5038,8 +5042,13 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 /* A swipe: the new pull comes in from the right, the last one leaves to the
    left. Both run in the same 0.5s so they cross rather than queue. */
-.pull-face-card.is-entering { animation: pullFaceIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.pull-face-card.is-leaving { animation: pullFaceOut 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* No fill-mode on the entering card on purpose: with `both` it holds the
+   0-opacity `from` state whenever the animation hasn't run — which is what
+   a backgrounded tab does — and the face would sit blank until you came
+   back. Without it the base style (visible) is what applies, and the swipe
+   is pure decoration on top. */
+.pull-face-card.is-entering { animation: pullFaceIn 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.pull-face-card.is-leaving { animation: pullFaceOut 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
 @keyframes pullFaceIn {
   from { opacity: 0; transform: translateX(46%) scale(0.92); }

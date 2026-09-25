@@ -258,7 +258,9 @@ const screenAccount = document.getElementById("screen-account");
 const marketGrid = document.getElementById("marketGrid");
 const marketCount = document.getElementById("marketCount");
 const marketBrandFilter = document.getElementById("marketBrandFilter");
-const marketSizeFilter = document.getElementById("marketSizeFilter");
+const marketCategoryFilter = document.getElementById("marketCategoryFilter");
+const marketShoeSizeFilter = document.getElementById("marketShoeSizeFilter");
+const marketClothingSizeFilter = document.getElementById("marketClothingSizeFilter");
 const marketFmvFilter = document.getElementById("marketFmvFilter");
 const marketListedOnly = document.getElementById("marketListedOnly");
 const marketPriceMin = document.getElementById("marketPriceMin");
@@ -2203,6 +2205,9 @@ function offerRowHTML(offer, { showActions } = {}) {
 // price range are, mirroring the scope's filter set.
 
 let marketBrandValue = "all";
+let marketCategoryValue = "all";
+// One value, two pickers: a listing's size is a bare "10.5" or a bare "L",
+// so the two scales can share the field without colliding.
 let marketSizeValue = "all";
 let marketFmvValue = "all";
 
@@ -2220,16 +2225,35 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
-    // Shoe sizes and apparel sizes both, now that a crate can be a hoodie.
-    const sizes = ["all", ...market.SIZES, ...market.APPAREL_SIZES];
-    marketSizeFilter.innerHTML = sizes
-      .map((s) => `<option value="${s}">${s === "all" ? "All Sizes" : `US ${s}`}</option>`)
+    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", stocks: "Stocks" };
+    const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
+    marketCategoryFilter.innerHTML = cats
+      .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
       .join("");
-    marketSizeFilter.addEventListener("change", () => {
+    marketCategoryFilter.addEventListener("change", () => {
       playClick();
-      marketSizeValue = marketSizeFilter.value;
+      marketCategoryValue = marketCategoryFilter.value;
       renderMarketGrid();
     });
+
+    // Two pickers, because the scales are different kinds of thing. Picking
+    // in one clears the other — an item is a shoe or it's a garment, and a
+    // listing can't satisfy both at once.
+    function wireSize(el, values, allLabel, format) {
+      el.innerHTML = ["all", ...values]
+        .map((v) => `<option value="${v}">${v === "all" ? allLabel : format(v)}</option>`)
+        .join("");
+      el.addEventListener("change", () => {
+        playClick();
+        marketSizeValue = el.value;
+        [marketShoeSizeFilter, marketClothingSizeFilter].forEach((other) => {
+          if (other !== el) other.value = "all";
+        });
+        renderMarketGrid();
+      });
+    }
+    wireSize(marketShoeSizeFilter, market.SIZES, "Any Shoe Size", (v) => `US ${v}`);
+    wireSize(marketClothingSizeFilter, market.APPAREL_SIZES, "Any Clothing Size", (v) => v);
 
     // "Not Good" isn't a filter people actually want (nobody's browsing
     // for overpriced listings) — dropped entirely rather than shown as a
@@ -2261,6 +2285,7 @@ function renderMarketGrid() {
   marketCount.textContent = listings.length;
 
   if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
+  if (marketCategoryValue !== "all") listings = listings.filter((l) => l.category === marketCategoryValue);
   if (marketSizeValue !== "all") listings = listings.filter((l) => l.size === marketSizeValue);
   if (marketFmvValue !== "all") listings = listings.filter((l) => market.fmvRating(l)?.key === marketFmvValue);
   if (marketListedOnly.checked) listings = listings.filter((l) => l.price != null);

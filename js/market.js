@@ -252,18 +252,41 @@ export function fmvRating(listing) {
 // filter (mirrors "brand" being a first-class filter in the scope).
 export function extractBrand(name) {
   const upper = name.toUpperCase();
-  if (upper.includes("AIR JORDAN") || upper.includes("JORDAN")) return "Jordan";
-  if (upper.includes("YEEZY")) return "Yeezy";
-  if (upper.includes("NIKE")) return "Nike";
-  if (upper.includes("ADIDAS")) return "Adidas";
-  if (upper.includes("NEW BALANCE")) return "New Balance";
-  if (upper.includes("ASICS")) return "Asics";
-  if (upper.includes("VANS")) return "Vans";
-  if (upper.includes("CONVERSE")) return "Converse";
-  if (upper.includes("RICK OWENS")) return "Rick Owens";
-  if (upper.includes("CHROME HEARTS")) return "Chrome Hearts";
+  // Order matters: the longer, more specific label wins. Bearbrick is
+  // Medicom's line and the catalogue names it either way, and a "Bearbrick
+  // BAPE" is filed under Bearbrick rather than BAPE — the collab reads as
+  // the figure first.
+  const RULES = [
+    [["AIR JORDAN", "JORDAN"], "Jordan"],
+    [["YEEZY"], "Yeezy"],
+    [["BEARBRICK", "MEDICOM"], "Bearbrick"],
+    [["KAWS"], "KAWS"],
+    [["SUPREME"], "Supreme"],
+    [["BAPE", "BATHING APE"], "BAPE"],
+    [["NIKE"], "Nike"],
+    [["ADIDAS"], "Adidas"],
+    [["NEW BALANCE"], "New Balance"],
+    [["ASICS"], "Asics"],
+    [["ESSENTIALS", "FEAR OF GOD"], "Fear of God"],
+    [["ERIC EMANUEL"], "Eric Emanuel"],
+    [["STUSSY"], "Stussy"],
+    [["DENIM TEARS"], "Denim Tears"],
+    [["GALLERY DEPT"], "Gallery Dept."],
+    [["AIME LEON DORE"], "Aimé Leon Dore"],
+    [["KITH"], "Kith"],
+    [["POP MART", "LABUBU"], "Pop Mart"],
+    [["DANIEL ARSHAM"], "Daniel Arsham"],
+    [["CHROME HEARTS"], "Chrome Hearts"],
+    [["RICK OWENS"], "Rick Owens"],
+    [["VANS"], "Vans"],
+    [["CONVERSE"], "Converse"],
+  ];
+  for (const [needles, label] of RULES) {
+    if (needles.some((n) => upper.includes(n))) return label;
+  }
   return "Other";
 }
+
 
 // ---- Offers ----------------------------------------------------------
 

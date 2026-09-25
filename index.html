@@ -184,11 +184,19 @@ try {
       </div>
       <div class="market-shell">
         <label for="marketFiltersToggle" class="market-filters-backdrop"></label>
+        <!-- One labelled group per thing you'd filter on, which is roughly
+             what ODTO's own collection pages offer (brand, size, price,
+             availability). Sizes are split because the two scales don't mix:
+             a hoodie in "US L" was what the single list produced. -->
         <aside class="market-filters">
           <label class="market-listed-toggle">
             <input type="checkbox" id="marketListedOnly"> Listed only
           </label>
-          <div id="marketFmvFilter" class="market-filter-chips"></div>
+
+          <div class="market-filter-group">
+            <span class="market-filter-label">Value</span>
+            <div id="marketFmvFilter" class="market-filter-chips"></div>
+          </div>
 
           <div class="market-filter-group">
             <span class="market-filter-label">Price</span>
@@ -199,15 +207,34 @@ try {
             </div>
           </div>
 
-          <select id="marketSort" class="market-filter-select">
-            <option value="new">Newest</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-          </select>
+          <div class="market-filter-group">
+            <span class="market-filter-label">Category</span>
+            <select id="marketCategoryFilter" class="market-filter-select"></select>
+          </div>
 
-          <select id="marketBrandFilter" class="market-filter-select"></select>
+          <div class="market-filter-group">
+            <span class="market-filter-label">Brand</span>
+            <select id="marketBrandFilter" class="market-filter-select"></select>
+          </div>
 
-          <select id="marketSizeFilter" class="market-filter-select"></select>
+          <div class="market-filter-group">
+            <span class="market-filter-label">Shoe Size</span>
+            <select id="marketShoeSizeFilter" class="market-filter-select"></select>
+          </div>
+
+          <div class="market-filter-group">
+            <span class="market-filter-label">Clothing Size</span>
+            <select id="marketClothingSizeFilter" class="market-filter-select"></select>
+          </div>
+
+          <div class="market-filter-group">
+            <span class="market-filter-label">Sort</span>
+            <select id="marketSort" class="market-filter-select">
+              <option value="new">Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
         </aside>
 
         <div class="market-content">
