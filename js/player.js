@@ -469,11 +469,14 @@ export function setUsername(name) {
 
 // ---- Demo seeding (Vault/Portfolio pre-populated once) -------------------
 
-export function hasSeededDemoInventory() {
-  return state.demoSeeded;
+// Which demo set this account was last seeded with. Accounts from before
+// versioning only carry the old demoSeeded flag, which means version 1.
+export function getDemoSeedVersion() {
+  return state.demoSeedVersion ?? (state.demoSeeded ? 1 : 0);
 }
 
-export function markDemoSeeded() {
+export function setDemoSeedVersion(version) {
+  state.demoSeedVersion = version;
   state.demoSeeded = true;
   save();
 }

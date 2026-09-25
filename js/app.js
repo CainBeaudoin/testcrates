@@ -508,43 +508,75 @@ function releaseOwnedItem(item) {
 
 // Demo convenience: the first time this browser ever loads the app, drop a
 // fixed set of ODTO items in the Vault, a fixed set of stocks in the
-// Portfolio, and top up Cash/Credits — so there's something to click
+// Portfolio, and top up Cash/Credits, so there's something to click
 // through without opening crates first. This dataset is hardcoded (not
 // randomized) on purpose: it's what a shared deployment link shows too,
 // with no backend to carry a specific developer's own local state to
-// another visitor, so every fresh session — including someone else
-// opening the link — shows the exact same populated demo account.
+// another visitor, so every fresh session (including someone else
+// opening the link) shows the exact same populated demo account.
 // Goes through addOwnedItem like a real Keep, so listings/consolidation
-// behave identically to the real thing. Runs once ever (see
-// player.markDemoSeeded) — never re-seeds an account that's already played.
+// behave identically to the real thing.
+//
+// Versioned rather than run-once: when the set grows, bumping
+// DEMO_SEED_VERSION tops up accounts seeded under an older set (adding
+// only what they're short of, by name and count) exactly once. Cash and
+// Credits are only ever granted on the very first seed.
+const DEMO_SEED_VERSION = 2;
 const DEMO_VAULT_ITEM_NAMES = [
   "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
+  "Air Jordan 1 Low Travis Scott Velvet Brown", // Sneakers, Legendary
+  "Air Jordan 4 Red Cement", // Sneakers, Rare
+  "Yeezy Slide Glow Green", // Sneakers, Uncommon
   "Nike Dunk Low GS Black White", // Sneakers, Common
-  "Supreme The North Face Statue Of Liberty Mountain Jacket", // Streetwear, Legendary
+  "Supreme The North Face Statue Of Liberty Mountain Jacket Red", // Streetwear, Legendary
+  "Supreme Box Logo Hoodie Sage (fw16)", // Streetwear, Legendary
+  "BAPE 1st Camo Crazy By Bathing Ape Tee Black", // Streetwear, Uncommon
   "Medicom Bearbrick 3125C Objective Edc 1000%", // Collectibles, Legendary
+  "KAWS Companion Plush Brown", // Collectibles, Legendary
+  "POP Mart Labubu The Monster Let's Checkmate", // Collectibles, Uncommon
 ];
 const DEMO_PORTFOLIO_ITEM_NAMES = [
+  // Three NVDA lots on purpose: demos Portfolio consolidating several wins
+  // into one position.
   "NVDA · Nvidia Corp",
-  "NVDA · Nvidia Corp", // two lots on purpose — demos Portfolio consolidation
+  "NVDA · Nvidia Corp",
+  "NVDA · Nvidia Corp",
   "AAPL · Apple Inc",
+  "MSFT · Microsoft Corp",
+  "TSLA · Tesla Inc",
+  "AMZN · Amazon.com Inc",
+  "COIN · Coinbase Global",
+  "SPY · SPDR S&P 500 ETF",
 ];
 const DEMO_STARTING_CASH = 2000; // added on top of the base $500 starting balance
 const DEMO_STARTING_CREDITS = 25;
 
 function seedDemoInventory() {
-  if (player.hasSeededDemoInventory()) return;
-  const findByName = (pool, name) => pool.find((p) => p.name === name);
-  DEMO_VAULT_ITEM_NAMES.forEach((name) => {
-    const prize = findByName(SNEAKER_CATALOG, name);
-    if (prize) addOwnedItem(prize);
-  });
-  DEMO_PORTFOLIO_ITEM_NAMES.forEach((name) => {
-    const prize = findByName(STOCKS_POOL, name);
-    if (prize) addOwnedItem(prize);
-  });
-  player.addCash(DEMO_STARTING_CASH);
-  player.addCredits(DEMO_STARTING_CREDITS);
-  player.markDemoSeeded();
+  const version = player.getDemoSeedVersion();
+  if (version >= DEMO_SEED_VERSION) return;
+
+  // How many of each name the account already holds, so a top-up only
+  // adds the difference.
+  const held = new Map();
+  player.getInventory().forEach((i) => held.set(i.name, (held.get(i.name) ?? 0) + 1));
+  const seed = (pool, names) => {
+    names.forEach((name) => {
+      if ((held.get(name) ?? 0) > 0) {
+        held.set(name, held.get(name) - 1);
+        return;
+      }
+      const prize = pool.find((p) => p.name === name);
+      if (prize) addOwnedItem(prize);
+    });
+  };
+  seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
+  seed(STOCKS_POOL, DEMO_PORTFOLIO_ITEM_NAMES);
+
+  if (version === 0) {
+    player.addCash(DEMO_STARTING_CASH);
+    player.addCredits(DEMO_STARTING_CREDITS);
+  }
+  player.setDemoSeedVersion(DEMO_SEED_VERSION);
 }
 
 const DEMO_STREAK_DAYS = 3;
@@ -3973,8 +4005,6 @@ if (profileParam) {
 } else {
   renderIdentity();
   seedSimulatedPulls();
-  seedDemoInventory();
-  player.seedDemoStreak(DEMO_STREAK_DAYS);
   // Saved stock items keep the name and card image from when they were
   // saved; bring them up to the current ones. Names used to read
   // "NVDA — Nvidia Corp", so the old spelling maps too.
@@ -3986,6 +4016,9 @@ if (profileParam) {
   });
   player.refreshItems(stockItems);
   market.refreshItems(stockItems);
+  // After the refresh, so the top-up counts renamed items as held.
+  seedDemoInventory();
+  player.seedDemoStreak(DEMO_STREAK_DAYS);
   renderCategories();
   renderHome();
   renderRecentPulls();
