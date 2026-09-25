@@ -6021,3 +6021,27 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 @media (prefers-reduced-motion: reduce) {
   .recent-pull-item.is-special.is-new { animation: none; }
 }
+
+/* Grails wall: a tile turns edge-on, swaps to another grail at the
+   midpoint (app.js), and turns back, with a slight lift so it reads as a
+   card being flipped rather than a fade. */
+.home-grails { perspective: 1400px; }
+.home-grail.is-flipping {
+  animation: grailFlip 0.66s cubic-bezier(0.45, 0, 0.2, 1);
+  pointer-events: none;
+}
+@keyframes grailFlip {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(90deg) scale(0.96); }
+  50.01% { transform: rotateY(-90deg) scale(0.96); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+/* The incoming image (inserted at the swap) settles in with a small pop. */
+.home-grail.is-flipping .home-grail-media img { animation: grailPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes grailPop {
+  0% { transform: scale(0.88); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-grail.is-flipping, .home-grail.is-flipping .home-grail-media img { animation: none; }
+}

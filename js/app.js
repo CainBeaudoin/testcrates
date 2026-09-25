@@ -4346,15 +4346,19 @@ function homeGrailList(count) {
   return out;
 }
 
-function renderHomeGrails() {
-  const el = document.getElementById("homeGrails");
-  const grails = homeGrailList(5);
-  el.innerHTML = grails
-    .map(({ p, k }) => {
-      const cat = CATEGORIES[k];
-      return `
-      <button class="home-grail" data-tier="${k}">
-        <span class="home-grail-media"><img src="${p.image}" alt="" loading="lazy"></span>
+// The wall shows five, drawn from a deeper pool, and every few seconds one
+// tile flips over like a card and comes back as a different grail. One
+// tile at a time, in a shuffled order, never a grail that's already up.
+const GRAIL_SHOWN = 5;
+const GRAIL_POOL = 15;
+const GRAIL_FLIP_EVERY_MS = 2800;
+let grailTimer = null;
+let grailOrder = [];
+
+function grailTileInner({ p, k }) {
+  const cat = CATEGORIES[k];
+  return `
+        <span class="home-grail-media"><img src="${p.image}" alt=""></span>
         <span class="home-grail-info">
           <span class="tier-badge tier-badge-${k}">${cat.badge}</span>
           <span class="home-grail-name">${p.name}</span>
@@ -4362,9 +4366,15 @@ function renderHomeGrails() {
             <b>$${p.price.toLocaleString()}</b>
             <span>$${cat.price} crate</span>
           </span>
-        </span>
-      </button>`;
-    })
+        </span>`;
+}
+
+function renderHomeGrails() {
+  const el = document.getElementById("homeGrails");
+  const pool = homeGrailList(GRAIL_POOL);
+  el.innerHTML = pool
+    .slice(0, GRAIL_SHOWN)
+    .map((g) => `<button class="home-grail" data-tier="${g.k}" data-grail="${g.p.name.replace(/"/g, "&quot;")}">${grailTileInner(g)}</button>`)
     .join("");
   el.querySelectorAll(".home-grail").forEach((tile) => {
     tile.addEventListener("click", () => {
@@ -4372,6 +4382,38 @@ function renderHomeGrails() {
       homeSeeCrate(tile.dataset.tier);
     });
   });
+
+  clearInterval(grailTimer);
+  if (heroReducedMotion.matches) return;
+  // Warm the pool's images so a flip never lands on a blank frame.
+  pool.forEach(({ p }) => (new Image().src = p.image));
+  grailOrder = [];
+  grailTimer = setInterval(() => flipOneGrail(el, pool), GRAIL_FLIP_EVERY_MS);
+}
+
+function flipOneGrail(el, pool) {
+  // Only while Home is on screen and the tab is visible, and never under
+  // the pointer: a tile changing as you reach for it is a bait-and-switch.
+  if (document.hidden || !document.getElementById("screen-home").classList.contains("active")) return;
+  const tiles = [...el.querySelectorAll(".home-grail")];
+  if (!grailOrder.length) grailOrder = shuffledOthers(-1, tiles.length);
+  const tile = tiles[grailOrder.pop()];
+  if (!tile || tile.matches(":hover") || tile.classList.contains("is-flipping")) return;
+
+  const shown = new Set(tiles.map((t) => t.dataset.grail));
+  const choices = pool.filter((g) => !shown.has(g.p.name));
+  if (!choices.length) return;
+  const next = choices[Math.floor(Math.random() * choices.length)];
+
+  tile.classList.add("is-flipping");
+  // Swap at the edge-on moment, halfway through the turn.
+  setTimeout(() => {
+    tile.innerHTML = grailTileInner(next);
+    tile.dataset.tier = next.k;
+    tile.dataset.grail = next.p.name;
+  }, 330);
+  // After the turn and the new image's settle (which starts at the swap).
+  setTimeout(() => tile.classList.remove("is-flipping"), 820);
 }
 
 // ---- How it works: three pictures made by the app itself ----
