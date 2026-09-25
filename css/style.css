@@ -517,9 +517,13 @@ body {
 #screen-game.active {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   min-height: calc(100vh - var(--topbar-h) - 68px);
 }
+/* The status bar (Playing with Cash, Fairness) stays up under the header;
+   the crates sit in the space below it, a little above its middle: the
+   spacer above them takes less of the free space than the one below. */
+.game-spacer { flex: 0.5 1 0; }
+#screen-game.active::after { content: ""; flex: 1.6 1 0; }
 
 .screen-title {
   text-align: left;
@@ -4340,9 +4344,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .game-top-bar .back-btn { display: none; }
   .game-top-bar { justify-content: center; margin-bottom: 32px; }
 
-  /* The whole screen stays vertically centred (there was too much dead
-     space under it otherwise), so growing the gaps at both ends is what
-     lifts the badges and drops the button away from the cards. */
+  /* The badges sit under the header and the crates in the space below
+     (see .game-spacer); this just drops the button away from the cards. */
   #playAgainBtn { margin-top: 32px; }
 
   /* Nothing in the tab bar is "where you are" mid-open: un-highlighting
