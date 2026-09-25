@@ -237,7 +237,10 @@ const pullDock = document.getElementById("pullDock");
 const pullDockHead = document.getElementById("pullDockHead");
 const pullDockMin = document.getElementById("pullDockMin");
 const pullDockCrate = document.getElementById("pullDockCrate");
-const pullDockPrice = document.getElementById("pullDockPrice");
+const pullDockName = document.getElementById("pullDockName");
+const pullDockCrateBox = document.getElementById("pullDockCrateBox");
+const pullDockCrateName = document.getElementById("pullDockCrateName");
+const pullDockCrateSub = document.getElementById("pullDockCrateSub");
 const payingWithBadge = document.getElementById("payingWithBadge");
 const fairnessBadge = document.getElementById("fairnessBadge");
 const fairnessBadgeLabel = document.getElementById("fairnessBadgeLabel");
@@ -942,43 +945,70 @@ function renderPullsCarousel() {
 // One prize in the corner, on every screen. The newest arrival swipes in
 // and the previous one swipes out of the same square.
 let pullFaceTs = null;
+let pullFaceDescribeTimer = null;
+// The card on screen, held by reference. Reading it back off the DOM meant
+// reading whichever card happened to be first — and if a previous leaving
+// card hadn't been cleaned up yet, that was a stale one, so the wrong card
+// got marked as leaving and two live prizes ended up stacked.
+let pullFaceCurrent = null;
 
 function renderPullDock() {
   const [pull] = livePullFeed(1, recentPullsTierKey);
   if (!pull) {
     pullFaceScreen.innerHTML = "";
-    pullDockCrate.textContent = "";
-    pullDockPrice.textContent = "";
+    pullFaceCurrent = null;
+    pullDockName.textContent = "";
+    pullDockCrateName.textContent = "";
+    pullDockCrateSub.textContent = "";
     pullFaceTs = null;
     return;
   }
-  if (pull.ts === pullFaceTs && pullFaceScreen.firstElementChild) return;
+  if (pull.ts === pullFaceTs && pullFaceCurrent) return;
 
   const tierKey = tierKeyOf(pull.tierKey);
   const cat = CATEGORIES[tierKey];
   const isFirst = pullFaceTs === null;
   pullFaceTs = pull.ts;
 
-  // The price and the action under the tile follow whatever is on it.
-  pullDockPrice.textContent = `$${pull.price.toLocaleString()}`;
-  pullDockCrate.textContent = cat.badge;
-  pullDockCrate.title = `Open the ${cat.badge} crate`;
-  pullDockCrate.dataset.tier = tierKey;
+  // Everything under the tile follows whatever is on it — but not until the
+  // incoming prize is actually the one you're looking at. Swapping the text
+  // the instant a new pull lands left the name describing the arriving item
+  // while the leaving one was still mid-slide and fully opaque, which reads
+  // as the label belonging to the wrong prize. Half the swipe is enough for
+  // the crossover to have visibly happened; pulls are seconds apart, so
+  // these can't stack up.
+  const describe = () => {
+    pullDockName.textContent = pull.name;
+    pullDockName.title = pull.name;
+    pullDockCrateName.textContent = cat.badge;
+    pullDockCrateSub.textContent = pull.isPlayer ? "You pulled this" : `Pulled by ${pull.username}`;
+    pullDockCrate.title = `Open the ${cat.badge} crate`;
+    pullDockCrate.dataset.tier = tierKey;
+    // The crate's own box, from the same renderer the Drops cards use.
+    // Cached per crate, so this is a map hit after the first pull from it.
+    getBoxSnapshot(cat.badge.toLowerCase(), cat.boxKind ?? "box").then((url) => {
+      if (pullDockCrate.dataset.tier === tierKey) pullDockCrateBox.src = url;
+    });
+  };
+  clearTimeout(pullFaceDescribeTimer);
+  if (isFirst) describe();
+  else pullFaceDescribeTimer = setTimeout(describe, 250);
 
   const card = document.createElement("div");
   card.className = `pull-face-card${isFirst ? "" : " is-entering"}`;
   card.dataset.pullTs = pull.ts;
   card.title = `${pull.name} — ${RARITY_META[pull.rarity].label}`;
   card.innerHTML = `
-    <span class="pull-face-user ${pull.isPlayer ? "you" : ""}">${pull.isPlayer ? "You" : pull.username}</span>
+    <span class="pull-face-time">${relativeTime(pull.ts)}</span>
     <img src="${pull.image}" alt="${pull.name}">`;
   card.addEventListener("click", () => {
     playClick();
     openPullDetail(pull);
   });
 
-  const outgoing = pullFaceScreen.firstElementChild;
+  const outgoing = pullFaceCurrent;
   pullFaceScreen.appendChild(card);
+  pullFaceCurrent = card;
   if (outgoing) {
     outgoing.classList.remove("is-entering");
     outgoing.classList.add("is-leaving");
@@ -2204,10 +2234,9 @@ function marketItemCardHTML(listing) {
     <div class="market-item" data-listing="${listing.id}">
       <div class="market-item-media">
         <img src="${listing.image}" alt="">
-        ${sizeHTML}
-        ${fmvHTML}
       </div>
       <div class="market-item-body">
+        ${sizeHTML || fmvHTML ? `<div class="market-item-tags">${fmvHTML}${sizeHTML}</div>` : ""}
         <span class="market-item-name">${listing.name}</span>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
@@ -2674,9 +2703,10 @@ function inventoryItemHTML(item) {
   const itemSize = market.sizeLabelFor(item.name, item.category);
   const sizeHTML = itemSize ? `<span class="market-item-size">${itemSize}</span>` : "";
 
-  // Someone has bid on this one. Sits opposite the size pill so the two
-  // corners read as a pair; vault cards only, the marketplace grid uses a
-  // different builder.
+  // Someone has bid on this one. This one does stay on the photo: it's a
+  // call for attention rather than a spec, and it's what you're meant to
+  // spot from across the grid. Vault cards only — the marketplace grid uses
+  // a different builder.
   const pendingOffers = item.listingId
     ? market.getOffersForListing(item.listingId).filter((o) => o.status === "pending" && !o.fromIsPlayer)
     : [];
@@ -2689,9 +2719,9 @@ function inventoryItemHTML(item) {
       <div class="market-item-media">
         <img src="${item.image}" alt="">
         ${offerHTML}
-        ${sizeHTML}
       </div>
       <div class="market-item-body">
+        ${sizeHTML ? `<div class="market-item-tags">${sizeHTML}</div>` : ""}
         <span class="market-item-name">${item.name}</span>
         <span class="item-archival ${archivalClass}">${archivalText}</span>
         <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>

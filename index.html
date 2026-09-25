@@ -798,9 +798,18 @@ try {
   <div class="pull-dock-body">
     <div class="pull-face">
       <div class="pull-face-screen" id="pullFaceScreen" aria-live="polite"></div>
-      <span class="pull-face-price" id="pullDockPrice"></span>
     </div>
-    <button class="pull-dock-crate" id="pullDockCrate"></button>
+    <span class="pull-face-name" id="pullDockName"></span>
+    <!-- Which crate it came out of, and the way into it: the crate's own
+         box, its name, and who pulled it. -->
+    <button class="pull-dock-crate" id="pullDockCrate">
+      <img class="pull-dock-crate-box" id="pullDockCrateBox" alt="">
+      <span class="pull-dock-crate-text">
+        <span class="pull-dock-crate-name" id="pullDockCrateName"></span>
+        <span class="pull-dock-crate-sub" id="pullDockCrateSub"></span>
+      </span>
+      <svg class="pull-dock-crate-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
   </div>
 </aside>
 

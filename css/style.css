@@ -1896,27 +1896,38 @@ button.deposit-btn:hover {
   border-radius: 16px;
 }
 
+/* Labels live in the card body, not over the photograph. On the shot they
+   landed on whatever the product happened to be at that corner — a shoe, a
+   figure's head — and a label you have to look past isn't doing its job. */
+.market-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
 .market-item-rarity,
 .market-item-fmv,
 .market-item-size {
-  position: absolute;
-  top: 8px;
-  left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
   font-size: 0.52rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  padding: 4px 8px;
-  border-radius: 999px;
-  /* Its own surface, not an outline over the photo: a frosted chip in the
-     theme's own paper, so a busy product shot can't read through the label.
-     No border — the surface is the boundary. */
-  background: var(--chip-over-media);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
 }
-.market-item-size { left: auto; right: 8px; }
-.market-item-size { color: var(--text-dim); }
+
+/* Solid fill, white type. As an outline the verdict was the same weight as
+   everything else on the card; filled, it's the thing you see first, which
+   is the point of grading a price at all. */
+.market-item-fmv { color: #fff; }
+.market-item-fmv.fmv-good-deal { background: #15803d; }
+.market-item-fmv.fmv-fair { background: #5f6672; }
+.market-item-fmv.fmv-over { background: #c2321f; }
+
+/* The size is a spec, not a verdict — it stays quiet next to the badge. */
+.market-item-size { background: var(--surface-2); color: var(--text-dim); }
 /* Offer flag on a vault card — opposite corner to the size pill, green so
    it reads as something waiting on you rather than another spec. */
 .market-item-offer-flag {
@@ -4690,17 +4701,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 :root[data-theme="light"] .category-tier-name.tier-name-collectibles,
 :root[data-theme="light"] .tier-badge-collectibles { color: #8a6410; }
 
-/* The FMV pill lost its dark scrim in light mode (it's outline-only there),
-   which left "Very Good" green at 1.5:1 on the near-white photo well — the
-   worst contrast in the app. The colour comes from a class now rather than
-   an inline style, so each theme can set its own. */
-.market-item-fmv.fmv-good-deal { color: #4ade80; }
-.market-item-fmv.fmv-fair { color: #afbac4; }
-.market-item-fmv.fmv-over { color: #f87171; }
-:root[data-theme="light"] .market-item-fmv.fmv-good-deal { color: #157037; }
-:root[data-theme="light"] .market-item-fmv.fmv-fair { color: #5f6672; }
-:root[data-theme="light"] .market-item-fmv.fmv-over { color: #c2321f; }
-
 /* The Credits claim button carries both .exit-btn-primary and .deposit-btn.
    Primary's white-ink sub-label won on source order and put near-white text
    on the green gradient; the green button has its own dark ink for this. */
@@ -4795,21 +4795,47 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .pull-dock-crate {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
     padding: 7px 8px;
     border: none;
-    border-radius: 9px;
+    border-radius: 10px;
     background: var(--control-fill);
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
+    text-align: left;
     cursor: pointer;
   }
   .pull-dock-crate:hover { background: var(--control-fill-hover); }
-  .pull-dock-crate::after { content: "→"; font-size: 0.7rem; opacity: 0.6; }
+
+  /* The crate's own box, rendered by the same viewer that draws it on the
+     Drops page — so the thumbnail is the actual crate, wearing its own
+     product collage, not a generic icon. */
+  .pull-dock-crate-box {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    object-fit: contain;
+  }
+
+  .pull-dock-crate-text { flex: 1; min-width: 0; }
+  .pull-dock-crate-name {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pull-dock-crate-sub {
+    display: block;
+    font-size: 0.56rem;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pull-dock-crate-arrow { flex: 0 0 auto; color: var(--text-faint); }
+  .pull-dock-crate:hover .pull-dock-crate-arrow { color: var(--text); }
 }
 
 /* No bezel and no display any more: the prize is a rounded tile on the
@@ -4847,36 +4873,36 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   object-fit: contain;
 }
 
-/* The price sits under the tile on the dock's surface rather than on a
-   gradient over the product — over the shot it had to carry its own scrim
-   and a shadow just to stay legible, which is a lot of treatment for four
-   characters. */
-.pull-face-price {
+/* The name, not the price. A number is what you'd compare listings by;
+   this is a feed of what just came out of a crate, and the thing that says
+   that is what it is. */
+.pull-face-name {
   display: block;
-  padding: 7px 2px 1px;
-  font-size: 1.02rem;
-  font-weight: 800;
+  padding: 8px 2px 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.25;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.pull-face-user {
+/* When, over the shot — the one thing that makes a feed read as live. */
+.pull-face-time {
   position: absolute;
   top: 7px;
-  left: 9px;
-  padding: 2px 6px;
+  right: 7px;
+  z-index: 2;
+  padding: 3px 8px;
   border-radius: 999px;
   background: var(--chip-over-media);
   backdrop-filter: blur(6px);
-  font-size: 0.5rem;
+  font-size: 0.52rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  letter-spacing: 0.3px;
   color: var(--text-dim);
 }
-.pull-face-user.you { color: var(--positive); }
 
 /* A swipe: the new prize in from the right, the last one out to the left,
    both in the same 0.5s so they cross rather than queue. No fill-mode on
