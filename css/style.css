@@ -67,39 +67,45 @@
    boundaries in both themes instead of introducing borders in one. */
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f2f2f5;
-  --panel: #ffffff;
-  --panel-2: #ffffff;
-  --hairline: rgba(16, 16, 20, 0.08);
-  --line: rgba(16, 16, 20, 0.16);
-  --line-strong: rgba(16, 16, 20, 0.42);
-  --text: #101014;
-  --text-dim: rgba(16, 16, 20, 0.6);
-  --text-faint: rgba(16, 16, 20, 0.45);
-  --glow: 0 0 40px rgba(16, 16, 20, 0.1);
-  --accent: #101014;
-  --accent-dim: rgba(16, 16, 20, 0.08);
-  --accent-line: rgba(16, 16, 20, 0.28);
-  --accent-hover: rgba(16, 16, 20, 0.12);
-  --panel-blur: rgba(255, 255, 255, 0.92);
-  --surface-1: #ffffff;
-  --surface-2: #f4f4f7;
+  /* Warm neutrals, not grey ones. Every value here sits on a single warm
+     hue (~38deg) instead of the blue-grey the first pass used — that's the
+     whole difference between "dark mode turned off" and the off-white a
+     shop front is built on. The page is the beige and cards lift toward a
+     warm white, so surfaces still step *up* the way they do in dark. */
+  --bg: #f5f2ec;
+  --panel: #fffdf9;
+  --panel-2: #fffdf9;
+  --hairline: rgba(38, 32, 22, 0.09);
+  --line: rgba(38, 32, 22, 0.16);
+  --line-strong: rgba(38, 32, 22, 0.42);
+  --text: #1c1813;
+  --text-dim: rgba(28, 24, 19, 0.62);
+  --text-faint: rgba(28, 24, 19, 0.46);
+  --glow: 0 0 40px rgba(38, 32, 22, 0.1);
+  --accent: #1c1813;
+  --accent-dim: rgba(38, 32, 22, 0.08);
+  --accent-line: rgba(38, 32, 22, 0.28);
+  --accent-hover: rgba(38, 32, 22, 0.12);
+  --panel-blur: rgba(255, 253, 249, 0.92);
+  --surface-1: #fffdf9;
+  --surface-2: #f1ede4;
 
-  --text-inverse: #ffffff;
-  --text-inverse-dim: rgba(255, 255, 255, 0.66);
-  --inverse-tint: rgba(255, 255, 255, 0.18);
-  /* Product shots are mostly cut out on white, so a near-white well keeps
-     them from sitting in a black box on a white page. */
-  --well: #f4f4f7;
-  --hover-bg: rgba(16, 16, 20, 0.05);
-  --hover-bg-strong: rgba(16, 16, 20, 0.08);
-  --hover-surface: #f4f4f7;
-  --track: rgba(16, 16, 20, 0.1);
+  --text-inverse: #fffdf9;
+  --text-inverse-dim: rgba(255, 253, 249, 0.66);
+  --inverse-tint: rgba(255, 253, 249, 0.18);
+  /* Product shots are mostly cut out on white, so a warm near-white well
+     keeps them from sitting in a black box on a light page. */
+  --well: #f3efe7;
+  --hover-bg: rgba(38, 32, 22, 0.05);
+  --hover-bg-strong: rgba(38, 32, 22, 0.08);
+  --hover-surface: #f3efe7;
+  --track: rgba(38, 32, 22, 0.1);
   /* Far lighter than the dark theme's: a 0.85-alpha black shadow that
-     reads as depth on near-black reads as soot on white. */
-  --shadow-card: rgba(16, 16, 20, 0.16);
-  --shadow-modal: rgba(16, 16, 20, 0.22);
-  --shadow-toast: rgba(16, 16, 20, 0.18);
+     reads as depth on near-black reads as soot on white. Warm-tinted, so
+     a card's shadow doesn't turn the beige under it grey. */
+  --shadow-card: rgba(58, 46, 30, 0.14);
+  --shadow-modal: rgba(58, 46, 30, 0.2);
+  --shadow-toast: rgba(58, 46, 30, 0.16);
   --positive: #15803d;
   --negative: #dc2626;
   --warning: #b45309;
@@ -142,18 +148,12 @@
    second asset. */
 :root[data-theme="light"] .brand-logo img { filter: invert(1); }
 
-/* Tier hues are metals — silver in particular is a light grey, which on a
-   white card is nothing at all. */
-/* The tier metals are left exactly as the dark theme has them. Darkening
-   them for contrast made them read as dimmed, and these are meant to look
-   like bronze, silver and gold. */
-
 /* The streak heatmap ramps up in opacity toward the accent, which means
    toward white in dark and toward black in light — the one place the ramp
    has to be restated rather than tokenised. */
-:root[data-theme="light"] .streak-tile.level-1 { background: rgba(16, 16, 20, 0.1); border-color: rgba(16, 16, 20, 0.16); }
-:root[data-theme="light"] .streak-tile.level-2 { background: rgba(16, 16, 20, 0.3); }
-:root[data-theme="light"] .streak-tile.level-3 { background: rgba(16, 16, 20, 0.55); border-color: rgba(16, 16, 20, 0.62); color: var(--text-inverse); }
+:root[data-theme="light"] .streak-tile.level-1 { background: rgba(38, 32, 22, 0.1); border-color: rgba(38, 32, 22, 0.16); }
+:root[data-theme="light"] .streak-tile.level-2 { background: rgba(38, 32, 22, 0.3); }
+:root[data-theme="light"] .streak-tile.level-3 { background: rgba(38, 32, 22, 0.55); border-color: rgba(38, 32, 22, 0.62); color: var(--text-inverse); }
 
 * { box-sizing: border-box; }
 
@@ -678,9 +678,13 @@ body {
   font-weight: 800;
   letter-spacing: 0.3px;
 }
-.category-tier-name.tier-name-bronze { color: #d0895a; }
-.category-tier-name.tier-name-silver { color: #c7ccd6; }
-.category-tier-name.tier-name-gold { color: #f0c14b; }
+/* One hue per product category, mid-toned so the same value carries on
+   near-black and on off-white — the crates are categories now, not metals,
+   so there is no silver to go invisible on a light page. Matches the
+   fallback finishes in boxViewer's TIER_SKINS. */
+.category-tier-name.tier-name-sneakers { color: #d4794e; }
+.category-tier-name.tier-name-streetwear { color: #5b8dd9; }
+.category-tier-name.tier-name-collectibles { color: #c9942f; }
 .category-tier-name.tier-name-stocks { color: var(--positive); }
 
 .category-tier-price {
@@ -1030,7 +1034,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
    a simulated cast, same pattern as the marketplace/leaderboard) --- */
 
 .recent-pulls {
-  /* Full width of the tier-card row (Bronze through Gold), not a narrower
+  /* Full width of the crate-card row, not a narrower
      centered strip — no max-width of its own. */
   margin: 48px 0 0;
 }
@@ -3336,7 +3340,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .wallet-cash-btn:hover { border-color: var(--line-strong); }
 
-/* --- Tier badge (Bronze/Silver/Gold) --- */
+/* --- Crate badge (Sneakers/Streetwear/Collectibles) --- */
 
 .tier-badge {
   display: inline-block;
@@ -3349,9 +3353,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   border-radius: 999px;
   border: 1px solid currentColor;
 }
-.tier-badge-bronze { color: #d0895a; background: rgba(208, 137, 90, 0.14); }
-.tier-badge-silver { color: #c7ccd6; background: rgba(199, 204, 214, 0.14); }
-.tier-badge-gold { color: #f0c14b; background: rgba(240, 193, 75, 0.16); }
+.tier-badge-sneakers { color: #d4794e; background: rgba(212, 121, 78, 0.14); }
+.tier-badge-streetwear { color: #5b8dd9; background: rgba(91, 141, 217, 0.14); }
+.tier-badge-collectibles { color: #c9942f; background: rgba(201, 148, 47, 0.16); }
 .tier-badge-stocks { color: var(--positive); background: rgba(74, 222, 128, 0.14); }
 
 /* --- Reveal exits: Cash Out / Keep --- */
@@ -4727,4 +4731,148 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   }
   .app-footer-col { align-items: center; min-width: 0; }
   .app-footer-link { align-self: center; text-align: center; }
+}
+
+/* --- Live pulls dock -----------------------------------------------------
+   The Drops page keeps its own horizontal strip; this is the same feed
+   following you onto Market, Account and Rewards. Desktop only — a phone
+   already has the tab bar and the account dock parked in the bottom
+   corners, and a third floating panel there would be fighting both. It
+   opts in per breakpoint rather than out, so it can never appear on mobile
+   by accident. */
+
+.pulls-dock { display: none; }
+
+@media (min-width: 641px) {
+  .pulls-dock {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    width: 232px;
+    /* Deliberately short. It floats over the page like any corner widget,
+       so the taller it is the more of the first column it sits on top of —
+       at this height it clears the crate cards' Open buttons on a normal
+       desktop, and collapsing gets it out of the way entirely. */
+    max-height: min(34vh, 300px);
+    background: var(--panel-blur);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px var(--shadow-card);
+    overflow: hidden;
+    transition: max-height 0.24s ease;
+  }
+
+  .pulls-dock-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--text-dim);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .pulls-dock-head:hover { color: var(--text); }
+  .pulls-dock-title { flex: 1; text-align: left; }
+
+  /* The one thing that says this is live rather than a stored list. */
+  .pulls-dock-pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--positive);
+    animation: pullsDockPip 2s ease-in-out infinite;
+  }
+  @keyframes pullsDockPip {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+
+  .pulls-dock-chevron { transition: transform 0.24s ease; }
+
+  .pulls-dock-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Collapsed: the header is the whole widget. max-height animates where
+     display:none can't, and the list is taken out of the tab order once
+     it's hidden. */
+  .pulls-dock.collapsed { max-height: 39px; }
+  .pulls-dock.collapsed .pulls-dock-head { border-bottom-color: transparent; }
+  .pulls-dock.collapsed .pulls-dock-chevron { transform: rotate(-180deg); }
+  .pulls-dock.collapsed .pulls-dock-list { visibility: hidden; }
+
+  .pulls-dock-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--hairline);
+    text-align: left;
+    cursor: pointer;
+  }
+  .pulls-dock-row:last-child { border-bottom: none; }
+  .pulls-dock-row:hover { background: var(--hover-bg); }
+
+  .pulls-dock-row img {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    object-fit: contain;
+    background: var(--well);
+    border-radius: 5px;
+  }
+
+  .pulls-dock-row-main { flex: 1; min-width: 0; }
+  .pulls-dock-row-name {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pulls-dock-row-user {
+    display: block;
+    font-size: 0.58rem;
+    color: var(--text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pulls-dock-row-user.you { color: var(--positive); font-weight: 700; }
+
+  .pulls-dock-row-price {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A new pull lands at the top; it appears in place rather than sliding
+     the whole list. */
+  .pulls-dock-row.is-new { animation: pullsDockIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes pullsDockIn {
+    from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
 }

@@ -25,9 +25,8 @@ export const OPENING_HISTORY_ROLLING = 10; // non-pinned entries kept
 // across all tiers ($100 → 5, $250 → 12.5, $1000 → 50).
 export const CASHBACK_RATE = 0.05;
 
-// Daily play streak: opening at least one crate (any tier — Bronze/$100
-// already is the minimum) on RAFFLE_STREAK_DAYS consecutive calendar days
-// enters that week's raffle.
+// Daily play streak: opening at least one crate of any kind on
+// RAFFLE_STREAK_DAYS consecutive calendar days enters that week's raffle.
 export const RAFFLE_STREAK_DAYS = 7;
 
 // Referral ladder from the scope doc, denominated in lifetime crate volume.

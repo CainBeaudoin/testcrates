@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gotcha Machine</title>
 <script>
-// Runs before the stylesheet paints so a reload in light mode never flashes
-// the dark palette first — which it would if this waited for app.js at the
-// end of the body. The toggle that writes this lives in the rail.
+// Runs before the stylesheet paints so a reload never flashes the other
+// palette first — which it would if this waited for app.js at the end of
+// the body. The toggle that writes this lives in the rail.
+// Light is the default: this reads as a shop, and shops are not dark by
+// default. Dark is opt-in and remembered.
 try {
-  if (localStorage.getItem("gotcha_theme") === "light") {
+  if (localStorage.getItem("gotcha_theme") !== "dark") {
     document.documentElement.setAttribute("data-theme", "light");
   }
 } catch (e) {
-  // Private mode — dark, the default, is what you get.
+  document.documentElement.setAttribute("data-theme", "light");
 }
 </script>
 <link rel="stylesheet" href="css/style.css">
@@ -782,6 +784,19 @@ try {
   <span class="credit-toast-icon" id="creditToastIcon"></span>
   <span id="creditToastText"></span>
 </div>
+
+<!-- Live pulls, docked. The Drops page has its own horizontal strip of
+     these; this is the same feed following you onto Market, Account and
+     Rewards, where the interesting thing about a pull is that it happened
+     at all. Collapses to its own header, and remembers that. -->
+<aside id="pullsDock" class="pulls-dock">
+  <button id="pullsDockToggle" class="pulls-dock-head" aria-expanded="true" aria-controls="pullsDockList">
+    <span class="pulls-dock-pip" aria-hidden="true"></span>
+    <span class="pulls-dock-title">Live Pulls</span>
+    <svg class="pulls-dock-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="pullsDockList" class="pulls-dock-list"></div>
+</aside>
 
 <script type="module" src="js/app.js"></script>
 </body>

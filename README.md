@@ -35,9 +35,12 @@ $100-tier Legendary. Add more in `CATEGORIES` in `js/app.js`.
 
 ## How it works
 
-- `js/app.js` defines the prize tiers in `CATEGORIES`. Each tier draws from
-  a weighted pool of prizes (see `js/prizeData.js`, `prizeData250.js`,
-  `prizeData1000.js`).
+- `js/app.js` defines the crates in `CATEGORIES`. Crates are product
+  categories — Sneakers, Streetwear, Collectibles (plus Stocks) — each
+  drawing from its own weighted pool (`js/prizeDataSneakers.js`,
+  `prizeDataStreetwear.js`, `prizeDataCollectibles.js`). They used to be
+  price tiers cut out of one footwear pool; `LEGACY_TIER_KEYS` in `app.js`
+  keeps saved history from before that change rendering.
 - When a round starts, all three crates are assigned a prize immediately
   (via a weighted random pick) — before the player picks anything. Clicking
   a crate never changes what's inside it, and nothing about a prize is
@@ -112,12 +115,14 @@ structure (studied for reference, not copied).
 
 ## Prize catalog
 
-`js/prizeData.js` / `prizeData250.js` / `prizeData1000.js` are each
-generated from a scrape of
-[odto.com/collections/footwear](https://odto.com/collections/footwear) —
-real sneaker names, prices, and product photos (downloaded into
-`assets/prizes/`, downscaled from the original 4K exports). AED prices
-were converted to USD at a fixed approximate rate. Each tier draws from a
+`js/prizeDataSneakers.js` / `prizeDataStreetwear.js` /
+`prizeDataCollectibles.js` are each generated from a scrape of the matching
+ODTO collection ([footwear](https://odto.com/collections/footwear),
+[apparel](https://odto.com/collections/apparel),
+[collectibles](https://odto.com/collections/collectibles)) — real product
+names, prices, and photos (downloaded into `assets/prizes/`). ODTO quotes
+CAD; prices are converted to USD at the rate its own storefront uses. Each
+crate draws from a
 *different price band* of the same catalog (scraped via
 `?sort_by=price-descending` across several pages), then splits its own
 band into 5 rarity tiers by price quintile — so "Legendary" always means
@@ -139,16 +144,23 @@ band into 5 rarity tiers by price quintile — so "Legendary" always means
 
 Each item's `weight` is its rarity tier's total draw weight split evenly
 across the items in that tier (commons draw far more often than
-legendaries). To refresh the pool with different stock, re-scrape the
-collection page and regenerate `prizeData.js` (product name, price, image
-URL, then bucket by price quintile).
+legendaries). To refresh a pool with different stock, re-scrape that
+collection and regenerate its file: take available products with a photo,
+clamp to a sensible price window, sample 40 evenly across it, then assign
+eight per rarity band lowest to highest.
 
-## Adding a new prize tier
+Each crate also wears its own pool: `boxViewer.js` bakes a tiled collage of
+that crate's product shots into the 3D box texture (`registerTierArt`), so
+a Collectibles crate is visibly covered in Bearbricks and a Sneakers crate
+in shoes.
+
+## Adding a new crate
 
 Add an entry to `CATEGORIES` in `js/app.js` with its own `pool` (an array
-of `{ name, price, rarity, weight, image }` objects — see `prizeData.js`
-for the shape). A card for it appears automatically on the tier-select
-screen, including its own "View Prizes" dropdown.
+of `{ name, price, rarity, weight, image, category }` objects — see
+`prizeDataSneakers.js` for the shape). A card for it appears automatically
+on the crate-select screen, including its own "View Prizes" dropdown, and
+its pool is registered as the box's collage wrap.
 
 ## 3D asset
 

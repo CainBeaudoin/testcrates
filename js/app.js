@@ -1,7 +1,8 @@
-import { createBoxViewer, getBoxSnapshot } from "./boxViewer.js";
-import { PRIZE_POOL as HUNDRED_POOL, RARITY_META } from "./prizeData.js";
-import { PRIZE_POOL as TWO_FIFTY_POOL } from "./prizeData250.js";
-import { PRIZE_POOL as THOUSAND_POOL } from "./prizeData1000.js";
+import { createBoxViewer, getBoxSnapshot, registerTierArt } from "./boxViewer.js";
+import { RARITY_META } from "./rarity.js";
+import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
+import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
+import { PRIZE_POOL as COLLECTIBLES_POOL } from "./prizeDataCollectibles.js";
 import { PRIZE_POOL as STOCKS_POOL } from "./prizeDataStocks.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
@@ -27,28 +28,56 @@ const CATEGORIES = {
     boxKind: "printer", // generic printer model, not the shoe box
     cashOnly: true, // real USDC settlement, not a Credits reward balance
   },
-  hundred: {
+  sneakers: {
+    label: "$125",
+    badge: "Sneakers",
+    price: 125,
+    pool: SNEAKER_POOL,
+    poweredBy: "ODTO",
+  },
+  streetwear: {
     label: "$100",
-    badge: "Bronze",
+    badge: "Streetwear",
     price: 100,
-    pool: HUNDRED_POOL,
+    pool: STREETWEAR_POOL,
     poweredBy: "ODTO",
   },
-  twoFifty: {
-    label: "$250",
-    badge: "Silver",
-    price: 250,
-    pool: TWO_FIFTY_POOL,
-    poweredBy: "ODTO",
-  },
-  thousand: {
-    label: "$1000",
-    badge: "Gold",
-    price: 1000,
-    pool: THOUSAND_POOL,
+  collectibles: {
+    label: "$150",
+    badge: "Collectibles",
+    price: 150,
+    pool: COLLECTIBLES_POOL,
     poweredBy: "ODTO",
   },
 };
+
+// Crates used to be price tiers (Bronze $100 / Silver $250 / Gold $1000)
+// cut out of one footwear pool. They're product categories now, so a saved
+// history, pity counter or simulated pull from before the change still
+// names a tier that no longer exists — this keeps those rows rendering
+// instead of blanking out. New writes only ever use the keys above.
+const LEGACY_TIER_KEYS = {
+  hundred: "sneakers",
+  twoFifty: "streetwear",
+  thousand: "collectibles",
+};
+
+function tierKeyOf(key) {
+  if (CATEGORIES[key]) return key;
+  return LEGACY_TIER_KEYS[key] ?? "sneakers";
+}
+
+function tierOf(key) {
+  return CATEGORIES[tierKeyOf(key)];
+}
+
+// Each crate is wrapped in what can come out of it. boxViewer bakes these
+// into one texture per crate the first time it draws one; registering here
+// keeps the pools owned by this file and out of the renderer.
+Object.entries(CATEGORIES).forEach(([key, cat]) => {
+  if (cat.boxKind) return; // the Stocks printer has no product art to wear
+  registerTierArt(key, cat.pool.map((p) => p.image));
+});
 
 const MAX_BATCH_QTY = 8;
 
@@ -58,10 +87,10 @@ function rankOf(rarity) {
 }
 const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"];
 
-// Full catalog across all tiers, used to seed simulated marketplace listings.
-const ALL_CATALOG = [...STOCKS_POOL, ...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
-// ODTO tiers only (no stocks) — used to demo-seed the Vault.
-const SNEAKER_CATALOG = [...HUNDRED_POOL, ...TWO_FIFTY_POOL, ...THOUSAND_POOL];
+// Full catalog across every crate, used to seed simulated marketplace listings.
+const ALL_CATALOG = [...STOCKS_POOL, ...SNEAKER_POOL, ...STREETWEAR_POOL, ...COLLECTIBLES_POOL];
+// ODTO crates only (no stocks) — used to demo-seed the Vault.
+const SNEAKER_CATALOG = [...SNEAKER_POOL, ...STREETWEAR_POOL, ...COLLECTIBLES_POOL];
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
@@ -426,7 +455,8 @@ function fmt(n) {
 // catalog) but still stated explicitly rather than assumed.
 function itemMetaText(name, category) {
   if (category === "stocks") return "";
-  return `Size US ${market.sizeForItem(name)} · Condition: New`;
+  const size = market.sizeLabelFor(name, category);
+  return size ? `Size ${size} · Condition: New` : "Condition: New";
 }
 
 function vibrate(rarity) {
@@ -467,10 +497,10 @@ function releaseOwnedItem(item) {
 // behave identically to the real thing. Runs once ever (see
 // player.markDemoSeeded) — never re-seeds an account that's already played.
 const DEMO_VAULT_ITEM_NAMES = [
-  "Air Jordan 4 Nigel Sylvester Brick By Brick", // Bronze, Legendary, $587
-  "Nike Air Force 1 Low White", // Bronze, Common, $103
-  "Nike Air Force 1 Low Off-White Volt", // Silver, Legendary, $1,174
-  "Air Jordan 1 High Off-White Chicago", // Gold, Legendary, $6,236
+  "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
+  "Nike Dunk Low GS Black White", // Sneakers, Common
+  "Supreme The North Face Statue Of Liberty Mountain Jacket", // Streetwear, Legendary
+  "Medicom Bearbrick 3125C Objective Edc 1000%", // Collectibles, Legendary
 ];
 const DEMO_PORTFOLIO_ITEM_NAMES = [
   "NVDA — Nvidia Corp",
@@ -828,19 +858,25 @@ function tickSimulatedPulls() {
   simulatedPulls.unshift(generateSimulatedPull(Date.now()));
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
   if (screenCategory.classList.contains("active")) renderRecentPulls();
+  renderPullsDock(); // the dock is on every screen, not just Drops
 }
 
 // Set while a tier page is open, so the carousel under it shows that
 // tier's pulls only — see openTierDetail. null = the whole feed.
 let recentPullsTierKey = null;
 
-function renderRecentPulls() {
+// Your own opens and the simulated crowd's, newest first. Shared by the
+// Drops strip and the docked widget so the two can never disagree about
+// what just happened.
+function livePullFeed(limit, tierKey = null) {
   const mine = player.getHistory().map((p) => ({ ...p, username: player.getUsername(), isPlayer: true }));
   const all = [...mine, ...simulatedPulls];
-  const scoped = recentPullsTierKey
-    ? all.filter((p) => (p.tierKey ?? "hundred") === recentPullsTierKey)
-    : all;
-  const feed = scoped.sort((a, b) => b.ts - a.ts).slice(0, 16);
+  const scoped = tierKey ? all.filter((p) => tierKeyOf(p.tierKey) === tierKey) : all;
+  return scoped.sort((a, b) => b.ts - a.ts).slice(0, limit);
+}
+
+function renderRecentPulls() {
+  const feed = livePullFeed(16, recentPullsTierKey);
 
   recentPullsTitle.textContent = recentPullsTierKey
     ? `Recent ${CATEGORIES[recentPullsTierKey].badge} Pulls`
@@ -861,8 +897,7 @@ function renderRecentPulls() {
   });
 
   const itemHTML = (p) => {
-    const tierKey = p.tierKey ?? "hundred";
-    const badge = CATEGORIES[tierKey]?.badge ?? "Bronze";
+    const badge = tierOf(p.tierKey).badge;
     return `
       <div class="recent-pull-item" data-pull-ts="${p.ts}">
         <img src="${p.image}" alt="">
@@ -905,9 +940,81 @@ function renderRecentPulls() {
   });
 }
 
+// ---- Live pulls dock ----------------------------------------------------
+// The same feed as the Drops strip, parked bottom-left on every screen so
+// you don't have to be on Drops (or scroll) to see that something landed.
+// Collapses to its own header bar, and remembers that between visits.
+
+const pullsDock = document.getElementById("pullsDock");
+const pullsDockList = document.getElementById("pullsDockList");
+const pullsDockToggle = document.getElementById("pullsDockToggle");
+const PULLS_DOCK_KEY = "gotcha_pulls_dock";
+const PULLS_DOCK_ROWS = 10;
+
+// Only the row that wasn't there last render animates in — re-animating the
+// whole list on every tick would make the corner of the screen twitch every
+// four seconds.
+let pullsDockTopTs = null;
+
+function renderPullsDock() {
+  const feed = livePullFeed(PULLS_DOCK_ROWS);
+  if (feed.length === 0) {
+    pullsDockList.innerHTML = "";
+    return;
+  }
+  const newest = feed[0].ts;
+  const isFirstPaint = pullsDockTopTs === null;
+
+  pullsDockList.innerHTML = feed
+    .map((p) => {
+      const cat = tierOf(p.tierKey);
+      const fresh = !isFirstPaint && p.ts > pullsDockTopTs;
+      return `
+      <button class="pulls-dock-row${fresh ? " is-new" : ""}" data-pull-ts="${p.ts}">
+        <img src="${p.image}" alt="">
+        <span class="pulls-dock-row-main">
+          <span class="pulls-dock-row-name">${p.name}</span>
+          <span class="pulls-dock-row-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username} · ${cat.badge}</span>
+        </span>
+        <span class="pulls-dock-row-price">$${p.price.toLocaleString()}</span>
+      </button>`;
+    })
+    .join("");
+
+  pullsDockList.querySelectorAll(".pulls-dock-row").forEach((el, i) => {
+    el.addEventListener("click", () => {
+      playClick();
+      openPullDetail(feed[i]);
+    });
+  });
+  pullsDockTopTs = newest;
+}
+
+function setPullsDockCollapsed(collapsed) {
+  pullsDock.classList.toggle("collapsed", collapsed);
+  pullsDockToggle.setAttribute("aria-expanded", String(!collapsed));
+  pullsDockToggle.title = collapsed ? "Show live pulls" : "Hide live pulls";
+  try {
+    localStorage.setItem(PULLS_DOCK_KEY, collapsed ? "collapsed" : "open");
+  } catch {
+    // Not persisting is survivable — it just reopens next visit.
+  }
+}
+
+pullsDockToggle.addEventListener("click", () => {
+  playClick();
+  setPullsDockCollapsed(!pullsDock.classList.contains("collapsed"));
+});
+
+try {
+  setPullsDockCollapsed(localStorage.getItem(PULLS_DOCK_KEY) === "collapsed");
+} catch {
+  setPullsDockCollapsed(false);
+}
+
 function openPullDetail(pull) {
   const meta = RARITY_META[pull.rarity];
-  const tierKey = pull.tierKey ?? "hundred";
+  const tierKey = tierKeyOf(pull.tierKey);
   const cat = CATEGORIES[tierKey];
 
   pullDetailModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
@@ -1440,6 +1547,7 @@ function onPick(index) {
   const finalPrize = boxPrizes[index]; // duplicate-guard already resolved at round start, see startRound
 
   const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, CATEGORIES[currentCategoryKey].price);
+  renderPullsDock(); // your own pull should land in the dock immediately
 
   // Result is known — the Live Activity switches from OPENING to the rarity.
   // Deliberately fired here rather than after the modal animation: the point
@@ -2000,7 +2108,9 @@ function marketItemCardHTML(listing) {
   // Computed live from the name rather than read off listing.size — older
   // listings seeded before that field existed would otherwise silently go
   // without a size badge, showing sizes only on ones created afterward.
-  const sizeHTML = `<span class="market-item-size">US ${market.sizeForItem(listing.name)}</span>`;
+  // Null for the kinds that aren't sized, now that crates aren't all shoes.
+  const listingSize = market.sizeLabelFor(listing.name, listing.category);
+  const sizeHTML = listingSize ? `<span class="market-item-size">${listingSize}</span>` : "";
   return `
     <div class="market-item" data-listing="${listing.id}">
       <div class="market-item-media">
@@ -2075,7 +2185,8 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
-    const sizes = ["all", ...market.SIZES];
+    // Shoe sizes and apparel sizes both, now that a crate can be a hoodie.
+    const sizes = ["all", ...market.SIZES, ...market.APPAREL_SIZES];
     marketSizeFilter.innerHTML = sizes
       .map((s) => `<option value="${s}">${s === "all" ? "All Sizes" : `US ${s}`}</option>`)
       .join("");
@@ -2382,7 +2493,7 @@ function openCreditsEarnedModal() {
   creditsEarnedList.innerHTML = events.length
     ? events
         .map((e) => {
-          const cat = CATEGORIES[e.tierKey];
+          const cat = e.tierKey ? tierOf(e.tierKey) : null;
           return `
           <div class="opening-row">
             <span class="opening-row-name">${cat ? cat.label : "Crate"} purchase</span>
@@ -2505,7 +2616,8 @@ function inventoryItemHTML(item) {
   const cashOutToday = player.cashOutValue(item);
   const listing = item.listingId ? market.getListing(item.listingId) : null;
   const isListed = listing && listing.price != null;
-  const sizeHTML = item.category !== "stocks" ? `<span class="market-item-size">US ${market.sizeForItem(item.name)}</span>` : "";
+  const itemSize = market.sizeLabelFor(item.name, item.category);
+  const sizeHTML = itemSize ? `<span class="market-item-size">${itemSize}</span>` : "";
 
   // Someone has bid on this one. Sits opposite the size pill so the two
   // corners read as a pair; vault cards only, the marketplace grid uses a
@@ -3140,12 +3252,16 @@ function renderReferralPanel() {
 // Deterministic per-week pick from the grail tier, so the raffle prize is
 // stable all week and only changes once the next week starts — no backend
 // needed to "populate" it on a schedule.
+// The top rarity band across the ODTO crates — a raffle prize should be
+// something you'd actually chase.
+const RAFFLE_POOL = SNEAKER_CATALOG.filter((p) => p.rarity === "legendary");
+
 function getWeeklyRafflePrize() {
   const weekIndex = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
   let h = 0;
   const s = `raffle-${weekIndex}`;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return THOUSAND_POOL[h % THOUSAND_POOL.length];
+  return RAFFLE_POOL[h % RAFFLE_POOL.length];
 }
 
 // Small glyphs for the "How You Earn More" rows.
@@ -3425,6 +3541,7 @@ if (profileParam) {
   seedSimulatedPulls();
   seedDemoInventory();
   renderCategories();
+  renderPullsDock();
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.

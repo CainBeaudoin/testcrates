@@ -24,18 +24,38 @@ function uid() {
 // size) — enough to power a real Size filter without pretending it's real
 // inventory data.
 export const SIZES = ["7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "13"];
+// The crates aren't all footwear any more: a hoodie is sized S-XXL, and a
+// Bearbrick isn't sized at all.
+export const APPAREL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-export function sizeForItem(name) {
+function hashOf(name) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return SIZES[h % SIZES.length];
+  return h;
 }
 
-// A share of stock doesn't have a shoe size — only assign one for
-// categories that actually wear one (sneakers, the implicit default for
-// items predating the category field).
-function sizeFor(item) {
-  return item.category === "stocks" ? null : sizeForItem(item.name);
+export function sizeForItem(name) {
+  return SIZES[hashOf(name) % SIZES.length];
+}
+
+/**
+ * The size a listing is filed under, or null for the kinds that don't have
+ * one (stocks, and collectibles — a skateboard deck filed under "10.5" was
+ * the giveaway that this used to assume every prize was a sneaker). This is
+ * the value the Size filter matches on, so it stays bare.
+ */
+export function sizeFor(item) {
+  const { name, category } = item;
+  if (category === "stocks" || category === "collectibles") return null;
+  if (category === "streetwear") return APPAREL_SIZES[hashOf(name) % APPAREL_SIZES.length];
+  return sizeForItem(name); // sneakers, and anything saved before crates had categories
+}
+
+/** The same size as it's shown to a person — shoe sizes wear their "US". */
+export function sizeLabelFor(name, category) {
+  const size = sizeFor({ name, category });
+  if (size === null) return null;
+  return category === "streetwear" ? size : `US ${size}`;
 }
 
 function defaultState() {

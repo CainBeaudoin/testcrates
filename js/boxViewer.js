@@ -39,32 +39,145 @@ function loadModelFor(kind) {
   return kind === "printer" ? loadPrinterModel() : loadModel();
 }
 
-// Bronze/Silver/Gold "skins" — same hex family as the tier badges elsewhere
-// in the UI. Replaces the model's own branded texture with a flat metallic
-// tint per tier, rather than multiplying a color over it (multiplying a
-// grayscale tint like silver over the existing orange-toned texture reads
-// muddy, not metallic). High metalness + low roughness for a genuine
-// mirror-like/chrome look — needs a real environment map to reflect
-// (see applyStudioEnvironment), or a metal this shiny just reads as flat
-// black with no light source to bounce.
+// Per-crate finishes, keyed by crate. Replaces the model's own branded
+// texture rather than multiplying a colour over it, which reads muddy.
 const TIER_SKINS = {
-  bronze: { color: 0xd0895a, metalness: 1, roughness: 0.22 },
-  silver: { color: 0xc7ccd6, metalness: 1, roughness: 0.1 },
-  gold: { color: 0xf0c14b, metalness: 1, roughness: 0.14 },
-  // Placeholder for the Stocks tier, reusing the same crate model with a
-  // finance-green skin — a dedicated "pack" model replaces this later.
+  // Fallback finish, used until a crate registers product art (and by the
+  // Stocks crate, which has no product shots of its own). High metalness +
+  // low roughness for a genuine mirror-like look — needs a real environment
+  // map to reflect (see applyStudioEnvironment), or a metal this shiny just
+  // reads as flat black with no light source to bounce.
+  sneakers: { color: 0xd4794e, metalness: 1, roughness: 0.22 },
+  streetwear: { color: 0x5b8dd9, metalness: 1, roughness: 0.18 },
+  collectibles: { color: 0xc9942f, metalness: 1, roughness: 0.14 },
   stocks: { color: 0x4ade80, metalness: 1, roughness: 0.18 },
 };
+
+// ---- Product collage skins ----------------------------------------------
+// A crate is wrapped in the things that can come out of it: its own pool's
+// product shots, tiled into one texture. app.js registers the art (it owns
+// the pools; this module has no business importing prize data), and a crate
+// with nothing registered falls back to the metallic finish above.
+
+const collageArt = new Map();
+const collageTextures = new Map();
+
+/** @param {string} tierKey @param {string[]} images - product image URLs. */
+export function registerTierArt(tierKey, images) {
+  collageArt.set(tierKey, images);
+  collageTextures.delete(tierKey); // re-bake if the pool changed
+}
+
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null); // a missing shot just leaves its cell empty
+    img.src = src;
+  });
+}
+
+// Deterministic per crate, so a crate's wrap is the same every time it's
+// drawn rather than reshuffling on each mount.
+function seeded(seed) {
+  let n = seed;
+  return () => {
+    n = (n * 1664525 + 1013904223) % 4294967296;
+    return n / 4294967296;
+  };
+}
+
+// The model's UVs were laid out for a branded shoe box, so this is painted
+// as a repeating wrap rather than a registered print: a dense grid reads as
+// "covered in product" from any angle, which is the point, and no cell
+// lands on a seam in a way that matters.
+const COLLAGE_SIZE = 1024;
+const COLLAGE_COLS = 4;
+
+async function buildCollageTexture(tierKey) {
+  const images = collageArt.get(tierKey);
+  if (!images || images.length === 0) return null;
+
+  const cells = COLLAGE_COLS * COLLAGE_COLS;
+  const rand = seeded(tierKey.length * 7919 + images.length);
+  // Spread the picks across the whole pool instead of taking the first 16,
+  // so the wrap shows the cheap and the grail side by side.
+  const step = images.length / cells;
+  const picks = Array.from({ length: cells }, (_, i) => images[Math.floor(i * step) % images.length]);
+  const loaded = await Promise.all(picks.map(loadImage));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = COLLAGE_SIZE;
+  const ctx = canvas.getContext("2d");
+
+  // Warm paper ground, so gaps between cut-out shots read as box board
+  // rather than as holes, washed with the crate's own hue — product shots
+  // are nearly all cut out on white, and on a white ground the box read as
+  // a plain white box with a few specks on it.
+  ctx.fillStyle = "#efe9df";
+  ctx.fillRect(0, 0, COLLAGE_SIZE, COLLAGE_SIZE);
+  const tint = TIER_SKINS[tierKey];
+  if (tint) {
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#" + tint.color.toString(16).padStart(6, "0");
+    ctx.fillRect(0, 0, COLLAGE_SIZE, COLLAGE_SIZE);
+    ctx.globalAlpha = 1;
+  }
+
+  const cell = COLLAGE_SIZE / COLLAGE_COLS;
+  loaded.forEach((img, i) => {
+    if (!img) return;
+    const cx = (i % COLLAGE_COLS) * cell;
+    const cy = Math.floor(i / COLLAGE_COLS) * cell;
+    // Contain rather than cover: these are cut-out product shots, and
+    // cropping one to fill its cell tends to cut the shoe in half.
+    const scale = Math.min(cell / img.width, cell / img.height) * 1.02;
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.save();
+    ctx.translate(cx + cell / 2, cy + cell / 2);
+    ctx.rotate((rand() - 0.5) * 0.24); // a few degrees each way — a collage, not a contact sheet
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  // Tiled about twice over each face: one pass of a 4x4 grid stretched
+  // across a whole box makes each product big enough that a face can end up
+  // showing one shoe and a lot of board.
+  texture.repeat.set(2, 2);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+function collageFor(tierKey) {
+  if (!collageArt.has(tierKey)) return Promise.resolve(null);
+  if (!collageTextures.has(tierKey)) collageTextures.set(tierKey, buildCollageTexture(tierKey));
+  return collageTextures.get(tierKey);
+}
 
 // Materials are shared by reference across clone(true) instances, so this
 // clones each mesh's material before tinting it — otherwise skinning one
 // box would repaint every other box sharing that base model.
-function applyTierSkin(root, tierKey) {
+function applyTierSkin(root, tierKey, collage = null) {
   const skin = TIER_SKINS[tierKey];
-  if (!skin) return;
+  if (!skin && !collage) return;
   root.traverse((node) => {
     if (!node.isMesh || !node.material) return;
     const mat = node.material.clone();
+    if (collage) {
+      // Printed board, not polished metal: a mirror finish over product art
+      // blows the shots out to white at most angles.
+      mat.map = collage;
+      mat.color.setHex(0xffffff);
+      mat.metalness = 0.08;
+      mat.roughness = 0.62;
+      mat.envMapIntensity = 1;
+      node.material = mat;
+      return;
+    }
     mat.map = null;
     mat.color.setHex(skin.color);
     mat.metalness = skin.metalness;
@@ -253,7 +366,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
   if (!snapshotPromises.has(cacheKey)) {
     snapshotPromises.set(
       cacheKey,
-      loadModelFor(kind).then((baseModel) => {
+      loadModelFor(kind).then(async (baseModel) => {
         const size = 320;
         const canvas = document.createElement("canvas");
         canvas.width = size;
@@ -263,7 +376,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
         renderer.setSize(size, size, false);
 
         const root = baseModel.clone(true);
-        if (kind === "box") applyTierSkin(root, tierKey);
+        if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
         // Snapshot always represents the closed/idle state (same as the
         // box's lid never being open in it) — the paper sheet doesn't need
         // to exist in this scene at all.
@@ -284,7 +397,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 
 /**
  * Mounts one interactive, self-rotating prop on `canvas` — a box (optionally
- * skinned to a tier: "bronze"/"silver"/"gold") or, for kind:"printer", the
+ * skinned to a crate: "sneakers"/"streetwear"/"collectibles") or, for kind:"printer", the
  * Stocks tier's printer. Same idle-spin/hover/facing dynamics either way;
  * only what happens on open() differs — a box's lid hinges open, the
  * printer instead feeds a sheet of "paper" out (no lid to open). A prop
@@ -296,7 +409,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 export async function createBoxViewer(canvas, tierKey = "", kind = "box") {
   const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
-  if (kind === "box") applyTierSkin(root, tierKey);
+  if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
   const { scene, camera, group, lid, bounds } = buildRig(root);
 
   let paper = null;
