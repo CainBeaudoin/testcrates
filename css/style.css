@@ -244,8 +244,9 @@ body {
 }
 
 /* Theme and sound: a vertical stack pinned to the bottom-right corner, on
-   an inverted fill (the --text colour) so they contrast with whatever page
-   is behind them. The recent-pulls dock owns the bottom-left. */
+   the card surface (white in light mode) with a hairline ring and a soft
+   shadow, so they lift off whatever page is behind them without shouting.
+   The recent-pulls dock owns the bottom-left. */
 .rail-bottom {
   position: fixed;
   right: 16px;
@@ -257,15 +258,17 @@ body {
   gap: 8px;
 }
 .rail-bottom .mute-btn {
-  background: var(--text);
-  color: var(--text-inverse);
-  box-shadow: 0 6px 18px var(--shadow-toast);
+  background: var(--surface-1);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--hairline), 0 4px 14px rgba(0, 0, 0, 0.1);
 }
+:root[data-theme="light"] .rail-bottom .mute-btn { background: #fff; }
 .rail-bottom .mute-btn:hover {
-  background: var(--text);
-  color: var(--text-inverse);
+  background: var(--surface-1);
+  color: var(--text);
   transform: scale(1.08);
 }
+:root[data-theme="light"] .rail-bottom .mute-btn:hover { background: #fff; }
 
 .mute-btn {
   width: 36px;
