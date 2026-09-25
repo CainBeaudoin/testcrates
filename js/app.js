@@ -1098,11 +1098,8 @@ try {
 }
 
 pullDockCrate.addEventListener("click", () => {
-  playClick();
-  const wrap = categoryList.querySelector(`.category-wrap[data-tier="${pullDockCrate.dataset.tier}"]`);
-  if (!wrap) return;
-  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
-  openTierDetail(wrap);
+  if (!pullDockCrate.dataset.tier) return;
+  openCratePage(pullDockCrate.dataset.tier);
 });
 
 function openPullDetail(pull) {
@@ -1122,12 +1119,11 @@ function openPullDetail(pull) {
   pullDetailTierBadge.className = `tier-badge tier-badge-${cat.badge.toLowerCase()}`;
   pullDetailUser.textContent = pull.isPlayer ? "Pulled by you" : `Pulled by ${pull.username}`;
   pullDetailUser.classList.toggle("you", !!pull.isPlayer);
-  pullDetailGoBtn.textContent = `Go to ${cat.label} Crate`;
+  pullDetailGoBtn.textContent = `Go to ${cat.badge} Crate`;
   pullDetailGoBtn.onclick = () => {
     playClick();
     closePullDetail();
-    document.querySelector('.nav-tab[data-nav="screen-category"]').click();
-    openPaymentPicker(tierKey);
+    openCratePage(tierKey);
   };
 
   pullDetailModal.classList.remove("hidden");
@@ -1252,6 +1248,17 @@ function closeTierDetail() {
     recentPullsTierKey = null;
     renderRecentPulls();
   }
+}
+
+// Drops, opened straight onto one crate's page — its box, live odds and
+// prize list, with Open right there. The wrap has to be looked up *after*
+// the nav click: going to Drops re-renders the crate list, and a wrap
+// fetched beforehand is a detached node, which left the page on an empty
+// tier list with only that crate's pulls carousel showing.
+function openCratePage(tierKey) {
+  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
+  const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
+  if (wrap) openTierDetail(wrap);
 }
 
 dropDetailBackBtn.addEventListener("click", () => {
@@ -1936,7 +1943,7 @@ applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "li
 // On mobile the bottom tab bar is Drops/Market/Account only — mute moves
 // into the footer's Social Media row instead (same button/click handler,
 // just reparented) so it's not competing with real navigation. Desktop
-// keeps it in the rail. Re-parenting (not cloning) means the listener
+// keeps it in the bottom-right corner stack. Re-parenting (not cloning) means the listener
 // above stays attached wherever the node ends up.
 const railBottom = document.querySelector(".rail-bottom");
 const footerSocial = document.querySelector(".app-footer-social");
@@ -2076,74 +2083,6 @@ document.querySelectorAll(".account-toggle").forEach((toggle) => {
     });
   });
 });
-
-// ---- Account: KicksDB key for live StockX pricing -----------------------
-// Saved to this browser only (see stockx.getKey). Verifying on save is worth
-// the one request: it distinguishes a bad key from a working key on a plan
-// whose sales history is locked, which is exactly what decides whether the
-// charts can ever be live.
-const apiKeyInput = document.getElementById("apiKeyInput");
-const apiKeyStatus = document.getElementById("apiKeyStatus");
-const apiKeySaveBtn = document.getElementById("apiKeySaveBtn");
-const apiKeyClearBtn = document.getElementById("apiKeyClearBtn");
-
-function setKeyStatus(text, state) {
-  apiKeyStatus.textContent = text;
-  apiKeyStatus.className = `api-key-status ${state}`;
-}
-
-function renderApiKeyState() {
-  const key = stockx.getKey();
-  apiKeyInput.value = key;
-  if (!key) {
-    setKeyStatus("Not connected — charts show simulated data.", "idle");
-  } else {
-    setKeyStatus(`Connected · ${key.slice(0, 10)}…`, "ok");
-  }
-}
-
-apiKeySaveBtn.addEventListener("click", async () => {
-  playClick();
-  const key = apiKeyInput.value.trim();
-  if (!key) {
-    setKeyStatus("Enter a key first.", "warn");
-    return;
-  }
-  setKeyStatus("Checking…", "idle");
-  apiKeySaveBtn.disabled = true;
-  const result = await stockx.verifyKey(key);
-  apiKeySaveBtn.disabled = false;
-
-  if (!result.ok) {
-    const why =
-      result.reason === "rejected"
-        ? "Key rejected by KicksDB."
-        : result.reason === "unreachable"
-          ? "Couldn't reach KicksDB."
-          : `KicksDB returned ${result.reason.replace("http_", "")}.`;
-    setKeyStatus(why, "warn");
-    return;
-  }
-
-  stockx.setKey(key);
-  // Sales history is subscriber-only, so a free key still gives real prices
-  // in the chart caption but can't draw the line itself. Say which.
-  setKeyStatus(
-    result.history
-      ? "Connected — live StockX prices, and chart lines drawn from real sales."
-      : "Connected — live StockX prices. Sales history needs a paid plan, so chart lines stay simulated.",
-    "ok"
-  );
-});
-
-apiKeyClearBtn.addEventListener("click", () => {
-  playClick();
-  stockx.setKey("");
-  apiKeyInput.value = "";
-  renderApiKeyState();
-});
-
-renderApiKeyState();
 
 // ---- Generic amount prompt ------------------------------------------------
 
@@ -3623,9 +3562,8 @@ function homeGo(where) {
 
 // A crate's own page on Drops — what's in it, the odds, the pity meter.
 function homeSeeCrate(tierKey) {
-  homeGo("drops");
-  const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
-  if (wrap) openTierDetail(wrap);
+  openCratePage(tierKey);
+  window.scrollTo({ top: 0 });
 }
 
 // Straight to paying for one — the shortest path from a billboard to a box.

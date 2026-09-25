@@ -82,21 +82,6 @@ try {
         <span id="topUsername"></span>
       </button>
     </div>
-    <div class="rail-bottom">
-      <!-- Two small utility switches at the end of the header, not
-           navigation — which is why they keep the circle treatment while the
-           nav is plain type. Both theme icons ship; CSS shows whichever
-           belongs to the theme that isn't running, so the button always
-           pictures what clicking it will do. -->
-      <button id="themeBtn" class="mute-btn theme-btn" aria-label="Toggle light mode" title="Toggle light mode">
-        <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg>
-        <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
-      </button>
-      <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
-        <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-        <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-      </button>
-    </div>
   </header>
 
   <div class="shell-body">
@@ -422,23 +407,6 @@ try {
           <div class="account-wallet-actions">
             <button id="accountAddFundsBtn" class="modal-btn deposit-btn">Deposit</button>
             <button id="accountWithdrawBtn" class="modal-btn modal-btn-solid">Withdraw</button>
-          </div>
-
-          <!-- KicksDB key for live StockX pricing. Stored in this browser's
-               localStorage only — it is never sent anywhere but KicksDB and
-               never leaves this device, so it doesn't affect other visitors.
-               With no key set the site falls back to the server-side key if
-               one is configured, and to simulated data otherwise. -->
-          <div class="api-key-card">
-            <span class="api-key-title">Market Data</span>
-            <p class="api-key-status" id="apiKeyStatus"></p>
-            <input type="password" id="apiKeyInput" class="api-key-input"
-                   placeholder="KICKS-…" autocomplete="off" spellcheck="false">
-            <div class="api-key-actions">
-              <button id="apiKeySaveBtn" class="api-key-btn api-key-btn-primary">Connect</button>
-              <button id="apiKeyClearBtn" class="api-key-btn">Clear</button>
-            </div>
-            <p class="api-key-note">Stored in this browser only. <a href="https://kicks.dev/register" target="_blank" rel="noopener">Get a key</a></p>
           </div>
         </aside>
 
@@ -943,6 +911,22 @@ try {
     </button>
   </div>
 </aside>
+
+<!-- Theme and sound: two utility switches, not navigation, so they live
+     out of the header — stacked in the bottom-right corner on an inverted
+     fill so they read against whatever the page is showing. Both theme icons
+     ship; CSS shows whichever belongs to the theme that isn't running, so
+     the button always pictures what clicking it will do. -->
+<div class="rail-bottom">
+  <button id="themeBtn" class="mute-btn theme-btn" aria-label="Toggle light mode" title="Toggle light mode">
+    <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 0 1 11.2 3a7 7 0 1 0 9.8 9.8z"/></svg>
+    <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
+  </button>
+  <button id="muteBtn" class="mute-btn" aria-label="Toggle sound" title="Toggle sound">
+    <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+  </button>
+</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

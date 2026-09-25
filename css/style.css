@@ -243,12 +243,28 @@ body {
   .nav-tab .icon { display: none; }
 }
 
-/* Theme and sound: the tail of the header, past the wallet. */
+/* Theme and sound: a vertical stack pinned to the bottom-right corner, on
+   an inverted fill (the --text colour) so they contrast with whatever page
+   is behind them. The recent-pulls dock owns the bottom-left. */
 .rail-bottom {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
+}
+.rail-bottom .mute-btn {
+  background: var(--text);
+  color: var(--text-inverse);
+  box-shadow: 0 6px 18px var(--shadow-toast);
+}
+.rail-bottom .mute-btn:hover {
+  background: var(--text);
+  color: var(--text-inverse);
+  transform: scale(1.08);
 }
 
 .mute-btn {
@@ -340,6 +356,7 @@ body {
 }
 
 .topbar-stats {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2716,72 +2733,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .rewards-referral { order: 4; }
   .rewards-earn { order: 5; }
 }
-
-/* --- Account: KicksDB key ------------------------------------------------ */
-
-.api-key-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  background: var(--surface-1);
-  border: none;
-  border-radius: 8px;
-}
-.api-key-title {
-  font-size: 0.62rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-weight: 600;
-}
-.api-key-status {
-  margin: 0;
-  font-size: 0.66rem;
-  line-height: 1.4;
-  color: var(--text-faint);
-}
-.api-key-status.ok { color: var(--positive); }
-.api-key-status.warn { color: var(--negative); }
-.api-key-input {
-  width: 100%;
-  padding: 8px 12px;
-  background: var(--surface-2);
-  border: none;
-  border-radius: 8px;
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.7rem;
-}
-.api-key-input:focus {
-  outline: none;
-  border-color: var(--line-strong);
-}
-.api-key-actions {
-  display: flex;
-  gap: 8px;
-}
-.api-key-btn {
-  flex: 1;
-  padding: 8px;
-  background: var(--surface-2);
-  border-radius: 999px;
-  color: var(--text-dim);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  border: none;
-}
-.api-key-btn:hover { color: var(--text); background: var(--control-fill-hover); }
-.api-key-btn:disabled { opacity: 0.5; cursor: default; }
-.api-key-btn-primary { color: var(--text); }
-.api-key-note {
-  margin: 0;
-  font-size: 0.6rem;
-  color: var(--text-faint);
-}
-.api-key-note a { color: var(--text-dim); }
 
 .account-section-header {
   display: flex;
