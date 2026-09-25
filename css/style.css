@@ -187,6 +187,8 @@ body {
   display: flex;
   flex: 1;
   min-height: 0;
+  /* The topbar is fixed, so it no longer holds this down itself. */
+  padding-top: var(--topbar-h);
 }
 
 .rail {
@@ -277,10 +279,11 @@ body {
 }
 
 .topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 25;
-  width: 100%;
   flex: 0 0 auto;
   height: var(--topbar-h);
   display: flex;
@@ -290,7 +293,6 @@ body {
   padding: 0 24px;
   background: var(--panel-blur);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--hairline);
 }
 
 .topbar-brand {

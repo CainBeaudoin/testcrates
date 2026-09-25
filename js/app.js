@@ -1833,7 +1833,13 @@ function applyTheme(theme) {
   else root.removeAttribute("data-theme");
   // Two frames: one for the new values to be applied, one before transitions
   // are allowed back.
-  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove("theme-switching")));
+  // Two frames is the happy path; the timeout is the floor. A tab that goes
+  // to the background between the two never fires them, and the class
+  // disables every transition in the app while it's on — found it still
+  // stuck on <html> long after a theme change.
+  const unlock = () => root.classList.remove("theme-switching");
+  requestAnimationFrame(() => requestAnimationFrame(unlock));
+  setTimeout(unlock, 200);
   themeBtn.setAttribute("aria-label", light ? "Switch to dark mode" : "Switch to light mode");
   themeBtn.setAttribute("title", light ? "Dark mode" : "Light mode");
   try {
