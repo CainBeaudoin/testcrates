@@ -899,6 +899,7 @@ function livePullFeed(limit, tierKey = null) {
 function renderRecentPulls() {
   renderPullsCarousel();
   renderPullDock();
+  renderHomePulls();
 }
 
 function renderPullsCarousel() {
@@ -920,20 +921,25 @@ function renderPullsCarousel() {
     [...recentPullsList.querySelectorAll("[data-pull-ts]")].map((el) => el.dataset.pullTs)
   );
 
-  recentPullsList.innerHTML = feed
-    .map((p) => {
-      const cat = tierOf(p.tierKey);
-      return `
-      <div class="recent-pull-item${known.has(String(p.ts)) ? "" : " is-new"}" data-pull-ts="${p.ts}">
+  fillPullStrip(recentPullsList, feed, known);
+}
+
+// One tile of the pulls strip. Shared by Drops and Home so the two strips
+// are the same object in two places, not two designs that drift.
+function pullTileHTML(p, isNew) {
+  const cat = tierOf(p.tierKey);
+  return `
+      <div class="recent-pull-item${isNew ? " is-new" : ""}" data-pull-ts="${p.ts}">
         <img src="${p.image}" alt="">
         <span class="recent-pull-price">$${p.price.toLocaleString()}</span>
         <span class="tier-badge tier-badge-${cat.badge.toLowerCase()}">${cat.badge}</span>
         <span class="recent-pull-user ${p.isPlayer ? "you" : ""}">${p.isPlayer ? "You" : p.username}</span>
       </div>`;
-    })
-    .join("");
+}
 
-  recentPullsList.querySelectorAll(".recent-pull-item").forEach((el, i) => {
+function fillPullStrip(listEl, feed, known) {
+  listEl.innerHTML = feed.map((p) => pullTileHTML(p, !known.has(String(p.ts)))).join("");
+  listEl.querySelectorAll(".recent-pull-item").forEach((el, i) => {
     el.addEventListener("click", () => {
       playClick();
       openPullDetail(feed[i]);
@@ -1968,11 +1974,6 @@ window.addEventListener(
   },
   { passive: true }
 );
-
-// The wordmark is a way home — same as clicking the Drops tab.
-document.getElementById("brandHomeBtn").addEventListener("click", () => {
-  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
-});
 
 const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
 navTabs.forEach((tab) => {
@@ -3573,6 +3574,389 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// ---- Home -----------------------------------------------------------------
+// The front door. Nothing on it is its own data: the crates, grails, pulls,
+// leaderboard and listings are the same objects the other screens render,
+// so every tile here is a door into the screen that owns it and can't
+// advertise something the app doesn't actually have.
+
+const HOME_HERO_SLIDES = [
+  { tier: "sneakers", pick: "Nike SB Dunk Low Supreme Stars Hyper Royal", tint: "#e6eafa", accent: "#2f45c8", accent2: "#8a5cf0" },
+  { tier: "streetwear", pick: "Supreme The North Face Statue Of Liberty Mountain Jacket Red", tint: "#f8e4df", accent: "#c8321f", accent2: "#e27a2a" },
+  { tier: "collectibles", pick: "Medicom Bearbrick 3125C Objective Edc 1000%", tint: "#f7eadb", accent: "#b0680f", accent2: "#d9a02b" },
+];
+// The photographic crates. Stocks is a real crate, but its "photos" are
+// generated ticker cards — right in a crate card, wrong as a grail.
+const HOME_PHOTO_TIERS = ["sneakers", "streetwear", "collectibles"];
+
+const byPriceDesc = (a, b) => b.price - a.price;
+
+function heroPrize(slide) {
+  const pool = CATEGORIES[slide.tier].pool;
+  return pool.find((p) => p.name === slide.pick) ?? [...pool].sort(byPriceDesc)[0];
+}
+
+// "1 in N" for one item: its share of its crate's total weight. The same
+// numbers weightedPick draws with, so the odds on the tile are the odds.
+function oneIn(prize, tierKey) {
+  const pool = CATEGORIES[tierKey].pool;
+  const total = pool.reduce((sum, p) => sum + p.weight, 0);
+  return Math.max(1, Math.round(total / prize.weight));
+}
+
+function goHome() {
+  navTabs.forEach((t) => t.classList.remove("active"));
+  showScreen(document.getElementById("screen-home"));
+  renderHome();
+  window.scrollTo({ top: 0 });
+}
+
+const HOME_DESTINATIONS = {
+  drops: '.nav-tab[data-nav="screen-category"]',
+  market: '.nav-tab[data-nav="screen-marketplace"]',
+  rewards: '.nav-tab[data-account-group="rewards"]',
+};
+function homeGo(where) {
+  document.querySelector(HOME_DESTINATIONS[where])?.click();
+  window.scrollTo({ top: 0 });
+}
+
+// A crate's own page on Drops — what's in it, the odds, the pity meter.
+function homeSeeCrate(tierKey) {
+  homeGo("drops");
+  const wrap = categoryList.querySelector(`.category-wrap[data-tier="${tierKey}"]`);
+  if (wrap) openTierDetail(wrap);
+}
+
+// Straight to paying for one — the shortest path from a billboard to a box.
+function homeBuyCrate(tierKey) {
+  homeGo("drops");
+  openPaymentPicker(tierKey);
+}
+
+document.getElementById("brandHomeBtn").addEventListener("click", () => {
+  playClick();
+  goHome();
+});
+document.querySelectorAll("[data-home-go]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    playClick();
+    homeGo(btn.dataset.homeGo);
+  });
+});
+
+// ---- The billboard ----
+// Advances when the active dot's fill animation finishes rather than on a
+// timer, so hovering (which pauses the animation) pauses the rotation with
+// it, a hidden tab doesn't flip through slides nobody is watching, and
+// reduced motion — no animation at all — means it simply stays put.
+let homeHeroIndex = 0;
+let homeHeroBuilt = false;
+
+function buildHomeHero() {
+  const hero = document.getElementById("homeHero");
+  const media = document.getElementById("homeHeroMedia");
+  const dots = document.getElementById("homeHeroDots");
+
+  HOME_HERO_SLIDES.forEach((slide, i) => {
+    const prize = heroPrize(slide);
+    const img = document.createElement("img");
+    img.className = "home-hero-img";
+    img.src = prize.image;
+    img.alt = prize.name;
+    img.dataset.slide = i;
+    media.insertBefore(img, media.firstChild);
+
+    const dot = document.createElement("button");
+    dot.className = "home-hero-dot";
+    dot.setAttribute("role", "tab");
+    dot.setAttribute("aria-label", CATEGORIES[slide.tier].badge);
+    dot.innerHTML = `<span class="home-hero-dot-fill"></span>`;
+    dot.addEventListener("click", () => {
+      playClick();
+      showHomeSlide(i);
+    });
+    dot.querySelector(".home-hero-dot-fill").addEventListener("animationend", () => {
+      showHomeSlide((homeHeroIndex + 1) % HOME_HERO_SLIDES.length);
+    });
+    dots.appendChild(dot);
+  });
+
+  hero.addEventListener("mouseenter", () => hero.classList.add("is-paused"));
+  hero.addEventListener("mouseleave", () => hero.classList.remove("is-paused"));
+
+  document.getElementById("homeHeroOpen").addEventListener("click", () => {
+    playClick();
+    homeBuyCrate(HOME_HERO_SLIDES[homeHeroIndex].tier);
+  });
+  document.getElementById("homeHeroInside").addEventListener("click", () => {
+    playClick();
+    homeSeeCrate(HOME_HERO_SLIDES[homeHeroIndex].tier);
+  });
+  media.addEventListener("click", () => {
+    playClick();
+    homeSeeCrate(HOME_HERO_SLIDES[homeHeroIndex].tier);
+  });
+
+  homeHeroBuilt = true;
+  showHomeSlide(0, { instant: true });
+}
+
+let homeHeroSwapTimer = null;
+function showHomeSlide(i, { instant = false } = {}) {
+  homeHeroIndex = i;
+  const slide = HOME_HERO_SLIDES[i];
+  const prize = heroPrize(slide);
+  const cat = CATEGORIES[slide.tier];
+  const hero = document.getElementById("homeHero");
+
+  hero.style.setProperty("--hero-tint", slide.tint);
+  hero.style.setProperty("--hero-accent", slide.accent);
+  hero.style.setProperty("--hero-accent2", slide.accent2);
+
+  hero.querySelectorAll(".home-hero-img").forEach((img) => {
+    img.classList.toggle("is-active", Number(img.dataset.slide) === i);
+  });
+  // Restart the fill on the new dot: dropping and re-adding the class is
+  // what makes a CSS animation run again from zero.
+  hero.querySelectorAll(".home-hero-dot").forEach((dot, d) => {
+    dot.classList.remove("is-active");
+    dot.setAttribute("aria-selected", String(d === i));
+  });
+  void hero.offsetWidth;
+  hero.querySelectorAll(".home-hero-dot")[i].classList.add("is-active");
+
+  // The line stays; the words around it change. Faded out, swapped, faded
+  // back in, so the copy never describes the product that's leaving.
+  const write = () => {
+    document.getElementById("homeHeroMedia").dataset.word = cat.badge;
+    document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}`;
+    document.getElementById("homeHeroSub").innerHTML =
+      `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()} &mdash; and it&rsquo;s sitting in a $${cat.price} crate.`;
+    document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · $${cat.price}`;
+    document.getElementById("homeHeroTag").textContent =
+      `${RARITY_META[prize.rarity].label} · 1 in ${oneIn(prize, slide.tier).toLocaleString()}`;
+    hero.classList.remove("is-swapping");
+  };
+  clearTimeout(homeHeroSwapTimer);
+  if (instant) write();
+  else {
+    hero.classList.add("is-swapping");
+    homeHeroSwapTimer = setTimeout(write, 220);
+  }
+}
+
+// ---- Facts, crates, grails ----
+function renderHomeFacts() {
+  const photoItems = HOME_PHOTO_TIERS.flatMap((k) => CATEGORIES[k].pool);
+  const top = [...photoItems].sort(byPriceDesc)[0];
+  const facts = [
+    [ALL_CATALOG.length.toLocaleString(), "prizes across four crates"],
+    [`$${top.price.toLocaleString()}`, "the top item in a crate right now"],
+    [`${Math.round(player.CASHOUT_HAIRCUT * 100)}%`, "back in cash, instantly, on any pull"],
+    ["Provably fair", "every result is hashed before a box opens"],
+  ];
+  document.getElementById("homeFacts").innerHTML = facts
+    .map(([big, small]) => `<div class="home-fact"><b>${big}</b><span>${small}</span></div>`)
+    .join("");
+}
+
+function renderHomeCrates() {
+  const el = document.getElementById("homeCrates");
+  el.innerHTML = Object.entries(CATEGORIES)
+    .map(([key, cat]) => {
+      const top = [...cat.pool].sort(byPriceDesc);
+      return `
+      <div class="home-crate" data-tier="${key}">
+        <div class="home-crate-stage"><img class="home-crate-box" alt=""></div>
+        <div class="home-crate-row">
+          <span class="category-tier-name tier-name-${key}">${cat.badge}</span>
+          <span class="home-crate-price">$${cat.price}</span>
+        </div>
+        <span class="home-crate-top">Top prize <b>$${top[0].price.toLocaleString()}</b></span>
+        <div class="home-crate-thumbs">${top
+          .slice(0, 3)
+          .map((p) => `<img src="${p.image}" alt="" title="${p.name}">`)
+          .join("")}</div>
+        <button class="home-btn home-btn-solid home-crate-open">Open · $${cat.price}</button>
+      </div>`;
+    })
+    .join("");
+
+  el.querySelectorAll(".home-crate").forEach((card) => {
+    const key = card.dataset.tier;
+    const cat = CATEGORIES[key];
+    getBoxSnapshot(key, cat.boxKind ?? "box").then((url) => {
+      card.querySelector(".home-crate-box").src = url;
+    });
+    card.addEventListener("click", () => {
+      playClick();
+      homeSeeCrate(key);
+    });
+    card.querySelector(".home-crate-open").addEventListener("click", (e) => {
+      e.stopPropagation();
+      playClick();
+      homeBuyCrate(key);
+    });
+  });
+}
+
+// Round-robin across the photographic crates, most valuable first, so the
+// wall shows the range of what's in there rather than ten of whichever
+// crate happens to carry the priciest stock.
+function homeGrailList(count) {
+  const ranked = HOME_PHOTO_TIERS.map((k) => [...CATEGORIES[k].pool].sort(byPriceDesc).map((p) => ({ p, k })));
+  const out = [];
+  for (let i = 0; out.length < count && i < 40; i++) {
+    ranked.forEach((list) => {
+      if (list[i] && out.length < count) out.push(list[i]);
+    });
+  }
+  return out;
+}
+
+function renderHomeGrails() {
+  const el = document.getElementById("homeGrails");
+  const grails = homeGrailList(10);
+  el.innerHTML = grails
+    .map(({ p, k }) => {
+      const cat = CATEGORIES[k];
+      return `
+      <button class="home-grail" data-tier="${k}">
+        <span class="home-grail-media"><img src="${p.image}" alt="" loading="lazy"></span>
+        <span class="home-grail-info">
+          <span class="tier-badge tier-badge-${k}">${cat.badge}</span>
+          <span class="home-grail-name">${p.name}</span>
+          <span class="home-grail-foot">
+            <b>$${p.price.toLocaleString()}</b>
+            <span>1 in ${oneIn(p, k).toLocaleString()} · $${cat.price} crate</span>
+          </span>
+        </span>
+      </button>`;
+    })
+    .join("");
+  el.querySelectorAll(".home-grail").forEach((tile) => {
+    tile.addEventListener("click", () => {
+      playClick();
+      homeSeeCrate(tile.dataset.tier);
+    });
+  });
+}
+
+// ---- How it works: three pictures made by the app itself ----
+let homeStepsBuilt = false;
+function renderHomeSteps() {
+  document.getElementById("homeStepSellCopy").textContent =
+    `Hold it in your vault, list it on the market, or have the real thing shipped to your door. ` +
+    `Or sell it back on the spot for ${Math.round(player.CASHOUT_HAIRCUT * 100)}% of its value in cash.`;
+  if (homeStepsBuilt) return;
+  homeStepsBuilt = true;
+
+  getBoxSnapshot("sneakers", "box").then((url) => {
+    document.getElementById("homeStepBox").src = url;
+  });
+  const grail = [...CATEGORIES.collectibles.pool].sort(byPriceDesc)[0];
+  renderSlabImage(slabInfoFor(grail, "collectibles")).then((url) => {
+    document.getElementById("homeStepSlab").src = url;
+  });
+  document.getElementById("homeStepItem").src = heroPrize(HOME_HERO_SLIDES[0]).image;
+}
+
+// ---- Live pulls ----
+function renderHomePulls() {
+  const list = document.getElementById("homePullsList");
+  if (!list || !document.getElementById("screen-home").classList.contains("active")) return;
+  const known = new Set([...list.querySelectorAll("[data-pull-ts]")].map((el) => el.dataset.pullTs));
+  fillPullStrip(list, livePullFeed(16), known);
+}
+
+// ---- Leaderboard ----
+function renderHomeBoard() {
+  const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
+    (a, b) => b.xp - a.xp
+  );
+  const youRank = rows.findIndex((r) => r.isPlayer) + 1;
+  const shown = rows.slice(0, 5).map((r, i) => ({ ...r, rank: i + 1 }));
+  // You're always on it — below a gap when you're not in the top five.
+  if (youRank > 5) shown.push({ ...rows[youRank - 1], rank: youRank, gap: true });
+  const topXp = rows[0].xp || 1;
+
+  const el = document.getElementById("homeBoard");
+  el.innerHTML = shown
+    .map(
+      (r) => `
+      <button class="home-board-row${r.isPlayer ? " you" : ""}${r.gap ? " gap" : ""}" data-username="${r.username}">
+        <span class="home-board-rank rank-${r.rank}">${r.rank}</span>
+        <span class="avatar-circle home-board-avatar"></span>
+        <span class="home-board-name">${r.isPlayer ? "You" : r.username}</span>
+        <span class="home-board-bar"><i style="width:${Math.max(3, (r.xp / topXp) * 100).toFixed(1)}%"></i></span>
+        <span class="home-board-xp">${r.xp.toLocaleString()} XP</span>
+      </button>`
+    )
+    .join("");
+  el.querySelectorAll(".home-board-row").forEach((row) => {
+    renderAvatarInto(row.querySelector(".home-board-avatar"), row.dataset.username);
+    row.addEventListener("click", () => {
+      location.search = `?profile=${encodeURIComponent(row.dataset.username)}`;
+    });
+  });
+  document.getElementById("homeBoardYou").textContent = `You're #${youRank} of ${rows.length} collectors.`;
+}
+
+// ---- Market ----
+function renderHomeMarket() {
+  market.ensureSeeded(ALL_CATALOG);
+  // Priced listings from other people — the ones you can actually buy —
+  // cheapest against what they're worth first, so the panel leads with the
+  // same verdict badge the market does, and leads with the good one.
+  const listings = market
+    .getListings()
+    .filter((l) => l.price != null && !l.isPlayer)
+    .map((l) => ({ l, ratio: l.price / market.currentListingValue(l) }))
+    .sort((a, b) => a.ratio - b.ratio)
+    .slice(0, 5)
+    .map(({ l }) => l);
+
+  const el = document.getElementById("homeMarket");
+  el.innerHTML = listings
+    .map((l) => {
+      const fmv = market.fmvRating(l);
+      const size = market.sizeLabelFor(l.name, l.category);
+      return `
+      <button class="home-market-row" data-listing="${l.id}">
+        <span class="home-market-thumb"><img src="${l.image}" alt=""></span>
+        <span class="home-market-text">
+          <span class="home-market-name">${l.name}</span>
+          <span class="home-market-meta">
+            ${fmv ? `<span class="market-item-fmv fmv-${fmv.key}">${fmv.label}</span>` : ""}
+            ${size ? `<span class="market-item-size">${size}</span>` : ""}
+            <span class="home-market-seller">${l.seller}</span>
+          </span>
+        </span>
+        <span class="home-market-price">$${l.price.toLocaleString()}</span>
+      </button>`;
+    })
+    .join("");
+  el.querySelectorAll(".home-market-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      playClick();
+      homeGo("market");
+      openListingModal(row.dataset.listing);
+    });
+  });
+}
+
+function renderHome() {
+  if (!homeHeroBuilt) buildHomeHero();
+  renderHomeFacts();
+  renderHomeCrates();
+  renderHomeGrails();
+  renderHomeSteps();
+  renderHomePulls();
+  renderHomeBoard();
+  renderHomeMarket();
+}
+
 // ---- Footer: quick links navigate for real; social/support are labeled
 // placeholders (no real destinations exist for a demo) that surface an
 // honest "coming soon" rather than a dead link with no feedback. ---------
@@ -3621,6 +4005,7 @@ if (profileParam) {
   seedSimulatedPulls();
   seedDemoInventory();
   renderCategories();
+  renderHome();
   renderRecentPulls();
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist

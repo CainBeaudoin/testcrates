@@ -1358,7 +1358,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
    the :has() compound selector here outranks a plain
    .app-footer{display:none}. */
 @media (min-width: 641px) {
-  main:has(#screen-category.active) + .app-footer {
+  main:has(#screen-category.active) + .app-footer,
+  main:has(#screen-home.active) + .app-footer {
     display: block;
   }
 }
@@ -3346,7 +3347,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid currentColor;
+  border: none;
 }
 .tier-badge-sneakers { color: #d4794e; background: rgba(212, 121, 78, 0.14); }
 .tier-badge-streetwear { color: #5b8dd9; background: rgba(91, 141, 217, 0.14); }
@@ -4965,4 +4966,635 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 @media (prefers-reduced-motion: reduce) {
   .recent-pull-item.is-new { animation: none; }
+}
+
+
+/* ==========================================================================
+   Home
+   The front door: a billboard, then one band per thing the app does, each
+   a way into the screen that owns it. Section titles are set in the
+   wordmark's face so the page reads as one voice from the header down.
+   ========================================================================== */
+
+/* --- The billboard ------------------------------------------------------
+   A light stage in both themes, on purpose: the product shots are white-
+   ground photographs, and multiply against a pale tint is what lifts them
+   off their rectangles into cut-outs. A dark stage would need real
+   transparency the photos don't have. Its own ink for the same reason. */
+.home-hero {
+  --hero-tint: #eeeae2;
+  --hero-accent: #16130f;
+  --hero-accent2: #16130f;
+  --hero-ink: #16130f;
+  --hero-ink-dim: rgba(22, 19, 15, 0.68);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  min-height: clamp(460px, 64vh, 640px);
+  border-radius: 28px;
+  overflow: hidden;
+  background-color: var(--hero-tint);
+  transition: background-color 0.7s ease;
+  isolation: isolate;
+}
+/* A pool of light behind the product — what makes it read as lit rather
+   than pasted. */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 48% 62% at 74% 54%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 72%);
+}
+
+.home-hero-copy {
+  position: relative;
+  z-index: 2;
+  padding: 56px 0 48px 64px;
+  color: var(--hero-ink);
+}
+.home-hero-eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  background: linear-gradient(90deg, var(--hero-accent), var(--hero-accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.home-hero-title {
+  margin: 0 0 20px;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  font-size: clamp(3.4rem, 6.6vw, 6.2rem);
+  line-height: 0.94;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--hero-ink);
+}
+.home-hero-sub {
+  max-width: 420px;
+  margin: 0 0 28px;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--hero-ink-dim);
+}
+.home-hero-sub b { color: var(--hero-ink); font-weight: 700; }
+.home-hero-ctas { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* The copy that turns over with the product fades out and back rather than
+   cutting, so for a moment it says nothing instead of the wrong thing. */
+.home-hero-eyebrow,
+.home-hero-sub,
+.home-hero-tag,
+#homeHeroOpen {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.home-hero.is-swapping .home-hero-eyebrow,
+.home-hero.is-swapping .home-hero-sub,
+.home-hero.is-swapping .home-hero-tag,
+.home-hero.is-swapping #homeHeroOpen {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.home-hero-media {
+  position: relative;
+  align-self: stretch;
+  min-height: inherit;
+  cursor: pointer;
+}
+/* The crate's name, huge and faint behind the product. */
+.home-hero-media::before {
+  content: attr(data-word);
+  position: absolute;
+  right: -2%;
+  bottom: -4%;
+  z-index: 0;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: clamp(6rem, 13vw, 12.5rem);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hero-accent);
+  opacity: 0.07;
+  transition: color 0.7s ease;
+  pointer-events: none;
+}
+.home-hero-img {
+  position: absolute;
+  z-index: 1;
+  inset: 5% 4% 5% 0;
+  width: 96%;
+  height: 90%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transform: translateX(48px) scale(0.95);
+  transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-hero-img.is-active { opacity: 1; transform: none; }
+.home-hero-media:hover .home-hero-img.is-active { transform: scale(1.025); }
+
+.home-hero-tag {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+  z-index: 2;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  color: var(--hero-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Progress bars, not dots: each one fills while its slide is up, and the
+   fill ending is what turns the page (see buildHomeHero). */
+.home-hero-dots { display: flex; gap: 8px; margin-top: 40px; }
+.home-hero-dot {
+  position: relative;
+  width: 44px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.home-hero-dot::before,
+.home-hero-dot-fill {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  height: 4px;
+  border-radius: 4px;
+}
+.home-hero-dot::before { content: ""; right: 0; background: rgba(22, 19, 15, 0.14); }
+.home-hero-dot-fill { width: 0; background: var(--hero-ink); }
+.home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 6s linear forwards; }
+.home-hero.is-paused .home-hero-dot-fill { animation-play-state: paused; }
+@keyframes homeHeroFill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+.home-btn {
+  padding: 14px 24px;
+  border: none;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+.home-btn:hover { transform: translateY(-2px); }
+.home-btn-solid { background: var(--text); color: var(--text-inverse); }
+.home-btn-ghost { background: transparent; color: var(--text); }
+.home-btn-ghost::after { content: " \203A"; }
+/* On the billboard the ink is the stage's, not the theme's. */
+.home-hero .home-btn-solid { background: var(--hero-ink); color: #fff; }
+.home-hero .home-btn-ghost { color: var(--hero-ink); }
+.home-btn-inverse { background: var(--text-inverse); color: var(--text); }
+
+/* --- Facts -------------------------------------------------------------- */
+.home-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.home-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--surface-1);
+}
+.home-fact b {
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  font-size: 1.7rem;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.home-fact span { font-size: 0.78rem; line-height: 1.4; color: var(--text-dim); }
+
+/* --- Section heads ------------------------------------------------------ */
+.home-block { margin-top: 64px; }
+.home-block-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.home-block-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.home-block-sub { margin: 6px 0 0; font-size: 0.88rem; color: var(--text-dim); }
+.home-more {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--control-fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.home-more:hover { background: var(--control-fill-hover); }
+.home-more::after { content: " \2192"; }
+
+.home-live-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0352b;
+  animation: homeLive 1.8s ease-out infinite;
+}
+@keyframes homeLive {
+  0% { box-shadow: 0 0 0 0 rgba(224, 53, 43, 0.5); }
+  100% { box-shadow: 0 0 0 10px rgba(224, 53, 43, 0); }
+}
+
+/* White wells for the product shots in both themes: the photos are shot on
+   white, so a white tile is the one ground they sit on without an edge. */
+.home-crate-thumbs img,
+.home-grail-media,
+.home-market-thumb,
+.home-step-choices #homeStepItem { background: #fff; }
+
+/* --- Crates ------------------------------------------------------------- */
+.home-crates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.home-crate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.home-crate:hover { transform: translateY(-4px); }
+.home-crate-stage {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 62%, var(--surface-2), transparent 72%);
+}
+.home-crate-box {
+  width: 82%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-crate:hover .home-crate-box { transform: scale(1.07) rotate(-2deg); }
+.home-crate-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-crate .category-tier-name { font-size: 1.2rem; }
+.home-crate-price { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+.home-crate-top { font-size: 0.78rem; color: var(--text-dim); }
+.home-crate-top b { color: var(--text); }
+.home-crate-thumbs { display: flex; gap: 6px; }
+.home-crate-thumbs img {
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.home-crate-open { width: 100%; margin-top: auto; }
+
+/* --- Grails: two bentos, the big tile swapping sides ----------------------- */
+.home-grails {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(250px, auto);
+  grid-auto-flow: dense;
+  gap: 16px;
+}
+.home-grail:nth-child(1) { grid-column: 1 / span 2; grid-row: span 2; }
+.home-grail:nth-child(6) { grid-column: 3 / span 2; grid-row: span 2; }
+.home-grail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px;
+  border: none;
+  border-radius: 20px;
+  background: var(--surface-1);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.home-grail:hover { transform: translateY(-4px); }
+.home-grail-media {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.home-grail-media img {
+  width: 84%;
+  height: 84%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-grail:hover .home-grail-media img { transform: scale(1.07); }
+.home-grail-info { display: flex; flex-direction: column; gap: 6px; padding: 12px 4px 4px; }
+.home-grail-info .tier-badge { align-self: flex-start; margin: 0; }
+.home-grail-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-grail-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-grail-foot b { font-size: 1.05rem; color: var(--text); }
+.home-grail-foot span { font-size: 0.7rem; color: var(--text-dim); text-align: right; }
+/* The two big tiles get the big number. */
+.home-grail:nth-child(1) .home-grail-name,
+.home-grail:nth-child(6) .home-grail-name { font-size: 1.1rem; white-space: normal; }
+.home-grail:nth-child(1) .home-grail-foot b,
+.home-grail:nth-child(6) .home-grail-foot b {
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  font-size: 2rem;
+  letter-spacing: 0.5px;
+}
+
+/* --- Live pulls ---------------------------------------------------------- */
+.home-pulls .recent-pull-item { width: 184px; border-radius: 16px; }
+.home-pulls .recent-pull-item img { width: 128px; height: 128px; background: #fff; border-radius: 10px; }
+
+/* --- How it works --------------------------------------------------------- */
+.home-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-step { padding: 16px 16px 26px; border-radius: 22px; background: var(--surface-1); }
+.home-step-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.home-step-visual img { max-width: 72%; max-height: 84%; object-fit: contain; }
+#homeStepSlab { max-height: 94%; filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.22)); }
+.home-step-num {
+  display: block;
+  padding: 0 8px;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--text-faint);
+}
+.home-step h3 { margin: 6px 8px 8px; font-size: 1.15rem; font-weight: 800; color: var(--text); }
+.home-step p { margin: 0 8px; font-size: 0.86rem; line-height: 1.55; color: var(--text-dim); }
+
+.home-step-choices #homeStepItem { width: 50%; padding: 8px; border-radius: 16px; }
+.home-choice {
+  position: absolute;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+.home-choice-keep { left: 7%; top: 16%; background: var(--text); color: var(--text-inverse); }
+.home-choice-ship { right: 6%; top: 44%; background: #2c5fa8; }
+.home-choice-sell { left: 10%; bottom: 13%; background: #15803d; }
+
+/* --- Leaderboard + market ----------------------------------------------- */
+.home-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 64px;
+}
+.home-panel { min-width: 0; padding: 24px; border-radius: 22px; background: var(--surface-1); }
+.home-panel .home-block-head { margin-bottom: 14px; }
+.home-panel .home-block-title { font-size: 1.5rem; }
+
+.home-board, .home-market { display: flex; flex-direction: column; gap: 4px; }
+.home-board-row,
+.home-market-row {
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.home-board-row:hover, .home-market-row:hover { background: var(--hover-bg); }
+
+.home-board-row {
+  display: grid;
+  grid-template-columns: 30px 32px minmax(0, 1fr) 84px 84px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+}
+.home-board-row.you { background: var(--accent-dim); }
+.home-board-row.gap { margin-top: 12px; }
+.home-board-rank {
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 1.25rem;
+  text-align: center;
+  color: var(--text-faint);
+}
+.home-board-rank.rank-1 { color: var(--gold); }
+.home-board-rank.rank-2 { color: #8e959e; }
+.home-board-rank.rank-3 { color: #b0683a; }
+.home-board-avatar { width: 32px; height: 32px; font-size: 0.8rem; }
+.home-board-name {
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-board-bar { height: 6px; border-radius: 6px; background: var(--control-fill); overflow: hidden; }
+.home-board-bar i { display: block; height: 100%; border-radius: inherit; background: var(--text); opacity: 0.75; }
+.home-board-xp {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-market-row { display: flex; align-items: center; gap: 12px; padding: 8px; }
+.home-market-thumb {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.home-market-thumb img { width: 88%; height: 88%; object-fit: contain; }
+.home-market-text { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.home-market-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-market-meta { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.home-market-meta .market-item-fmv,
+.home-market-meta .market-item-size { margin: 0; }
+.home-market-seller {
+  overflow: hidden;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.home-market-price { font-size: 0.98rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* --- Closing band ---------------------------------------------------------
+   The theme's ink as the ground: dark on the light theme, light on the
+   dark one, so the last thing on the page always inverts what came before
+   it. */
+.home-cta {
+  margin-top: 64px;
+  padding: 64px 32px;
+  border-radius: 28px;
+  background: var(--text);
+  color: var(--text-inverse);
+  text-align: center;
+}
+.home-cta-title {
+  margin: 0 0 12px;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  font-size: clamp(2.2rem, 4.6vw, 3.8rem);
+  line-height: 1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.home-cta-sub { margin: 0 0 28px; font-size: 1rem; color: var(--text-inverse-dim); }
+
+/* The dock repeats the Live pulls band, and parked bottom-left it would sit
+   on the billboard's copy. Home has the feed at full size already. */
+body:has(#screen-home.active) .pull-dock { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-dot.is-active .home-hero-dot-fill { animation: none; width: 100%; }
+  .home-hero-img { transition: opacity 0.2s ease; transform: none; }
+  .home-live-pip { animation: none; }
+}
+
+/* Between desktop and phone the four-across rows get cramped first. */
+@media (max-width: 1000px) and (min-width: 641px) {
+  .home-hero-copy { padding: 44px 0 40px 40px; }
+  .home-crates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-board-row { grid-template-columns: 26px 30px minmax(0, 1fr) 80px; }
+  .home-board-bar { display: none; }
+}
+
+@media (max-width: 640px) {
+  .home-hero { grid-template-columns: 1fr; min-height: 0; border-radius: 22px; }
+  .home-hero::before { background: radial-gradient(ellipse 70% 40% at 50% 26%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 72%); }
+  .home-hero-media { order: -1; height: 290px; min-height: 0; }
+  .home-hero-media::before { font-size: 6.5rem; right: 50%; transform: translateX(50%); bottom: 0; }
+  .home-hero-img { inset: 6% 8% 4%; width: 84%; height: 90%; }
+  .home-hero-tag { right: 14px; bottom: 12px; }
+  .home-hero-copy { padding: 4px 22px 26px; }
+  .home-hero-eyebrow { font-size: 0.92rem; margin-bottom: 10px; }
+  .home-hero-title { font-size: 3.1rem; margin-bottom: 14px; }
+  .home-hero-sub { font-size: 0.9rem; margin-bottom: 20px; }
+  .home-hero-dots { margin-top: 22px; }
+  .home-btn { padding: 12px 20px; font-size: 0.8rem; }
+  /* It wraps under the solid button here; flush left so the two line up. */
+  .home-btn-ghost { padding-left: 2px; }
+
+  .home-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+  .home-fact { padding: 14px; border-radius: 14px; }
+  .home-fact b { font-size: 1.3rem; }
+  .home-fact span { font-size: 0.7rem; }
+
+  .home-block { margin-top: 44px; }
+  .home-block-head { margin-bottom: 14px; }
+  .home-block-title { font-size: 1.5rem; }
+  .home-block-sub { font-size: 0.8rem; }
+  .home-more { padding: 8px 12px; font-size: 0.72rem; }
+
+  .home-crates { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .home-crate { padding: 12px; border-radius: 16px; gap: 8px; }
+  .home-crate .category-tier-name { font-size: 1rem; }
+  .home-crate-price { font-size: 0.95rem; }
+  .home-crate-thumbs img { width: 34px; height: 34px; }
+
+  .home-grails { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 10px; }
+  .home-grail:nth-child(1),
+  .home-grail:nth-child(6) { grid-column: 1 / -1; grid-row: auto; }
+  .home-grail { padding: 10px; border-radius: 16px; }
+  .home-grail-media { aspect-ratio: 1; min-height: 0; flex: 0 0 auto; }
+  .home-grail:nth-child(1) .home-grail-media,
+  .home-grail:nth-child(6) .home-grail-media { aspect-ratio: 4 / 3; }
+  .home-grail-foot { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .home-grail-foot span { text-align: left; }
+
+  .home-pulls .recent-pull-item { width: 150px; }
+  .home-pulls .recent-pull-item img { width: 104px; height: 104px; }
+
+  .home-steps { grid-template-columns: 1fr; gap: 10px; }
+
+  .home-duo { grid-template-columns: 1fr; gap: 10px; margin-top: 44px; }
+  .home-panel { padding: 16px; border-radius: 18px; }
+  .home-board-row { grid-template-columns: 24px 30px minmax(0, 1fr) 74px; gap: 10px; padding: 8px 6px; }
+  .home-board-bar { display: none; }
+
+  .home-cta { margin-top: 44px; padding: 44px 20px; border-radius: 22px; }
 }
