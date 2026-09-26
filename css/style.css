@@ -1371,8 +1371,13 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 }
 .primary-btn:hover { transform: translateY(-2px); }
 
+/* Full width of the page, the same 1360px column and gutters as <main>
+   above it. It sits in a flex column, where auto side margins alone
+   shrink it to its content, hence the explicit width. */
 .app-footer {
   display: none;
+  box-sizing: border-box;
+  width: 100%;
   max-width: 1360px;
   margin: 64px auto 0;
   padding: 0 32px;
@@ -1398,7 +1403,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   border-top: 1px solid var(--hairline);
 }
 
-.app-footer-brand { flex: 1 1 280px; max-width: 360px; }
+.app-footer-brand { flex: 1 1 280px; max-width: 440px; }
 
 .app-footer-logo {
   display: flex;
