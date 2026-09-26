@@ -7471,8 +7471,10 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .home-hero-media::before { content: none; }
 .home-hero { overflow: visible; }
 @media (min-width: 641px) {
-  .home-hero-stage { inset: 2% -6% -12% -8%; }
-  .home-hero-box { width: 66%; }
+  /* Low enough that the crate's base sits just above "Pick your drop",
+     bridging the two instead of leaving a gap under the billboard. */
+  .home-hero-stage { inset: 6% -10% -28% -10%; }
+  .home-hero-box { width: 70%; }
 }
 @media (max-width: 640px) {
   .home-hero-stage { inset: 0 -4% -8%; }
