@@ -14,6 +14,7 @@ import { playClick, playHover, playPop, playDing, playFeedChime, toggleMuted, is
 import { ICONS } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
+import { liquidTabs, swapText } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 
 // ---- Prize configuration -------------------------------------------------
@@ -763,9 +764,9 @@ const DEMO_STREAK_DAYS = 3;
 
 function renderWallet({ pulse } = {}) {
   const wallet = player.getWallet();
-  walletCredits.textContent = wallet.credits.toLocaleString();
+  swapText(walletCredits, wallet.credits.toLocaleString());
   // The pill's $ glyph already says what this is; no second "$" here.
-  walletCash.textContent = wallet.cash.toLocaleString();
+  swapText(walletCash, wallet.cash.toLocaleString());
   if (pulse) {
     const el = pulse === "cash" ? walletCash : walletCredits;
     el.classList.add("pulse");
@@ -1628,7 +1629,7 @@ function renderCategories() {
     const qtyValueEl = card.querySelector(".qty-value");
     const maxBtn = card.querySelector('[data-qty-action="max"]');
     function refreshQty() {
-      qtyValueEl.textContent = batchQuantities[key];
+      swapText(qtyValueEl, batchQuantities[key]);
       maxBtn.classList.toggle("active", batchQuantities[key] === MAX_BATCH_QTY);
     }
     refreshQty();
@@ -3087,7 +3088,7 @@ function renderHeaderStats() {
   // Days in a row with an open — the same number Rewards leads with — with
   // the ring filling toward the raffle's streak goal.
   const streak = player.getDailyStreak();
-  streakValue.textContent = streak;
+  swapText(streakValue, streak);
   streakRing.style.setProperty("--pct", Math.min(100, (streak / player.RAFFLE_STREAK_DAYS) * 100));
 }
 
@@ -4805,6 +4806,11 @@ const profileParam = new URLSearchParams(location.search).get("profile");
 if (profileParam) {
   renderPublicProfile(profileParam);
 } else {
+  // Sliding pills behind the active tab of each tab row (see motion.js).
+  liquidTabs(document.getElementById("dropLines"), ".drop-line.active");
+  liquidTabs(document.querySelector(".account-nav"), ".account-nav-item.active");
+  document.querySelectorAll(".account-toggle").forEach((row) => liquidTabs(row, ".account-toggle-label.active"));
+  liquidTabs(document.querySelector(".add-funds-tabs"), ".add-funds-tab.active");
   renderIdentity();
   seedSimulatedPulls();
   // Saved stock items keep the name and card image from when they were

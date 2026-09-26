@@ -1318,8 +1318,8 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 10px) scale(0.82);
-  transition: opacity 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-              transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.45s var(--spring),
+              transform 0.45s var(--spring);
 }
 
 .box-slot.open .price-card {
@@ -1523,7 +1523,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   box-shadow: 0 24px 70px var(--shadow-modal), 0 0 40px -6px var(--rarity-color);
   opacity: 1;
   transform: scale(0.85) translateY(8px);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  transition: transform 0.4s var(--spring), opacity 0.3s ease;
 }
 
 .prize-modal.visible .prize-modal-card {
@@ -5032,7 +5032,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 /* A new tile in the carousel pops in where it lands; the rest of the row
    just shifts along. */
-.recent-pull-item.is-new { animation: recentPullIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.recent-pull-item.is-new { animation: recentPullIn 0.32s var(--spring); }
 @keyframes recentPullIn {
   from { opacity: 0; transform: scale(0.86); }
   to { opacity: 1; transform: none; }
@@ -5196,7 +5196,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 /* Out: an arc up out of the box with a little overshoot, then a slow bob
    on the image so the group never sits dead still. */
 .hero-burst-item.is-out {
-  animation: heroBurstOut 0.9s cubic-bezier(0.2, 1.25, 0.35, 1) var(--d) forwards;
+  animation: heroBurstOut 0.9s var(--spring) var(--d) forwards;
 }
 .hero-burst-item.is-out img {
   animation: heroBob var(--bob) ease-in-out calc(var(--d) + 0.9s) infinite;
@@ -6047,7 +6047,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
               0 0 12px -4px var(--rarity-color);
 }
 .recent-pull-item.is-special.is-new {
-  animation: recentPullIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+  animation: recentPullIn 0.32s var(--spring),
              pullShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.35s;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6069,7 +6069,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   100% { transform: rotateY(0deg) scale(1); }
 }
 /* The incoming image (inserted at the swap) settles in with a small pop. */
-.home-grail.is-flipping .home-grail-media img { animation: grailPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.home-grail.is-flipping .home-grail-media img { animation: grailPop 0.45s var(--spring); }
 @keyframes grailPop {
   0% { transform: scale(0.88); opacity: 0.4; }
   100% { transform: scale(1); opacity: 1; }
@@ -6317,3 +6317,66 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .credits-info-list b { display: block; font-size: 0.86rem; color: var(--text); margin-bottom: 2px; }
 .credits-info-list span:not(.credits-info-icon) { display: block; font-size: 0.76rem; line-height: 1.45; color: var(--text-dim); }
 @media (max-width: 640px) { .credits-info-card { padding: 22px 18px; } }
+
+
+/* --- Motion ---------------------------------------------------------------
+   Two springs, sampled from a closed-form damped spring's step response
+   (see js/motion.js, which uses the same model for the tab pills):
+   --spring overshoots by ~1.5% and settles, --spring-soft is critically
+   damped (no overshoot). They replace the bouncy back-out curves that used
+   to be scattered through this file. */
+:root {
+  --spring: linear(0.0, 0.0129, 0.047, 0.0965, 0.1567, 0.2234, 0.2935, 0.3645, 0.4345, 0.5019, 0.5657, 0.6251, 0.6798, 0.7296, 0.7742, 0.8139, 0.8489, 0.8793, 0.9056, 0.9279, 0.9468, 0.9626, 0.9756, 0.9861, 0.9945, 1.001, 1.006, 1.0097, 1.0122, 1.0139, 1.0148, 1.0152, 1.015, 1.0146, 1.0139, 1.013, 1.012, 1.011, 1.0099, 1.0088, 1.0078, 1.0068, 1.0059, 1.005, 1.0043, 1.0036, 1.0029, 1.0024, 1);
+  --spring-soft: linear(0.0, 0.0139, 0.0497, 0.0998, 0.1587, 0.2222, 0.2872, 0.3516, 0.4139, 0.473, 0.5284, 0.5797, 0.6268, 0.6696, 0.7084, 0.7433, 0.7745, 0.8024, 0.8272, 0.8491, 0.8685, 0.8855, 0.9005, 0.9136, 0.9251, 0.9352, 0.9439, 0.9515, 0.9581, 0.9639, 0.9689, 0.9732, 0.9769, 0.9802, 0.983, 0.9854, 0.9874, 0.9892, 0.9908, 0.9921, 0.9932, 0.9942, 0.995, 0.9958, 0.9964, 0.9969, 0.9973, 0.9977, 1);
+}
+
+/* Press: buttons dip a touch while held and spring back on release. Only
+   transform, so nothing reflows and no text re-rasterises mid-press. */
+.modal-btn, .category-open-btn, .home-btn, .drop-line, .qty-btn, .qty-max-btn,
+.market-chip, .offer-btn, .exit-btn, .wallet-item, .stat-pill, .avatar-btn,
+.account-nav-item, .account-toggle-label, .add-funds-tab, .mute-btn,
+.detail-media-btn, .item-action-btn, .payment-option, .home-more {
+  transition-property: transform, background-color, color, box-shadow, opacity, border-color;
+  transition-duration: 0.45s, 0.18s, 0.18s, 0.25s, 0.18s, 0.18s;
+  transition-timing-function: var(--spring), ease, ease, ease, ease, ease;
+}
+:is(.modal-btn, .category-open-btn, .home-btn, .drop-line, .qty-btn, .qty-max-btn,
+.market-chip, .offer-btn, .exit-btn, .wallet-item, .stat-pill,
+.account-nav-item, .account-toggle-label, .add-funds-tab, .mute-btn,
+.detail-media-btn, .item-action-btn, .payment-option, .home-more):active:not(:disabled) {
+  transform: scale(0.96);
+  transition-duration: 0.12s, 0.18s, 0.18s, 0.25s, 0.18s, 0.18s;
+  transition-timing-function: ease-out, ease, ease, ease, ease, ease;
+}
+/* The lift-on-hover a few of these had is kept, and eased by the spring. */
+.modal-btn:hover:not(:active), .category-open-btn:hover:not(:active) { transform: translateY(-2px); }
+
+/* --- Liquid tab pill ------------------------------------------------------
+   One pill behind the active tab, moved by js/motion.js (liquidTabs): its
+   leading edge springs ahead of the trailing one, so it stretches as it
+   travels. The tabs' own active background steps aside for it. */
+.has-liquid { isolation: isolate; }
+.has-liquid > .liquid-pill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--pill-bg, var(--text));
+  transition: opacity 0.2s ease, background-color 0.3s ease;
+}
+.has-liquid > :not(.liquid-pill) { position: relative; z-index: 1; }
+.drop-lines { --pill-bg: var(--text); }
+.account-nav, .account-toggle { --pill-bg: var(--accent-dim); }
+.add-funds-tabs { --pill-bg: var(--surface-1); }
+.drop-lines.has-liquid .drop-line.active,
+.account-nav.has-liquid .account-nav-item.active,
+.account-toggle.has-liquid .account-toggle-label.active,
+.add-funds-tabs.has-liquid .add-funds-tab.active { background: transparent; }
+/* The label colours still change, just after a beat, so they cross over
+   as the pill arrives rather than before it. */
+.drop-line, .account-nav-item, .account-toggle-label, .add-funds-tab { transition-delay: 0s, 0.06s, 0.06s, 0s, 0s, 0s; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.modal-btn, .category-open-btn, .home-btn, .drop-line, .qty-btn, .market-chip, .exit-btn):active { transform: none; }
+}
