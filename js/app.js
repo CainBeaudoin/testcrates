@@ -4451,7 +4451,7 @@ function showHomeSlide(i, { instant = false } = {}) {
   // back in, so the copy never describes the product that's leaving.
   const write = () => {
     document.getElementById("homeHeroMedia").dataset.word = cat.badge;
-    document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}${cat.line ? ` · ${cat.label} crate` : ""}`;
+    document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}`;
     document.getElementById("homeHeroSub").innerHTML =
       `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()}, and it&rsquo;s sitting in a ${cat.label} crate.`;
     document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · ${cat.label}`;
