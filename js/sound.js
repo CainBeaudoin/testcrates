@@ -145,3 +145,31 @@ export function playPop() {
   if (!ctx) return;
   tone(ctx, { freq: 260, start: ctx.currentTime, duration: 0.1, type: "sine", gain: 0.08, freqEnd: 460 });
 }
+
+// A soft chime for a good pull landing in the live feed (the dock/strip
+// glow and shake). Bell-like: a sine partial plus a quieter octave-and-a-
+// fifth overtone per note, so it rings rather than beeps. Grows with
+// rarity: rare two notes, epic three, legendary four and a high shimmer.
+// Kept well under the reveal's own sounds: it's someone else's win.
+const FEED_CHIME = {
+  rare: [1046.5, 1318.5],
+  epic: [987.8, 1318.5, 1568],
+  legendary: [1046.5, 1318.5, 1568, 2093],
+};
+export function playFeedChime(rarity) {
+  const notes = FEED_CHIME[rarity];
+  const ctx = notes && getCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime + 0.01;
+  const level = rarity === "legendary" ? 0.09 : rarity === "epic" ? 0.075 : 0.06;
+  notes.forEach((f, i) => {
+    const at = now + i * 0.09;
+    tone(ctx, { freq: f, start: at, duration: 0.9, type: "sine", gain: level });
+    tone(ctx, { freq: f * 3, start: at, duration: 0.35, type: "sine", gain: level * 0.18 });
+  });
+  if (rarity === "legendary") {
+    for (let i = 0; i < 5; i++) {
+      tone(ctx, { freq: 3136 + i * 260, start: now + 0.4 + i * 0.05, duration: 0.25, type: "sine", gain: 0.02 });
+    }
+  }
+}

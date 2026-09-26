@@ -10,7 +10,7 @@ import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
-import { playClick, playHover, playPop, playDing, toggleMuted, isMuted } from "./sound.js";
+import { playClick, playHover, playPop, playDing, playFeedChime, toggleMuted, isMuted } from "./sound.js";
 import { ICONS } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
@@ -1091,9 +1091,19 @@ function seedSimulatedPulls() {
 }
 
 function tickSimulatedPulls() {
-  simulatedPulls.unshift(generateSimulatedPull(Date.now()));
+  const pull = generateSimulatedPull(Date.now());
+  simulatedPulls.unshift(pull);
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
   renderRecentPulls(); // the dock is on every screen, not just Drops
+  // A good pull chimes as it shakes in (Rare and up). Not in a hidden tab,
+  // and not over your own opening, where the reveal has the stage.
+  if (
+    SPECIAL_PULL_RARITIES.has(pull.rarity) &&
+    !document.hidden &&
+    !document.getElementById("screen-game").classList.contains("active")
+  ) {
+    setTimeout(() => playFeedChime(pull.rarity), 450); // with the shake, after the swipe
+  }
 }
 
 // Set while a tier page is open, so the carousel under it shows that
