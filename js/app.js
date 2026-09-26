@@ -2971,11 +2971,43 @@ avatarBtn.addEventListener("click", () => {
 // opening Account and then reaching for a sub-tab that no longer exists.
 const railRewardsTab = document.querySelector('.nav-tab[data-account-group="rewards"]');
 
-// Credits are what Rewards is about, so the pill is the way in — the Cash
-// pill already opens Withdraw beside it.
+// The Credits pill explains Credits: how they're earned (they can't be
+// bought), with a way on to Rewards. Figures come from player.js, so the
+// copy can't drift from what the app actually pays.
+const creditsInfoModal = document.getElementById("creditsInfoModal");
+function openCreditsInfo() {
+  const pct = Math.round(player.CASHBACK_RATE * 100);
+  const example = CATEGORIES.sneakers1000 ?? Object.values(CATEGORIES).sort((a, b) => b.price - a.price)[0];
+  document.getElementById("creditsInfoBalance").textContent = player.getWallet().credits.toLocaleString();
+  document.getElementById("creditsInfoCashback").textContent =
+    `Every crate you open pays ${pct}% of its price back in Credits, win or lose. A ${example.label} crate earns ${(example.price * player.CASHBACK_RATE).toLocaleString()}.`;
+  document.getElementById("creditsInfoReferral").textContent =
+    `Share your link and earn a cut of what your friends open. Take it as Credits for a ${Math.round(player.REFERRAL_CREDITS_BONUS * 100)}% bonus.`;
+  document.getElementById("creditsInfoPromo").textContent =
+    `Drops, streaks and challenges we run from time to time, plus ${player.EARN_TASK_CREDITS} Credits for each clip or post you share.`;
+  creditsInfoModal.classList.remove("hidden");
+  requestAnimationFrame(() => creditsInfoModal.classList.add("visible"));
+}
+function closeCreditsInfo() {
+  creditsInfoModal.classList.remove("visible");
+  setTimeout(() => creditsInfoModal.classList.add("hidden"), 250);
+}
 document.getElementById("walletCreditsBtn").addEventListener("click", () => {
   playClick();
+  openCreditsInfo();
+});
+document.getElementById("creditsInfoCloseBtn").addEventListener("click", () => {
+  playClick();
+  closeCreditsInfo();
+});
+document.getElementById("creditsInfoRewardsBtn").addEventListener("click", () => {
+  playClick();
+  closeCreditsInfo();
   railRewardsTab.click();
+});
+// A click on the dimmed backdrop closes it too.
+creditsInfoModal.addEventListener("click", (e) => {
+  if (e.target === creditsInfoModal) closeCreditsInfo();
 });
 
 streakStat.addEventListener("click", () => {
