@@ -2253,17 +2253,20 @@ muteBtn.addEventListener("click", () => {
 refreshMuteBtn();
 
 // ---- Theme -------------------------------------------------------------
-// Dark is the default and the only theme the app had; light is the whole of
-// the [data-theme="light"] block in style.css. The attribute goes on <html>
+// Light is the default (see index.html's head script); dark is opt-in.
+// Light is the whole of the [data-theme="light"] block in style.css. The attribute goes on <html>
 // rather than <body> so the inline script in <head> can set it before the
 // stylesheet paints (see index.html) — this handler only takes over once
 // the page is interactive.
-const THEME_KEY = "gotcha_theme";
+const THEME_KEY = "gotcha_theme_v2"; // see the head script in index.html
 const themeBtn = document.getElementById("themeBtn");
 
-function applyTheme(theme) {
+function applyTheme(theme, { remember = true } = {}) {
   const light = theme === "light";
   const root = document.documentElement;
+  // Tell the browser which scheme is showing, "only" so it never applies
+  // its own forced dark over the light theme.
+  root.style.colorScheme = light ? "only light" : "only dark";
   // See .theme-switching in style.css — without this the rail's tabs and the
   // sound button keep the outgoing theme's colours, because they transition
   // properties that a custom property feeds.
@@ -2281,6 +2284,7 @@ function applyTheme(theme) {
   setTimeout(unlock, 200);
   themeBtn.setAttribute("aria-label", light ? "Switch to dark mode" : "Switch to light mode");
   themeBtn.setAttribute("title", light ? "Dark mode" : "Light mode");
+  if (!remember) return;
   try {
     localStorage.setItem(THEME_KEY, light ? "light" : "dark");
   } catch {
@@ -2292,8 +2296,9 @@ themeBtn.addEventListener("click", () => {
   playClick();
   applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
 });
-// Sync the label with whatever the head script already applied.
-applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
+// Sync the label with whatever the head script already applied, without
+// saving it: only an actual click on the switch is a preference.
+applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark", { remember: false });
 
 // On mobile the bottom tab bar is Drops/Market/Account only — mute moves
 // into the footer's Social Media row instead (same button/click handler,

@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- The page does its own light and dark; "only" stops browsers with a
+     forced/auto dark mode (Chrome, Samsung Internet, Opera) from inverting
+     the light theme on their own. -->
+<meta name="color-scheme" content="only light">
 <title>Chosen</title>
 <!-- The Chosen Win cube (assets/brand/chosen-win-logo.jpg), cut out of
      its white ground: 32px for tabs, 192px for high-DPI tabs and Android,
@@ -15,9 +19,11 @@
 // palette first — which it would if this waited for app.js at the end of
 // the body. The toggle that writes this lives in the rail.
 // Light is the default: this reads as a shop, and shops are not dark by
-// default. Dark is opt-in and remembered.
+// default. Dark is opt-in and remembered, but only once someone actually
+// picks it: the key is v2 because the old one was written on every load
+// back when dark was the default, which left early visitors stuck in dark.
 try {
-  if (localStorage.getItem("gotcha_theme") !== "dark") {
+  if (localStorage.getItem("gotcha_theme_v2") !== "dark") {
     document.documentElement.setAttribute("data-theme", "light");
   }
 } catch (e) {
