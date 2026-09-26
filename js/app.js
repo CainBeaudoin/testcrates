@@ -335,7 +335,6 @@ const fairnessStatus = document.getElementById("fairnessStatus");
 const fairnessCloseBtn = document.getElementById("fairnessCloseBtn");
 const walletCredits = document.getElementById("walletCredits");
 const walletCash = document.getElementById("walletCash");
-const addFundsBtn = document.getElementById("addFundsBtn");
 const walletCashBtn = document.getElementById("walletCashBtn");
 const creditToast = document.getElementById("creditToast");
 const creditToastIcon = document.getElementById("creditToastIcon");
@@ -765,7 +764,8 @@ const DEMO_STREAK_DAYS = 3;
 function renderWallet({ pulse } = {}) {
   const wallet = player.getWallet();
   walletCredits.textContent = wallet.credits.toLocaleString();
-  walletCash.textContent = `$${wallet.cash.toLocaleString()}`;
+  // The pill's $ glyph already says what this is; no second "$" here.
+  walletCash.textContent = wallet.cash.toLocaleString();
   if (pulse) {
     const el = pulse === "cash" ? walletCash : walletCredits;
     el.classList.add("pulse");
@@ -852,10 +852,6 @@ function closeAddFundsModal() {
   setTimeout(() => addFundsModal.classList.add("hidden"), 250);
 }
 
-addFundsBtn.addEventListener("click", () => {
-  playClick();
-  openAddFundsModal();
-});
 accountAddFundsBtn.addEventListener("click", () => {
   playClick();
   openAddFundsModal();

@@ -383,7 +383,7 @@ body {
   .topbar { padding: 0 14px; gap: 8px; }
   .rail { margin-left: 0; }
   .nav-tab { padding: 8px 8px; letter-spacing: 0.3px; }
-  #streakStat, #addFundsBtn { display: none; }
+  #streakStat { display: none; }
 }
 /* Just above the phone breakpoint, where the four words themselves are
    most of the bar. */
@@ -3379,6 +3379,28 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   cursor: pointer;
 }
 .wallet-cash-btn:hover { border-color: var(--line-strong); }
+/* The cash pill ends in the site's green + (the Deposit button's
+   gradient), sitting just inside the pill's right edge. */
+#walletCashBtn { padding: 5px 5px 5px 12px; gap: 8px; }
+.wallet-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5eead4, #16a34a);
+  color: #04160c;
+  box-shadow: 0 2px 8px -2px rgba(22, 163, 74, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#walletCashBtn:hover .wallet-add { transform: rotate(90deg) scale(1.08); box-shadow: 0 3px 12px -2px rgba(22, 163, 74, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+@media (max-width: 640px) {
+  .wallet-add { width: 18px; height: 18px; }
+  .wallet-add svg { width: 10px; height: 10px; }
+  #walletCashBtn { padding: 3px 3px 3px 8px; }
+}
 
 /* --- Crate badge (Sneakers/Streetwear/Collectibles) --- */
 
@@ -4283,7 +4305,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
   .topbar { padding: 0 12px; gap: 8px; }
   .brand-logo { font-size: 1.15rem; letter-spacing: 1px; }
-  #referralStat, #addFundsBtn { display: none; }
+  #referralStat { display: none; }
   /* The streak stays, as just its ring and number: the word is what
      doesn't fit, not the thing itself. */
   #streakStat { gap: 5px; padding: 4px 8px; font-size: 0.62rem; white-space: nowrap; }

@@ -83,11 +83,12 @@ try {
         <span class="ring" id="streakRing"></span> <span class="stat-pill-label">Streak</span> <b id="streakValue">0</b>
       </button>
       <button id="walletCreditsBtn" class="wallet-item wallet-cash-btn" title="Rewards: how you earn Credits"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <b id="walletCredits">0</b></button>
-      <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Add funds">
-        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">$0</b>
-      </button>
-      <button id="addFundsBtn" class="wallet-item add-funds-btn" title="Add demo funds (not a real deposit)">
-        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <!-- Cash and its top-up in one pill: the $ glyph, the balance (no
+           second "$" in the number), and a green + at the end. The whole
+           pill opens Add Funds; withdrawing is on the Account page. -->
+      <button id="walletCashBtn" class="wallet-item wallet-cash-btn" title="Add funds (demo, not a real deposit)" aria-label="Cash balance. Add funds">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> <b id="walletCash">0</b>
+        <span class="wallet-add" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
       </button>
       <button id="avatarBtn" class="avatar-btn" aria-label="Account">
         <span class="avatar-circle" id="topAvatar"></span>
