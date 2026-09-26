@@ -1,5 +1,5 @@
-// Shared UI motion: closed-form springs, a liquid tab indicator, and a
-// blur swap for content that changes in place.
+// Shared UI motion: closed-form springs, a liquid tab indicator, a blur swap
+// for content that changes in place, scroll reveals, and the theme wipe.
 //
 // Springs here are step responses you can evaluate at any time t, not
 // simulations stepped frame by frame. A value that is retargeted several
@@ -157,7 +157,13 @@ export function liquidTabs(row, activeSelector) {
  */
 export function swapText(el, text) {
   text = String(text);
-  if (!el || el.textContent === text) return;
+  if (!el) return;
+  // Compare against where the text is heading, not what's on screen: mid-
+  // swap the old text is still showing, so a quick 1 → 2 → 1 saw "1" on
+  // screen, returned early, and then landed on "2" — a quantity display
+  // one off from the quantity Open would charge for.
+  const heading = el._swapping ? el._swapTo : el.textContent;
+  if (heading === text) return;
   if (reducedMotion.matches || !el.isConnected || !el.offsetParent || !el.animate) {
     el.textContent = text;
     return;
@@ -184,4 +190,65 @@ export function swapText(el, text) {
     );
     out.cancel();
   };
+}
+
+
+// ---- Scroll reveal ---------------------------------------------------------
+// Sections marked [data-reveal] rise in the first time they come into view;
+// [data-reveal="stagger"] does it to its children one after another.
+//
+// The hidden starting state only exists under html.motion-armed, and that is
+// set either now (tab visible) or on the first frame the tab draws. A tab
+// that never draws never arms, so nothing is ever held invisible waiting on
+// an observer that won't fire — the page stays complete without any of this.
+
+let revealObserver = null;
+
+export function initReveal() {
+  if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("in");
+        revealObserver.unobserve(entry.target);
+      });
+    },
+    // Trip a little before the edge reaches the viewport, so the rise is
+    // under way by the time you're looking at it.
+    { rootMargin: "0px 0px -8% 0px", threshold: 0.06 }
+  );
+  const arm = () => {
+    document.documentElement.classList.add("motion-armed");
+    document.querySelectorAll("[data-reveal]:not(.in)").forEach((el) => revealObserver.observe(el));
+  };
+  if (document.visibilityState === "visible") arm();
+  else requestAnimationFrame(arm);
+}
+
+// ---- Theme change as a wipe --------------------------------------------------
+// The new palette opens out of the toggle in a circle over the old one. The
+// View Transitions API snapshots the page before and after `apply` and we
+// animate between the two pictures, so nothing on the page has to know how
+// to transition its own colours. Anywhere that can't (no API, reduced motion,
+// a hidden tab) just swaps.
+
+export function themeWipe(originEl, apply) {
+  if (!document.startViewTransition || reducedMotion.matches || document.visibilityState !== "visible") {
+    apply();
+    return;
+  }
+  const r = originEl.getBoundingClientRect();
+  const x = r.left + r.width / 2;
+  const y = r.top + r.height / 2;
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const transition = document.startViewTransition(apply);
+  transition.ready
+    .then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 560, easing: "cubic-bezier(0.22, 1, 0.36, 1)", pseudoElement: "::view-transition-new(root)" }
+      );
+    })
+    .catch(() => {});
 }

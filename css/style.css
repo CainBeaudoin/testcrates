@@ -27,6 +27,19 @@
      here, so the reveal is unchanged in dark. */
   --reveal-banner: rgba(255, 255, 255, 0.4);
   --topbar-h: 60px;
+  /* Corner scale. Every radius in the app is one of these, chosen by what
+     the thing is: xs for thumbnails in rows, sm for inputs, rows and wells
+     inside cards, md for tiles and tall buttons inside pop-ups, lg for
+     cards, xl for panels and pop-ups, 2xl for full-width bands, pill for
+     single-line buttons, chips and tabs. It's the set Home, Drops and the
+     pop-ups had already settled on, extended to everything else. */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 24px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
   --surface-1: #131318;
   --surface-2: #1a1a20;
 
@@ -210,7 +223,7 @@ body {
   padding: 8px 4px;
   background: transparent;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-pill);
   /* dim, not faint: with the icon gone the word is the whole target, and
      faint sits at 2.75:1 on the dark bar. */
   color: var(--text-dim);
@@ -604,7 +617,7 @@ body {
 .fairness-status {
   margin: 16px 0;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 0.75rem;
   font-weight: 600;
   text-align: center;
@@ -623,7 +636,8 @@ body {
 
 .credit-toast {
   position: fixed;
-  top: 24px;
+  /* Below the header, not over it: at 24px it sat on the nav. */
+  top: calc(var(--topbar-h) + 14px);
   left: 50%;
   z-index: 200;
   display: flex;
@@ -674,7 +688,7 @@ body {
   flex: 1;
   background: var(--panel);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-lg);
   padding: 24px 32px 32px;
   text-align: center;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -807,7 +821,7 @@ body {
   background: var(--text);
   color: var(--text-inverse);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-pill);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 1px;
@@ -832,21 +846,21 @@ body {
 }
 .pity-bar-track {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-pill);
   background: var(--track);
   overflow: hidden;
 }
 .pity-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent));
-  border-radius: 2px;
+  border-radius: var(--r-pill);
   transition: width 0.3s ease;
 }
 
 .prize-dropdown {
   background: var(--panel);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -904,7 +918,7 @@ body {
   padding: 8px 12px;
   background: var(--surface-2);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 .odds-bucket-rarity {
   font-size: 0.6rem;
@@ -1046,7 +1060,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 36px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   flex: 0 0 auto;
 }
 
@@ -1120,7 +1134,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   padding: 16px 16px 16px;
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   text-align: center;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -1134,7 +1148,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   height: 104px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   margin: 0 auto 12px;
   display: block;
 }
@@ -1191,7 +1205,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   overflow: hidden;
   background: var(--panel);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-lg);
   box-shadow: var(--glow);
 }
 
@@ -1365,7 +1379,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   color: var(--text-inverse);
   background: var(--text);
   border: none;
-  border-radius: 2px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
@@ -1516,8 +1530,10 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   width: 100%;
   max-width: 300px;
   background: var(--panel-2);
-  border: 1px solid var(--rarity-color);
-  border-radius: 6px;
+  /* No outline, like everything else: rarity reads from the glow and the
+     rarity pill, not from a hairline around the card. */
+  border: none;
+  border-radius: var(--r-xl);
   padding: 32px 32px 32px;
   text-align: center;
   box-shadow: 0 24px 70px var(--shadow-modal), 0 0 40px -6px var(--rarity-color);
@@ -1545,7 +1561,9 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   letter-spacing: 2px;
   text-transform: uppercase;
   padding: 4px 12px;
-  border: 1px solid currentColor;
+  /* A tint of the rarity's colour rather than an outline in it. */
+  border: none;
+  background: color-mix(in srgb, currentColor 15%, transparent);
   border-radius: 999px;
   margin-bottom: 16px;
 }
@@ -1735,7 +1753,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   object-fit: contain;
   margin: 0 auto 16px;
   background: var(--well);
-  border-radius: 18px;
+  border-radius: var(--r-md);
 }
 
 .prize-modal-name {
@@ -1763,7 +1781,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
@@ -1828,7 +1846,7 @@ button.deposit-btn:hover {
   gap: 8px;
   padding: 16px 8px;
   background: var(--panel-2);
-  border-radius: 6px;
+  border-radius: var(--r-md);
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
@@ -1875,7 +1893,7 @@ button.deposit-btn:hover {
   gap: 16px;
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 16px;
 }
 
@@ -1905,7 +1923,7 @@ button.deposit-btn:hover {
   background: var(--surface-2);
   border: none;
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 8px 8px;
   font-size: 0.72rem;
   cursor: pointer;
@@ -1974,7 +1992,7 @@ button.deposit-btn:hover {
 .market-item {
   background: var(--surface-1);
   border: none;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -2003,7 +2021,7 @@ button.deposit-btn:hover {
   object-fit: contain;
   display: block;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: #fff;
 }
 
@@ -2137,7 +2155,7 @@ button.deposit-btn:hover {
 .account-avatar-block {
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -2187,7 +2205,7 @@ button.deposit-btn:hover {
 .account-wallet-card {
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 8px 16px;
 }
 .wallet-card-row {
@@ -2216,7 +2234,7 @@ button.deposit-btn:hover {
   background: var(--panel-blur);
   backdrop-filter: blur(10px);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-pill);
   padding: 8px;
   margin-bottom: 24px;
   position: sticky;
@@ -2231,7 +2249,7 @@ button.deposit-btn:hover {
   padding: 8px 16px;
   background: transparent;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--r-pill);
   color: var(--text-dim);
   font-size: 0.76rem;
   font-weight: 600;
@@ -2371,7 +2389,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 12px 16px;
   background: var(--surface-1);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   margin-bottom: 8px;
 }
 .activity-row[data-listing] { cursor: pointer; }
@@ -2383,7 +2401,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 40px;
   object-fit: contain;
   background: #fff;
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   flex: 0 0 auto;
 }
 .activity-row-info { flex: 1; min-width: 0; }
@@ -2462,7 +2480,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   align-items: stretch;
   background: var(--surface-1);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 .rewards-stat {
@@ -2506,7 +2524,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 24px;
   background: var(--surface-1);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-lg);
 }
 .rewards-card-title {
   font-size: 0.62rem;
@@ -2549,7 +2567,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--r-xs);
   background: var(--surface-2);
   border: none;
   font-size: 0.76rem;
@@ -2651,7 +2669,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   padding: 12px 16px;
   background: var(--surface-2);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 .rewards-earn-icon {
   display: flex;
@@ -2703,7 +2721,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 12px;
   background: var(--surface-1);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   color: var(--text);
   font-size: 0.7rem;
 }
@@ -2828,7 +2846,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 16px;
   background: var(--panel);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   flex-wrap: wrap;
 }
 
@@ -2837,7 +2855,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 40px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
   flex: 0 0 auto;
 }
 
@@ -2967,23 +2985,24 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 0 0 auto;
   width: 52px;
   height: 52px;
-  padding: 3px;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  padding: 5px;
+  border: none;
+  border-radius: var(--r-sm);
   background: #fff;
   cursor: pointer;
   opacity: 0.6;
-  transition: opacity 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 .listing-strip-thumb img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 .listing-strip-thumb:hover { opacity: 1; transform: translateY(-2px); }
-.listing-strip-thumb.active { opacity: 1; border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+/* Selected: full strength, lifted, and a shadow under it — no ring. */
+.listing-strip-thumb.active { opacity: 1; transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35); }
 
 .listing-nav-arrow {
   flex: 0 0 auto;
@@ -3261,7 +3280,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   background: transparent;
   border: none;
   color: var(--text);
-  border-radius: 4px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   background: var(--control-fill);
 }
@@ -3361,7 +3380,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 12px 16px;
   background: var(--panel-2);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   color: var(--text);
   font-size: 1.1rem;
   text-align: center;
@@ -3456,7 +3475,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 4px;
   padding: 12px 8px;
   background: var(--control-fill);
-  border-radius: 4px;
+  border-radius: var(--r-md);
   color: var(--text);
   cursor: pointer;
   text-align: center;
@@ -3520,7 +3539,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 8px;
   background: var(--panel);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   color: var(--text);
   font-size: 0.72rem;
 }
@@ -3604,7 +3623,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 16px;
   background: var(--panel);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 .opening-row.pinned { border-color: var(--gold); }
 .opening-row img {
@@ -3612,7 +3631,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 36px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 4px;
+  border-radius: var(--r-xs);
 }
 .opening-row-name { flex: 1; font-size: 0.75rem; color: var(--text); }
 .opening-row-mult {
@@ -3640,7 +3659,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 16px;
   background: var(--panel);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 0.8rem;
   cursor: pointer;
   transition: border-color 0.15s ease;
@@ -3671,7 +3690,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 16px 24px;
   background: var(--panel);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   margin-bottom: 16px;
 }
 .referral-current .share {
@@ -3685,7 +3704,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .referral-progress-track {
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--r-pill);
   background: var(--track);
   overflow: hidden;
   margin-bottom: 24px;
@@ -3725,7 +3744,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 16px 24px;
   background: var(--panel);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   margin-bottom: 24px;
   text-align: left;
 }
@@ -3799,7 +3818,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 0 0 auto;
   padding: 3px 9px;
   border-radius: 999px;
-  border: 1px solid currentColor;
+  border: none;
+  background: color-mix(in srgb, currentColor 14%, transparent);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -3807,7 +3827,6 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   opacity: 0.75;
 }
 .deposit-btn .referral-claim-bonus {
-  border-color: rgba(4, 22, 12, 0.35);
   background: rgba(255, 255, 255, 0.28);
   color: #04160c;
   opacity: 1;
@@ -3860,7 +3879,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 16px 24px;
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 .streak-summary-meta {
   flex: 1;
@@ -3920,14 +3939,14 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 16px 16px;
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 .streak-raffle-prize img {
   width: 56px;
   height: 56px;
   object-fit: contain;
   background: var(--well);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   flex: 0 0 auto;
 }
 /* Desktop has the height to spare now the two cards match — a bigger
@@ -3975,7 +3994,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 0.62rem;
   color: var(--text-faint);
   background: var(--surface-2);
@@ -3999,7 +4018,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .clip-card {
   background: var(--surface-1);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -4042,7 +4061,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   text-align: center;
   background: var(--surface-1);
   border: none;
-  border-radius: 14px;
+  border-radius: var(--r-xl);
   padding: 32px 32px;
 }
 
@@ -4060,7 +4079,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 1px;
   background: var(--hairline);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-lg);
   overflow: hidden;
   margin-bottom: 32px;
 }
@@ -4104,7 +4123,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 8px;
   margin-bottom: 16px;
   background: var(--surface-2);
-  border-radius: 8px;
+  border-radius: var(--r-pill);
   padding: 4px;
 }
 .add-funds-tab {
@@ -4112,7 +4131,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 0;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-pill);
   color: var(--text-faint);
   font-size: 0.72rem;
   font-weight: 700;
@@ -4123,7 +4142,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .deposit-address-box {
   background: var(--surface-2);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 12px 16px;
   margin-bottom: 16px;
 }
@@ -4202,7 +4221,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 12px;
   background: var(--surface-2);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   text-align: left;
   color: var(--text);
@@ -4248,7 +4267,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 8px 12px;
   background: var(--panel-2);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   color: var(--text);
   font-size: 0.76rem;
 }
@@ -4268,6 +4287,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 @media (max-width: 640px) {
   :root {
+    /* The same scale a step tighter: phone-width cards with desktop
+       corners start to read as pills. */
+    --r-md: 14px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+    --r-2xl: 22px;
     --topbar-h: 52px;
     --bottom-nav-h: 60px;
     /* The floating Account group-icon bar, and the section toggle that
@@ -4496,7 +4521,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     flex: 0 0 auto;
     max-height: 78vh;
     margin: 0;
-    border-radius: 16px 16px 0 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
     padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
     overflow-y: auto;
     transform: translateY(105%);
@@ -4658,7 +4683,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     gap: 2px;
     padding: 4px;
     margin-bottom: 0;
-    border-radius: 14px;
+    border-radius: var(--r-md);
     /* Floating over the grid now, so both bars read as solid rather than
        leaning on a blur the content behind them shows through. */
     background: var(--surface-1);
@@ -4672,7 +4697,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     font-size: 0.58rem;
     letter-spacing: 0.2px;
     padding: 2px;
-    border-radius: 10px;
+    border-radius: var(--r-sm);
   }
 
   /* A dedicated Profile tab (avatar/username/referral link/balances/Add
@@ -4710,7 +4735,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     z-index: 200;
     background: var(--surface-1);
     border: none;
-    border-radius: 16px;
+    border-radius: var(--r-xl);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
     /* Height comes from the content, and the auto block margins centre it
        in that band — a card sized to the band would be two-thirds empty. */
@@ -4883,7 +4908,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     width: 188px;
     background: var(--panel-blur);
     backdrop-filter: blur(10px);
-    border-radius: 14px;
+    border-radius: var(--r-md);
     box-shadow: 0 12px 32px var(--shadow-card);
     overflow: hidden;
     touch-action: none; /* the header is a drag handle */
@@ -4951,7 +4976,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     width: 100%;
     padding: 7px 8px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--r-sm);
     background: var(--control-fill);
     text-align: left;
     cursor: pointer;
@@ -4995,7 +5020,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--well);
 }
@@ -5020,7 +5045,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   object-fit: contain;
   /* Rounded like the frame around it (12px, less the 8px inset, plus a
      little so the curve reads at this size). */
-  border-radius: 8px;
+  border-radius: var(--r-xs);
 }
 
 /* The name, not the price. A number is what you'd compare listings by;
@@ -5095,7 +5120,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   align-items: center;
   min-height: clamp(460px, 64vh, 640px);
-  border-radius: 28px;
+  border-radius: var(--r-2xl);
   overflow: hidden;
   background-color: var(--hero-tint);
   transition: background-color 0.7s ease;
@@ -5197,7 +5222,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   position: absolute;
   left: 50%;
   bottom: 0;
-  width: 48%;
+  /* Framed for the box open (fitOpen), so it needs the wider canvas: 60%
+     against the 48% it had shut keeps the flaps inside the frame and still
+     draws the box itself a little bigger than before. Behind the burst
+     layer: prizes come up out of the open box in front of it. */
+  z-index: 1;
+  width: 60%;
   /* Taller than wide: the crate sits in the bottom square, and the space
      above (HERO_BOX_HEADROOM in app.js) is where the lid swings up to. */
   aspect-ratio: 1 / 1.45;
@@ -5206,7 +5236,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .home-hero-box canvas { display: block; width: 100%; height: 100%; }
 .home-hero-box.is-away { opacity: 0; transform: translateX(-50%) translateY(24px) scale(0.92); }
-.home-hero-burst { position: absolute; inset: 0; pointer-events: none; }
+.home-hero-burst { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 
 .hero-burst-item {
   position: absolute;
@@ -5226,7 +5256,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 /* Out: an arc up out of the box with a little overshoot, then a slow bob
    on the image so the group never sits dead still. */
 .hero-burst-item.is-out {
-  animation: heroBurstOut 0.9s var(--spring) var(--d) forwards;
+  animation: heroBurstOut 1.15s var(--spring) var(--d) both;
 }
 .hero-burst-item.is-out img {
   animation: heroBob var(--bob) ease-in-out calc(var(--d) + 0.9s) infinite;
@@ -5238,14 +5268,19 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   rotate: var(--r);
   animation: heroBurstIn 0.45s cubic-bezier(0.5, 0, 0.75, 0) var(--d) forwards;
 }
+/* Up out of the box first — from its open mouth, fading in as it clears
+   the flaps, straight up to just above the rim — then out to its place
+   with a little overshoot. */
 @keyframes heroBurstOut {
-  0% { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.12) rotate(0deg); }
-  18% { opacity: 1; }
+  0% { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.3) rotate(0deg); }
+  14% { opacity: 1; }
+  38% { opacity: 1; transform: translate(var(--from-x), var(--rise-y)) scale(0.62) rotate(0deg); }
   100% { opacity: 1; transform: none; rotate: var(--r); }
 }
 @keyframes heroBurstIn {
   from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.12); }
+  60% { opacity: 1; transform: translate(var(--from-x), var(--rise-y)) scale(0.62); }
+  to { opacity: 0; transform: translate(var(--from-x), var(--from-y)) scale(0.3); }
 }
 @keyframes heroBob {
   0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -5276,7 +5311,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   left: 0;
   top: 8px;
   height: 4px;
-  border-radius: 4px;
+  border-radius: var(--r-pill);
 }
 .home-hero-dot::before { content: ""; right: 0; background: rgba(22, 19, 15, 0.14); }
 .home-hero-dot-fill { width: 0; background: var(--hero-ink); }
@@ -5377,7 +5412,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex-direction: column;
   gap: 10px;
   padding: 18px;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--surface-1);
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -5387,7 +5422,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
-  border-radius: 14px;
+  border-radius: var(--r-md);
 }
 .home-crate-box {
   display: block;
@@ -5406,7 +5441,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 44px;
   height: 44px;
   padding: 3px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   object-fit: contain;
 }
 .home-crate-open { width: 100%; margin-top: auto; }
@@ -5427,7 +5462,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   min-width: 0;
   padding: 12px;
   border: none;
-  border-radius: 20px;
+  border-radius: var(--r-lg);
   background: var(--surface-1);
   color: inherit;
   font: inherit;
@@ -5441,7 +5476,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   display: grid;
   place-items: center;
   min-height: 150px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   overflow: hidden;
 }
 .home-grail-media img {
@@ -5477,8 +5512,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 /* --- Live pulls ---------------------------------------------------------- */
-.home-pulls .recent-pull-item { width: 184px; border-radius: 16px; }
-.home-pulls .recent-pull-item img { width: 128px; height: 128px; background: #fff; border-radius: 10px; }
+.home-pulls .recent-pull-item { width: 184px; border-radius: var(--r-md); }
+.home-pulls .recent-pull-item img { width: 128px; height: 128px; background: #fff; border-radius: var(--r-sm); }
 
 /* --- How it works --------------------------------------------------------- */
 .home-steps {
@@ -5489,14 +5524,14 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   padding: 0;
   list-style: none;
 }
-.home-step { padding: 16px 16px 26px; border-radius: 22px; background: var(--surface-1); }
+.home-step { padding: 16px 16px 26px; border-radius: var(--r-xl); background: var(--surface-1); }
 .home-step-visual {
   position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
   margin-bottom: 20px;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -5513,7 +5548,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .home-step h3 { margin: 6px 8px 8px; font-size: 1.15rem; font-weight: 800; color: var(--text); }
 .home-step p { margin: 0 8px; font-size: 0.86rem; line-height: 1.55; color: var(--text-dim); }
 
-.home-step-choices #homeStepItem { width: 50%; padding: 8px; border-radius: 16px; }
+.home-step-choices #homeStepItem { width: 50%; padding: 8px; border-radius: var(--r-md); }
 .home-choice {
   position: absolute;
   padding: 7px 12px;
@@ -5534,7 +5569,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   gap: 16px;
   margin-top: 64px;
 }
-.home-panel { min-width: 0; padding: 24px; border-radius: 22px; background: var(--surface-1); }
+.home-panel { min-width: 0; padding: 24px; border-radius: var(--r-xl); background: var(--surface-1); }
 .home-panel .home-block-head { margin-bottom: 14px; }
 .home-panel .home-block-title { font-size: 1.5rem; }
 
@@ -5542,7 +5577,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .home-board-row,
 .home-market-row {
   border: none;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -5578,7 +5613,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.home-board-bar { height: 6px; border-radius: 6px; background: var(--control-fill); overflow: hidden; }
+.home-board-bar { height: 6px; border-radius: var(--r-pill); background: var(--control-fill); overflow: hidden; }
 .home-board-bar i { display: block; height: 100%; border-radius: inherit; background: var(--text); opacity: 0.75; }
 .home-board-xp {
   font-size: 0.78rem;
@@ -5594,7 +5629,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 0 0 auto;
   width: 52px;
   height: 52px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   overflow: hidden;
 }
 .home-market-thumb img { width: 88%; height: 88%; object-fit: contain; }
@@ -5625,7 +5660,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .home-cta {
   margin-top: 64px;
   padding: 64px 32px;
-  border-radius: 28px;
+  border-radius: var(--r-2xl);
   background: var(--text);
   color: var(--text-inverse);
   text-align: center;
@@ -5655,13 +5690,13 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 @media (max-width: 640px) {
-  .home-hero { grid-template-columns: 1fr; min-height: 0; border-radius: 22px; }
+  .home-hero { grid-template-columns: 1fr; min-height: 0; border-radius: var(--r-2xl); }
   .home-hero::before { background: radial-gradient(ellipse 70% 40% at 50% 26%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 72%); }
   .home-hero-media { order: -1; height: 290px; min-height: 0; }
   .home-hero-media::before { font-size: 6.5rem; right: 50%; transform: translateX(50%); bottom: 0; }
   .home-hero-media { height: 340px; }
   .home-hero-stage { inset: 2% 3% 0; }
-  .home-hero-box { width: 46%; }
+  .home-hero-box { width: 58%; }
   .home-hero-copy { padding: 4px 22px 26px; }
   .home-hero-eyebrow { font-size: 0.92rem; margin-bottom: 10px; }
   .home-hero-title { font-size: 3.1rem; margin-bottom: 14px; }
@@ -5679,7 +5714,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .home-more { padding: 8px 12px; font-size: 0.72rem; }
 
   .home-crates { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .home-crate { padding: 12px; border-radius: 16px; gap: 8px; }
+  .home-crate { padding: 12px; border-radius: var(--r-lg); gap: 8px; }
   .home-crate .category-tier-name { font-size: 1rem; }
   .home-crate-price { font-size: 0.95rem; }
   .home-crate-thumbs img { width: 34px; height: 34px; }
@@ -5687,7 +5722,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .home-grails { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 10px; }
   .home-grail:nth-child(1),
   .home-grail:nth-child(6) { grid-column: 1 / -1; grid-row: auto; }
-  .home-grail { padding: 10px; border-radius: 16px; }
+  .home-grail { padding: 10px; border-radius: var(--r-lg); }
   .home-grail-media { aspect-ratio: 1; min-height: 0; flex: 0 0 auto; }
   .home-grail:nth-child(1) .home-grail-media,
   .home-grail:nth-child(6) .home-grail-media { aspect-ratio: 4 / 3; }
@@ -5700,11 +5735,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .home-steps { grid-template-columns: 1fr; gap: 10px; }
 
   .home-duo { grid-template-columns: 1fr; gap: 10px; margin-top: 44px; }
-  .home-panel { padding: 16px; border-radius: 18px; }
+  .home-panel { padding: 16px; border-radius: var(--r-xl); }
   .home-board-row { grid-template-columns: 24px 30px minmax(0, 1fr) 74px; gap: 10px; padding: 8px 6px; }
   .home-board-bar { display: none; }
 
-  .home-cta { margin-top: 44px; padding: 44px 20px; border-radius: 22px; }
+  .home-cta { margin-top: 44px; padding: 44px 20px; border-radius: var(--r-2xl); }
 }
 
 /* --- Ship: checkout form + order tracker ---------------------------------- */
@@ -5731,7 +5766,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   flex: 0 0 auto;
   object-fit: contain;
   padding: 4px;
-  border-radius: 10px;
+  border-radius: var(--r-xs);
   background: #fff;
 }
 .ship-item-name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--text); line-height: 1.3; }
@@ -5761,7 +5796,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   width: 100%;
   padding: 11px 12px;
   border: 1px solid var(--hairline);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--control-fill);
   color: var(--text);
   font: inherit;
@@ -5831,7 +5866,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 .ship-address {
   padding: 14px 16px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   background: var(--control-fill);
   margin-bottom: 20px;
 }
@@ -5959,7 +5994,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     pointer-events: none;
   }
   .account-nav::before { top: -34px; bottom: -10px; background: var(--bg); }
-  .account-nav::after { inset: 0; border-radius: 10px; background: var(--surface-1); }
+  .account-nav::after { inset: 0; border-radius: var(--r-pill); background: var(--surface-1); }
   .account-sidebar {
     top: var(--pin-top);
     max-height: calc(100vh - var(--pin-top) - 16px);
@@ -5984,7 +6019,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
    frame picks up a soft halo, and the whole face shakes briefly once the
    new card has swiped in (0.5s). Legendary shakes harder and its glow
    keeps breathing while it's up. */
-.pull-face { position: relative; border-radius: 12px; transition: box-shadow 0.4s ease; }
+.pull-face { position: relative; border-radius: var(--r-sm); transition: box-shadow 0.4s ease; }
 .pull-face.is-special {
   box-shadow: 0 0 0 2px var(--rarity-color), 0 0 18px -2px var(--rarity-color);
 }
@@ -5996,7 +6031,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   position: absolute;
   inset: 0;
   z-index: 1;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rarity-color) 60%, transparent),
               inset 0 0 26px 2px color-mix(in srgb, var(--rarity-color) 50%, transparent);
   pointer-events: none;
@@ -6133,7 +6168,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 body.drop-detail-open .drop-lines { display: none; }
 @media (max-width: 640px) {
   .drops-head { gap: 10px; margin-bottom: 16px; }
-  .drop-lines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  /* align-self: stretch — the head is a column that sizes children to
+     their content, so without it this row took its full 484px and pushed
+     the whole page sideways instead of scrolling inside itself. */
+  .drop-lines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; align-self: stretch; min-width: 0; }
   .drop-lines::-webkit-scrollbar { display: none; }
   .drop-line { flex: 0 0 auto; }
 }
@@ -6205,7 +6243,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 /* --- Drops: the same soft shapes as Home ---------------------------------
    Home's cards are 20px-round and its buttons are pills; Drops was still
    on 4px corners. Same card radius, pill buttons, rounder inner panels. */
-.category-card { border-radius: 20px; }
+.category-card { border-radius: var(--r-lg); }
 .category-open-btn {
   border-radius: 999px;
   padding: 13px 0;
@@ -6214,12 +6252,12 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   letter-spacing: 0.4px;
   text-transform: none;
 }
-.prize-dropdown { border-radius: 20px; }
-.odds-bucket { border-radius: 12px; }
+.prize-dropdown { border-radius: var(--r-lg); }
+.odds-bucket { border-radius: var(--r-sm); }
 .pity-bar-track, .pity-bar-fill { border-radius: 999px; }
 @media (max-width: 640px) {
-  .category-card { border-radius: 16px; }
-  .prize-dropdown { border-radius: 16px; }
+  .category-card { border-radius: var(--r-lg); }
+  .prize-dropdown { border-radius: var(--r-lg); }
 }
 
 /* --- Recent pulls on phones: an app-icon tile ----------------------------
@@ -6248,15 +6286,15 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   .pull-dock-body,
   .pull-dock.collapsed .pull-dock-body { display: block; padding: 0; }
   .pull-face {
-    border-radius: 16px;
+    border-radius: var(--r-md);
     background: var(--surface-1);
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--hairline);
   }
   .pull-face.is-special {
     box-shadow: 0 0 0 2px var(--rarity-color), 0 0 16px -2px var(--rarity-color), 0 8px 22px rgba(0, 0, 0, 0.18);
   }
-  .pull-face-screen { border-radius: 16px; }
-  .pull-face-card img { inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 12px; }
+  .pull-face-screen { border-radius: var(--r-md); }
+  .pull-face-card img { inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: var(--r-xs); }
   /* A live dot, so it reads as a feed and not a stray thumbnail. */
   .pull-face::after {
     content: "";
@@ -6294,15 +6332,15 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
    Every pop-up card (market listing, recent pull, vault item, payment,
    amount, ship, withdraw...) takes a 24px corner, its buttons are pills,
    and the pieces inside are rounded to match. */
-.prize-modal-card { border-radius: 24px; }
-.detail-modal-card { border-radius: 24px; }
+.prize-modal-card { border-radius: var(--r-xl); }
+.detail-modal-card { border-radius: var(--r-xl); }
 .modal-btn { border-radius: 999px; }
-.payment-option { border-radius: 16px; }
-.offer-row { border-radius: 12px; }
-.amount-input { border-radius: 12px; }
-.exit-btn { border-radius: 16px; }
+.payment-option { border-radius: var(--r-md); }
+.offer-row { border-radius: var(--r-sm); }
+.amount-input { border-radius: var(--r-sm); }
+.exit-btn { border-radius: var(--r-md); }
 @media (max-width: 640px) {
-  .prize-modal-card, .detail-modal-card { border-radius: 20px; }
+  .prize-modal-card, .detail-modal-card { border-radius: var(--r-xl); }
 }
 
 /* --- Credits explainer ---------------------------------------------------- */
@@ -6314,7 +6352,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   width: 44px;
   height: 44px;
   margin: 0 auto 12px;
-  border-radius: 14px;
+  border-radius: var(--r-sm);
   background: linear-gradient(135deg, #5eead4, #16a34a);
   color: #04160c;
   box-shadow: 0 6px 16px -6px rgba(22, 163, 74, 0.6);
@@ -6324,7 +6362,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .credits-info-balance {
   margin-bottom: 18px;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: var(--control-fill);
   text-align: center;
   font-size: 0.78rem;
@@ -6340,7 +6378,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   background: var(--control-fill);
   color: var(--text);
 }
@@ -6493,3 +6531,750 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   color: var(--text-dim);
 }
 .referral-invite-note b { color: var(--text); }
+
+
+/* ==========================================================================
+   Motion: screens, reveals, the round guard, the theme wipe
+   Additions to the springs and liquid tabs in motion.js. Each one animates
+   toward a state the element already has, so none of it is load-bearing.
+   Opacity and the standalone `translate` property only: `transform` is what
+   the cards' own hover lifts use, and the two would fight over it.
+   ========================================================================== */
+
+/* Screens fade in rather than cut. Opacity only — Market and Account pin
+   parts of their chrome, and a moving ancestor would drag pinned children
+   along for the length of the animation. */
+.screen.active { animation: screenFade 0.32s ease-out; }
+@keyframes screenFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scroll reveal (initReveal in motion.js). The hidden state exists only
+   under .motion-armed, which is only ever set while the tab is drawing. */
+.motion-armed [data-reveal]:not([data-reveal="stagger"]):not(.in),
+.motion-armed [data-reveal="stagger"]:not(.in) > * {
+  opacity: 0;
+}
+.motion-armed [data-reveal]:not([data-reveal="stagger"]).in { animation: revealRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.motion-armed [data-reveal="stagger"].in > * { animation: revealRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(2) { animation-delay: 45ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(3) { animation-delay: 90ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(4) { animation-delay: 135ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(5) { animation-delay: 180ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(6) { animation-delay: 225ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(7) { animation-delay: 270ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(8) { animation-delay: 315ms; }
+.motion-armed [data-reveal="stagger"].in > :nth-child(n + 9) { animation-delay: 360ms; }
+/* Liquid pills sit inside some of these rows as a first child; they place
+   themselves and must not fade with the content. */
+.motion-armed [data-reveal="stagger"] > .liquid-pill { opacity: 1; animation: none; }
+@keyframes revealRise {
+  from { opacity: 0; translate: 0 24px; }
+  to { opacity: 1; translate: none; }
+}
+
+/* "Pick a box first" — the row shakes its head. */
+#boxRow.nudge { animation: nudge 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes nudge {
+  20% { translate: -8px 0; }
+  45% { translate: 7px 0; }
+  70% { translate: -4px 0; }
+  100% { translate: none; }
+}
+
+/* The theme wipe draws its own circle (themeWipe in motion.js), so the
+   browser's default cross-fade is switched off and the new picture is laid
+   straight over the old one. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.active,
+  #boxRow.nudge { animation: none; }
+}
+
+@media (max-width: 640px) {
+  /* Seven fixed 40px days plus their gaps come to 328px, wider than a phone
+     card's inside: the week shares the width instead. */
+  .rewards-week-strip { width: 100%; gap: 6px; }
+  .rewards-day { flex: 1; min-width: 0; }
+  .rewards-day-box { width: 100%; height: auto; aspect-ratio: 1; max-width: 40px; }
+}
+
+/* ==========================================================================
+   Live pulls bar (desktop)
+   The whole bottom edge. At rest one 52px row; on hover it grows upward
+   into big tiles. The same tile element serves both — the row is the tile
+   with its picture shrunk and its details laid out on one line — so
+   opening the bar reflows what's there instead of swapping in a second
+   list. No outline on the bar: it lifts off the page on a shadow.
+   ========================================================================== */
+
+.live-bar,
+.live-bar-pill { display: none; }
+
+@media (min-width: 641px) {
+  :root { --live-bar-h: 52px; }
+
+  .live-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    display: flex;
+    align-items: stretch;
+    height: var(--live-bar-h);
+    background: var(--panel-blur);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.08);
+    transition: height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .live-bar.is-open { height: 248px; }
+  body.live-bar-min .live-bar { display: none; }
+
+  /* Room at the bottom of every page for the bar, and the theme/sound
+     buttons lift above it. */
+  body:not(.live-bar-min) .shell-body { padding-bottom: var(--live-bar-h); }
+  body:not(.live-bar-min) .rail-bottom { bottom: calc(var(--live-bar-h) + 14px); }
+
+  .lb-label,
+  .lb-all,
+  .lb-min {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    align-self: flex-end;
+    height: var(--live-bar-h);
+    padding: 0 18px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .lb-label { gap: 8px; padding-left: 20px; }
+  .lb-all { color: var(--text-dim); }
+  .lb-all:hover, .lb-min:hover { color: var(--text); }
+  .lb-min { padding: 0 18px 0 8px; color: var(--text-faint); }
+
+  .lb-dot {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--positive);
+  }
+  .lb-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--positive);
+    animation: lbPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes lbPing {
+    75%, 100% { transform: scale(2.6); opacity: 0; }
+  }
+
+  /* The row scrolls sideways under the wheel or a drag; its ends fade so a
+     tile slides out of view rather than being cut. */
+  .lb-view {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 40px), transparent);
+  }
+  .lb-view::-webkit-scrollbar { display: none; }
+  .lb-track {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    padding: 0 16px;
+    width: max-content;
+  }
+
+  /* --- A tile, at rest: one line --------------------------------------- */
+  .lb-pull {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    padding: 0 12px 0 4px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+  }
+  .lb-pull:hover,
+  .lb-pull:focus-visible { background: var(--hover-bg); outline: none; }
+  .lb-media {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-xs);
+    background: #fff;
+    overflow: hidden;
+  }
+  .lb-media img { width: 88%; height: 88%; object-fit: contain; }
+  .lb-info { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .lb-name {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .lb-price { font-size: 0.8rem; font-weight: 800; color: var(--positive); font-variant-numeric: tabular-nums; }
+  .lb-pull.is-special .lb-price { color: var(--rarity-color); }
+  :root[data-theme="light"] .lb-pull.is-special .lb-price { filter: brightness(0.7) saturate(1.4); }
+  .lb-mult {
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--positive) 16%, transparent);
+    color: var(--positive);
+    font-size: 0.64rem;
+    font-style: normal;
+    font-weight: 800;
+  }
+  .lb-who { display: none; font-size: 0.7rem; color: var(--text-faint); }
+  .lb-who b { color: var(--text); font-weight: 700; }
+  .lb-crate {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-faint);
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+  }
+  .lb-crate b { color: var(--text-dim); font-weight: 600; }
+  .lb-crate i {
+    padding: 2px 7px;
+    border-radius: var(--r-pill);
+    background: var(--control-fill);
+    color: var(--text-dim);
+    font-style: normal;
+    font-weight: 700;
+  }
+  .lb-crate:hover b,
+  .lb-crate:hover i { color: var(--text); }
+
+  /* --- Open: big tiles --------------------------------------------------- */
+  .live-bar.is-open .lb-track { align-items: flex-start; gap: 12px; padding: 16px 16px 0; }
+  .live-bar.is-open .lb-pull {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 156px;
+    height: auto;
+    padding: 0;
+    background: none;
+    white-space: normal;
+    animation: lbTileIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .live-bar.is-open .lb-media {
+    width: 100%;
+    height: 108px;
+    border-radius: var(--r-md);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .live-bar.is-open .lb-media img { width: 82%; height: 86%; transition: scale 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+  .live-bar.is-open .lb-pull:hover .lb-media { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14); }
+  .live-bar.is-open .lb-pull:hover .lb-media img { scale: 1.06; }
+  .live-bar.is-open .lb-info { flex-direction: column; align-items: stretch; gap: 3px; padding: 0 2px; }
+  .live-bar.is-open .lb-name { max-width: none; white-space: nowrap; font-size: 0.78rem; }
+  .live-bar.is-open .lb-price { font-size: 0.84rem; }
+  .live-bar.is-open .lb-who { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .live-bar.is-open .lb-crate { font-size: 0.68rem; white-space: nowrap; overflow: hidden; }
+  .live-bar.is-open .lb-crate .lb-from { display: none; }
+  @keyframes lbTileIn {
+    from { opacity: 0; translate: 0 10px; }
+    to { opacity: 1; translate: none; }
+  }
+
+  /* Rare and up: the picture glows in its rarity's colour, open or not. */
+  .lb-pull.is-special .lb-media { box-shadow: 0 0 0 0 transparent, 0 0 16px -2px var(--rarity-color); }
+  .live-bar.is-open .lb-pull.is-special .lb-media {
+    background: #fff;
+    box-shadow: 0 0 22px -4px var(--rarity-color), inset 0 0 0 999px color-mix(in srgb, var(--rarity-color) 7%, transparent);
+  }
+
+  /* A pull arriving pops in where it lands; a good one shakes as it does. */
+  .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .lb-pull.is-special.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), lbShake 0.5s ease 0.45s; }
+  @keyframes lbArrive {
+    from { opacity: 0; scale: 0.7; }
+    to { opacity: 1; scale: 1; }
+  }
+  @keyframes lbShake {
+    20% { rotate: -5deg; }
+    40% { rotate: 4deg; }
+    60% { rotate: -3deg; }
+    80% { rotate: 2deg; }
+  }
+
+  /* Minimized: a pill in the corner that brings it back. */
+  body.live-bar-min .live-bar-pill {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 45;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  :root[data-theme="light"] body.live-bar-min .live-bar-pill { background: #fff; }
+
+  /* The corner dock was desktop's live feed; the bar is now. It stays the
+     phone's (see the mobile query). */
+  .pull-dock { display: none !important; }
+}
+
+@media (max-width: 640px) {
+  .live-bar, .live-bar-pill { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-bar { transition: none; }
+  .lb-dot::after, .lb-pull.is-arriving, .live-bar.is-open .lb-pull { animation: none !important; }
+}
+@media (min-width: 641px) {
+  /* Open, the tiles' own entrance would otherwise win over the arrival pop. */
+  .live-bar.is-open .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .live-bar.is-open .lb-pull.is-special.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), lbShake 0.5s ease 0.45s; }
+}
+@media (min-width: 641px) {
+  /* The pinned side panels are sized to the viewport; with the bar showing
+     their last 52px would sit under it. */
+  body:not(.live-bar-min) .market-filters {
+    max-height: calc(100vh - var(--pin-top) - var(--market-head-h, 52px) - 24px - var(--live-bar-h));
+  }
+  body:not(.live-bar-min) .account-sidebar {
+    max-height: calc(100vh - var(--pin-top) - 16px - var(--live-bar-h));
+  }
+}
+@media (min-width: 641px) {
+  /* Open, the tiles take the full width and the controls drop into a strip
+     beneath them — otherwise the label kept an empty column down the left
+     of the row the whole height of the bar. */
+  .live-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "label view all min";
+  }
+  .lb-label { grid-area: label; }
+  .lb-view { grid-area: view; }
+  .lb-all { grid-area: all; }
+  .lb-min { grid-area: min; }
+  .live-bar.is-open {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "view view view view"
+      "label . all min";
+  }
+  .live-bar.is-open .lb-label,
+  .live-bar.is-open .lb-all,
+  .live-bar.is-open .lb-min { height: 44px; align-self: center; }
+
+  /* The theme and sound buttons ride up with the bar as it opens. */
+  .rail-bottom { transition: bottom 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
+  body:not(.live-bar-min):has(.live-bar.is-open) .rail-bottom { bottom: calc(248px + 14px); }
+}
+
+/* The cardboard box in the round is framed for its open flaps, which
+   shrinks it ~10% inside its canvas; the canvas grows by as much, outward
+   into the slot's margin, so the box stays the size it was and the slot
+   doesn't move. */
+.box-slot.is-od .box-canvas { width: 212px; height: 212px; margin: -11px; }
+@media (max-width: 640px) {
+  .box-slot.is-od .box-canvas { width: 116px; height: 116px; margin: -6px; }
+}
+
+@media (min-width: 641px) {
+  /* At rest the bar says three things per pull: the picture, the name, the
+     price. Who pulled it, the multiple and the crate it came out of wait for
+     the open bar, where there's room to read them — and the crate line
+     there is the way into the crate. */
+  .live-bar:not(.is-open) .lb-mult,
+  .live-bar:not(.is-open) .lb-crate { display: none; }
+  .live-bar:not(.is-open) .lb-track { gap: 4px; padding: 0 12px; }
+  .live-bar:not(.is-open) .lb-pull { padding: 0 14px 0 4px; }
+  .live-bar:not(.is-open) .lb-pull.is-alt { background: var(--control-fill); }
+  .live-bar:not(.is-open) .lb-pull:hover { background: var(--control-fill-hover); }
+}
+
+/* ==========================================================================
+   Home: crate cards, grails and How it works, in the layout of the team's
+   other Chosen build — adapted to this site's scale and its no-outline
+   rule (their cards are ruled in black; these lift on the page's own
+   surface tones instead).
+   ========================================================================== */
+
+/* --- Crate cards ------------------------------------------------------- */
+#homeCrates .home-crate {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-1);
+}
+.crate-panel {
+  --crate-tint: #efe3d4;
+  position: relative;
+  padding: 14px 14px 12px;
+  background: linear-gradient(var(--crate-tint), transparent);
+}
+.home-crate[data-line="sneakers"] .crate-panel { --crate-tint: #f3ddcb; }
+.home-crate[data-line="streetwear"] .crate-panel { --crate-tint: #dfe6f1; }
+.home-crate[data-line="collectibles"] .crate-panel { --crate-tint: #f5e7c6; }
+.home-crate[data-line="stocks"] .crate-panel { --crate-tint: #d8eedd; }
+:root:not([data-theme="light"]) .crate-panel { --crate-tint: rgba(255, 255, 255, 0.07); }
+.crate-brand {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  background: var(--surface-1);
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+#homeCrates .home-crate-stage { aspect-ratio: 5 / 4; background: none; }
+.crate-could {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.crate-could-thumbs { display: flex; gap: 4px; }
+.crate-could-thumbs img {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  border-radius: var(--r-xs);
+  background: #fff;
+  object-fit: contain;
+}
+.crate-body { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; }
+.crate-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.crate-title .category-tier-name { font-size: 1.1rem; }
+.crate-price { font-size: 1.05rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.crate-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.crate-facts span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.crate-facts i { font-style: normal; font-size: 0.66rem; color: var(--text-dim); }
+.crate-facts b { font-size: 0.82rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crate-supply { height: 4px; border-radius: var(--r-pill); background: var(--control-fill); overflow: hidden; }
+.crate-supply i { display: block; height: 100%; border-radius: inherit; background: var(--text); }
+#homeCrates .home-crate-open { width: 100%; margin-top: 2px; }
+
+/* --- Grails: the clean collectibles grid --------------------------------- */
+#homeGrails {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  gap: 28px 14px;
+}
+#homeGrails .home-grail {
+  grid-column: auto;
+  grid-row: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+#homeGrails .home-grail:hover { transform: none; }
+#homeGrails .home-grail-media {
+  position: relative;
+  flex: none;
+  aspect-ratio: 1;
+  min-height: 0;
+  margin-bottom: 8px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#homeGrails .home-grail:hover .home-grail-media { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.1); }
+#homeGrails .home-grail-media img { width: 100%; height: 100%; object-fit: contain; }
+.home-grail-chip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, currentColor 12%, #fff);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+#homeGrails .home-grail-name,
+#homeGrails .home-grail:nth-child(n) .home-grail-name {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#homeGrails .home-grail-foot,
+#homeGrails .home-grail:nth-child(n) .home-grail-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#homeGrails .home-grail-foot b,
+#homeGrails .home-grail:nth-child(n) .home-grail-foot b {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--text);
+}
+#homeGrails .home-grail-foot span { font-size: 0.68rem; color: var(--text-faint); }
+
+/* --- How it works: three across, joined by dotted arrows ----------------- */
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px 72px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.how-step { position: relative; }
+/* The arrow into the next step, in the gap between the pictures. */
+.how-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 96px;
+  right: -58px;
+  width: 44px;
+  height: 12px;
+  background:
+    radial-gradient(circle, var(--text) 1.3px, transparent 1.6px) 0 50% / 7px 4px repeat-x;
+  -webkit-mask: linear-gradient(90deg, #000 78%, transparent 78%);
+  mask: linear-gradient(90deg, #000 78%, transparent 78%);
+}
+.how-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 97px;
+  right: -58px;
+  width: 8px;
+  height: 8px;
+  border-top: 1.8px solid var(--text);
+  border-right: 1.8px solid var(--text);
+  transform: translateY(-2px) rotate(45deg);
+}
+.how-art {
+  position: relative;
+  height: 200px;
+  margin-bottom: 26px;
+}
+/* 1 — three crates, stacked. */
+.how-crate { position: absolute; width: 56%; object-fit: contain; filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.14)); }
+.how-crate-a { left: 2%; top: 4%; transform: rotate(-4deg); }
+.how-crate-b { right: 2%; top: 0; transform: scaleX(-1) rotate(-3deg); }
+.how-crate-c { left: 22%; top: 30%; width: 62%; z-index: 1; }
+/* 2 — three slabs fanned, the middle one picked. */
+.how-art-pick { display: flex; align-items: center; justify-content: center; }
+.how-card { height: 170px; object-fit: contain; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.16)); }
+.how-card-l { position: absolute; left: 12%; transform: rotate(-9deg) scale(0.86); opacity: 0.9; }
+.how-card-r { position: absolute; right: 12%; transform: rotate(9deg) scale(0.86); opacity: 0.9; }
+.how-card-picked { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; transform: translateY(-8px); }
+.how-card-c { height: 184px; }
+.how-chip {
+  margin-top: -14px;
+  padding: 5px 13px;
+  border-radius: var(--r-pill);
+  background: var(--positive);
+  color: #062b12;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+}
+/* 3 — the three ways out. */
+.how-art-exits { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.how-exit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+:root[data-theme="light"] .how-exit { background: #fff; }
+.how-exit svg { flex: 0 0 auto; color: var(--text-dim); }
+.how-num {
+  display: block;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--text);
+}
+.how-step h3 {
+  margin: 4px 0 8px;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.how-step p { max-width: 34ch; margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-dim); }
+
+@media (max-width: 1000px) and (min-width: 641px) {
+  #homeGrails { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .how-steps { gap: 32px 40px; }
+  .how-step:not(:last-child)::after,
+  .how-step:not(:last-child)::before { display: none; }
+}
+
+@media (max-width: 640px) {
+  #homeGrails { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 10px; }
+  #homeGrails .home-grail:nth-child(1),
+  #homeGrails .home-grail:nth-child(6) { grid-column: auto; }
+  .how-steps { grid-template-columns: 1fr; gap: 36px; }
+  .how-step:not(:last-child)::after,
+  .how-step:not(:last-child)::before { display: none; }
+  .how-art { height: 180px; margin-bottom: 18px; }
+  .crate-facts b { font-size: 0.74rem; }
+}
+
+/* --- Grails as slot reels (spinGrail in app.js) -------------------------
+   Each tile is a window onto a vertical strip of pieces. At rest the strip
+   holds one; a spin fills it with a run of others and slides it up, blurred
+   for the fast part, stopping hard on the new piece. Name, price and the
+   Grail tag ease out for the spin and back in when it lands. */
+#homeGrails .home-grail-media {
+  position: relative;
+  padding: 0;
+  overflow: visible;
+  transition: transform 0.2s ease, box-shadow 0.35s ease;
+}
+.grail-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #fff;
+}
+/* The reel's top and bottom fade into the window, so pieces arrive and
+   leave rather than being cut by its edge. */
+.grail-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(#fff, transparent 14%, transparent 86%, #fff);
+}
+.grail-strip { display: block; will-change: transform, filter; }
+.grail-strip.is-blurred { filter: blur(2.5px); }
+.grail-item { display: block; width: 100%; aspect-ratio: 1; padding: 14px; }
+.grail-item img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.grail-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, #f7b733, #f56a3d);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
+}
+.home-grail.is-grail .grail-badge { opacity: 1; transform: none; }
+/* A grail glows warm under its window — no stroke round it. */
+#homeGrails .home-grail.is-grail .home-grail-media { box-shadow: 0 12px 30px -10px rgba(245, 106, 61, 0.55), 0 0 0 0 transparent; }
+
+.home-grail-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
+}
+.home-grail-meta .home-grail-name { flex: 1; min-width: 0; }
+.home-grail-price { font-size: 0.9rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* During a spin: text and tag out, glow off. */
+.home-grail.is-changing .home-grail-meta { opacity: 0; transform: translateY(4px); }
+.home-grail.is-changing .grail-badge { opacity: 0; transform: translateY(-4px); }
+#homeGrails .home-grail.is-changing .home-grail-media { box-shadow: none; }
+
+/* One light sweep across a grail as it lands. */
+.grail-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.grail-shine::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  transform: skewX(-12deg);
+}
+.home-grail.is-shining .grail-shine::before { animation: grailSweep 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes grailSweep {
+  from { left: -60%; }
+  to { left: 130%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grail-strip { transition: none !important; }
+  .home-grail.is-shining .grail-shine::before { animation: none; }
+}

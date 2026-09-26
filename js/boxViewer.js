@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
 const MODEL_URL = "assets/models/nike_shoe_box/scene.gltf";
 const LID_NODE_NAME = "Plane_Plane_002_Material_001"; // hinge pivot baked into the source animation
@@ -35,8 +36,29 @@ function loadPrinterModel() {
 }
 loadPrinterModel().catch(() => {});
 
+// The CHOSEN × ODTO shipping box: kraft cardboard, four flaps, and its own
+// baked clips — Idle, Charge, Open. Shared with the other Chosen build on the
+// team (same file, same flaps), used on Home. Meshopt-compressed with webp
+// textures, so the loader needs the decoder; the textures are its own, so it
+// never takes a crate skin.
+const OD_MODEL_URL = "assets/models/box-chosen-od.glb";
+let odModelPromise = null;
+function loadOdModel() {
+  if (!odModelPromise) {
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    odModelPromise = loader.loadAsync(OD_MODEL_URL).then((gltf) => {
+      // Clips travel with the scene so every clone can find them.
+      gltf.scene.userData.clips = gltf.animations;
+      return gltf.scene;
+    });
+  }
+  return odModelPromise;
+}
+
 function loadModelFor(kind) {
-  return kind === "printer" ? loadPrinterModel() : loadModel();
+  if (kind === "printer") return loadPrinterModel();
+  if (kind === "od") return loadOdModel();
+  return loadModel();
 }
 
 // Per-crate finishes, keyed by crate. Replaces the model's own branded
@@ -260,7 +282,13 @@ function angleToZero(angle) {
 function buildRig(root) {
   const lid = root.getObjectByName(LID_NODE_NAME);
 
-  const box = new THREE.Box3().setFromObject(root);
+  // Frame by the body when the model has one: the od box's flaps stand
+  // straight up in its rest pose, and fitting those made the box itself
+  // come out half the size of everything else on the page.
+  // (World matrices first: measuring a child on its own would skip the
+  // scale its parent nodes carry.)
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root.getObjectByName("CrateBody") ?? root);
   const size = new THREE.Vector3();
   box.getSize(size);
   const center = new THREE.Vector3();
@@ -363,6 +391,57 @@ function buildPaperSheet(bounds) {
   return { sheet, parkedY, printedY, print };
 }
 
+// The box's own kraft texture is already lit for display; under the
+// exposure the collage-skinned boxes need it blew out to beige. Matte board
+// either way.
+const OD_EXPOSURE = 1.05;
+function settleOdMaterials(root) {
+  root.traverse((node) => {
+    if (!node.isMesh || !node.material) return;
+    node.material = node.material.clone();
+    node.material.envMapIntensity = 0.9;
+  });
+}
+
+// The od box's outline with its Open clip played to the end, in the
+// model's own space (before buildRig scales and centres it). Posed and put
+// back: stopping the mixer restores every node it touched.
+function measureOpenOutline(root, clips = []) {
+  const clip = clips.find((c) => c.name === "Open");
+  if (!clip) return null;
+  const mixer = new THREE.AnimationMixer(root);
+  const action = mixer.clipAction(clip);
+  action.setLoop(THREE.LoopOnce, 1);
+  action.clampWhenFinished = true;
+  action.play();
+  mixer.update(clip.duration);
+  root.updateMatrixWorld(true);
+  const outline = new THREE.Box3().setFromObject(root);
+  mixer.stopAllAction();
+  mixer.uncacheRoot(root);
+  root.updateMatrixWorld(true);
+  return outline;
+}
+
+// Shrinks the prop inside its frame until the open outline fits, keeping
+// its floor where it was so it doesn't drift up the canvas. The camera sees
+// about ±0.91 units across at the prop (fov 30° from ~3.4 away); 0.86 leaves
+// a margin. Returns the zoom, so a caller can size its canvas up by the
+// same factor and keep the box itself as big as before.
+const FRAME_HALF = 0.86;
+function fitForOpen(root, group, outline, bounds) {
+  const s = root.scale.x;
+  const cx = -root.position.x / s;
+  const cy = -root.position.y / s;
+  const halfWide = Math.max(cx - outline.min.x, outline.max.x - cx) * s;
+  const top = (outline.max.y - cy) * s;
+  const bodyH = bounds.maxY - bounds.minY;
+  const zoom = Math.min(1, FRAME_HALF / halfWide, (FRAME_HALF + bodyH / 2) / (top + bodyH / 2));
+  group.scale.setScalar(zoom);
+  group.position.y = -(1 - zoom) * (bodyH / 2);
+  return zoom;
+}
+
 function configureRenderer(renderer) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -394,6 +473,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 
         const root = baseModel.clone(true);
         if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
+        if (kind === "od") settleOdMaterials(root);
         // Snapshot always represents the closed/idle state (same as the
         // box's lid never being open in it) — the paper sheet doesn't need
         // to exist in this scene at all.
@@ -404,6 +484,10 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
         renderer.render(scene, camera);
 
         const dataUrl = canvas.toDataURL("image/png");
+        // dispose() frees three's GPU objects but not the WebGL context —
+        // that waits for garbage collection, and a browser allows ~16 live.
+        // Losing it explicitly hands the slot back now.
+        renderer.forceContextLoss();
         renderer.dispose();
         return dataUrl;
       })
@@ -427,11 +511,30 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 // without moving or resizing the prop: the square framing is kept and the
 // extra height is sky above it. For a box that opens where its lid would
 // otherwise swing out past the top edge of a square canvas.
-export async function createBoxViewer(canvas, tierKey = "", kind = "box", { headroom = 0 } = {}) {
+// `fitOpen` (od box only) frames for the box *open*, not shut: its flaps
+// fold out past its own sides, and a viewer that's going to open would
+// otherwise cut them off at the canvas edge. See fitForOpen.
+export async function createBoxViewer(canvas, tierKey = "", kind = "box", { headroom = 0, fitOpen = false } = {}) {
   const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
   if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
+  if (kind === "od") settleOdMaterials(root);
+  const openOutline = kind === "od" && fitOpen ? measureOpenOutline(root, baseModel.userData.clips) : null;
   const { scene, camera, group, lid, bounds } = buildRig(root);
+  const zoom = openOutline ? fitForOpen(root, group, openOutline, bounds) : 1;
+
+  // The od box animates its own flaps from baked clips rather than having
+  // one hinge swung by hand: Idle loops while it waits, Open plays once and
+  // holds on its last frame.
+  let mixer = null;
+  let clips = null;
+  let openAction = null;
+  if (kind === "od") {
+    mixer = new THREE.AnimationMixer(root);
+    const byName = (n) => (baseModel.userData.clips || []).find((c) => c.name === n);
+    clips = { idle: byName("Idle"), open: byName("Open") };
+    if (clips.idle) mixer.clipAction(clips.idle).play();
+  }
 
   let paper = null;
   if (kind === "printer") {
@@ -442,6 +545,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   configureRenderer(renderer);
+  if (kind === "od") renderer.toneMappingExposure = OD_EXPOSURE;
   applyStudioEnvironment(scene, renderer);
 
   function resize() {
@@ -470,7 +574,8 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   let openProgress = 0; // 0 closed -> 1 open, latched once finished
   let running = true;
   let lastT = performance.now();
-  const openDuration = kind === "printer" ? PRINT_DURATION_MS : OPEN_DURATION_MS;
+  const openDuration =
+    kind === "printer" ? PRINT_DURATION_MS : kind === "od" && clips?.open ? clips.open.duration * 1000 : OPEN_DURATION_MS;
 
   function easeTowardZero(dt, speedMul) {
     const current = angleToZero(group.rotation.y);
@@ -495,6 +600,8 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
         const eased = 1 - Math.pow(1 - p, 3);
         openProgress = eased;
         paper.sheet.position.y = paper.parkedY + (paper.printedY - paper.parkedY) * eased;
+      } else if (kind === "od") {
+        openProgress = p; // the clip itself carries the easing
       } else {
         openProgress = easeOutBack(p);
         if (lid) lid.rotation.x = THREE.MathUtils.degToRad(LID_OPEN_DEG) * openProgress;
@@ -512,6 +619,19 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       }
     }
 
+    if (mixer) {
+      // Open runs on the clock, not on frames: its pose is a pure function
+      // of time since open(), so the flaps are exactly as far open as the
+      // burst timed off the same moment expects, however few frames a slow
+      // or busy page manages to draw. Idle, which nothing waits on, just
+      // ticks along with the frames.
+      if (openAction) {
+        openAction.time = Math.min((t - openStartTime) / 1000, clips.open.duration);
+        mixer.update(0);
+      } else {
+        mixer.update(dt);
+      }
+    }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
@@ -535,13 +655,35 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       facing = false;
       openStartTime = performance.now();
       if (paper) paper.sheet.visible = true;
+      if (mixer && clips?.open) {
+        if (clips.idle) mixer.clipAction(clips.idle).stop();
+        openAction = mixer.clipAction(clips.open);
+        openAction.reset();
+        openAction.setLoop(THREE.LoopOnce, 1);
+        openAction.clampWhenFinished = true;
+        openAction.play();
+      }
     },
+    // How long after open() the box is open enough for something to come
+    // out of it. The shoebox lid is out of the way almost at once; the od
+    // box waits for its flaps to finish folding back, so nothing leaves
+    // through a flap that's still closing over it.
+    get mouthClearMs() {
+      return kind === "od" ? openDuration * 0.92 : 250;
+    },
+    // How far fitOpen shrank the prop in its frame (1 = not at all).
+    zoom,
     reset() {
       opening = false;
       facing = false;
       openProgress = 0;
       group.rotation.y = 0;
       if (lid) lid.rotation.x = 0;
+      if (mixer) {
+        mixer.stopAllAction();
+        openAction = null;
+        if (clips?.idle) mixer.clipAction(clips.idle).reset().play();
+      }
       if (paper) {
         paper.sheet.visible = false;
         paper.sheet.position.y = paper.parkedY;
@@ -550,6 +692,13 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
     dispose() {
       running = false;
       ro.disconnect();
+      if (mixer) mixer.stopAllAction();
+      // Without this every disposed viewer kept its context until GC. The
+      // billboard alone swaps its crate every 7s, so a couple of minutes on
+      // Home used up the browser's ~16 — after which three couldn't create
+      // a renderer at all ("reading 'precision'") and the next 3D view on
+      // any screen threw instead of drawing.
+      renderer.forceContextLoss();
       renderer.dispose();
     },
   };

@@ -14,7 +14,7 @@ import { playClick, playHover, playPop, playDing, playFeedChime, toggleMuted, is
 import { ICONS } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
-import { liquidTabs, swapText } from "./motion.js";
+import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 
 // ---- Prize configuration -------------------------------------------------
@@ -145,6 +145,14 @@ const LEGACY_TIER_KEYS = {
   twoFifty: "streetwear",
   thousand: "collectibles",
 };
+
+// Which 3D prop a crate is. Every ODTO crate is the CHOSEN × ODTO cardboard
+// box (shared with the team's other Chosen build) — on Home, on Drops, in
+// the reel and in the round itself. Stocks keeps its printer: it isn't an
+// ODTO crate and has nothing to ship.
+function crateBoxKind(cat) {
+  return cat.boxKind === "printer" ? "printer" : "od";
+}
 
 function tierKeyOf(key) {
   if (CATEGORIES[key]) return key;
@@ -286,6 +294,10 @@ let batchRemaining = 0; // still to auto-chain after this one
 let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
+// True from the moment a crate is paid for until a box is picked. The Back
+// button already stays hidden through that window; this closes the other
+// ways out the header offers (see the guard above the nav wiring).
+let roundAwaitingPick = false;
 let viewers = [null, null, null];
 let reelCellWidth = 0;
 let toastTimer = null;
@@ -341,6 +353,7 @@ const creditToast = document.getElementById("creditToast");
 const creditToastIcon = document.getElementById("creditToastIcon");
 const creditToastText = document.getElementById("creditToastText");
 const paymentModal = document.getElementById("paymentModal");
+const paymentModalHint = paymentModal.querySelector(".payment-modal-hint");
 const paymentTierLabel = document.getElementById("paymentTierLabel");
 const payWithCredits = document.getElementById("payWithCredits");
 const payWithCash = document.getElementById("payWithCash");
@@ -1124,6 +1137,7 @@ function renderRecentPulls() {
   renderPullsCarousel();
   renderPullDock();
   renderHomePulls();
+  renderLiveBar();
 }
 
 function renderPullsCarousel() {
@@ -1216,7 +1230,7 @@ function renderPullDock() {
     pullDockCrate.dataset.tier = tierKey;
     // The crate's own box, from the same renderer the Drops cards use.
     // Cached per crate, so this is a map hit after the first pull from it.
-    getBoxSnapshot(tierKey, cat.boxKind ?? "box").then((url) => {
+    getBoxSnapshot(tierKey, crateBoxKind(cat)).then((url) => {
       if (pullDockCrate.dataset.tier === tierKey) pullDockCrateBox.src = url;
     });
   };
@@ -1261,6 +1275,205 @@ function renderPullDock() {
     // A hidden tab never fires the animation, so this is the floor.
     setTimeout(() => outgoing.remove(), 700);
   }
+}
+
+// ---- Live pulls bar (desktop) ----------------------------------------------
+// The whole bottom edge, the way the team's other build does it: one row at
+// rest, big tiles on hover. What it keeps from ours is how pulls arrive — a
+// new one spawns at the left and pushes the rest along, rather than the row
+// drifting past on a loop — and that everything in it goes somewhere: a
+// tile opens the pull, its crate line opens the crate.
+
+const LIVE_BAR_SIZE = 24;
+const LIVE_BAR_KEY = "gotcha_live_bar";
+const liveBar = document.getElementById("liveBar");
+const liveBarTrack = document.getElementById("liveBarTrack");
+const liveBarView = document.getElementById("liveBarView");
+const liveBarLabel = document.getElementById("liveBarLabel");
+const liveBarPill = document.getElementById("liveBarPill");
+const liveBarTiles = new Map(); // pull ts -> tile element
+// Alternate tiles take a shaded ground so neighbours read as separate items
+// at rest. The shade is fixed when a tile is made — by nth-child it would
+// flip on every tile each time a new pull pushed in at the front.
+let liveBarSeq = 0;
+
+function liveBarTileHTML(p) {
+  const tierKey = tierKeyOf(p.tierKey);
+  const cat = CATEGORIES[tierKey];
+  // What it came out at against what the crate cost — the number that makes
+  // a pull worth looking at twice. Only shown when it's a real multiple.
+  const mult = cat.price ? p.price / cat.price : 0;
+  const multHTML = mult >= 1.5 ? `<em class="lb-mult">${mult >= 10 ? Math.round(mult) : mult.toFixed(1)}×</em>` : "";
+  return `
+    <span class="lb-media"><img src="${p.image}" alt="" loading="lazy"></span>
+    <span class="lb-info">
+      <span class="lb-name">${p.name}</span>
+      <span class="lb-price">$${p.price.toLocaleString()}${multHTML}</span>
+      <span class="lb-who"><b>${p.isPlayer ? "You" : "@" + p.username}</b> <span class="lb-time" data-ts="${p.ts}">${relativeTime(p.ts)}</span></span>
+      <button class="lb-crate" data-tier="${tierKey}" title="Open the ${cat.badge} crate">
+        <span class="lb-from">from</span> <b>${cat.badge}</b> <i>$${cat.price.toLocaleString()} crate</i>
+      </button>
+    </span>`;
+}
+
+function makeLiveBarTile(p) {
+  const special = SPECIAL_PULL_RARITIES.has(p.rarity);
+  const tile = document.createElement("div");
+  tile.className = `lb-pull${liveBarSeq++ % 2 ? " is-alt" : ""}${special ? " is-special" : ""}${p.rarity === "legendary" ? " is-legendary" : ""}`;
+  tile.dataset.pullTs = p.ts;
+  tile.tabIndex = 0;
+  tile.setAttribute("role", "button");
+  tile.setAttribute("aria-label", `${p.name}, $${p.price.toLocaleString()}`);
+  if (special) tile.style.setProperty("--rarity-color", RARITY_META[p.rarity].color);
+  tile.innerHTML = liveBarTileHTML(p);
+  tile.addEventListener("click", (e) => {
+    const crate = e.target.closest(".lb-crate");
+    playClick();
+    if (crate) {
+      e.stopPropagation();
+      openCratePage(crate.dataset.tier);
+      return;
+    }
+    openPullDetail(p);
+  });
+  tile.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openPullDetail(p);
+    }
+  });
+  return tile;
+}
+
+function renderLiveBar() {
+  if (!liveBar) return;
+  const feed = livePullFeed(LIVE_BAR_SIZE);
+  const keep = new Set(feed.map((p) => String(p.ts)));
+  const firstRender = liveBarTiles.size === 0;
+
+  // FLIP: where everything is now, before the new pulls push in.
+  const before = new Map();
+  if (!firstRender) liveBarTiles.forEach((el, ts) => before.set(ts, el.offsetLeft));
+
+  // Pulls that fell off the end go.
+  liveBarTiles.forEach((el, ts) => {
+    if (!keep.has(ts)) {
+      el.remove();
+      liveBarTiles.delete(ts);
+    }
+  });
+
+  // New ones in at the front, newest first.
+  const arrivals = [];
+  feed
+    .slice()
+    .reverse()
+    .forEach((p) => {
+      const ts = String(p.ts);
+      if (liveBarTiles.has(ts)) return;
+      const tile = makeLiveBarTile(p);
+      liveBarTrack.prepend(tile);
+      liveBarTiles.set(ts, tile);
+      arrivals.push(tile);
+    });
+
+  // Times drift even when nothing new arrives.
+  liveBarTrack.querySelectorAll(".lb-time").forEach((el) => (el.textContent = relativeTime(Number(el.dataset.ts))));
+
+  if (firstRender || !arrivals.length || !liveBarTrack.offsetParent) return;
+
+  // …and the rest slide over to make room, from where they were.
+  liveBarTiles.forEach((el, ts) => {
+    if (!before.has(ts)) return;
+    const dx = before.get(ts) - el.offsetLeft;
+    if (dx) el.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+  });
+  arrivals.forEach((el) => {
+    el.classList.add("is-arriving");
+    el.addEventListener("animationend", () => el.classList.remove("is-arriving"), { once: true });
+    setTimeout(() => el.classList.remove("is-arriving"), 900); // a hidden tab never ends it
+  });
+}
+
+// Open on hover (with a little grace either side so crossing the bar on
+// the way somewhere doesn't pop it), pinned open by clicking the label,
+// and open while anything inside has keyboard focus.
+let liveBarPinned = false;
+let liveBarHoverTimer = null;
+function setLiveBarOpen(open) {
+  liveBar.classList.toggle("is-open", open);
+  liveBarLabel.setAttribute("aria-expanded", String(open));
+}
+liveBar.addEventListener("mouseenter", () => {
+  clearTimeout(liveBarHoverTimer);
+  liveBarHoverTimer = setTimeout(() => setLiveBarOpen(true), 90);
+});
+liveBar.addEventListener("mouseleave", () => {
+  clearTimeout(liveBarHoverTimer);
+  if (!liveBarPinned) liveBarHoverTimer = setTimeout(() => setLiveBarOpen(false), 260);
+});
+liveBar.addEventListener("focusin", () => setLiveBarOpen(true));
+liveBar.addEventListener("focusout", (e) => {
+  if (!liveBarPinned && !liveBar.contains(e.relatedTarget)) setLiveBarOpen(false);
+});
+liveBar.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    liveBarPinned = false;
+    setLiveBarOpen(false);
+    liveBarLabel.focus();
+  }
+});
+liveBarLabel.addEventListener("click", () => {
+  playClick();
+  liveBarPinned = !liveBarPinned;
+  setLiveBarOpen(liveBarPinned);
+});
+// A vertical wheel over the row scrolls it sideways — it's the only
+// direction the row goes.
+liveBarView.addEventListener(
+  "wheel",
+  (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      liveBarView.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  },
+  { passive: false }
+);
+
+// See all: the full strip, on Drops.
+document.getElementById("liveBarAll").addEventListener("click", () => {
+  playClick();
+  liveBarPinned = false;
+  setLiveBarOpen(false);
+  if (dropLine !== "all") dropLine = "all";
+  document.querySelector('.nav-tab[data-nav="screen-category"]').click();
+  setTimeout(() => document.getElementById("recentPulls")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+});
+
+// Minimize to a pill, remembered.
+function setLiveBarMinimized(min) {
+  document.body.classList.toggle("live-bar-min", min);
+  liveBarPinned = false;
+  setLiveBarOpen(false);
+  try {
+    localStorage.setItem(LIVE_BAR_KEY, min ? "min" : "open");
+  } catch {
+    // Not remembering is survivable.
+  }
+}
+document.getElementById("liveBarMin").addEventListener("click", () => {
+  playClick();
+  setLiveBarMinimized(true);
+});
+liveBarPill.addEventListener("click", () => {
+  playClick();
+  setLiveBarMinimized(false);
+});
+try {
+  if (localStorage.getItem(LIVE_BAR_KEY) === "min") document.body.classList.add("live-bar-min");
+} catch {
+  // Default to showing it.
 }
 
 // ---- The dock: collapse, and drag it wherever ---------------------------
@@ -1354,7 +1567,6 @@ function openPullDetail(pull) {
   pullDetailModal.querySelector(".prize-modal-card").style.setProperty("--rarity-color", meta.color);
   pullDetailRarity.textContent = meta.label;
   pullDetailRarity.style.color = meta.color;
-  pullDetailRarity.style.borderColor = meta.color;
   pullDetailImage.src = pull.image;
   pullDetailImage.alt = pull.name;
   pullDetailName.textContent = pull.name;
@@ -1683,7 +1895,7 @@ function renderCategories() {
     // views, and ten of them idling behind Home took Home's own away.
     if (screenCategoryEl.classList.contains("active")) {
       const canvas = card.querySelector(".category-box-canvas");
-      createBoxViewer(canvas, key, cat.boxKind ?? "box").then((viewer) => {
+      createBoxViewer(canvas, key, crateBoxKind(cat)).then((viewer) => {
         if (!canvas.isConnected || !screenCategoryEl.classList.contains("active")) return viewer.dispose();
         categoryBoxViewers.push(viewer);
       });
@@ -1703,13 +1915,15 @@ function openPaymentPicker(key, quantity = 1) {
   pendingQuantity = quantity;
   const cat = CATEGORIES[key];
 
-  // Stocks settle in Cash only (real USDC, not a Credits reward balance) —
-  // skip the picker entirely and charge Cash straight away. tryPurchase
-  // itself handles routing to Add Funds if the balance falls short.
-  if (cat.cashOnly) {
-    tryPurchase("cash");
-    return;
-  }
+  // Stocks settle in Cash only (real USDC, not a Credits reward balance), so
+  // the picker shows the one option it has. It used to be skipped, which
+  // made every Stocks "Open" — on Home as well as Drops — a one-tap charge
+  // with nothing between the tap and the money leaving. One option is still
+  // a confirmation.
+  payWithCredits.classList.toggle("hidden", !!cat.cashOnly);
+  paymentModalHint.textContent = cat.cashOnly
+    ? "Stocks settle in Cash, and a Cash Out pays back into Cash."
+    : "Whichever you choose, a Cash Out pays back into that same balance.";
 
   const wallet = player.getWallet();
   const totalCost = cat.price * quantity;
@@ -1829,9 +2043,12 @@ function resetSlotsUI() {
 async function mountViewers() {
   const cat = CATEGORIES[currentCategoryKey];
   const skin = currentCategoryKey;
-  const kind = cat.boxKind ?? "box";
+  const kind = crateBoxKind(cat);
+  // The cardboard box opens its flaps out past its own sides: framed for
+  // that, on a canvas a touch bigger to match (see .box-slot.is-od).
+  slots.forEach((s) => s.classList.toggle("is-od", kind === "od"));
   const canvases = slots.map((s) => s.querySelector(".box-canvas"));
-  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind)));
+  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind, { fitOpen: kind === "od" })));
   mounted.forEach((viewer, i) => {
     viewers[i] = viewer;
     const slot = slots[i];
@@ -1930,6 +2147,7 @@ async function startRound(key, currency) {
   boxPrizes.forEach((prize) => revealImageFor(prize, key));
   selectedIndex = null;
   roundLocked = false;
+  roundAwaitingPick = true;
   commitFairness(boxPrizes); // not awaited — badge appears whenever the hash resolves
 
   // No price here — what the crate cost belongs on the Drops page you pick
@@ -1951,7 +2169,7 @@ async function startRound(key, currency) {
 
   showScreen(screenGame);
 
-  const snapshotUrl = await getBoxSnapshot(key, cat.boxKind ?? "box");
+  const snapshotUrl = await getBoxSnapshot(key, crateBoxKind(cat));
   buildReel(snapshotUrl);
   await spinReel();
 
@@ -1966,6 +2184,7 @@ async function startRound(key, currency) {
 function onPick(index) {
   if (roundLocked) return;
   roundLocked = true;
+  roundAwaitingPick = false;
   selectedIndex = index;
   playPop();
 
@@ -1997,7 +2216,7 @@ function onPick(index) {
   setTimeout(async () => {
     await showPrizeModal(finalPrize, { streak, multiplier });
     slots[index].classList.add("open");
-  }, MODAL_DELAY_MS);
+  }, Math.max(MODAL_DELAY_MS, viewers[index]?.mouthClearMs ?? 0)); // after the box is open
 }
 
 // Pointer tilt across the row of opened crates, plus the idle lean. The
@@ -2075,7 +2294,13 @@ function openSlot(index, { isYours, revealCard = true }) {
 
   slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
-  if (revealCard) slot.classList.add("open");
+  // The card comes up once the box is open enough to let it out — at once
+  // for the shoebox lid, after the cardboard box's flaps have folded back.
+  const lead = viewers[index] ? Math.max(0, viewers[index].mouthClearMs - 250) : 0;
+  if (revealCard) {
+    if (lead) setTimeout(() => slot.classList.add("open"), lead);
+    else slot.classList.add("open");
+  }
   // The printer's sheet comes out printed with this slot's certificate.
   if (viewers[index]?.setPaper) viewers[index].setPaper(prize.image);
   if (viewers[index]) viewers[index].open();
@@ -2291,7 +2516,8 @@ function applyTheme(theme, { remember = true } = {}) {
 
 themeBtn.addEventListener("click", () => {
   playClick();
-  applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light");
+  const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  themeWipe(themeBtn, () => applyTheme(next));
 });
 // Sync the label with whatever the head script already applied, without
 // saving it: only an actual click on the switch is a preference.
@@ -2359,6 +2585,26 @@ window.addEventListener(
     }, 220);
   },
   { passive: true }
+);
+
+// A paid crate whose box hasn't been picked yet can't be walked away from:
+// its contents are already committed to the fairness hash and nothing
+// brings you back to it. Anything that would change screen is stopped here,
+// in the capture phase, before its own handler runs. Pop-ups (Add Funds,
+// Credits) are fine — they open over the round, not instead of it.
+const LEAVES_THE_ROUND = ".nav-tab, #brandHomeBtn, #streakStat, #avatarBtn, [data-footer-nav], [data-home-go]";
+document.addEventListener(
+  "click",
+  (e) => {
+    if (!roundAwaitingPick || !e.target.closest(LEAVES_THE_ROUND)) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    showToast("Pick a box first — this crate is already paid for", ICONS.bell);
+    boxRow.classList.remove("nudge");
+    void boxRow.offsetWidth;
+    boxRow.classList.add("nudge");
+  },
+  true
 );
 
 const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
@@ -2480,7 +2726,39 @@ document.querySelectorAll(".account-toggle").forEach((toggle) => {
 
 let amountResolver = null;
 let amountMax = null;
+// The same small dialog asks for words as well as numbers: a username, a
+// recipient. Those went through the browser's own prompt(), a grey system
+// box over a page that has its own pop-ups.
+let amountMode = "number";
+
+function promptText(title, hint, defaultValue = "", { placeholder = "", confirmLabel = "Confirm" } = {}) {
+  amountMode = "text";
+  amountModalTitle.textContent = title;
+  amountModalHint.textContent = hint;
+  amountInput.type = "text";
+  amountInput.removeAttribute("inputmode");
+  amountInput.placeholder = placeholder;
+  amountInput.value = defaultValue;
+  amountConfirmBtn.textContent = confirmLabel;
+  amountMax = null;
+  amountQuickRow.classList.add("hidden");
+  amountModal.classList.remove("hidden");
+  requestAnimationFrame(() => amountModal.classList.add("visible"));
+  setTimeout(() => {
+    amountInput.focus();
+    amountInput.select();
+  }, 50);
+  return new Promise((resolve) => {
+    amountResolver = resolve;
+  });
+}
+
 function promptAmount(title, hint, defaultValue, { max } = {}) {
+  amountMode = "number";
+  amountInput.type = "number";
+  amountInput.setAttribute("inputmode", "numeric");
+  amountInput.placeholder = "";
+  amountConfirmBtn.textContent = "Confirm";
   amountModalTitle.textContent = title;
   amountModalHint.textContent = hint;
   amountInput.value = defaultValue ?? "";
@@ -2524,6 +2802,16 @@ function closeAmountModal(result) {
   }
 }
 amountConfirmBtn.addEventListener("click", () => {
+  if (amountMode === "text") {
+    const text = amountInput.value.trim();
+    if (!text) {
+      amountInput.focus();
+      return;
+    }
+    playClick();
+    closeAmountModal(text);
+    return;
+  }
   let value = Math.round(Number(amountInput.value));
   if (!value || value <= 0) return;
   if (amountMax != null) value = Math.min(value, amountMax);
@@ -2854,7 +3142,10 @@ listingBuyBtn.addEventListener("click", () => {
   const listing = market.getListing(openListingId);
   if (!listing || listing.price == null) return;
   if (!player.spendCash(listing.price)) {
-    alert("Not enough Cash for this purchase.");
+    // Same route the crates take when you're short: say so, then open the
+    // way to fix it, rather than a system alert that just stops you.
+    showToast("Not enough Cash for this — add funds to continue", ICONS.bell);
+    openAddFundsModal();
     return;
   }
   playClick();
@@ -2957,7 +3248,10 @@ function renderIdentity() {
 }
 
 usernameBtn.addEventListener("click", async () => {
-  const name = prompt("Choose a username", player.getUsername());
+  playClick();
+  const name = await promptText("Choose a username", "This is how you show up on the leaderboard and in Recent Pulls.", player.getUsername(), {
+    confirmLabel: "Save",
+  });
   if (name) {
     player.setUsername(name);
     renderIdentity();
@@ -3431,12 +3725,15 @@ portfolioDetailSellBtn.addEventListener("click", () => {
 // A position is several lots of the same ticker, so a transfer moves the
 // whole holding rather than asking which lot — the Portfolio never exposes
 // individual lots as separate things you can act on.
-portfolioDetailSendBtn.addEventListener("click", () => {
+portfolioDetailSendBtn.addEventListener("click", async () => {
   const ticker = portfolioDetailSendBtn.dataset.ticker;
   const holding = player.getPortfolio().find((h) => h.ticker === ticker);
   if (!holding) return;
-  const to = prompt(`Transfer your ${ticker} position to which username or wallet address?`);
-  if (!to || !to.trim()) return;
+  const to = await promptText(`Transfer ${ticker}`, "The whole position moves. Enter a username or a wallet address.", "", {
+    placeholder: "Username or 0x…",
+    confirmLabel: "Transfer",
+  });
+  if (!to) return;
   playClick();
   const recipient = to.trim();
   // Copy first: transferItem removes from inventory as it goes, so
@@ -3988,7 +4285,7 @@ function renderStreaks() {
 
 
 // Delegated: offer actions + inventory item actions (both lists re-render often)
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
   const offerBtn = e.target.closest("[data-offer-action]");
   const itemBtn = e.target.closest("[data-item-action]");
 
@@ -4067,8 +4364,11 @@ document.addEventListener("click", (e) => {
         renderAccount();
       });
     } else if (action === "send") {
-      const toUsername = prompt(`Send ${item.name} to which username?`);
-      if (!toUsername || !toUsername.trim()) return;
+      const toUsername = await promptText(`Send ${item.name}`, "It leaves your vault and lands in theirs.", "", {
+        placeholder: "Username",
+        confirmLabel: "Send",
+      });
+      if (!toUsername) return;
       playClick();
       if (item.listingId) market.removeListing(item.listingId);
       player.transferItem(item, toUsername.trim());
@@ -4338,8 +4638,15 @@ const HERO_BURST_SLOTS = [
 // Sky above the crate in its canvas, so the lid has room to swing up
 // (must match .home-hero-box's aspect-ratio: 1 / (1 + this)).
 const HERO_BOX_HEADROOM = 0.45;
-// The box's mouth, where everything comes out of and goes back into.
-const HERO_MOUTH = { x: 0.5, y: 0.76 };
+// The open box's mouth, where everything comes out of and goes back into —
+// the gap between its folded-back flaps (measured on the stage). A prize
+// starts there, invisible, and fades in as it rises out of the opening, in
+// front of the box: it reads as coming up out of it, and nothing shows
+// until the flaps are open (the burst waits for them; see mouthClearMs).
+const HERO_MOUTH = { x: 0.5, y: 0.56 };
+// Just above the open box's rim — where a prize has risen to before it
+// flies out to its place.
+const HERO_RIM_Y = 0.4;
 
 // Product shots are cut out on white. For them to fly free of a box they
 // need that white gone: flood-fill from the edges through near-white
@@ -4459,7 +4766,7 @@ async function playHeroShow(i) {
   const canvas = document.createElement("canvas");
   canvasHost.appendChild(canvas);
   const cat = CATEGORIES[slide.tier];
-  const viewer = await createBoxViewer(canvas, slide.tier, cat.boxKind ?? "box", { headroom: HERO_BOX_HEADROOM });
+  const viewer = await createBoxViewer(canvas, slide.tier, crateBoxKind(cat), { headroom: HERO_BOX_HEADROOM, fitOpen: true });
   if (token !== heroShowToken) return viewer.dispose();
   heroViewer = viewer;
   canvasHost.classList.remove("is-away");
@@ -4473,10 +4780,14 @@ async function playHeroShow(i) {
     const slot = HERO_BURST_SLOTS[n];
     const el = document.createElement("div");
     el.className = "hero-burst-item";
+    // Each one rises straight up out of the box first (--rise-y: to just
+    // above its rim) and only then flies out to its place — so it reads as
+    // lifted out of the box rather than launched from in front of it.
     el.style.cssText =
       `left:${slot.x * 100}%;top:${slot.y * 100}%;width:${slot.s * 100}%;` +
       `--from-x:${(HERO_MOUTH.x - slot.x) * w}px;--from-y:${(HERO_MOUTH.y - slot.y) * h}px;` +
-      `--r:${slot.r}deg;--d:${n * 90}ms;--bob:${3.2 + n * 0.45}s;`;
+      `--rise-y:${(HERO_RIM_Y - slot.y) * h}px;` +
+      `--r:${slot.r}deg;--d:${n * 110}ms;--bob:${3.2 + n * 0.45}s;`;
     el.innerHTML = `<img src="${urls[n]}" alt="">`;
     el.title = p.name;
     burst.appendChild(el);
@@ -4489,7 +4800,10 @@ async function playHeroShow(i) {
   }
   heroLater(() => viewer.setPaused(true), 150);
   heroLater(() => viewer.open(), 600);
-  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 850);
+  // Out when the mouth is clear — the cardboard box's flaps fold back
+  // across most of their clip, and prizes leaving before that go through
+  // them.
+  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 600 + viewer.mouthClearMs);
 }
 
 function buildHomeHero() {
@@ -4582,13 +4896,60 @@ function showHomeSlide(i, { instant = false } = {}) {
 // re-render (every visit to Home) can release the old WebGL contexts first.
 let homeBoxViewers = [];
 
+
 function releaseHomeViewers() {
+  // A billboard crate still loading when Home is left would otherwise land
+  // after this and run on, unseen, holding a context; bumping the token
+  // makes it dispose itself on arrival (see playHeroShow).
+  heroShowToken++;
   homeBoxViewers.forEach((v) => v.dispose());
   homeBoxViewers = [];
   if (heroViewer) {
     heroViewer.dispose();
     heroViewer = null;
   }
+}
+
+// One crate as a card, laid out after the team's other Chosen build: a
+// tinted panel with the crate on it, who it's from, and three things it
+// could hold; then its name and price, three facts, a bar, and the way in.
+// The facts are the ones this app can stand behind: grail (Legendary) odds
+// from the crate's own weights, its top prize, and your pity — rounds left
+// to a guaranteed Rare+ — which the bar under them fills toward.
+function homeCrateCardHTML(key, cat) {
+  const top = [...cat.pool].sort(byPriceDesc);
+  const total = cat.pool.reduce((sum, p) => sum + p.weight, 0);
+  const grailWeight = cat.pool.filter((p) => p.rarity === "legendary").reduce((sum, p) => sum + p.weight, 0);
+  const grailOdds = grailWeight ? `1 in ${Math.max(1, Math.round(total / grailWeight))}` : "—";
+  const pity = player.getPity(key);
+  const pityPct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
+  return `
+      <div class="home-crate" data-tier="${key}" data-line="${lineOf(key)}">
+        <div class="crate-panel">
+          <span class="crate-brand">${cat.poweredBy ?? "Chosen"}</span>
+          <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
+          <div class="crate-could">
+            <span>Could contain</span>
+            <span class="crate-could-thumbs">${top
+              .slice(0, 3)
+              .map((p) => `<img src="${p.image}" alt="" title="${p.name}">`)
+              .join("")}</span>
+          </div>
+        </div>
+        <div class="crate-body">
+          <div class="crate-title">
+            <span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span>
+            <span class="crate-price">$${cat.price.toLocaleString()}</span>
+          </div>
+          <div class="crate-facts">
+            <span><i>Grail odds</i><b>${grailOdds}</b></span>
+            <span><i>Top prize</i><b>$${top[0].price.toLocaleString()}</b></span>
+            <span><i>Rare+ in</i><b>${pity.rareRoundsLeft} ${pity.rareRoundsLeft === 1 ? "open" : "opens"}</b></span>
+          </div>
+          <div class="crate-supply" title="Rounds toward your guaranteed Rare+"><i style="width:${pityPct}%"></i></div>
+          <button class="home-btn home-btn-solid home-crate-open">Open for $${cat.price.toLocaleString()}</button>
+        </div>
+      </div>`;
 }
 
 function renderHomeCrates() {
@@ -4599,32 +4960,20 @@ function renderHomeCrates() {
   // one click further, on Drops.
   el.innerHTML = Object.entries(CATEGORIES)
     .filter(([, cat]) => !cat.line)
-    .map(([key, cat]) => {
-      const top = [...cat.pool].sort(byPriceDesc);
-      return `
-      <div class="home-crate" data-tier="${key}">
-        <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
-        <div class="home-crate-row">
-          <span class="category-tier-name tier-name-${key}">${cat.badge}</span>
-          <span class="home-crate-price">$${cat.price}</span>
-        </div>
-        <span class="home-crate-top">Top prize <b>$${top[0].price.toLocaleString()}</b></span>
-        <div class="home-crate-thumbs">${top
-          .slice(0, 3)
-          .map((p) => `<img src="${p.image}" alt="" title="${p.name}">`)
-          .join("")}</div>
-        <button class="home-btn home-btn-solid home-crate-open">Open</button>
-      </div>`;
-    })
+    .map(([key, cat]) => homeCrateCardHTML(key, cat))
     .join("");
 
   el.querySelectorAll(".home-crate").forEach((card) => {
     const key = card.dataset.tier;
     const cat = CATEGORIES[key];
     const canvas = card.querySelector(".home-crate-box");
-    createBoxViewer(canvas, key, cat.boxKind ?? "box").then((viewer) => {
-      // Rendered over again before this one finished loading — drop it.
-      if (!canvas.isConnected) return viewer.dispose();
+    createBoxViewer(canvas, key, crateBoxKind(cat)).then((viewer) => {
+      // Rendered over again before this one finished loading, or Home was
+      // left while it loaded (its canvas is still in the page, just hidden,
+      // so isConnected alone let it through and it idled on elsewhere).
+      if (!canvas.isConnected || !document.getElementById("screen-home").classList.contains("active")) {
+        return viewer.dispose();
+      }
       homeBoxViewers.push(viewer);
       // Hover turns it to face you, like the Drops cards.
       card.addEventListener("mouseenter", () => viewer.setPaused(true));
@@ -4665,32 +5014,52 @@ function homeGrailList(count) {
 // tile at a time, in a shuffled order, never a grail that's already up.
 const GRAIL_SHOWN = 5;
 const GRAIL_POOL = 30;
-const GRAIL_FLIP_EVERY_MS = 2800;
+// The grails spin like slot-machine reels and land on new pieces, the way
+// the floating cards on the team's other Chosen build do: a blurred run of
+// pieces flies up through each window and stops hard on the new one, left
+// to right in a wave. Timings are theirs.
+const GRAIL_SPIN_EVERY_MS = 6000;
+const GRAIL_SPIN_MS = 1150; // one reel, start to stop
+const GRAIL_STAGGER_MS = 180; // between neighbouring reels
+const GRAIL_BLUR_ITEMS = 8; // pieces that fly past on the way
 let grailTimer = null;
-let grailOrder = [];
+let grailPool = [];
 
-function grailTileInner({ p, k }) {
-  const cat = CATEGORIES[k];
+// A grail is the piece alone in its window, its name and price underneath,
+// and a Grail tag when it's Legendary. No partner logo, no crate chip.
+function grailItemHTML({ p }) {
+  return `<span class="grail-item"><img src="${p.image}" alt="" decoding="async"></span>`;
+}
+function setGrailMeta(tile, g) {
+  tile.dataset.tier = g.k;
+  tile.dataset.grail = g.p.name;
+  tile.classList.toggle("is-grail", g.p.rarity === "legendary");
+  tile.querySelector(".home-grail-name").textContent = g.p.name;
+  tile.querySelector(".home-grail-price").textContent = `$${g.p.price.toLocaleString()}`;
+  tile.setAttribute("aria-label", `${g.p.name}, $${g.p.price.toLocaleString()}`);
+}
+function grailTileHTML(g) {
   return `
-        <span class="home-grail-media"><img src="${p.image}" alt=""></span>
-        <span class="home-grail-info">
-          <span class="tier-badge tier-badge-${lineOf(k)}">${cat.badge}</span>
-          <span class="home-grail-name">${p.name}</span>
-          <span class="home-grail-foot">
-            <b>$${p.price.toLocaleString()}</b>
-            <span>${cat.label} crate</span>
-          </span>
-        </span>`;
+    <button class="home-grail">
+      <span class="home-grail-media">
+        <span class="grail-window"><span class="grail-strip">${grailItemHTML(g)}</span></span>
+        <span class="grail-badge">Grail</span>
+        <span class="grail-shine" aria-hidden="true"></span>
+      </span>
+      <span class="home-grail-meta">
+        <span class="home-grail-name"></span>
+        <b class="home-grail-price"></b>
+      </span>
+    </button>`;
 }
 
 function renderHomeGrails() {
   const el = document.getElementById("homeGrails");
-  const pool = homeGrailList(GRAIL_POOL);
-  el.innerHTML = pool
-    .slice(0, GRAIL_SHOWN)
-    .map((g) => `<button class="home-grail" data-tier="${g.k}" data-grail="${g.p.name.replace(/"/g, "&quot;")}">${grailTileInner(g)}</button>`)
-    .join("");
-  el.querySelectorAll(".home-grail").forEach((tile) => {
+  grailPool = homeGrailList(GRAIL_POOL);
+  const first = grailPool.slice(0, GRAIL_SHOWN);
+  el.innerHTML = first.map(grailTileHTML).join("");
+  [...el.children].forEach((tile, i) => {
+    setGrailMeta(tile, first[i]);
     tile.addEventListener("click", () => {
       playClick();
       homeSeeCrate(tile.dataset.tier);
@@ -4699,54 +5068,85 @@ function renderHomeGrails() {
 
   clearInterval(grailTimer);
   if (heroReducedMotion.matches) return;
-  // Warm the pool's images so a flip never lands on a blank frame.
-  pool.forEach(({ p }) => (new Image().src = p.image));
-  grailOrder = [];
-  grailTimer = setInterval(() => flipOneGrail(el, pool), GRAIL_FLIP_EVERY_MS);
+  // Warm the pool's images so a reel never stops on a blank frame.
+  grailPool.forEach(({ p }) => (new Image().src = p.image));
+  grailTimer = setInterval(() => spinGrails(el), GRAIL_SPIN_EVERY_MS);
 }
 
-function flipOneGrail(el, pool) {
-  // Only while Home is on screen and the tab is visible, and never under
-  // the pointer: a tile changing as you reach for it is a bait-and-switch.
+function spinGrails(el) {
+  // Only while Home is on screen and the tab is visible.
   if (document.hidden || !document.getElementById("screen-home").classList.contains("active")) return;
   const tiles = [...el.querySelectorAll(".home-grail")];
-  if (!grailOrder.length) grailOrder = shuffledOthers(-1, tiles.length);
-  const tile = tiles[grailOrder.pop()];
-  if (!tile || tile.matches(":hover") || tile.classList.contains("is-flipping")) return;
-
+  // Never the same piece twice on screen: draw from what isn't showing.
   const shown = new Set(tiles.map((t) => t.dataset.grail));
-  const choices = pool.filter((g) => !shown.has(g.p.name));
-  if (!choices.length) return;
-  const next = choices[Math.floor(Math.random() * choices.length)];
+  const fresh = grailPool.filter((g) => !shown.has(g.p.name));
+  tiles.forEach((tile, i) => {
+    // A tile under the pointer stays put — changing what someone is about
+    // to click is a bait-and-switch.
+    if (tile.matches(":hover") || tile.classList.contains("is-spinning") || !fresh.length) return;
+    const next = fresh.splice(Math.floor(Math.random() * fresh.length), 1)[0];
+    setTimeout(() => spinGrail(tile, next), i * GRAIL_STAGGER_MS);
+  });
+}
 
-  tile.classList.add("is-flipping");
-  // Swap at the edge-on moment, halfway through the turn.
+function spinGrail(tile, target) {
+  const strip = tile.querySelector(".grail-strip");
+  const windowEl = tile.querySelector(".grail-window");
+  const h = windowEl.clientHeight;
+  if (!h) return;
+  const current = grailPool.find((g) => g.p.name === tile.dataset.grail) ?? target;
+  const blur = Array.from({ length: GRAIL_BLUR_ITEMS }, () => grailPool[Math.floor(Math.random() * grailPool.length)]);
+  // The strip: what's showing now, a run of others, and the new piece last.
+  strip.innerHTML = [current, ...blur, target].map(grailItemHTML).join("");
+  strip.style.transition = "none";
+  strip.style.transform = "translateY(0)";
+  void strip.offsetHeight; // commit the reset before the spin starts
+
+  tile.classList.add("is-spinning", "is-changing"); // name, price and tag ease out
+  strip.classList.add("is-blurred");
+  strip.style.transition = `transform ${GRAIL_SPIN_MS}ms cubic-bezier(.16,.84,.3,1)`;
+  strip.style.transform = `translateY(${-(GRAIL_BLUR_ITEMS + 1) * h}px)`;
+  setTimeout(() => strip.classList.remove("is-blurred"), GRAIL_SPIN_MS * 0.62);
   setTimeout(() => {
-    tile.innerHTML = grailTileInner(next);
-    tile.dataset.tier = next.k;
-    tile.dataset.grail = next.p.name;
-  }, 330);
-  // After the turn and the new image's settle (which starts at the swap).
-  setTimeout(() => tile.classList.remove("is-flipping"), 820);
+    // The strip already rests on the new piece: swapping it for that one
+    // piece alone is invisible.
+    strip.style.transition = "none";
+    strip.innerHTML = grailItemHTML(target);
+    strip.style.transform = "translateY(0)";
+    setGrailMeta(tile, target);
+    tile.classList.remove("is-spinning");
+    setTimeout(() => tile.classList.remove("is-changing"), 30); // ease back in
+    if (target.p.rarity === "legendary") {
+      // One light sweep across a grail as it lands.
+      tile.classList.remove("is-shining");
+      void tile.offsetWidth;
+      tile.classList.add("is-shining");
+    }
+  }, GRAIL_SPIN_MS + 30);
 }
 
 // ---- How it works: three pictures made by the app itself ----
+// 1: the crate, stacked three deep. 2: three slabs fanned out, the middle
+// one picked. 3 is words only (the three ways out), in the markup.
 let homeStepsBuilt = false;
 function renderHomeSteps() {
-  document.getElementById("homeStepSellCopy").textContent =
-    `Hold it in your vault, list it on the market, or have the real thing shipped to your door. ` +
-    `Or sell it back on the spot for ${Math.round(player.CASHOUT_HAIRCUT * 100)}% of its value in cash.`;
   if (homeStepsBuilt) return;
   homeStepsBuilt = true;
 
-  getBoxSnapshot("sneakers", "box").then((url) => {
-    document.getElementById("homeStepBox").src = url;
+  getBoxSnapshot("sneakers", "od").then((url) => {
+    ["howCrateA", "howCrateB", "howCrateC"].forEach((id) => (document.getElementById(id).src = url));
   });
-  const grail = [...CATEGORIES.collectibles.pool].sort(byPriceDesc)[0];
-  renderSlabImage(slabInfoFor(grail, "collectibles")).then((url) => {
-    document.getElementById("homeStepSlab").src = url;
+  // The picked card is the most valuable piece in the flagship crate; the
+  // two either side come from the other lines, so the fan shows the range.
+  const top = (key) => [...CATEGORIES[key].pool].sort(byPriceDesc)[0];
+  const cards = [
+    ["howCardL", "collectibles"],
+    ["howCardC", "sneakers"],
+    ["howCardR", "streetwear"],
+  ];
+  cards.forEach(([id, key]) => {
+    renderSlabImage(slabInfoFor(top(key), key)).then((url) => (document.getElementById(id).src = url));
   });
-  document.getElementById("homeStepItem").src = heroPrize(HOME_HERO_SLIDES[0]).image;
 }
 
 // ---- Live pulls ----
@@ -4889,6 +5289,8 @@ const profileParam = new URLSearchParams(location.search).get("profile");
 if (profileParam) {
   renderPublicProfile(profileParam);
 } else {
+  // Sections rise in as they scroll into view (see motion.js).
+  initReveal();
   // Sliding pills behind the active tab of each tab row (see motion.js).
   liquidTabs(document.getElementById("dropLines"), ".drop-line.active");
   liquidTabs(document.querySelector(".account-nav"), ".account-nav-item.active");

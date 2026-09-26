@@ -132,74 +132,87 @@ try {
       </div>
 
       <div class="home-block">
-        <div class="home-block-head">
+        <div class="home-block-head" data-reveal>
           <div>
             <h2 class="home-block-title">Pick your drop</h2>
             <p class="home-block-sub">Four kinds of crate, from $25 up to $1,000. Every pull is a real item.</p>
           </div>
           <button class="home-more" data-home-go="drops">All drops</button>
         </div>
-        <div class="home-crates" id="homeCrates"></div>
+        <div class="home-crates" id="homeCrates" data-reveal="stagger"></div>
       </div>
 
       <div class="home-block">
-        <div class="home-block-head">
+        <div class="home-block-head" data-reveal>
           <div>
             <h2 class="home-block-title">The grails</h2>
             <p class="home-block-sub">The most valuable things in the crates right now. Each one is a pull away.</p>
           </div>
         </div>
-        <div class="home-grails" id="homeGrails"></div>
+        <div class="home-grails" id="homeGrails" data-reveal></div>
       </div>
 
       <div class="home-block">
-        <div class="home-block-head">
+        <div class="home-block-head" data-reveal>
           <div>
             <h2 class="home-block-title"><span class="home-live-pip" aria-hidden="true"></span>Live pulls</h2>
             <p class="home-block-sub">What people are pulling, as it happens.</p>
           </div>
           <button class="home-more" data-home-go="drops">Open one</button>
         </div>
-        <div class="recent-pulls-viewport home-pulls">
+        <div class="recent-pulls-viewport home-pulls" data-reveal>
           <div class="recent-pulls-list" id="homePullsList"></div>
         </div>
       </div>
 
       <div class="home-block">
-        <div class="home-block-head">
+        <div class="home-block-head" data-reveal>
           <div>
             <h2 class="home-block-title">How it works</h2>
-            <p class="home-block-sub">From crate to your door in three steps.</p>
+            <p class="home-block-sub">Three steps, no surprises. The odds are on every crate before you open it.</p>
           </div>
         </div>
-        <ol class="home-steps">
-          <li class="home-step">
-            <div class="home-step-visual"><img id="homeStepBox" alt=""></div>
-            <span class="home-step-num">01</span>
-            <h3>Open your box</h3>
-            <p>Pick a crate (sneakers, streetwear, collectibles or stocks) and choose one of three boxes. The result is hashed before any box opens, so it can be checked after.</p>
-          </li>
-          <li class="home-step">
-            <div class="home-step-visual"><img id="homeStepSlab" alt=""></div>
-            <span class="home-step-num">02</span>
-            <h3>Reveal your collectible</h3>
-            <p>It comes out sealed in a Chosen slab: the item, its rarity and what it&rsquo;s worth, the second the box opens.</p>
-          </li>
-          <li class="home-step">
-            <div class="home-step-visual home-step-choices">
-              <img id="homeStepItem" alt="">
-              <span class="home-choice home-choice-keep">Keep it</span>
-              <span class="home-choice home-choice-ship">Ship it</span>
-              <span class="home-choice home-choice-sell">Sell for cash</span>
+        <!-- Three steps across, joined by dotted arrows, each over a picture
+             of itself: the crates, the pick, the three ways out. Laid out
+             after the team's other Chosen build; the third step is ours. -->
+        <ol class="how-steps" data-reveal="stagger">
+          <li class="how-step">
+            <div class="how-art how-art-crates" aria-hidden="true">
+              <img class="how-crate how-crate-a" id="howCrateA" alt="">
+              <img class="how-crate how-crate-b" id="howCrateB" alt="">
+              <img class="how-crate how-crate-c" id="howCrateC" alt="">
             </div>
-            <span class="home-step-num">03</span>
-            <h3>Keep it, ship it, or sell it</h3>
-            <p id="homeStepSellCopy"></p>
+            <span class="how-num">1</span>
+            <h3>Pick a crate</h3>
+            <p>Every crate shows its price, what it could contain and the odds of each tier before you open it.</p>
+          </li>
+          <li class="how-step">
+            <div class="how-art how-art-pick" aria-hidden="true">
+              <img class="how-card how-card-l" id="howCardL" alt="">
+              <img class="how-card how-card-r" id="howCardR" alt="">
+              <span class="how-card-picked">
+                <img class="how-card how-card-c" id="howCardC" alt="">
+                <span class="how-chip">Chosen</span>
+              </span>
+            </div>
+            <span class="how-num">2</span>
+            <h3>Open it</h3>
+            <p>Three boxes come out of the crate. You pick one, and what&rsquo;s inside is yours.</p>
+          </li>
+          <li class="how-step">
+            <div class="how-art how-art-exits" aria-hidden="true">
+              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Cash back, instantly</span>
+              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="8.5" x2="12" y2="6"/></svg>Keep it in your vault</span>
+              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h13v10H1z"/><path d="M14 9h4l4 4v3h-8z"/><circle cx="5.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>Ship it home</span>
+            </div>
+            <span class="how-num">3</span>
+            <h3>Cash back, keep or ship</h3>
+            <p>Take cash back on the spot, hold it in your vault, or have the real thing shipped to your door.</p>
           </li>
         </ol>
       </div>
 
-      <div class="home-duo">
+      <div class="home-duo" data-reveal="stagger">
         <div class="home-panel">
           <div class="home-block-head">
             <div>
@@ -222,7 +235,7 @@ try {
         </div>
       </div>
 
-      <div class="home-cta">
+      <div class="home-cta" data-reveal>
         <h2 class="home-cta-title">Your grail is already chosen.</h2>
         <p class="home-cta-sub">The only question is who opens it.</p>
         <button class="home-btn home-btn-solid home-btn-inverse" data-home-go="drops">Open a crate</button>
@@ -242,7 +255,7 @@ try {
            the way back out. Hidden at every other time. -->
       <button id="dropDetailBackBtn" class="drop-detail-back">&larr; Drops</button>
       <input type="checkbox" id="prizeListToggleAll" class="prize-list-toggle-input">
-      <div id="categoryList" class="category-list"></div>
+      <div id="categoryList" class="category-list" data-reveal="stagger"></div>
 
       <!-- The full feed, as a carousel under the crates. The corner dock
            shows one prize at a time wherever you are; this is the same feed
@@ -367,7 +380,7 @@ try {
         </aside>
 
         <div class="market-content">
-          <div id="marketGrid" class="market-grid"></div>
+          <div id="marketGrid" class="market-grid" data-reveal="stagger"></div>
         </div>
       </div>
     </section>
@@ -448,7 +461,7 @@ try {
               <h3>My Items <span class="count-badge" id="vaultCount">0</span></h3>
               <span class="account-block-note">Vault · archives at 365 days</span>
             </div>
-            <div id="inventoryGrid" class="market-grid"></div>
+            <div id="inventoryGrid" class="market-grid" data-reveal="stagger"></div>
           </div>
 
           <div class="account-section active toggle-hidden" data-section="portfolio" data-toggle-key="portfolio">
@@ -1024,9 +1037,29 @@ try {
   <span id="creditToastText"></span>
 </div>
 
-<!-- Recent pulls: one prize on a watch face, parked bottom-left on every
-     screen. Draggable anywhere, collapses to its header, and the bar under
-     the case takes you to the crate the prize came out of. -->
+<!-- Live pulls, desktop: a bar along the whole bottom edge. Collapsed it's
+     one row; hovering grows it upward into big tiles. New pulls spawn at the
+     left and push the rest along — no conveyor drift — and every tile opens
+     the pull, its crate line the crate. (Phones keep the corner tile below.) -->
+<aside id="liveBar" class="live-bar" aria-label="Live pulls">
+  <button class="lb-label" id="liveBarLabel" aria-expanded="false" aria-controls="liveBarView">
+    <i class="lb-dot" aria-hidden="true"></i>Live pulls
+  </button>
+  <div class="lb-view" id="liveBarView">
+    <div class="lb-track" id="liveBarTrack"></div>
+  </div>
+  <button class="lb-all" id="liveBarAll">See all</button>
+  <button class="lb-min" id="liveBarMin" aria-label="Minimize live pulls" title="Minimize">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="12" x2="18" y2="12"/></svg>
+  </button>
+</aside>
+<button id="liveBarPill" class="live-bar-pill" aria-label="Show live pulls">
+  <i class="lb-dot" aria-hidden="true"></i>Live pulls
+</button>
+
+<!-- Recent pulls on phones: one prize at a time in the corner tile, and the
+     bar under it takes you to the crate it came out of. Desktop uses the
+     live bar above instead. -->
 <aside id="pullDock" class="pull-dock">
   <div class="pull-dock-head" id="pullDockHead">
     <span class="pull-dock-pip" aria-hidden="true"></span>
