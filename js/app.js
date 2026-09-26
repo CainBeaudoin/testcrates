@@ -1507,14 +1507,17 @@ dropDetailBackBtn.addEventListener("click", () => {
 let dropLine = "all";
 const dropLinesEl = document.getElementById("dropLines");
 
+// All Drops is one run, cheapest to dearest (Stocks' $25 leads); a line's
+// tab keeps its own crates in price order.
 function orderedCrates() {
   return Object.entries(CATEGORIES).sort(
-    ([a, ca], [b, cb]) => CRATE_LINES.indexOf(lineOf(a)) - CRATE_LINES.indexOf(lineOf(b)) || ca.price - cb.price
+    ([a, ca], [b, cb]) =>
+      ca.price - cb.price || CRATE_LINES.indexOf(lineOf(a)) - CRATE_LINES.indexOf(lineOf(b))
   );
 }
 
 function renderDropLines() {
-  const chips = [["all", "All Packs"], ...CRATE_LINES.map((l) => [l, CATEGORIES[l].badge])];
+  const chips = [["all", "All Drops"], ...CRATE_LINES.map((l) => [l, CATEGORIES[l].badge])];
   dropLinesEl.innerHTML = chips
     .map(([l, label]) => {
       const n = l === "all" ? Object.keys(CATEGORIES).length : Object.keys(CATEGORIES).filter((k) => lineOf(k) === l).length;
@@ -1557,15 +1560,16 @@ function renderCategories() {
   categoryBoxViewers.forEach((v) => v.dispose());
   categoryBoxViewers = [];
   renderDropLines();
+  categoryList.classList.toggle("is-all", dropLine === "all");
 
   let lastLine = null;
   orderedCrates().forEach(([key, cat]) => {
     // Only the chosen line's crates are built at all (each is a live 3D
     // box, and a browser only hands out so many of those).
     if (dropLine !== "all" && lineOf(key) !== dropLine) return;
-    // A titled section per line: its name, a line about it, how many
-    // packs, and (on All Packs) a way to just that line.
-    if (lineOf(key) !== lastLine) {
+    // On a line's tab, a title for it: its name, a line about it and how
+    // many packs. All Drops is a single untitled run.
+    if (dropLine !== "all" && lineOf(key) !== lastLine) {
       lastLine = lineOf(key);
       categoryList.appendChild(dropSectionHead(lastLine));
     }
