@@ -5315,7 +5315,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .home-hero-dot::before { content: ""; right: 0; background: rgba(22, 19, 15, 0.14); }
 .home-hero-dot-fill { width: 0; background: var(--hero-ink); }
-.home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 7s linear forwards; }
+.home-hero-dot.is-active .home-hero-dot-fill { animation: homeHeroFill 9s linear forwards; } /* HERO_SLIDE_MS */
 @keyframes homeHeroFill {
   from { width: 0; }
   to { width: 100%; }
@@ -7293,31 +7293,40 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 }
 
 /* --- Open buttons: green, everywhere -------------------------------------
-   Every button that opens a crate is the same solid green pill with dark
-   type, so "open" reads the same on Home, the billboard and Drops. The
-   price is already on the card above it; the button just says Open. */
-:root { --open-green: #22c55e; --open-green-hover: #2fd46b; --open-ink: #04160c; }
+   Every button that opens a crate is the same one, after the reference
+   build: flat bright green, a thin black keyline, softly squared corners,
+   dark green type. The price is already on the card above it; the button
+   just says Open. */
+:root { --open-green: #7bfc7e; --open-green-hover: #6ef071; --open-ink: #112a14; }
 .category-open-btn,
 #homeCrates .home-crate-open,
 .home-btn-open,
 .home-hero .home-btn-open {
   background: var(--open-green);
   color: var(--open-ink);
-  font-weight: 800;
-  box-shadow: 0 6px 16px -8px rgba(22, 163, 74, 0.7);
+  border: 1.5px solid #000;
+  border-radius: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  box-shadow: none;
 }
 .category-open-btn:hover,
 #homeCrates .home-crate-open:hover,
 .home-btn-open:hover,
 .home-hero .home-btn-open:hover { background: var(--open-green-hover); }
 
-/* --- Partner logos: ODTO's stacked mark, Robinhood's feather ------------- */
+/* --- Partner logos: ODTO's wordmark on its white chip, Robinhood's feather */
 .crate-brand { display: inline-flex; align-items: center; gap: 5px; }
-.crate-brand .brand-mark-odto { display: block; width: 24px; height: 24px; }
-.crate-brand:has(.brand-mark-odto) { padding: 6px; border-radius: var(--r-sm); }
+.crate-brand:has(.brand-mark-odto) {
+  padding: 7px 14px;
+  border: 2px solid #deddd8;
+  background: #fff;
+  color: #0b0b0b;
+}
+.crate-brand .brand-mark-odto { display: block; height: 13px; width: auto; }
 .crate-brand .brand-mark-robinhood { width: 14px; height: 14px; }
 .category-powered-by { display: flex; align-items: center; justify-content: center; gap: 5px; height: 15px; }
 .category-powered-by-spacer { height: 23px; } /* the line above, plus its margin */
 .category-powered-by .brand-mark { flex: none; color: var(--text); }
-.category-powered-by .brand-mark-odto { width: 15px; height: 15px; }
+.category-powered-by .brand-mark-odto { height: 9px; width: auto; }
 .category-powered-by .brand-mark-robinhood { width: 12px; height: 12px; }

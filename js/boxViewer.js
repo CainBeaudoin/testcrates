@@ -712,6 +712,8 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
 
   let paused = false;
   let facing = false; // easing back to forward-facing (0), then holding there
+  let spinning = null; // { start, ms, from, done } while spin() turns a full lap
+  let closing = null; // { start, ms, from, done } while close() folds it shut
   let opening = false;
   let openStartTime = 0;
   let openProgress = 0; // 0 closed -> 1 open, latched once finished
@@ -732,7 +734,18 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
     const dt = Math.min((t - lastT) / 1000, 0.05);
     lastT = t;
 
-    if (opening) {
+    if (spinning) {
+      // One lap and a bit, easing in and out, landing facing forward.
+      const p = Math.min((t - spinning.start) / spinning.ms, 1);
+      const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      group.rotation.y = spinning.from + (Math.PI * 2 - spinning.from) * e;
+      if (p >= 1) {
+        group.rotation.y = 0;
+        const done = spinning.done;
+        spinning = null;
+        done();
+      }
+    } else if (opening) {
       // Always finish the turn to forward-facing while it opens, so every
       // pick plays out the same way no matter what angle it was spinning
       // at when it was chosen.
@@ -767,8 +780,22 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       // of time since open(), so the flaps are exactly as far open as the
       // burst timed off the same moment expects, however few frames a slow
       // or busy page manages to draw. Idle, which nothing waits on, just
-      // ticks along with the frames.
-      if (openAction) {
+      // ticks along with the frames. Closing is the same clip run backwards.
+      if (closing) {
+        const p = Math.min((t - closing.start) / closing.ms, 1);
+        openAction.time = closing.from * (1 - p);
+        mixer.update(0);
+        if (p >= 1) {
+          // Back to rest, and the idle loop picks up again.
+          mixer.stopAllAction();
+          openAction = null;
+          openProgress = 0;
+          if (clips.idle) mixer.clipAction(clips.idle).reset().play();
+          const done = closing.done;
+          closing = null;
+          done();
+        }
+      } else if (openAction) {
         openAction.time = Math.min((t - openStartTime) / 1000, clips.open.duration);
         mixer.update(0);
       } else {
@@ -787,13 +814,55 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       paused = v;
       facing = v;
     },
+    // One full turn, ending face-on and holding there. Resolves when it
+    // lands.
+    spin(ms = 1400) {
+      opening = false;
+      facing = true;
+      paused = true;
+      return new Promise((resolve) => {
+        spinning?.done();
+        spinning = { start: performance.now(), ms, from: angleToZero(group.rotation.y), done: resolve };
+      });
+    },
+    // Folds an open box shut again (the od box's Open clip in reverse; the
+    // shoebox lid just drops). Resolves once it's closed; at once if it
+    // already is.
+    close(ms = 1000) {
+      if (kind === "od" && openAction) {
+        opening = false;
+        openProgress = 1; // no idle spin while it folds
+        return new Promise((resolve) => {
+          closing?.done();
+          // A box only part-way open closes in proportionally less time.
+          const from = openAction.time;
+          closing = { start: performance.now(), ms: Math.max(1, ms * Math.min(1, from / clips.open.duration)), from, done: resolve };
+        });
+      }
+      opening = false;
+      openProgress = 0;
+      if (lid) lid.rotation.x = 0;
+      return Promise.resolve();
+    },
+    // The od box in another crate's stickers, without a new viewer: fetch
+    // it ahead with loadSkin, put it on with setSkin (instant once loaded).
+    loadSkin(skinKey) {
+      return kind === "od" ? stickerTextureFor(skinKey, baseModel) : Promise.resolve(null);
+    },
+    async setSkin(skinKey) {
+      if (kind !== "od") return;
+      const map = (await stickerTextureFor(skinKey, baseModel)) ?? odBaseMap(baseModel);
+      root.traverse((node) => {
+        if (node.isMesh && node.material) node.material.map = map;
+      });
+    },
     // Printer only: print this certificate on the sheet before it feeds out.
     setPaper(imageUrl) {
       if (paper && imageUrl) paper.print(imageUrl);
     },
     // Only ever called from an explicit click handler.
     open() {
-      if (opening || openProgress === 1) return;
+      if (opening || closing || openProgress === 1) return;
       opening = true;
       facing = false;
       openStartTime = performance.now();
@@ -817,6 +886,10 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
     // How far fitOpen shrank the prop in its frame (1 = not at all).
     zoom,
     reset() {
+      spinning?.done();
+      spinning = null;
+      closing?.done();
+      closing = null;
       opening = false;
       facing = false;
       openProgress = 0;

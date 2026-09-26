@@ -4613,7 +4613,7 @@ document.querySelectorAll("[data-home-go]").forEach((btn) => {
 });
 
 // ---- The billboard ----
-// Advances when the active dot's fill animation (7s) finishes rather than
+// Advances when the active dot's fill animation (9s) finishes rather than
 // on a timer, so a hidden tab doesn't flip through slides nobody is
 // watching, and reduced motion — no animation at all — means it simply
 // stays put.
@@ -4741,45 +4741,80 @@ function heroLater(fn, ms) {
   heroTimers.push(setTimeout(fn, ms));
 }
 
-// Puts the slide's crate on stage and plays the burst. Anything still
-// running from the last slide is cancelled by the token.
-async function playHeroShow(i) {
-  const token = ++heroShowToken;
-  clearHeroTimers();
-  const slide = HOME_HERO_SLIDES[i];
-  const stage = document.getElementById("homeHeroStage");
-  const burst = document.getElementById("homeHeroBurst");
-  const canvasHost = document.getElementById("homeHeroBox");
+// One crate stays on stage the whole time. Each slide: the box, shut, turns
+// a full lap and lands facing you; its flaps open and the prizes burst out;
+// near the end of the slide they drop back in and the flaps close; then the
+// next slide's lap begins, and halfway round — side-on and moving fastest —
+// the box changes into the next crate's stickers. No box is ever torn down
+// between slides, so nothing blinks or cuts.
+const HERO_SLIDE_MS = 9000; // must match .home-hero-dot-fill's animation
+const HERO_SPIN_MS = 1400;
+const HERO_CLOSE_MS = 900;
+const HERO_IN_MS = 620; // .hero-burst-item.is-in, with its stagger
 
-  // Send the last slide's prizes back into the box, then lose the box.
+// Prizes back down into the box, then the flaps shut. Nothing to do if
+// it's already closed and empty.
+async function heroCloseUp(token) {
+  const burst = document.getElementById("homeHeroBurst");
   const leaving = [...burst.children];
   leaving.forEach((el, n) => {
     el.style.setProperty("--d", `${n * 40}ms`);
     el.classList.remove("is-out");
     el.classList.add("is-in");
   });
-  canvasHost.classList.add("is-away");
-  await new Promise((r) => setTimeout(r, leaving.length ? 380 : 0));
+  if (leaving.length) await new Promise((r) => setTimeout(r, HERO_IN_MS));
   if (token !== heroShowToken) return;
   leaving.forEach((el) => el.remove());
+  if (heroViewer) await heroViewer.close(HERO_CLOSE_MS);
+}
 
-  // The next crate: a fresh viewer in this slide's skin (one live context
-  // at a time, rather than one per slide held open).
-  if (heroViewer) heroViewer.dispose();
-  heroViewer = null;
-  canvasHost.innerHTML = "";
-  const canvas = document.createElement("canvas");
-  canvasHost.appendChild(canvas);
+let heroShowStart = 0;
+async function playHeroShow(i) {
+  const token = ++heroShowToken;
+  heroShowStart = performance.now();
+  clearHeroTimers();
+  const slide = HOME_HERO_SLIDES[i];
+  const stage = document.getElementById("homeHeroStage");
+  const burst = document.getElementById("homeHeroBurst");
+  const canvasHost = document.getElementById("homeHeroBox");
   const cat = CATEGORIES[slide.tier];
-  const viewer = await createBoxViewer(canvas, slide.tier, crateBoxKind(cat), { headroom: HERO_BOX_HEADROOM, fitOpen: true });
-  if (token !== heroShowToken) return viewer.dispose();
-  heroViewer = viewer;
-  canvasHost.classList.remove("is-away");
 
-  // The prizes, cut out, waiting inside the box.
+  // The prizes, cut out, fetched while the box is busy.
   const prizes = heroBurstPrizes(slide);
-  const urls = await Promise.all(prizes.map((p) => (p.category === "stocks" ? p.image : cutoutImage(p.image))));
+  const urlsReady = Promise.all(prizes.map((p) => (p.category === "stocks" ? p.image : cutoutImage(p.image))));
+
+  if (!heroViewer) {
+    // First time on stage (or back on Home after leaving it): the box
+    // comes up already in this slide's skin.
+    canvasHost.innerHTML = "";
+    burst.innerHTML = "";
+    const canvas = document.createElement("canvas");
+    canvasHost.appendChild(canvas);
+    canvasHost.classList.add("is-away");
+    const viewer = await createBoxViewer(canvas, slide.tier, crateBoxKind(cat), { headroom: HERO_BOX_HEADROOM, fitOpen: true });
+    if (token !== heroShowToken) return viewer.dispose();
+    heroViewer = viewer;
+    canvasHost.classList.remove("is-away");
+  } else {
+    // Already here: close it up (a no-op when the last slide did so on
+    // time), and have the next skin ready before the lap starts.
+    const skinReady = heroViewer.loadSkin(slide.tier);
+    await heroCloseUp(token);
+    await skinReady;
+    if (token !== heroShowToken) return;
+  }
+  const viewer = heroViewer;
+
+  if (heroReducedMotion.matches) {
+    await viewer.setSkin(slide.tier);
+  } else {
+    // The lap, changing crates halfway round.
+    heroLater(() => viewer.setSkin(slide.tier), HERO_SPIN_MS / 2);
+    await viewer.spin(HERO_SPIN_MS);
+  }
+  const urls = await urlsReady;
   if (token !== heroShowToken) return;
+
   const w = stage.clientWidth, h = stage.clientHeight;
   prizes.forEach((p, n) => {
     const slot = HERO_BURST_SLOTS[n];
@@ -4798,17 +4833,22 @@ async function playHeroShow(i) {
     burst.appendChild(el);
   });
 
-  // Face forward, lid up, and out they come.
   if (heroReducedMotion.matches) {
     burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out"));
     return;
   }
-  heroLater(() => viewer.setPaused(true), 150);
-  heroLater(() => viewer.open(), 600);
-  // Out when the mouth is clear — the cardboard box's flaps fold back
-  // across most of their clip, and prizes leaving before that go through
-  // them.
-  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), 600 + viewer.mouthClearMs);
+  // Lid up, and out they come once the mouth is clear — the cardboard
+  // box's flaps fold back across most of their clip, and prizes leaving
+  // before that go through them.
+  viewer.open();
+  heroLater(() => burst.querySelectorAll(".hero-burst-item").forEach((el) => el.classList.add("is-out")), viewer.mouthClearMs);
+  // Shut again just as the slide runs out, so the next one starts on its
+  // lap. Timed from the slide's start, which was this function's start
+  // less however long the close-up and lap took.
+  // If getting here ate the slide (a slow first load), it stays open and
+  // the next slide closes it instead of shutting the moment it opened.
+  const closeAt = HERO_SLIDE_MS - HERO_IN_MS - HERO_CLOSE_MS - 150 - (performance.now() - heroShowStart);
+  if (closeAt > viewer.mouthClearMs + 1500) heroLater(() => heroCloseUp(token), closeAt);
 }
 
 function buildHomeHero() {
@@ -4831,7 +4871,7 @@ function buildHomeHero() {
     dots.appendChild(dot);
   });
 
-  // No pause on hover: the show turns over every 7s whatever the pointer
+  // No pause on hover: the show turns over every 9s whatever the pointer
   // is doing, so it never sits on one crate just because the mouse is
   // resting on the billboard.
 
