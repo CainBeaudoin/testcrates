@@ -4847,9 +4847,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .slab-reveal .exits-grid { margin-top: 4px; }
 
-/* A crate that's been opened shows what was in it: the piece, cut out and
-   floating on the same slow lean the reveal uses, its price under it, then
-   its name. No card chrome — the piece is the object. */
+/* A crate that's been opened shows what was in it: the product's photo on
+   the same slow lean the reveal uses, its price under it, then its name. */
 .price-card-img {
   display: block;
   width: 64%;
@@ -4879,8 +4878,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* A piece that couldn't be cut out (white on white) keeps its photo; the
-   rounding makes that read as a picture, and costs a cut-out nothing. */
+/* The photos are shot on white: rounded, they read as pictures, not as
+   white boxes. */
 .price-card-img, .slab-reveal .paper-reveal { border-radius: var(--r-md); }
 /* A certificate is flat paper, not a cut-out: a touch smaller. */
 .price-card.is-paper .price-card-img { padding: 6%; }
@@ -4889,7 +4888,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .price-card-img { animation: none; }
 }
 
-/* The reveal: the piece on a square stage, then its price, then its name. */
+/* The reveal: the photo on a square stage, then its price, then its name. */
 .slab-reveal .slab-stage { width: min(320px, 70vw); height: min(320px, 40vh); margin-bottom: 12px; }
 .reveal-name {
   margin: -6px auto 6px;
@@ -5549,6 +5548,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 
 /* --- Live pulls ---------------------------------------------------------- */
 .home-pulls .recent-pull-item { width: 184px; border-radius: var(--r-md); }
+.home-pulls .recent-pull-price { color: var(--positive); }
 .home-pulls .recent-pull-item img { width: 128px; height: 128px; background: #fff; border-radius: var(--r-sm); }
 
 /* --- How it works --------------------------------------------------------- */
@@ -6766,8 +6766,8 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     color: var(--text);
   }
   .lb-price { font-size: 0.8rem; font-weight: 800; color: var(--positive); font-variant-numeric: tabular-nums; }
-  .lb-pull.is-special .lb-price { color: var(--rarity-color); }
-  :root[data-theme="light"] .lb-pull.is-special .lb-price { filter: brightness(0.7) saturate(1.4); }
+  /* Always green, whatever the rarity: the outline already says how rare,
+     and a yellow or blue number read like a loss. */
   .lb-mult {
     margin-left: 6px;
     padding: 2px 6px;
@@ -6841,8 +6841,19 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   /* Rare and up: the picture is outlined in its rarity's colour, open or
      not — a line, not a glow, and nothing tinting the white behind the
      shot, so the photo never shows as a box inside a box. */
-  .lb-pull.is-special .lb-media { box-shadow: inset 0 0 0 1.5px var(--rarity-color); }
-  .live-bar.is-open .lb-pull.is-special .lb-media { box-shadow: inset 0 0 0 2px var(--rarity-color); }
+  /* Drawn as a layer over the photo, not an inset shadow under it: the
+     shot's own square white corners painted over the shadow and cut the
+     ring's rounded corners off. */
+  .lb-media { position: relative; }
+  .lb-pull.is-special .lb-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid var(--rarity-color);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .live-bar.is-open .lb-pull.is-special .lb-media::after { border-width: 2px; }
 
   /* A pull arriving pops in where it lands; a good one shakes as it does. */
   .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }

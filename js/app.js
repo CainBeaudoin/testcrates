@@ -562,12 +562,10 @@ function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-// What pops out of an opened crate: the product itself, cut out of its
-// white background so it floats like the pieces everywhere else on the
-// site; for a stock, its paper certificate.
+// What pops out of an opened crate: the product's own photo, as shot (a
+// stock's is its paper certificate). Kept a promise so callers don't care.
 function revealImageFor(prize) {
-  if (prize.category === "stocks") return Promise.resolve(prize.image);
-  return cutoutImage(prize.image);
+  return Promise.resolve(prize.image);
 }
 
 // Size + condition line shown on the reveal, Vault item detail, and
@@ -2131,9 +2129,9 @@ async function startRound(key, currency) {
   // box gets picked — final contents have to be locked in before the
   // fairness commitment below, or the hash couldn't be trusted.
   boxPrizes = boxPrizes.map((p) => player.rerollIfDuplicate(key, p, cat.pool));
-  // Cut the three pieces out now, while the reel is still spinning, so each
+  // Fetch the three photos now, while the reel is still spinning, so each
   // is ready the moment its lid opens.
-  boxPrizes.forEach((prize) => revealImageFor(prize));
+  boxPrizes.forEach((prize) => (new Image().src = prize.image));
   selectedIndex = null;
   roundLocked = false;
   roundAwaitingPick = true;
@@ -2275,7 +2273,7 @@ function openSlot(index, { isYours, revealCard = true }) {
   imgEl.alt = `${prize.name}, ${meta.label}, ${formatPrice(prize)}`;
   slot.querySelector(".price-card-price").textContent = formatPrice(prize);
   slot.querySelector(".price-card-name").textContent = prize.name;
-  // Cut out while the reel spun (see where boxPrizes is drawn), so this is
+  // Fetched while the reel spun (see where boxPrizes is drawn), so this is
   // a cache hit and the piece is there the instant the lid opens
   // rather than a beat later.
   revealImageFor(prize).then((url) => {
@@ -2325,8 +2323,8 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   revealBannerEl.textContent = meta.label;
 
-  // The piece itself, cut out and floating (a stock: its certificate).
-  // Cut out when the round started, so this is normally already cached.
+  // The piece's own photo (a stock: its certificate), fetched when the
+  // round started, so normally already cached.
   prizeRevealImg.removeAttribute("src");
   prizeRevealImg.alt = prize.name;
   revealImageFor(prize).then((url) => {
