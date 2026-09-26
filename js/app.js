@@ -3777,7 +3777,7 @@ function renderReferralPanel() {
       <span class="referral-link-text" title="${referralLink()}">${referralLink().replace(/^https?:\/\//, "")}</span>
       <button type="button" class="referral-copy-btn" id="referralCopyBtn"><span class="referral-copy-label">Copy link</span></button>
     </div>
-    <p class="referral-invite-note">Friends who join with your link get <b>${player.REFERRAL_SIGNUP_CREDITS} Credits</b> to start. You earn your share once they add cash and open drops.</p>
+    <p class="referral-invite-note">Friends who join with your link get <b>${player.REFERRAL_SIGNUP_CREDITS} Credits</b> to start. You earn as soon as they open a drop.</p>
     <div class="referral-current">
       <div class="referral-share-block">
         <span class="share">${Math.round(referral.share * 100)}%</span>
