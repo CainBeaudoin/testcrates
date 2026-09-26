@@ -393,14 +393,157 @@ function buildPaperSheet(bounds) {
 
 // The box's own kraft texture is already lit for display; under the
 // exposure the collage-skinned boxes need it blew out to beige. Matte board
-// either way.
+// either way. `map`, when given, is that crate's stickered copy of the
+// texture (see stickerTextureFor).
 const OD_EXPOSURE = 1.05;
-function settleOdMaterials(root) {
+function settleOdMaterials(root, map = null) {
   root.traverse((node) => {
     if (!node.isMesh || !node.material) return;
     node.material = node.material.clone();
     node.material.envMapIntensity = 0.9;
+    if (map) node.material.map = map;
   });
+}
+
+// ---- Grail stickers on the od box ---------------------------------------
+// The kraft box keeps its own print, and each crate slaps a few of its
+// grails on it as die-cut stickers: the piece cut out of its photo, a white
+// border round its silhouette, a soft shadow under it. app.js hands over a
+// function that resolves to cut-out image URLs (it owns the pools and the
+// cutting); it's called on first draw, not at registration.
+const stickerArt = new Map(); // tierKey -> () => Promise<string[]>
+const stickerTextures = new Map(); // tierKey -> Promise<Texture|null>
+
+/** @param {string} tierKey @param {() => Promise<string[]>} getImages */
+export function registerTierStickers(tierKey, getImages) {
+  stickerArt.set(tierKey, getImages);
+  stickerTextures.delete(tierKey);
+}
+
+// Where the stickers go, in the box texture's own pixels (1024 square).
+// The four walls run as one band across it (y ~448-582): the end with the
+// big ODTO mark (x 0-205), a CHOSEN side (205-512), the end with the ODTO
+// label (512-716), the other CHOSEN side (716-1024); the lid flaps sit
+// above. The band is continuous round the box, so a sticker across a wall
+// boundary wraps the corner, as a real one slapped on would. `s` is the
+// sticker's longest side, `r` its tilt in degrees.
+const STICKER_SPOTS = [
+  { x: 212, y: 522, s: 118, r: -9 }, // wrapping the corner onto a CHOSEN side
+  { x: 492, y: 548, s: 92, r: 11 }, // the other end of that side, low
+  { x: 640, y: 512, s: 104, r: -6 }, // the label end
+  { x: 952, y: 520, s: 118, r: 8 }, // far CHOSEN side, by its corner
+  { x: 470, y: 300, s: 120, r: -12 }, // on the lid
+];
+const STICKER_BORDER = 7;
+
+function stickerCanvas(img, size) {
+  const k = size / Math.max(img.width, img.height);
+  const w = Math.round(img.width * k);
+  const h = Math.round(img.height * k);
+  const pad = STICKER_BORDER + 2;
+  const c = document.createElement("canvas");
+  c.width = w + pad * 2;
+  c.height = h + pad * 2;
+  const ctx = c.getContext("2d");
+  // The border: the piece's silhouette in white, stamped in a ring.
+  const sil = document.createElement("canvas");
+  sil.width = w;
+  sil.height = h;
+  const sctx = sil.getContext("2d");
+  sctx.drawImage(img, 0, 0, w, h);
+  sctx.globalCompositeOperation = "source-in";
+  sctx.fillStyle = "#fff";
+  sctx.fillRect(0, 0, w, h);
+  for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
+    ctx.drawImage(sil, pad + Math.cos(a) * STICKER_BORDER, pad + Math.sin(a) * STICKER_BORDER);
+  }
+  ctx.drawImage(sil, pad, pad); // fill any pinholes inside the ring
+  ctx.drawImage(img, pad, pad, w, h);
+  return c;
+}
+
+// How well a cut-out reads as a sticker: colour and depth of tone over its
+// opaque pixels. A white sneaker or a clear figure on a white border is a
+// blank patch from across the room; a red jacket isn't.
+function stickerPunch(img) {
+  const n = 48;
+  const c = document.createElement("canvas");
+  c.width = c.height = n;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, n, n);
+  const px = ctx.getImageData(0, 0, n, n).data;
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < px.length; i += 4) {
+    if (px[i + 3] < 200) continue;
+    const hi = Math.max(px[i], px[i + 1], px[i + 2]);
+    const lo = Math.min(px[i], px[i + 1], px[i + 2]);
+    sum += (hi - lo) + (255 - hi) * 0.6;
+    count++;
+  }
+  return count ? sum / count : 0;
+}
+
+const STICKERS_PER_BOX = 4;
+
+async function buildStickerTexture(tierKey, base) {
+  const urls = await stickerArt.get(tierKey)();
+  const loaded = (await Promise.all(urls.map(loadImage))).filter(Boolean);
+  if (!loaded.length || !base?.image) return null;
+  // The punchiest few, kept in the order they came (most valuable first).
+  const keep = new Set(
+    loaded
+      .map((img) => ({ img, punch: stickerPunch(img) }))
+      .sort((a, b) => b.punch - a.punch)
+      .slice(0, STICKERS_PER_BOX)
+      .map(({ img }) => img)
+  );
+  const imgs = loaded.filter((img) => keep.has(img));
+
+  const size = base.image.width || 1024;
+  const k = size / 1024;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(base.image, 0, 0, size, size);
+
+  STICKER_SPOTS.forEach((spot, i) => {
+    const sticker = stickerCanvas(imgs[i % imgs.length], spot.s * k);
+    ctx.save();
+    ctx.translate(spot.x * k, spot.y * k);
+    ctx.rotate((spot.r * Math.PI) / 180);
+    ctx.shadowColor = "rgba(40, 22, 8, 0.35)";
+    ctx.shadowBlur = 5 * k;
+    ctx.shadowOffsetY = 2 * k;
+    ctx.drawImage(sticker, -sticker.width / 2, -sticker.height / 2);
+    ctx.restore();
+  });
+
+  // Same sampling, orientation and colour space as the box's own texture,
+  // just a new picture.
+  const tex = base.clone();
+  tex.source = new THREE.Source(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function odBaseMap(root) {
+  let map = null;
+  root.traverse((node) => {
+    if (!map && node.isMesh && node.material?.map) map = node.material.map;
+  });
+  return map;
+}
+
+function stickerTextureFor(tierKey, baseModel) {
+  if (!stickerArt.has(tierKey)) return Promise.resolve(null);
+  if (!stickerTextures.has(tierKey)) {
+    stickerTextures.set(
+      tierKey,
+      buildStickerTexture(tierKey, odBaseMap(baseModel)).catch(() => null)
+    );
+  }
+  return stickerTextures.get(tierKey);
 }
 
 // The od box's outline with its Open clip played to the end, in the
@@ -473,7 +616,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 
         const root = baseModel.clone(true);
         if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
-        if (kind === "od") settleOdMaterials(root);
+        if (kind === "od") settleOdMaterials(root, await stickerTextureFor(tierKey, baseModel));
         // Snapshot always represents the closed/idle state (same as the
         // box's lid never being open in it) — the paper sheet doesn't need
         // to exist in this scene at all.
@@ -518,7 +661,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
   if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
-  if (kind === "od") settleOdMaterials(root);
+  if (kind === "od") settleOdMaterials(root, await stickerTextureFor(tierKey, baseModel));
   const openOutline = kind === "od" && fitOpen ? measureOpenOutline(root, baseModel.userData.clips) : null;
   const { scene, camera, group, lid, bounds } = buildRig(root);
   const zoom = openOutline ? fitForOpen(root, group, openOutline, bounds) : 1;

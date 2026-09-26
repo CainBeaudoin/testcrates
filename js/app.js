@@ -1,4 +1,4 @@
-import { createBoxViewer, getBoxSnapshot, registerTierArt } from "./boxViewer.js";
+import { createBoxViewer, getBoxSnapshot, registerTierArt, registerTierStickers } from "./boxViewer.js";
 import { createSlabViewer, renderSlabImage, attachTiltRow } from "./slab.js";
 import { RARITY_META } from "./rarity.js";
 import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
@@ -11,7 +11,7 @@ import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
 import { playClick, playHover, playPop, playDing, playFeedChime, toggleMuted, isMuted } from "./sound.js";
-import { ICONS } from "./icons.js";
+import { ICONS, brandMarkHTML } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
 import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
@@ -169,6 +169,11 @@ function tierOf(key) {
 Object.entries(CATEGORIES).forEach(([key, cat]) => {
   if (cat.boxKind) return; // the Stocks printer has no product art to wear
   registerTierArt(key, cat.pool.map((p) => p.image));
+  // The cardboard box wears some of its most valuable pieces as stickers,
+  // cut out of their photos (cutoutImage, further down; called on first
+  // draw). boxViewer keeps the ones that stand out best on the board.
+  const picks = [...cat.pool].sort((a, b) => b.price - a.price).slice(0, 10);
+  registerTierStickers(key, () => Promise.all(picks.map((p) => cutoutImage(p.image))));
 });
 
 const MAX_BATCH_QTY = 8;
@@ -1817,7 +1822,7 @@ function renderCategories() {
         <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>
         <span class="category-tier-price">${cat.label}</span>
       </div>
-      ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${cat.poweredBy}</span>` : `<span class="category-powered-by-spacer"></span>`}
+      ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : `<span class="category-powered-by-spacer"></span>`}
       ${buildPityHTML(key)}
       <div class="category-qty">
         <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
@@ -4880,7 +4885,7 @@ function showHomeSlide(i, { instant = false } = {}) {
     document.getElementById("homeHeroEyebrow").textContent = `Top pull in ${cat.badge}`;
     document.getElementById("homeHeroSub").innerHTML =
       `<b>${prize.name}.</b> Worth $${prize.price.toLocaleString()}, and it&rsquo;s sitting in a ${cat.label} crate.`;
-    document.getElementById("homeHeroOpen").textContent = `Open ${cat.badge} · ${cat.label}`;
+    document.getElementById("homeHeroOpen").textContent = "Open";
     hero.classList.remove("is-swapping");
   };
   clearTimeout(homeHeroSwapTimer);
@@ -4926,7 +4931,7 @@ function homeCrateCardHTML(key, cat) {
   return `
       <div class="home-crate" data-tier="${key}" data-line="${lineOf(key)}">
         <div class="crate-panel">
-          <span class="crate-brand">${cat.poweredBy ?? "Chosen"}</span>
+          <span class="crate-brand" title="Powered by ${cat.poweredBy ?? "Chosen"}">${brandMarkHTML(cat.poweredBy ?? "Chosen")}</span>
           <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
           <div class="crate-could">
             <span>Could contain</span>
@@ -4947,7 +4952,7 @@ function homeCrateCardHTML(key, cat) {
             <span><i>Rare+ in</i><b>${pity.rareRoundsLeft} ${pity.rareRoundsLeft === 1 ? "open" : "opens"}</b></span>
           </div>
           <div class="crate-supply" title="Rounds toward your guaranteed Rare+"><i style="width:${pityPct}%"></i></div>
-          <button class="home-btn home-btn-solid home-crate-open">Open for $${cat.price.toLocaleString()}</button>
+          <button class="home-btn home-btn-solid home-crate-open">Open</button>
         </div>
       </div>`;
 }
@@ -5126,8 +5131,8 @@ function spinGrail(tile, target) {
 }
 
 // ---- How it works: three pictures made by the app itself ----
-// 1: the crate, stacked three deep. 2: three slabs fanned out, the middle
-// one picked. 3 is words only (the three ways out), in the markup.
+// 1: the crate, stacked three deep. 2: three grails, cut out and fanned,
+// the middle one in front. 3 is words only (the three ways out), in the markup.
 let homeStepsBuilt = false;
 function renderHomeSteps() {
   if (homeStepsBuilt) return;
@@ -5136,16 +5141,20 @@ function renderHomeSteps() {
   getBoxSnapshot("sneakers", "od").then((url) => {
     ["howCrateA", "howCrateB", "howCrateC"].forEach((id) => (document.getElementById(id).src = url));
   });
-  // The picked card is the most valuable piece in the flagship crate; the
-  // two either side come from the other lines, so the fan shows the range.
+  // Three grails, cut out of their white backgrounds so they float free:
+  // the flagship crate's top piece in front, one from each other line
+  // either side of it, so the fan shows the range.
   const top = (key) => [...CATEGORIES[key].pool].sort(byPriceDesc)[0];
-  const cards = [
+  const pieces = [
     ["howCardL", "collectibles"],
     ["howCardC", "sneakers"],
     ["howCardR", "streetwear"],
   ];
-  cards.forEach(([id, key]) => {
-    renderSlabImage(slabInfoFor(top(key), key)).then((url) => (document.getElementById(id).src = url));
+  pieces.forEach(([id, key]) => {
+    const p = top(key);
+    const img = document.getElementById(id);
+    img.title = p.name;
+    cutoutImage(p.image).then((url) => (img.src = url));
   });
 }
 

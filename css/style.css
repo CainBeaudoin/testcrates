@@ -4417,7 +4417,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   .drop-detail-active .category-box-canvas { width: 132px; height: 132px; }
   .drop-detail-active .category-card { padding: 16px 16px; }
   /* Undo the list view's hide — the tier page has room for the credit. */
-  .drop-detail-active .category-powered-by { display: block; }
+  .drop-detail-active .category-powered-by { display: flex; }
 
   /* --- Drops: picking screen (reel + 3 boxes) ------------------------- */
 
@@ -7112,23 +7112,19 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .how-crate-a { left: 2%; top: 4%; transform: rotate(-4deg); }
 .how-crate-b { right: 2%; top: 0; transform: scaleX(-1) rotate(-3deg); }
 .how-crate-c { left: 22%; top: 30%; width: 62%; z-index: 1; }
-/* 2 — three slabs fanned, the middle one picked. */
+/* 2 — three grails cut out of their backgrounds, fanned, the middle one
+   in front. */
 .how-art-pick { display: flex; align-items: center; justify-content: center; }
-.how-card { height: 170px; object-fit: contain; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.16)); }
-.how-card-l { position: absolute; left: 12%; transform: rotate(-9deg) scale(0.86); opacity: 0.9; }
-.how-card-r { position: absolute; right: 12%; transform: rotate(9deg) scale(0.86); opacity: 0.9; }
-.how-card-picked { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; transform: translateY(-8px); }
-.how-card-c { height: 184px; }
-.how-chip {
-  margin-top: -14px;
-  padding: 5px 13px;
-  border-radius: var(--r-pill);
-  background: var(--positive);
-  color: #062b12;
-  font-size: 0.72rem;
-  font-weight: 800;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+.how-card {
+  position: absolute;
+  width: 46%;
+  height: 72%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.18));
 }
+.how-card-l { left: 8%; top: 2%; transform: rotate(-8deg); }
+.how-card-r { right: 6%; top: 0; transform: rotate(8deg); }
+.how-card-c { z-index: 1; left: 10%; top: 30%; width: 80%; height: 66%; transform: rotate(-5deg) scale(1.3); }
 /* 3 — the three ways out. */
 .how-art-exits { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
 .how-exit {
@@ -7210,7 +7206,10 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 }
 .grail-strip { display: block; will-change: transform, filter; }
 .grail-strip.is-blurred { filter: blur(2.5px); }
-.grail-item { display: block; width: 100%; aspect-ratio: 1; padding: 14px; }
+/* Each piece is exactly one window tall, whatever the window's shape, so
+   the reel's step (the window's height, in spinGrail) always lands flush. */
+.grail-window { container-type: size; }
+.grail-item { display: block; width: 100%; height: 100cqh; padding: 14px; }
 .grail-item img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .grail-badge {
@@ -7230,8 +7229,6 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
 }
 .home-grail.is-grail .grail-badge { opacity: 1; transform: none; }
-/* A grail glows warm under its window — no stroke round it. */
-#homeGrails .home-grail.is-grail .home-grail-media { box-shadow: 0 12px 30px -10px rgba(245, 106, 61, 0.55), 0 0 0 0 transparent; }
 
 .home-grail-meta {
   display: flex;
@@ -7244,10 +7241,9 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .home-grail-meta .home-grail-name { flex: 1; min-width: 0; }
 .home-grail-price { font-size: 0.9rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 
-/* During a spin: text and tag out, glow off. */
+/* During a spin: text and tag out. */
 .home-grail.is-changing .home-grail-meta { opacity: 0; transform: translateY(4px); }
 .home-grail.is-changing .grail-badge { opacity: 0; transform: translateY(-4px); }
-#homeGrails .home-grail.is-changing .home-grail-media { box-shadow: none; }
 
 /* One light sweep across a grail as it lands. */
 .grail-shine {
@@ -7274,7 +7270,54 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   to { left: 130%; }
 }
 
+/* --- Grails as a bento: the first piece big on the left, four small in
+   a square to its right. The big tile stretches to the two rows the small
+   ones make, and its window takes whatever shape that leaves. */
+#homeGrails { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 16px; }
+#homeGrails .home-grail:first-child { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+#homeGrails .home-grail:first-child .home-grail-media { flex: 1 1 auto; aspect-ratio: auto; }
+#homeGrails .home-grail:first-child .grail-item { padding: 36px; }
+#homeGrails .home-grail:first-child .home-grail-name,
+#homeGrails .home-grail:first-child .home-grail-price { font-size: 1.05rem; }
+#homeGrails .home-grail:first-child .grail-badge { top: 16px; right: 16px; font-size: 0.72rem; padding: 4px 11px; }
+@media (max-width: 640px) {
+  #homeGrails { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 10px; }
+  #homeGrails .home-grail:first-child { grid-column: 1 / -1; grid-row: auto; }
+  #homeGrails .home-grail:first-child .home-grail-media { flex: none; aspect-ratio: 4 / 3; }
+  #homeGrails .home-grail:first-child .grail-item { padding: 20px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .grail-strip { transition: none !important; }
   .home-grail.is-shining .grail-shine::before { animation: none; }
 }
+
+/* --- Open buttons: green, everywhere -------------------------------------
+   Every button that opens a crate is the same solid green pill with dark
+   type, so "open" reads the same on Home, the billboard and Drops. The
+   price is already on the card above it; the button just says Open. */
+:root { --open-green: #22c55e; --open-green-hover: #2fd46b; --open-ink: #04160c; }
+.category-open-btn,
+#homeCrates .home-crate-open,
+.home-btn-open,
+.home-hero .home-btn-open {
+  background: var(--open-green);
+  color: var(--open-ink);
+  font-weight: 800;
+  box-shadow: 0 6px 16px -8px rgba(22, 163, 74, 0.7);
+}
+.category-open-btn:hover,
+#homeCrates .home-crate-open:hover,
+.home-btn-open:hover,
+.home-hero .home-btn-open:hover { background: var(--open-green-hover); }
+
+/* --- Partner logos: ODTO's stacked mark, Robinhood's feather ------------- */
+.crate-brand { display: inline-flex; align-items: center; gap: 5px; }
+.crate-brand .brand-mark-odto { display: block; width: 24px; height: 24px; }
+.crate-brand:has(.brand-mark-odto) { padding: 6px; border-radius: var(--r-sm); }
+.crate-brand .brand-mark-robinhood { width: 14px; height: 14px; }
+.category-powered-by { display: flex; align-items: center; justify-content: center; gap: 5px; height: 15px; }
+.category-powered-by-spacer { height: 23px; } /* the line above, plus its margin */
+.category-powered-by .brand-mark { flex: none; color: var(--text); }
+.category-powered-by .brand-mark-odto { width: 15px; height: 15px; }
+.category-powered-by .brand-mark-robinhood { width: 12px; height: 12px; }

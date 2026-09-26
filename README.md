@@ -161,6 +161,11 @@ Each crate also wears its own pool: `boxViewer.js` bakes a tiled collage of
 that crate's product shots into the 3D box texture (`registerTierArt`), so
 a Collectibles crate is visibly covered in Bearbricks and a Sneakers crate
 in shoes.
+The CHOSEN × ODTO cardboard box (`box-chosen-od.glb`, used on Home and
+Drops) keeps its own print instead, and wears a few of its crate's grails
+as die-cut stickers: `registerTierStickers` hands boxViewer cut-outs of the
+crate's priciest pieces, and it paints the most colourful four onto a copy
+of the box texture at fixed spots (`STICKER_SPOTS`).
 
 ## Adding a new crate
 
