@@ -3770,18 +3770,15 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text-faint);
 }
 
+/* The Credits bonus reads as part of the label ("CREDITS 1.1X"), on the
+   same line and in the same type as "CASH BACK", just a shade lighter:
+   no pill around it. */
 .referral-claim-bonus {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: rgba(74, 222, 128, 0.18);
-  color: var(--positive);
-  font-size: 0.6rem;
-  font-weight: 800;
+  margin-left: 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  opacity: 0.6;
 }
-.exit-btn-primary .referral-claim-bonus { background: var(--inverse-tint); color: #1f9d55; }
-.deposit-btn .referral-claim-bonus { background: rgba(4, 22, 12, 0.18); color: #04160c; }
 
 .referral-section-label {
   font-size: 0.62rem;
