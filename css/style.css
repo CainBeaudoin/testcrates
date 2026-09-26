@@ -7403,3 +7403,62 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 /* Withdraw sits beside the green Deposit: same corners, so they read as a pair. */
 .account-wallet-actions .modal-btn { border-radius: 9px; }
 .account-wallet-actions .modal-btn:not(.deposit-btn) { border: 1.5px solid transparent; }
+
+/* --- Home billboard, open to the page ------------------------------------
+   No panel: the copy, the crate and the burst sit straight on the page's
+   own background. Its ink follows the theme now it isn't on a fixed pale
+   stage, and the slide accents lift toward white in dark mode so a dark
+   accent (the $1,000 slide's) still reads. The crate floats over a soft
+   shadow on the floor. */
+.home-hero {
+  --hero-ink: var(--text);
+  --hero-ink-dim: var(--text-dim);
+  background: none;
+  border-radius: 0;
+}
+.home-hero::before { content: none; }
+.home-hero-copy { padding-left: 0; }
+.home-hero-dot::before { background: color-mix(in srgb, var(--hero-ink) 14%, transparent); }
+:root:not([data-theme="light"]) .home-hero-eyebrow {
+  background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--hero-accent) 55%, #fff),
+    color-mix(in srgb, var(--hero-accent2) 55%, #fff));
+}
+:root:not([data-theme="light"]) .home-hero-media::before {
+  color: color-mix(in srgb, var(--hero-accent) 40%, #fff);
+}
+
+/* The float: the crate drifts up and back, and its shadow on the floor
+   tightens and fades as it rises, so it reads as hovering over the page. */
+.home-hero-box canvas { animation: heroFloat 4.2s ease-in-out infinite; }
+.home-hero-box::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: 16.5%;
+  width: 58%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+  transform: translateX(-50%);
+  animation: heroFloatShadow 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+:root:not([data-theme="light"]) .home-hero-box::after {
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes heroFloatShadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(0.84); opacity: 0.7; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-box canvas, .home-hero-box::after { animation: none; }
+}
+@media (max-width: 640px) {
+  .home-hero-copy { padding-left: 0; padding-right: 0; }
+}
