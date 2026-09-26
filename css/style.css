@@ -6380,3 +6380,14 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 @media (prefers-reduced-motion: reduce) {
   :is(.modal-btn, .category-open-btn, .home-btn, .drop-line, .qty-btn, .market-chip, .exit-btn):active { transform: none; }
 }
+
+/* Rewards: both columns run to the same bottom edge. The columns stretch
+   to the taller one and each column's last card (Leaderboard, How to earn
+   more) takes up the slack, so their bottoms line up. Two columns only
+   exist above 900px; below that the cards stack. */
+@media (min-width: 901px) {
+  .rewards-grid { align-items: stretch; }
+  .rewards-col > .rewards-card:last-child { flex: 1 1 auto; }
+  /* Any extra height goes above the pager, which stays on the bottom edge. */
+  .rewards-leaderboard .leaderboard-pager { margin-top: auto; }
+}
