@@ -977,9 +977,11 @@ function closeWithdrawModal() {
   setTimeout(() => withdrawModal.classList.add("hidden"), 250);
 }
 
+// The topbar's cash pill tops up, same as the + beside it. Withdrawing
+// lives only on the Account page (its Withdraw button).
 walletCashBtn.addEventListener("click", () => {
   playClick();
-  openWithdrawModal();
+  openAddFundsModal();
 });
 accountWithdrawBtn.addEventListener("click", () => {
   playClick();
