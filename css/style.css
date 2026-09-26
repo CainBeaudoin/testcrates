@@ -6167,7 +6167,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 
 /* --- Recent pulls on phones: an app-icon tile ----------------------------
    Desktop's dock is a panel; a phone has no room for one, so here it's
-   just the prize tile, app-icon sized, parked bottom-right over the tab
+   just the prize tile, app-icon sized, parked bottom-left over the tab
    bar. The newest pull swipes through it (and a Rare+ one still glows and
    shakes); tapping it opens that pull. It ducks out of the way while the
    page is scrolling and comes back a moment after you stop, and isn't
@@ -6176,8 +6176,8 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   .pull-dock {
     display: block;
     position: fixed;
-    left: auto !important;
-    right: 14px;
+    left: 14px !important;
+    right: auto;
     bottom: calc(var(--bottom-nav-h) + 14px + env(safe-area-inset-bottom)) !important;
     z-index: 60;
     width: 64px;
