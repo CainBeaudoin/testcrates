@@ -7462,3 +7462,19 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 @media (max-width: 640px) {
   .home-hero-copy { padding-left: 0; padding-right: 0; }
 }
+
+/* No watermark word behind the crate. And the show itself bigger and a
+   little lower, filling the half it sits in: the stage grows past the
+   media box (the burst is placed as shares of the stage, so the crate, its
+   mouth and every prize scale together), and nothing clips it now there's
+   no panel edge to clip to. */
+.home-hero-media::before { content: none; }
+.home-hero { overflow: visible; }
+@media (min-width: 641px) {
+  .home-hero-stage { inset: 2% -6% -12% -8%; }
+  .home-hero-box { width: 66%; }
+}
+@media (max-width: 640px) {
+  .home-hero-stage { inset: 0 -4% -8%; }
+  .home-hero-box { width: 64%; }
+}
