@@ -291,17 +291,17 @@ try {
 
       <div id="boxRow" class="box-row hidden">
         <div class="box-slot" data-index="0">
-          <div class="price-card"><img class="price-card-slab" alt=""></div>
+          <div class="price-card"><img class="price-card-img" alt=""><b class="price-card-price"></b><span class="price-card-name"></span></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 1</div>
         </div>
         <div class="box-slot" data-index="1">
-          <div class="price-card"><img class="price-card-slab" alt=""></div>
+          <div class="price-card"><img class="price-card-img" alt=""><b class="price-card-price"></b><span class="price-card-name"></span></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 2</div>
         </div>
         <div class="box-slot" data-index="2">
-          <div class="price-card"><img class="price-card-slab" alt=""></div>
+          <div class="price-card"><img class="price-card-img" alt=""><b class="price-card-price"></b><span class="price-card-name"></span></div>
           <canvas class="box-canvas"></canvas>
           <div class="box-caption">Crate 3</div>
         </div>
@@ -637,13 +637,12 @@ try {
   <div class="reveal-fx"></div>
   <div class="reveal-rarity-banner"><span></span></div>
   <div class="slab-reveal-body">
-    <!-- The case prints the name itself; this is the same name for screen
-         readers, kept out of the layout. -->
-    <h3 class="slab-sr prize-modal-name"></h3>
-    <!-- Stocks show their paper certificate here instead of the case; it
-         tilts toward the pointer the same way (see showPrizeModal). -->
-    <div class="slab-stage"><canvas id="prizeSlabCanvas"></canvas><img id="prizePaper" class="paper-reveal hidden" alt=""></div>
+    <!-- The piece itself, cut out of its photo (a stock: its certificate),
+         leaning toward the pointer (see showPrizeModal). Then the price,
+         and what it is under that. -->
+    <div class="slab-stage"><img id="prizeRevealImg" class="paper-reveal" alt=""></div>
     <p class="slab-price prize-modal-price"></p>
+    <h3 class="reveal-name prize-modal-name"></h3>
     <p id="prizeModalMeta" class="slab-note"></p>
     <span id="multiplierBadge" class="multiplier-badge hidden"></span>
     <span id="streakBadge" class="streak-badge hidden"></span>

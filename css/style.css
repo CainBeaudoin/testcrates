@@ -67,6 +67,11 @@
   /* Money and status. Bright on black, too pale on white — the light
      theme darkens them rather than picking different hues. */
   --positive: #4ade80;
+  /* The green button (Open, Deposit, Cash Out, claims): flat green, a thin
+     black keyline, dark green type — the same in both themes. */
+  --open-green: #7bfc7e;
+  --open-green-hover: #6ef071;
+  --open-ink: #112a14;
   --negative: #f87171;
   --warning: #fbbf24;
   --gold: #f2b84b;
@@ -1808,16 +1813,15 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
    it reliably wins over each button's own base class (.exit-btn,
    .primary-btn) regardless of which is later in this file. */
 button.deposit-btn {
-  background: linear-gradient(135deg, #5eead4, #16a34a);
-  color: #04160c;
-  border: none;
-  box-shadow: 0 6px 18px -4px rgba(52, 211, 153, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: var(--open-green);
+  color: var(--open-ink);
+  border: 1.5px solid #000;
+  border-radius: 9px;
+  box-shadow: none;
 }
-button.deposit-btn:hover {
-  background: linear-gradient(135deg, #7af0dd, #1cb954);
-  box-shadow: 0 8px 22px -4px rgba(52, 211, 153, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-.deposit-btn .exit-btn-sub { color: rgba(4, 22, 12, 0.6); }
+button.deposit-btn:hover { background: var(--open-green-hover); box-shadow: none; }
+button.deposit-btn:disabled { background: var(--control-fill); color: var(--text-faint); border-color: var(--line); }
+.deposit-btn .exit-btn-sub { color: rgba(17, 42, 20, 0.62); }
 
 /* --- Payment method picker --- */
 
@@ -2906,7 +2910,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .offer-btn:hover { background: var(--text); color: var(--text-inverse); }
 .offer-btn.accept { border-color: var(--positive); color: var(--positive); }
-.offer-btn.accept:hover { background: #4ade80; color: #000; }
+.offer-btn.accept:hover { background: var(--open-green); border-color: #000; color: var(--open-ink); }
 .offer-btn.decline { border-color: var(--negative); color: var(--negative); }
 .offer-btn.decline:hover { background: #f87171; color: #000; }
 
@@ -3414,12 +3418,12 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   height: 22px;
   margin-left: 2px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5eead4, #16a34a);
-  color: #04160c;
-  box-shadow: 0 2px 8px -2px rgba(22, 163, 74, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: var(--open-green);
+  color: var(--open-ink);
+  box-shadow: inset 0 0 0 1.5px #000;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
-#walletCashBtn:hover .wallet-add { transform: scale(0.9); box-shadow: 0 3px 12px -2px rgba(22, 163, 74, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+#walletCashBtn:hover .wallet-add { transform: scale(0.9); background: var(--open-green-hover); }
 @media (max-width: 640px) {
   .wallet-add { width: 18px; height: 18px; }
   .wallet-add svg { width: 10px; height: 10px; }
@@ -4843,25 +4847,57 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .slab-reveal .exits-grid { margin-top: 4px; }
 
-/* A crate that's been opened shows a rendered still of the same case. The
-   card chrome goes: the slab is already an object with its own frame, and
-   a panel around it is a second box around the same thing. */
-.price-card-slab {
+/* A crate that's been opened shows what was in it: the piece, cut out and
+   floating on the same slow lean the reveal uses, its price under it, then
+   its name. No card chrome — the piece is the object. */
+.price-card-img {
   display: block;
-  width: 100%;
-  height: auto;
+  width: 64%;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  object-fit: contain;
   will-change: transform;
-  /* The stills aren't in a .slab-row here — each sits in its own crate slot
-     — so the idle lean is borrowed from the package's keyframe by hand.
-     Staggered per slot so the three drift out of phase instead of marching
+  /* Staggered per slot so the three drift out of phase instead of marching
      in step. attachTiltRow takes over on hover and restores this after. */
   animation: slabLean 11s ease-in-out infinite alternate;
 }
-.box-slot:nth-child(2) .price-card-slab { animation-duration: 13.5s; animation-delay: -4s; }
-.box-slot:nth-child(3) .price-card-slab { animation-duration: 9.5s; animation-delay: -7s; }
+.box-slot:nth-child(2) .price-card-img { animation-duration: 13.5s; animation-delay: -4s; }
+.box-slot:nth-child(3) .price-card-img { animation-duration: 9.5s; animation-delay: -7s; }
+.price-card-price {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.price-card-name {
+  display: block;
+  overflow: hidden;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* A piece that couldn't be cut out (white on white) keeps its photo; the
+   rounding makes that read as a picture, and costs a cut-out nothing. */
+.price-card-img, .slab-reveal .paper-reveal { border-radius: var(--r-md); }
+/* A certificate is flat paper, not a cut-out: a touch smaller. */
+.price-card.is-paper .price-card-img { padding: 6%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .price-card-slab { animation: none; }
+  .price-card-img { animation: none; }
+}
+
+/* The reveal: the piece on a square stage, then its price, then its name. */
+.slab-reveal .slab-stage { width: min(320px, 70vw); height: min(320px, 40vh); margin-bottom: 12px; }
+.reveal-name {
+  margin: -6px auto 6px;
+  max-width: 34ch;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
 }
 
 /* --- Light-theme colour corrections --------------------------------------
@@ -4881,7 +4917,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 /* The Credits claim button carries both .exit-btn-primary and .deposit-btn.
    Primary's white-ink sub-label won on source order and put near-white text
    on the green gradient; the green button has its own dark ink for this. */
-.exit-btn-primary.deposit-btn .exit-btn-sub { color: rgba(4, 22, 12, 0.62); }
+.exit-btn-primary.deposit-btn .exit-btn-sub { color: rgba(17, 42, 20, 0.62); }
 
 /* --- Recent pulls: a watch face in the corner -----------------------------
    One prize at a time, floating over every screen. This replaced a
@@ -5918,7 +5954,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 #screen-game .box-canvas { width: var(--slot); height: var(--slot); }
 #screen-game .price-card { width: calc(var(--slot) * 0.88); }
 #screen-game .box-slot.open .price-card {
-  transform: translate(-50%, calc(var(--slot) * -0.35)) scale(1);
+  /* High enough that the price and name under the piece clear the open
+     box's flaps. */
+  transform: translate(-50%, calc(var(--slot) * -0.35 - 22px)) scale(1);
 }
 @media (max-width: 640px) {
   /* Three across, filling the width between the 16px gutters. */
@@ -5927,8 +5965,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   #screen-game .reel { max-width: calc(var(--slot) * 3 + 16px); margin-top: calc(var(--slot) * 0.54); }
   #screen-game .price-card { width: var(--slot); }
   #screen-game .box-slot.open .price-card {
-    transform: translate(-50%, calc(var(--slot) * -0.5)) scale(1);
+    transform: translate(-50%, calc(var(--slot) * -0.5 - 30px)) scale(1);
   }
+  #screen-game .price-card-img { width: 72%; }
+  #screen-game .price-card-price { font-size: 0.86rem; }
+  #screen-game .price-card-name { font-size: 0.62rem; }
 }
 
 /* --- Pinned page headers (desktop) ---------------------------------------
@@ -6015,14 +6056,11 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 
 /* --- Recent pulls dock: special pulls ------------------------------------
-   Rare and up: the tile glows in its rarity colour from the inside, the
-   frame picks up a soft halo, and the whole face shakes briefly once the
-   new card has swiped in (0.5s). Legendary shakes harder and its glow
-   keeps breathing while it's up. */
+   Rare and up: the frame is outlined in its rarity colour, and the whole
+   face shakes briefly once the new card has swiped in (0.5s). Legendary
+   shakes harder. */
 .pull-face { position: relative; border-radius: var(--r-sm); transition: box-shadow 0.4s ease; }
-.pull-face.is-special {
-  box-shadow: 0 0 0 2px var(--rarity-color), 0 0 18px -2px var(--rarity-color);
-}
+.pull-face.is-special { box-shadow: 0 0 0 2px var(--rarity-color); }
 /* Over the photo, not under it: the product shots are on solid white, so a
    glow behind them only showed in the margin. An inset shadow laid over
    the edges tints the shot's own border instead. */
@@ -6037,11 +6075,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   pointer-events: none;
 }
 .pull-face.is-shaking { animation: pullShake 0.62s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.45s both; }
-.pull-face.is-legendary.is-shaking {
-  animation: pullShakeBig 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.45s both,
-             pullGlow 1.8s ease-in-out 1.3s infinite;
-}
-.pull-face.is-legendary:not(.is-shaking) { animation: pullGlow 1.8s ease-in-out infinite; }
+.pull-face.is-legendary.is-shaking { animation: pullShakeBig 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.45s both; }
 @keyframes pullShake {
   10%, 90% { transform: translateX(-1px) rotate(-0.6deg); }
   20%, 80% { transform: translateX(2px) rotate(0.8deg); }
@@ -6054,13 +6088,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   30%, 50%, 70% { transform: translateX(-4px) rotate(-2deg) scale(1.04); }
   40%, 60% { transform: translateX(4px) rotate(2deg) scale(1.04); }
 }
-@keyframes pullGlow {
-  50% { box-shadow: 0 0 0 2px var(--rarity-color), 0 0 30px 2px var(--rarity-color); }
-}
 @media (prefers-reduced-motion: reduce) {
   .pull-face.is-shaking,
-  .pull-face.is-legendary.is-shaking,
-  .pull-face.is-legendary:not(.is-shaking) { animation: none; }
+  .pull-face.is-legendary.is-shaking { animation: none; }
 }
 
 /* Try Again sat flush under the "Your Box/Stock" caption on desktop;
@@ -6102,15 +6132,10 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   }
 }
 
-/* Recent / Live pulls strips: Rare and up get the same rarity-coloured
-   ring and glow as the corner dock, and a special one arriving pops in
-   with a short shake. Inset-led, because the strip's viewport clips
-   anything drawn far outside a tile. */
-.recent-pull-item.is-special {
-  box-shadow: inset 0 0 0 2px var(--rarity-color),
-              inset 0 0 22px color-mix(in srgb, var(--rarity-color) 28%, transparent),
-              0 0 12px -4px var(--rarity-color);
-}
+/* Recent / Live pulls strips: Rare and up get a clean outline in their
+   rarity's colour (no glow), and a special one arriving pops in with a
+   short shake. Inset, so the strip's scrolling viewport never clips it. */
+.recent-pull-item.is-special { box-shadow: inset 0 0 0 2px var(--rarity-color); }
 .recent-pull-item.is-special.is-new {
   animation: recentPullIn 0.32s var(--spring),
              pullShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.35s;
@@ -6291,7 +6316,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--hairline);
   }
   .pull-face.is-special {
-    box-shadow: 0 0 0 2px var(--rarity-color), 0 0 16px -2px var(--rarity-color), 0 8px 22px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 0 0 2px var(--rarity-color), 0 8px 22px rgba(0, 0, 0, 0.18);
   }
   .pull-face-screen { border-radius: var(--r-md); }
   .pull-face-card img { inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: var(--r-xs); }
@@ -6520,8 +6545,9 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 /* Copied: the site's green, for as long as the label says so. */
 .referral-copy-btn.is-copied,
 .referral-link-btn.is-copied {
-  background: linear-gradient(135deg, #5eead4, #16a34a);
-  color: #04160c;
+  background: var(--open-green);
+  color: var(--open-ink);
+  box-shadow: inset 0 0 0 1.5px #000;
 }
 .referral-copy-label, .referral-link-btn-label { display: inline-block; }
 .referral-invite-note {
@@ -6634,7 +6660,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.08);
     transition: height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .live-bar.is-open { height: 248px; }
+  .live-bar.is-open { height: 272px; }
   body.live-bar-min .live-bar { display: none; }
 
   /* Room at the bottom of every page for the bar, and the theme/sound
@@ -6784,7 +6810,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-    width: 156px;
+    width: 132px;
     height: auto;
     padding: 0;
     background: none;
@@ -6793,12 +6819,13 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   }
   .live-bar.is-open .lb-media {
     width: 100%;
-    height: 108px;
+    height: auto;
+    aspect-ratio: 1;
     border-radius: var(--r-md);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
-  .live-bar.is-open .lb-media img { width: 82%; height: 86%; transition: scale 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
-  .live-bar.is-open .lb-pull:hover .lb-media { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14); }
+  .live-bar.is-open .lb-media img { width: 90%; height: 90%; transition: scale 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+  .live-bar.is-open .lb-pull:hover .lb-media { transform: translateY(-3px); }
   .live-bar.is-open .lb-pull:hover .lb-media img { scale: 1.06; }
   .live-bar.is-open .lb-info { flex-direction: column; align-items: stretch; gap: 3px; padding: 0 2px; }
   .live-bar.is-open .lb-name { max-width: none; white-space: nowrap; font-size: 0.78rem; }
@@ -6811,12 +6838,11 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     to { opacity: 1; translate: none; }
   }
 
-  /* Rare and up: the picture glows in its rarity's colour, open or not. */
-  .lb-pull.is-special .lb-media { box-shadow: 0 0 0 0 transparent, 0 0 16px -2px var(--rarity-color); }
-  .live-bar.is-open .lb-pull.is-special .lb-media {
-    background: #fff;
-    box-shadow: 0 0 22px -4px var(--rarity-color), inset 0 0 0 999px color-mix(in srgb, var(--rarity-color) 7%, transparent);
-  }
+  /* Rare and up: the picture is outlined in its rarity's colour, open or
+     not — a line, not a glow, and nothing tinting the white behind the
+     shot, so the photo never shows as a box inside a box. */
+  .lb-pull.is-special .lb-media { box-shadow: inset 0 0 0 1.5px var(--rarity-color); }
+  .live-bar.is-open .lb-pull.is-special .lb-media { box-shadow: inset 0 0 0 2px var(--rarity-color); }
 
   /* A pull arriving pops in where it lands; a good one shakes as it does. */
   .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -6909,7 +6935,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 
   /* The theme and sound buttons ride up with the bar as it opens. */
   .rail-bottom { transition: bottom 0.42s cubic-bezier(0.22, 1, 0.36, 1); }
-  body:not(.live-bar-min):has(.live-bar.is-open) .rail-bottom { bottom: calc(248px + 14px); }
+  body:not(.live-bar-min):has(.live-bar.is-open) .rail-bottom { bottom: calc(272px + 14px); }
 }
 
 /* The cardboard box in the round is framed for its open flaps, which
@@ -7297,7 +7323,6 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
    build: flat bright green, a thin black keyline, softly squared corners,
    dark green type. The price is already on the card above it; the button
    just says Open. */
-:root { --open-green: #7bfc7e; --open-green-hover: #6ef071; --open-ink: #112a14; }
 .category-open-btn,
 #homeCrates .home-crate-open,
 .home-btn-open,
@@ -7330,3 +7355,22 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .category-powered-by .brand-mark { flex: none; color: var(--text); }
 .category-powered-by .brand-mark-odto { height: 9px; width: auto; }
 .category-powered-by .brand-mark-robinhood { width: 12px; height: 12px; }
+
+/* --- Drops: bigger boxes ----------------------------------------------------
+   The prop is framed with room to spin (and, on the round screen, to open),
+   so a canvas shows the box at well under half its width. Twice the canvas,
+   pulled in top and bottom where that framing leaves only air. */
+.category-list.is-all .category-box-canvas,
+.category-box-canvas { width: min(100%, 230px); height: auto; aspect-ratio: 1; margin: -18px auto -22px; }
+@media (min-width: 641px) {
+  .drop-detail-active .category-card { flex: 0 0 420px; min-width: 0; }
+  .category-list .drop-detail-active .category-box-canvas { width: 320px; max-width: 100%; height: auto; margin: -30px auto -36px; }
+}
+@media (max-width: 640px) {
+  .category-list.is-all .category-box-canvas,
+  .category-box-canvas { width: min(100%, 170px); margin: -10px auto -14px; }
+  .category-list .drop-detail-active .category-box-canvas { width: min(100%, 260px); height: auto; margin: -20px auto -26px; }
+}
+/* Withdraw sits beside the green Deposit: same corners, so they read as a pair. */
+.account-wallet-actions .modal-btn { border-radius: 9px; }
+.account-wallet-actions .modal-btn:not(.deposit-btn) { border: 1.5px solid transparent; }

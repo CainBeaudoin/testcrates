@@ -1,5 +1,5 @@
 import { createBoxViewer, getBoxSnapshot, registerTierArt, registerTierStickers } from "./boxViewer.js";
-import { createSlabViewer, renderSlabImage, attachTiltRow } from "./slab.js";
+import { attachTiltRow } from "./slab.js";
 import { RARITY_META } from "./rarity.js";
 import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
 import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
@@ -562,28 +562,12 @@ function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-// What pops out of an opened crate: the rendered slab for things you can
-// photograph, and for a stock just its paper certificate, which tilts
-// toward the pointer the same way (attachTiltRow / the reveal's paper).
-function revealImageFor(prize, tierKey = currentCategoryKey) {
+// What pops out of an opened crate: the product itself, cut out of its
+// white background so it floats like the pieces everywhere else on the
+// site; for a stock, its paper certificate.
+function revealImageFor(prize) {
   if (prize.category === "stocks") return Promise.resolve(prize.image);
-  return renderSlabImage(slabInfoFor(prize, tierKey));
-}
-
-// What the case needs to print one prize. Stocks go in with their paper
-// share certificate as the "photo", the same one shown everywhere else and
-// fed out of the printer, so the slab you get matches what printed.
-function slabInfoFor(prize, tierKey = currentCategoryKey) {
-  const meta = RARITY_META[prize.rarity];
-  return {
-    image: prize.image,
-    symbol: null,
-    name: prize.name,
-    size: market.sizeLabelFor(prize.name, prize.category),
-    rarityLabel: meta.label,
-    color: meta.color,
-    brand: tierOf(tierKey).poweredBy ?? "ODTO",
-  };
+  return cutoutImage(prize.image);
 }
 
 // Size + condition line shown on the reveal, Vault item detail, and
@@ -2038,9 +2022,11 @@ function resetSlotsUI() {
   slots.forEach((slot) => {
     slot.classList.remove("open", "you", "locked", "near-miss");
     slot.querySelector(".price-card").style.removeProperty("--rarity-color");
-    const slab = slot.querySelector(".price-card-slab");
-    slab.removeAttribute("src");
-    slab.alt = "";
+    const img = slot.querySelector(".price-card-img");
+    img.removeAttribute("src");
+    img.alt = "";
+    slot.querySelector(".price-card-price").textContent = "";
+    slot.querySelector(".price-card-name").textContent = "";
     slot.querySelector(".box-caption").textContent = `${noun} ${Number(slot.dataset.index) + 1}`;
   });
 }
@@ -2145,11 +2131,9 @@ async function startRound(key, currency) {
   // box gets picked — final contents have to be locked in before the
   // fairness commitment below, or the hash couldn't be trusted.
   boxPrizes = boxPrizes.map((p) => player.rerollIfDuplicate(key, p, cat.pool));
-  // Start rendering the three cases now, while the reel is still spinning.
-  // Rendering at the moment a lid opens shows the previous round's still and
-  // swaps a beat later; they share one scene and queue internally, so this
-  // costs one WebGL context for all three.
-  boxPrizes.forEach((prize) => revealImageFor(prize, key));
+  // Cut the three pieces out now, while the reel is still spinning, so each
+  // is ready the moment its lid opens.
+  boxPrizes.forEach((prize) => revealImageFor(prize));
   selectedIndex = null;
   roundLocked = false;
   roundAwaitingPick = true;
@@ -2226,7 +2210,7 @@ function onPick(index) {
 
 // Pointer tilt across the row of opened crates, plus the idle lean. The
 // row exists from load; only its contents change.
-attachTiltRow(boxRow, ".price-card-slab");
+attachTiltRow(boxRow, ".price-card-img");
 
 function revealOthers() {
   const others = shuffledOthers(selectedIndex, SLOT_COUNT);
@@ -2287,11 +2271,13 @@ function openSlot(index, { isYours, revealCard = true }) {
 
   slot.querySelector(".price-card").style.setProperty("--rarity-color", meta.color);
 
-  const imgEl = slot.querySelector(".price-card-slab");
+  const imgEl = slot.querySelector(".price-card-img");
   imgEl.alt = `${prize.name}, ${meta.label}, ${formatPrice(prize)}`;
-  // Pre-rendered at the start of the round (see preloadSlabStills), so this
-  // is a cache hit and the case is there the instant the lid opens rather
-  // than a beat later.
+  slot.querySelector(".price-card-price").textContent = formatPrice(prize);
+  slot.querySelector(".price-card-name").textContent = prize.name;
+  // Cut out while the reel spun (see where boxPrizes is drawn), so this is
+  // a cache hit and the piece is there the instant the lid opens
+  // rather than a beat later.
   revealImageFor(prize).then((url) => {
     imgEl.src = url;
   });
@@ -2314,35 +2300,22 @@ function openSlot(index, { isYours, revealCard = true }) {
 // ---- Won-prize modal (four exits) --------------------------------------
 // Only ever called for the crate the player picked.
 
-// One live case for the whole session. A browser hands out about sixteen
-// WebGL contexts and this one is mounted on every reveal, so building it
-// per open would exhaust them within a session's worth of crates.
-let prizeSlab = null;
-function prizeSlabViewer() {
-  if (!prizeSlab) {
-    // Tracked over the whole overlay, not the canvas — the case should
-    // answer to the pointer anywhere on the reveal.
-    prizeSlab = createSlabViewer(document.getElementById("prizeSlabCanvas"), prizeModal);
-  }
-  return prizeSlab;
-}
-
-// The reveal's paper certificate leans toward the pointer anywhere on the
-// overlay, like the live case does; left alone it drifts on a slow CSS lean.
-const prizePaper = document.getElementById("prizePaper");
+// The revealed piece leans toward the pointer anywhere on the overlay; left
+// alone it drifts on a slow CSS lean.
+const prizeRevealImg = document.getElementById("prizeRevealImg");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 prizeModal.addEventListener("pointermove", (e) => {
-  if (prizePaper.classList.contains("hidden") || reducedMotionQuery.matches) return;
-  const r = prizePaper.getBoundingClientRect();
+  if (reducedMotionQuery.matches) return;
+  const r = prizeRevealImg.getBoundingClientRect();
   if (!r.width) return;
   const nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (innerWidth / 2)));
   const ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (innerHeight / 2)));
-  prizePaper.classList.add("is-tracking");
-  prizePaper.style.transform = `perspective(900px) rotateY(${nx * 22}deg) rotateX(${-ny * 16}deg)`;
+  prizeRevealImg.classList.add("is-tracking");
+  prizeRevealImg.style.transform = `perspective(900px) rotateY(${nx * 22}deg) rotateX(${-ny * 16}deg)`;
 });
 prizeModal.addEventListener("pointerleave", () => {
-  prizePaper.classList.remove("is-tracking");
-  prizePaper.style.transform = "";
+  prizeRevealImg.classList.remove("is-tracking");
+  prizeRevealImg.style.transform = "";
 });
 
 async function showPrizeModal(prize, { streak, multiplier } = {}) {
@@ -2352,17 +2325,13 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   revealBannerEl.textContent = meta.label;
 
-  // A stock is just its paper certificate, not a case: the slab canvas
-  // steps aside and the paper takes its place.
-  const isPaper = prize.category === "stocks";
-  prizePaper.classList.toggle("hidden", !isPaper);
-  document.getElementById("prizeSlabCanvas").classList.toggle("hidden", isPaper);
-  if (isPaper) {
-    prizePaper.src = prize.image;
-    prizePaper.alt = prize.name;
-  } else {
-    prizeSlabViewer().setItem(slabInfoFor(prize));
-  }
+  // The piece itself, cut out and floating (a stock: its certificate).
+  // Cut out when the round started, so this is normally already cached.
+  prizeRevealImg.removeAttribute("src");
+  prizeRevealImg.alt = prize.name;
+  revealImageFor(prize).then((url) => {
+    if (prizeRevealImg.alt === prize.name) prizeRevealImg.src = url;
+  });
 
   prizeModal.querySelector(".prize-modal-name").textContent = prize.name;
   prizeModal.querySelector(".prize-modal-price").textContent = formatPrice(prize);
@@ -4696,6 +4665,12 @@ function cutoutImage(src, max = 420) {
           if (y > 0) stack.push(p - w);
           if (y < h - 1) stack.push(p + w);
         }
+        // A white piece on white (a white tee, say) floods away with its
+        // background and leaves only its print behind. When that little is
+        // left, the plain photo is the better picture.
+        let kept = 0;
+        for (let p = 0; p < w * h; p++) if (seen[p] !== 2) kept++;
+        if (kept < w * h * 0.065) return resolve(src);
         for (let p = 0; p < w * h; p++) {
           if (seen[p] === 2) {
             px[p * 4 + 3] = 0;
