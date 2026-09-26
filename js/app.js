@@ -2984,7 +2984,7 @@ function openCreditsInfo() {
   document.getElementById("creditsInfoReferral").textContent =
     `Share your link and earn a cut of what your friends open. Take it as Credits for a ${Math.round(player.REFERRAL_CREDITS_BONUS * 100)}% bonus.`;
   document.getElementById("creditsInfoPromo").textContent =
-    `Drops, streaks and challenges we run from time to time, plus ${player.EARN_TASK_CREDITS} Credits for each clip or post you share.`;
+    "Drops, streaks and challenges we run from time to time, with more ways to earn along the way.";
   creditsInfoModal.classList.remove("hidden");
   requestAnimationFrame(() => creditsInfoModal.classList.add("visible"));
 }
