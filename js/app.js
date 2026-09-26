@@ -2208,7 +2208,7 @@ function onPick(index) {
 
 // Pointer tilt across the row of opened crates, plus the idle lean. The
 // row exists from load; only its contents change.
-attachTiltRow(boxRow, ".price-card-img");
+attachTiltRow(boxRow, ".price-card-body");
 
 function revealOthers() {
   const others = shuffledOthers(selectedIndex, SLOT_COUNT);

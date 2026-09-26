@@ -1559,6 +1559,14 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   transform: scale(0.6);
   pointer-events: none;
 }
+/* Same for the reveal's own body (photo, price, name, buttons): the FX
+   plays on an empty stage, and the prize pops in once it's done. */
+.slab-reveal .slab-reveal-body { transition: transform 0.4s var(--spring), opacity 0.25s ease; }
+.prize-modal.slab-reveal.revealing .slab-reveal-body {
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+}
 
 .prize-modal-rarity {
   display: inline-block;
@@ -4847,24 +4855,34 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 .slab-reveal .exits-grid { margin-top: 4px; }
 
-/* A crate that's been opened shows what was in it: the product's photo on
-   the same slow lean the reveal uses, its price under it, then its name. */
-.price-card-img {
-  display: block;
-  width: 64%;
-  margin: 0 auto;
-  aspect-ratio: 1;
-  object-fit: contain;
+/* A crate that's been opened shows what was in it: one card holding the
+   product's photo, its price, then its name, on the same slow lean the
+   reveal uses. It sits above the open box (see #screen-game .price-card),
+   never over it. */
+.price-card-body {
+  padding: 8px 8px 10px;
+  border-radius: var(--r-md);
+  background: var(--surface-1);
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.28);
   will-change: transform;
   /* Staggered per slot so the three drift out of phase instead of marching
      in step. attachTiltRow takes over on hover and restores this after. */
   animation: slabLean 11s ease-in-out infinite alternate;
 }
-.box-slot:nth-child(2) .price-card-img { animation-duration: 13.5s; animation-delay: -4s; }
-.box-slot:nth-child(3) .price-card-img { animation-duration: 9.5s; animation-delay: -7s; }
+.box-slot:nth-child(2) .price-card-body { animation-duration: 13.5s; animation-delay: -4s; }
+.box-slot:nth-child(3) .price-card-body { animation-duration: 9.5s; animation-delay: -7s; }
+:root[data-theme="light"] .price-card-body { background: #fff; }
+.price-card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: var(--r-sm);
+  background: #fff;
+}
 .price-card-price {
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--text);
@@ -4873,19 +4891,17 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .price-card-name {
   display: block;
   overflow: hidden;
+  padding: 0 4px;
   font-size: 0.72rem;
   color: var(--text-dim);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* The photos are shot on white: rounded, they read as pictures, not as
-   white boxes. */
-.price-card-img, .slab-reveal .paper-reveal { border-radius: var(--r-md); }
-/* A certificate is flat paper, not a cut-out: a touch smaller. */
+/* A certificate is flat paper: a touch smaller in its card. */
 .price-card.is-paper .price-card-img { padding: 6%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .price-card-img { animation: none; }
+  .price-card-body { animation: none; }
 }
 
 /* The reveal: the photo on a square stage, then its price, then its name. */
@@ -5952,24 +5968,26 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 }
 #screen-game .box-slot { width: var(--slot); }
 #screen-game .box-canvas { width: var(--slot); height: var(--slot); }
-#screen-game .price-card { width: calc(var(--slot) * 0.88); }
-#screen-game .box-slot.open .price-card {
-  /* High enough that the price and name under the piece clear the open
-     box's flaps. */
-  transform: translate(-50%, calc(var(--slot) * -0.35 - 22px)) scale(1);
+/* The card stands on the open box rather than over it: its bottom edge is
+   pinned just above the flaps' tips (about 30% down the box's canvas). */
+#screen-game .price-card {
+  top: auto;
+  bottom: calc(100% - var(--slot) * 0.28 + 10px);
+  width: calc(var(--slot) * 0.58);
+  filter: none;
+  transform: translate(-50%, 16px) scale(0.82);
+  transform-origin: 50% 100%;
 }
+#screen-game .box-slot.open .price-card { transform: translate(-50%, 0) scale(1); }
 @media (max-width: 640px) {
   /* Three across, filling the width between the 16px gutters. */
   #screen-game { --slot: min(150px, calc((100vw - 48px) / 3)); }
   #screen-game .box-row { column-gap: 8px; padding-top: calc(var(--slot) * 0.54); }
   #screen-game .reel { max-width: calc(var(--slot) * 3 + 16px); margin-top: calc(var(--slot) * 0.54); }
-  #screen-game .price-card { width: var(--slot); }
-  #screen-game .box-slot.open .price-card {
-    transform: translate(-50%, calc(var(--slot) * -0.5 - 30px)) scale(1);
-  }
-  #screen-game .price-card-img { width: 72%; }
-  #screen-game .price-card-price { font-size: 0.86rem; }
-  #screen-game .price-card-name { font-size: 0.62rem; }
+  #screen-game .price-card { width: calc(var(--slot) * 0.86); }
+  #screen-game .price-card-body { padding: 5px 5px 7px; }
+  #screen-game .price-card-price { font-size: 0.82rem; margin-top: 4px; }
+  #screen-game .price-card-name { font-size: 0.6rem; }
 }
 
 /* --- Pinned page headers (desktop) ---------------------------------------
