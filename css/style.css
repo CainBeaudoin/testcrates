@@ -3770,22 +3770,47 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
   color: var(--text-faint);
 }
 
-/* The Credits bonus reads as part of the label ("CREDITS 1.1X"), on the
-   same line and in the same type as "CASH BACK", just a shade lighter:
-   no pill around it. */
-.referral-claim-bonus {
-  margin-left: 6px;
-  font: inherit;
-  letter-spacing: inherit;
-  opacity: 0.6;
+/* Claim buttons: a small label over a big amount, left-aligned, with the
+   Credits bonus as a quiet outlined tag on the right, vertically centred. */
+.claim-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  text-align: left;
 }
-/* On the green Credits button the bonus is white, so it stands off the
-   green instead of sinking into it; a soft dark shadow keeps it legible
-   over the lighter teal end of the gradient. */
+.claim-btn-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.claim-btn-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.claim-btn-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.referral-claim-bonus {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
 .deposit-btn .referral-claim-bonus {
+  border-color: rgba(4, 22, 12, 0.35);
+  background: rgba(255, 255, 255, 0.28);
+  color: #04160c;
   opacity: 1;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(4, 22, 12, 0.35);
 }
 
 .referral-section-label {
