@@ -4931,14 +4931,11 @@ function releaseHomeViewers() {
 // One crate as a card, laid out after the team's other Chosen build: a
 // tinted panel with the crate on it, who it's from, and three things it
 // could hold; then its name and price, three facts, a bar, and the way in.
-// The facts are the ones this app can stand behind: grail (Legendary) odds
-// from the crate's own weights, its top prize, and your pity — rounds left
-// to a guaranteed Rare+ — which the bar under them fills toward.
+// The facts are the ones this app can stand behind: its top prize, and
+// your pity — rounds left to a guaranteed Rare+ — which the bar under them
+// fills toward.
 function homeCrateCardHTML(key, cat) {
   const top = [...cat.pool].sort(byPriceDesc);
-  const total = cat.pool.reduce((sum, p) => sum + p.weight, 0);
-  const grailWeight = cat.pool.filter((p) => p.rarity === "legendary").reduce((sum, p) => sum + p.weight, 0);
-  const grailOdds = grailWeight ? `1 in ${Math.max(1, Math.round(total / grailWeight))}` : "—";
   const pity = player.getPity(key);
   const pityPct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
   return `
@@ -4960,7 +4957,6 @@ function homeCrateCardHTML(key, cat) {
             <span class="crate-price">$${cat.price.toLocaleString()}</span>
           </div>
           <div class="crate-facts">
-            <span><i>Grail odds</i><b>${grailOdds}</b></span>
             <span><i>Top prize</i><b>$${top[0].price.toLocaleString()}</b></span>
             <span><i>Rare+ in</i><b>${pity.rareRoundsLeft} ${pity.rareRoundsLeft === 1 ? "open" : "opens"}</b></span>
           </div>
