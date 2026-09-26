@@ -7,7 +7,13 @@ const MODEL_URL = "assets/models/nike_shoe_box/scene.gltf";
 const LID_NODE_NAME = "Plane_Plane_002_Material_001"; // hinge pivot baked into the source animation
 const LID_OPEN_DEG = -118; // extracted from the model's own open-lid animation clip
 const OPEN_DURATION_MS = 700;
-const IDLE_SPEED = 0.45; // rad/s
+// Idle turn, clockwise seen from above (negative Y). The cardboard box's
+// own Idle clip used to supply most of this as a baked lap of its root
+// joint, which snapped back to zero whenever the clip stopped (every open);
+// that lap is stripped (see idleHoldClip) and this is the whole spin now,
+// at the speed the two used to add up to.
+const IDLE_SPEED = 0.55; // rad/s
+const SPIN_DIR = -1;
 const FACE_SPEED = 7; // rad/s easing back to forward-facing (0) on hover/open
 
 // The Stocks tier's "pack" — a generic printer, no lid to open. Same rig,
@@ -265,21 +271,36 @@ function easeOutBack(t) {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
-// Every box turns the same way, always: nothing ever spins back. Angles are
-// kept in [0, 2π), and "facing forward" is reached by carrying on round to
-// the next 0, however far that is.
+// Every box turns the same way (SPIN_DIR), always: nothing ever spins back.
+// Angles are kept in [0, 2π), and "facing forward" is reached by carrying on
+// round to the next 0, however far that is.
 const TAU = Math.PI * 2;
 function wrapAngle(angle) {
   return ((angle % TAU) + TAU) % TAU;
 }
 // How far a box at `angle` still has to turn, going forward, to face you.
 function aheadToFront(angle) {
-  return (TAU - wrapAngle(angle)) % TAU;
+  const a = wrapAngle(angle);
+  return SPIN_DIR < 0 ? a : (TAU - a) % TAU;
 }
 // Idle boxes share one clock, so a box mounted now joins the lap the others
 // are already on instead of starting face-on and jumping out of step.
 function sharedIdleAngle() {
-  return wrapAngle((performance.now() / 1000) * IDLE_SPEED);
+  return wrapAngle(SPIN_DIR * (performance.now() / 1000) * IDLE_SPEED);
+}
+
+// The od box's Idle clip with its root joint's rotation held at its first
+// frame: that track is a baked full lap, and the viewer does the turning.
+// Held rather than dropped, because the joint's rest pose sits ~58° off the
+// clip's face-on start. The rest of the clip holds the flaps shut.
+function idleHoldClip(clip) {
+  if (!clip) return null;
+  const tracks = clip.tracks.map((t) =>
+    t.name === "Joint_1.quaternion"
+      ? new THREE.QuaternionKeyframeTrack(t.name, [0], Array.from(t.values.slice(0, 4)))
+      : t
+  );
+  return new THREE.AnimationClip("IdleHold", clip.duration, tracks);
 }
 
 // Shared scene/camera/lighting setup so the reel snapshot and the live,
@@ -692,7 +713,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   if (kind === "od") {
     mixer = new THREE.AnimationMixer(root);
     const byName = (n) => (baseModel.userData.clips || []).find((c) => c.name === n);
-    clips = { idle: byName("Idle"), open: byName("Open") };
+    clips = { idle: idleHoldClip(byName("Idle")), open: byName("Open") };
     if (clips.idle) mixer.clipAction(clips.idle).play();
   }
 
@@ -744,7 +765,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
     const ahead = aheadToFront(group.rotation.y);
     if (ahead === 0) return;
     const step = Math.min(ahead, dt * FACE_SPEED * speedMul);
-    group.rotation.y = step === ahead ? 0 : wrapAngle(group.rotation.y + step);
+    group.rotation.y = step === ahead ? 0 : wrapAngle(group.rotation.y + SPIN_DIR * step);
   }
 
   function frame(t) {
@@ -759,7 +780,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       // and out, landing facing forward.
       const p = Math.min((t - spinning.start) / spinning.ms, 1);
       const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      group.rotation.y = spinning.from + spinning.turn * e;
+      group.rotation.y = spinning.from + SPIN_DIR * spinning.turn * e;
       if (p >= 0.5 && spinning.onHalf) {
         spinning.onHalf();
         spinning.onHalf = null;
@@ -818,6 +839,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
           openAction = null;
           openProgress = 0;
           if (clips.idle) mixer.clipAction(clips.idle).reset().play();
+          mixer.update(0); // settle the hold pose now, not a frame late at rest
           const done = closing.done;
           closing = null;
           done();
@@ -930,6 +952,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
         mixer.stopAllAction();
         openAction = null;
         if (clips?.idle) mixer.clipAction(clips.idle).reset().play();
+        mixer.update(0);
       }
       if (paper) {
         paper.sheet.visible = false;
