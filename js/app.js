@@ -3645,7 +3645,7 @@ function renderActivity() {
 }
 
 
-const LEADERBOARD_PAGE_SIZE = 10;
+const LEADERBOARD_PAGE_SIZE = 14; // fills the card to the bottom of the column beside it
 let leaderboardPage = 0;
 
 function renderLeaderboard() {
