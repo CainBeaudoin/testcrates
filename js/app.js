@@ -295,6 +295,7 @@ let currentFairness = null; // {hash, nonce} for the active round's commit-revea
 const screenCategory = document.getElementById("screen-category");
 const screenGame = document.getElementById("screen-game");
 const categoryList = document.getElementById("categoryList");
+const screenCategoryEl = document.getElementById("screen-category");
 const gameTierLabel = document.getElementById("gameTierLabel");
 const backBtn = document.getElementById("backBtn");
 const reel = document.getElementById("reel");
@@ -521,6 +522,10 @@ function showScreen(el) {
   // Home is shown again; holding their WebGL contexts open elsewhere would
   // crowd out the Drops and opening screens.
   if (el.id !== "screen-home") releaseHomeViewers();
+  if (el.id !== "screen-category") {
+    categoryBoxViewers.forEach((v) => v.dispose());
+    categoryBoxViewers = [];
+  }
   // Leaving Drops (or coming back to it, e.g. after an open) always lands
   // on the tier list rather than whichever tier page was last open.
   closeTierDetail();
@@ -1666,10 +1671,16 @@ function renderCategories() {
     wrap.appendChild(prizePanel);
     categoryList.appendChild(wrap);
 
-    // Decorative only — idles and spins forever, .open() is never called on it.
-    createBoxViewer(card.querySelector(".category-box-canvas"), key, cat.boxKind ?? "box").then((viewer) => {
-      categoryBoxViewers.push(viewer);
-    });
+    // Decorative only — idles and spins forever, .open() is never called on
+    // it. Built only while Drops is on screen: a browser allows ~16 live 3D
+    // views, and ten of them idling behind Home took Home's own away.
+    if (screenCategoryEl.classList.contains("active")) {
+      const canvas = card.querySelector(".category-box-canvas");
+      createBoxViewer(canvas, key, cat.boxKind ?? "box").then((viewer) => {
+        if (!canvas.isConnected || !screenCategoryEl.classList.contains("active")) return viewer.dispose();
+        categoryBoxViewers.push(viewer);
+      });
+    }
   });
 
   renderRecentPulls();
@@ -4475,7 +4486,7 @@ function renderHomeCrates() {
           .slice(0, 3)
           .map((p) => `<img src="${p.image}" alt="" title="${p.name}">`)
           .join("")}</div>
-        <button class="home-btn home-btn-solid home-crate-open">Open · $${cat.price}</button>
+        <button class="home-btn home-btn-solid home-crate-open">Open</button>
       </div>`;
     })
     .join("");

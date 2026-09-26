@@ -6144,3 +6144,23 @@ body.drop-detail-open .drop-section-head { display: none; }
   .category-list.is-all .category-card { padding: 16px 8px; }
 }
 body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1fr); }
+
+/* --- Drops: the same soft shapes as Home ---------------------------------
+   Home's cards are 20px-round and its buttons are pills; Drops was still
+   on 4px corners. Same card radius, pill buttons, rounder inner panels. */
+.category-card { border-radius: 20px; }
+.category-open-btn {
+  border-radius: 999px;
+  padding: 13px 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: none;
+}
+.prize-dropdown { border-radius: 20px; }
+.odds-bucket { border-radius: 12px; }
+.pity-bar-track, .pity-bar-fill { border-radius: 999px; }
+@media (max-width: 640px) {
+  .category-card { border-radius: 16px; }
+  .prize-dropdown { border-radius: 16px; }
+}
