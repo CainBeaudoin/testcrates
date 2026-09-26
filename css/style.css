@@ -443,7 +443,9 @@ body {
   flex: 0 0 auto;
   border-radius: 50%;
   position: relative;
-  background: conic-gradient(var(--accent) calc(var(--pct) * 3.6deg), var(--line) 0deg);
+  /* Filled in the site's green (the Rewards progress bar's teal-to-green),
+     the rest a faint track. */
+  background: conic-gradient(#5eead4 0deg, #16a34a calc(var(--pct) * 3.6deg), var(--line) calc(var(--pct) * 3.6deg));
 }
 .ring::after {
   content: "";
