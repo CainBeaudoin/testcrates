@@ -6873,18 +6873,35 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   }
   .live-bar.is-open .lb-pull.is-special .lb-media::after { border-width: 2px; }
 
-  /* A pull arriving pops in where it lands; a good one shakes as it does. */
+  /* A pull arriving pops in where it lands. A good one (Rare and up) then
+     glares: a sheen in its rarity's colour sweeps across the tile over a
+     soft tint, and fades — inside the tile's own edges, behind its text,
+     so it never spills onto its neighbours. */
   .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .lb-pull.is-special.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), lbShake 0.5s ease 0.45s; }
   @keyframes lbArrive {
     from { opacity: 0; scale: 0.7; }
     to { opacity: 1; scale: 1; }
   }
-  @keyframes lbShake {
-    20% { rotate: -5deg; }
-    40% { rotate: 4deg; }
-    60% { rotate: -3deg; }
-    80% { rotate: 2deg; }
+  .lb-pull { position: relative; isolation: isolate; }
+  .lb-pull.is-glaring::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--rarity-color) 55%, transparent) 50%, transparent 65%) no-repeat,
+      color-mix(in srgb, var(--rarity-color) 20%, transparent);
+    background-size: 260% 100%, 100% 100%;
+    animation: lbGlare 1.4s cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  }
+  .live-bar.is-open .lb-pull.is-glaring::before { inset: -6px; border-radius: var(--r-md); }
+  @keyframes lbGlare {
+    0% { opacity: 0; background-position: 120% 0, 0 0; }
+    18% { opacity: 1; }
+    65% { opacity: 1; }
+    100% { opacity: 0; background-position: -20% 0, 0 0; }
   }
 
   /* Minimized: a pill in the corner that brings it back. */
@@ -6920,12 +6937,11 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 
 @media (prefers-reduced-motion: reduce) {
   .live-bar { transition: none; }
-  .lb-dot::after, .lb-pull.is-arriving, .live-bar.is-open .lb-pull { animation: none !important; }
+  .lb-dot::after, .lb-pull.is-arriving, .live-bar.is-open .lb-pull, .lb-pull.is-glaring::before { animation: none !important; }
 }
 @media (min-width: 641px) {
   /* Open, the tiles' own entrance would otherwise win over the arrival pop. */
   .live-bar.is-open .lb-pull.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-  .live-bar.is-open .lb-pull.is-special.is-arriving { animation: lbArrive 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), lbShake 0.5s ease 0.45s; }
 }
 @media (min-width: 641px) {
   /* The pinned side panels are sized to the viewport; with the bar showing

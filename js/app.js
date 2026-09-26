@@ -1377,8 +1377,13 @@ function renderLiveBar() {
   });
   arrivals.forEach((el) => {
     el.classList.add("is-arriving");
-    el.addEventListener("animationend", () => el.classList.remove("is-arriving"), { once: true });
+    el.addEventListener("animationend", (e) => !e.pseudoElement && el.classList.remove("is-arriving"), { once: true });
     setTimeout(() => el.classList.remove("is-arriving"), 900); // a hidden tab never ends it
+    // Rare and up glare in their colour once they've landed (see .is-glaring).
+    if (el.classList.contains("is-special")) {
+      el.classList.add("is-glaring");
+      setTimeout(() => el.classList.remove("is-glaring"), 1600);
+    }
   });
 }
 
