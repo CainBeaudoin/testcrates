@@ -265,13 +265,21 @@ function easeOutBack(t) {
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
 
-// Shortest signed distance from `angle` back to 0 (facing forward), so easing
-// always turns the short way round rather than spinning back past a full lap.
-function angleToZero(angle) {
-  let a = angle % (Math.PI * 2);
-  if (a > Math.PI) a -= Math.PI * 2;
-  if (a < -Math.PI) a += Math.PI * 2;
-  return a;
+// Every box turns the same way, always: nothing ever spins back. Angles are
+// kept in [0, 2π), and "facing forward" is reached by carrying on round to
+// the next 0, however far that is.
+const TAU = Math.PI * 2;
+function wrapAngle(angle) {
+  return ((angle % TAU) + TAU) % TAU;
+}
+// How far a box at `angle` still has to turn, going forward, to face you.
+function aheadToFront(angle) {
+  return (TAU - wrapAngle(angle)) % TAU;
+}
+// Idle boxes share one clock, so a box mounted now joins the lap the others
+// are already on instead of starting face-on and jumping out of step.
+function sharedIdleAngle() {
+  return wrapAngle((performance.now() / 1000) * IDLE_SPEED);
 }
 
 // Shared scene/camera/lighting setup so the reel snapshot and the live,
@@ -657,7 +665,9 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 // `fitOpen` (od box only) frames for the box *open*, not shut: its flaps
 // fold out past its own sides, and a viewer that's going to open would
 // otherwise cut them off at the canvas edge. See fitForOpen.
-export async function createBoxViewer(canvas, tierKey = "", kind = "box", { headroom = 0, fitOpen = false } = {}) {
+// `syncSpin` (default on) starts the box at the shared idle angle; off, it
+// starts face-on — for the round, where it takes over from a face-on still.
+export async function createBoxViewer(canvas, tierKey = "", kind = "box", { headroom = 0, fitOpen = false, syncSpin = true } = {}) {
   const baseModel = await loadModelFor(kind);
   const root = baseModel.clone(true);
   if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
@@ -665,6 +675,13 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   const openOutline = kind === "od" && fitOpen ? measureOpenOutline(root, baseModel.userData.clips) : null;
   const { scene, camera, group, lid, bounds } = buildRig(root);
   const zoom = openOutline ? fitForOpen(root, group, openOutline, bounds) : 1;
+  if (syncSpin) group.rotation.y = sharedIdleAngle();
+  // While idling, the angle is read off the shared clock plus this offset,
+  // not added up frame by frame, so boxes stay in step however unevenly
+  // each one draws. Re-taken whenever idling resumes, so a box picks up
+  // exactly where hover or an open left it.
+  let idleOffset = 0;
+  let idling = false;
 
   // The od box animates its own flaps from baked clips rather than having
   // one hinge swung by hand: Idle loops while it waits, Open plays once and
@@ -722,23 +739,31 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   const openDuration =
     kind === "printer" ? PRINT_DURATION_MS : kind === "od" && clips?.open ? clips.open.duration * 1000 : OPEN_DURATION_MS;
 
+  // Turns on round to face you — forward, never back the short way.
   function easeTowardZero(dt, speedMul) {
-    const current = angleToZero(group.rotation.y);
-    if (current === 0) return;
-    const step = Math.min(Math.abs(current), dt * FACE_SPEED * speedMul);
-    group.rotation.y = current - Math.sign(current) * step;
+    const ahead = aheadToFront(group.rotation.y);
+    if (ahead === 0) return;
+    const step = Math.min(ahead, dt * FACE_SPEED * speedMul);
+    group.rotation.y = step === ahead ? 0 : wrapAngle(group.rotation.y + step);
   }
 
   function frame(t) {
     if (!running) return;
     const dt = Math.min((t - lastT) / 1000, 0.05);
     lastT = t;
+    const wasIdling = idling;
+    idling = false; // set again below if this frame idles
 
     if (spinning) {
-      // One lap and a bit, easing in and out, landing facing forward.
+      // On round from wherever it was, at least half a lap more, easing in
+      // and out, landing facing forward.
       const p = Math.min((t - spinning.start) / spinning.ms, 1);
       const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      group.rotation.y = spinning.from + (Math.PI * 2 - spinning.from) * e;
+      group.rotation.y = spinning.from + spinning.turn * e;
+      if (p >= 0.5 && spinning.onHalf) {
+        spinning.onHalf();
+        spinning.onHalf = null;
+      }
       if (p >= 1) {
         group.rotation.y = 0;
         const done = spinning.done;
@@ -771,7 +796,9 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       if (facing) {
         easeTowardZero(dt, 1);
       } else if (!paused) {
-        group.rotation.y += dt * IDLE_SPEED;
+        if (!wasIdling) idleOffset = group.rotation.y - sharedIdleAngle();
+        idling = true;
+        group.rotation.y = wrapAngle(sharedIdleAngle() + idleOffset);
       }
     }
 
@@ -814,15 +841,19 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       paused = v;
       facing = v;
     },
-    // One full turn, ending face-on and holding there. Resolves when it
-    // lands.
-    spin(ms = 1400) {
+    // Turns on round, forward, at least half a lap more, ending face-on
+    // and holding there. Resolves when it lands; `onHalf` runs at the
+    // lap's halfway point, side-on and moving fastest, by the lap's own
+    // progress rather than a timer, so a slow frame can't push it late.
+    spin(ms = 1400, { onHalf = null } = {}) {
       opening = false;
       facing = true;
       paused = true;
       return new Promise((resolve) => {
         spinning?.done();
-        spinning = { start: performance.now(), ms, from: angleToZero(group.rotation.y), done: resolve };
+        const from = wrapAngle(group.rotation.y);
+        const ahead = aheadToFront(from);
+        spinning = { start: performance.now(), ms, from, turn: ahead < Math.PI ? ahead + TAU : ahead, onHalf, done: resolve };
       });
     },
     // Folds an open box shut again (the od box's Open clip in reverse; the

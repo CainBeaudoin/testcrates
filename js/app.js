@@ -2037,7 +2037,8 @@ async function mountViewers() {
   // that, on a canvas a touch bigger to match (see .box-slot.is-od).
   slots.forEach((s) => s.classList.toggle("is-od", kind === "od"));
   const canvases = slots.map((s) => s.querySelector(".box-canvas"));
-  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind, { fitOpen: kind === "od" })));
+  // Face-on to start: they take over from the reel's face-on still.
+  const mounted = await Promise.all(canvases.map((c) => createBoxViewer(c, skin, kind, { fitOpen: kind === "od", syncSpin: false })));
   mounted.forEach((viewer, i) => {
     viewers[i] = viewer;
     const slot = slots[i];
@@ -4782,8 +4783,7 @@ async function playHeroShow(i) {
     await viewer.setSkin(slide.tier);
   } else {
     // The lap, changing crates halfway round.
-    heroLater(() => viewer.setSkin(slide.tier), HERO_SPIN_MS / 2);
-    await viewer.spin(HERO_SPIN_MS);
+    await viewer.spin(HERO_SPIN_MS, { onHalf: () => token === heroShowToken && viewer.setSkin(slide.tier) });
   }
   const urls = await urlsReady;
   if (token !== heroShowToken) return;
