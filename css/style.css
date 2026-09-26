@@ -6232,3 +6232,18 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 @media (max-width: 640px) and (prefers-reduced-motion: reduce) {
   .pull-face::after { animation: none; }
 }
+
+/* --- Pop-ups: the same soft shapes as Home and Drops ---------------------
+   Every pop-up card (market listing, recent pull, vault item, payment,
+   amount, ship, withdraw...) takes a 24px corner, its buttons are pills,
+   and the pieces inside are rounded to match. */
+.prize-modal-card { border-radius: 24px; }
+.detail-modal-card { border-radius: 24px; }
+.modal-btn { border-radius: 999px; }
+.payment-option { border-radius: 16px; }
+.offer-row { border-radius: 12px; }
+.amount-input { border-radius: 12px; }
+.exit-btn { border-radius: 16px; }
+@media (max-width: 640px) {
+  .prize-modal-card, .detail-modal-card { border-radius: 20px; }
+}
