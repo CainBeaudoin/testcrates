@@ -6421,3 +6421,75 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   /* Any extra height goes above the pager, which stays on the bottom edge. */
   .rewards-leaderboard .leaderboard-pager { margin-top: auto; }
 }
+
+/* Referral Rewards, tightened: the share row and the claim block sat in
+   24px-padded panels the same colour as the card, which read as empty
+   space. Padding comes off, the gaps close up, and "Available to claim"
+   becomes one line (label, then the figure) since the buttons below
+   already show both amounts. */
+.rewards-referral { gap: 12px; }
+.referral-current { padding: 0; margin-bottom: 10px; }
+.referral-current .share { font-size: 1.4rem; line-height: 1.1; }
+.referral-progress-track { margin-bottom: 14px; }
+.referral-claim { padding: 0; gap: 10px; margin-bottom: 12px; }
+.referral-claim-info { flex-direction: row; align-items: baseline; justify-content: space-between; width: 100%; gap: 8px; }
+.referral-claim-amount { font-size: 1.1rem; }
+.claim-btn { padding: 11px 16px; }
+.claim-btn-amount { font-size: 1.1rem; }
+
+/* Measuring pass for the leaderboard fit (app.js fitLeaderboard): the
+   columns at their natural heights, for one synchronous read. */
+.rewards-grid.is-measuring { align-items: flex-start !important; }
+.rewards-grid.is-measuring .rewards-col > .rewards-card:last-child { flex: none !important; }
+
+/* Referral link: the link itself, and a Copy button that answers. */
+.referral-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 5px 5px 14px;
+  border-radius: 999px;
+  background: var(--control-fill);
+}
+.referral-link-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.referral-copy-btn,
+.referral-link-btn {
+  transition: transform 0.45s var(--spring), background-color 0.18s ease, color 0.18s ease;
+}
+.referral-copy-btn {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--text-inverse);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.referral-copy-btn:hover { background: color-mix(in srgb, var(--text) 82%, var(--bg)); }
+.referral-copy-btn:active, .referral-link-btn:active { transform: scale(0.96); transition-duration: 0.12s; }
+/* Copied: the site's green, for as long as the label says so. */
+.referral-copy-btn.is-copied,
+.referral-link-btn.is-copied {
+  background: linear-gradient(135deg, #5eead4, #16a34a);
+  color: #04160c;
+}
+.referral-copy-label, .referral-link-btn-label { display: inline-block; }
+.referral-invite-note {
+  margin: 2px 0 8px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.referral-invite-note b { color: var(--text); }

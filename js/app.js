@@ -2983,7 +2983,7 @@ function openCreditsInfo() {
   document.getElementById("creditsInfoCashback").textContent =
     `Every crate you open pays ${pct}% of its price back in Credits, win or lose. A ${example.label} crate earns ${(example.price * player.CASHBACK_RATE).toLocaleString()}.`;
   document.getElementById("creditsInfoReferral").textContent =
-    `Share your link and earn a cut of what your friends open. Take it as Credits for a ${Math.round(player.REFERRAL_CREDITS_BONUS * 100)}% bonus.`;
+    `Friends who join with your link get ${player.REFERRAL_SIGNUP_CREDITS} Credits to start, and you earn a cut of what they open. Take it as Credits for a ${Math.round(player.REFERRAL_CREDITS_BONUS * 100)}% bonus.`;
   document.getElementById("creditsInfoPromo").textContent =
     "Drops, streaks and challenges we run from time to time, with more ways to earn along the way.";
   creditsInfoModal.classList.remove("hidden");
@@ -3016,16 +3016,48 @@ streakStat.addEventListener("click", () => {
   railRewardsTab.click();
 });
 
-referralLinkBtn.addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}?ref=${encodeURIComponent(player.getUsername())}`;
+function referralLink() {
+  return `${location.origin}${location.pathname}?ref=${encodeURIComponent(player.getUsername())}`;
+}
+
+// Copies the link and has the button say so: its label blurs to
+// "Copied" (and the button turns green) for a moment, then back. The
+// Rewards panel can re-render mid-way (offers arriving, balances moving),
+// replacing its button, so the state is kept by time and the button is
+// looked up fresh rather than held.
+let referralCopiedUntil = 0;
+function applyCopiedState(btn, idleText, animate) {
+  if (!btn) return;
+  const copied = Date.now() < referralCopiedUntil;
+  btn.classList.toggle("is-copied", copied);
+  const label = btn.querySelector(".referral-copy-label, .referral-link-btn-label");
+  const text = copied ? "Copied" : idleText;
+  if (animate) swapText(label, text);
+  else label.textContent = text;
+}
+const COPY_BUTTONS = [
+  [() => document.getElementById("referralCopyBtn"), "Copy link"],
+  [() => referralLinkBtn, "Copy Referral Link"],
+];
+let referralCopiedTimer = null;
+async function copyReferralLink() {
   try {
-    await navigator.clipboard.writeText(link);
+    await navigator.clipboard.writeText(referralLink());
   } catch {
-    // clipboard API unavailable — the link is still shown in the toast
+    // Clipboard unavailable (e.g. an insecure origin): the toast still
+    // confirms, and the link is on screen in Rewards to copy by hand.
   }
   playClick();
   showToast("Referral link copied", ICONS.bell);
-});
+  referralCopiedUntil = Date.now() + 1600;
+  COPY_BUTTONS.forEach(([get, idle]) => applyCopiedState(get(), idle, true));
+  clearTimeout(referralCopiedTimer);
+  referralCopiedTimer = setTimeout(() => {
+    COPY_BUTTONS.forEach(([get, idle]) => applyCopiedState(get(), idle, true));
+  }, 1650);
+}
+
+referralLinkBtn.addEventListener("click", copyReferralLink);
 
 // ---- Public shareable profile ---------------------------------------------
 // A read-only page at ?profile=<username>, standing in for the app shell
@@ -3645,10 +3677,45 @@ function renderActivity() {
 }
 
 
-const LEADERBOARD_PAGE_SIZE = 14; // fills the card to the bottom of the column beside it
+// Rows per page. On a two-column desktop layout this is recomputed so the
+// list fills the card down to the bottom of the column beside it (see
+// fitLeaderboard); elsewhere it stays at the default.
+let LEADERBOARD_PAGE_SIZE = 10;
 let leaderboardPage = 0;
+const rewardsTwoCols = window.matchMedia("(min-width: 901px)");
 
-function renderLeaderboard() {
+function fitLeaderboard() {
+  const grid = document.querySelector(".rewards-grid");
+  const card = document.querySelector(".rewards-leaderboard");
+  const row = leaderboardList.querySelector(".leaderboard-row");
+  if (!grid || !card || !row || !card.offsetParent) return;
+  let size = 10;
+  if (rewardsTwoCols.matches) {
+    // Natural heights, without the stretch that evens the columns out.
+    grid.classList.add("is-measuring");
+    const side = grid.querySelector(".rewards-col-side").offsetHeight;
+    const main = grid.querySelector(".rewards-col-main").offsetHeight;
+    grid.classList.remove("is-measuring");
+    const rows = leaderboardList.children.length;
+    const pitch = rows > 1 ? leaderboardList.children[1].offsetTop - leaderboardList.children[0].offsetTop : row.offsetHeight;
+    const fits = rows + Math.floor((side - main) / pitch);
+    size = Math.max(6, Math.min(16, fits));
+  }
+  if (size !== LEADERBOARD_PAGE_SIZE) {
+    const firstShown = leaderboardPage * LEADERBOARD_PAGE_SIZE;
+    LEADERBOARD_PAGE_SIZE = size;
+    leaderboardPage = Math.floor(firstShown / size);
+    renderLeaderboard({ fit: false });
+  }
+}
+rewardsTwoCols.addEventListener("change", () => fitLeaderboard());
+let fitLeaderboardTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(fitLeaderboardTimer);
+  fitLeaderboardTimer = setTimeout(fitLeaderboard, 150);
+});
+
+function renderLeaderboard({ fit = true } = {}) {
   const rows = [...FAKE_LEADERS, { username: player.getUsername(), xp: player.getXp(), isPlayer: true }].sort(
     (a, b) => b.xp - a.xp
   );
@@ -3679,6 +3746,7 @@ function renderLeaderboard() {
   leaderboardYouNote.textContent = `You're #${you}`;
   leaderboardPrevBtn.disabled = leaderboardPage === 0;
   leaderboardNextBtn.disabled = leaderboardPage >= pages - 1;
+  if (fit) requestAnimationFrame(fitLeaderboard);
 }
 
 leaderboardPrevBtn.addEventListener("click", () => {
@@ -3705,6 +3773,11 @@ function renderReferralPanel() {
     : "Top tier reached";
 
   referralPanel.innerHTML = `
+    <div class="referral-link-row">
+      <span class="referral-link-text" title="${referralLink()}">${referralLink().replace(/^https?:\/\//, "")}</span>
+      <button type="button" class="referral-copy-btn" id="referralCopyBtn"><span class="referral-copy-label">Copy link</span></button>
+    </div>
+    <p class="referral-invite-note">Friends who join with your link get <b>${player.REFERRAL_SIGNUP_CREDITS} Credits</b> to start. You earn your share once they add cash and open drops.</p>
     <div class="referral-current">
       <div class="referral-share-block">
         <span class="share">${Math.round(referral.share * 100)}%</span>
@@ -3756,6 +3829,11 @@ function renderReferralPanel() {
     showWalletToast(amount, "credits");
     renderReferralPanel();
   });
+  const copyBtn = document.getElementById("referralCopyBtn");
+  copyBtn.addEventListener("click", copyReferralLink);
+  applyCopiedState(copyBtn, "Copy link", false); // still "Copied" if re-rendered just after a copy
+  // Its height feeds the leaderboard's fit beside it.
+  requestAnimationFrame(fitLeaderboard);
 }
 
 // Deterministic per-week pick from the grail tier, so the raffle prize is
@@ -4839,4 +4917,13 @@ if (profileParam) {
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.
   routeDeepLink(new URLSearchParams(location.search));
+  // Arrived through someone's referral link: a one-off Credits welcome.
+  const refFrom = new URLSearchParams(location.search).get("ref");
+  if (refFrom && refFrom.toLowerCase() !== player.getUsername().toLowerCase()) {
+    const bonus = player.claimReferralSignupBonus(refFrom);
+    if (bonus) {
+      renderWallet({ pulse: "credits" });
+      setTimeout(() => showToast(`Welcome! ${bonus} Credits from ${refFrom}'s invite`, ICONS.bell), 800);
+    }
+  }
 }

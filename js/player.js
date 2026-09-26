@@ -430,6 +430,19 @@ export function verifyEarnTask(key) {
 
 export const REFERRAL_CREDITS_BONUS = 0.1;
 
+// A new player who arrives through someone's referral link gets a one-off
+// Credits welcome bonus. The referrer's own share still only accrues once
+// that player adds cash and opens drops (see getReferralTier).
+export const REFERRAL_SIGNUP_CREDITS = 10;
+
+export function claimReferralSignupBonus(fromUsername) {
+  if (state.referralSignupFrom) return 0;
+  state.referralSignupFrom = fromUsername;
+  state.wallet.credits += REFERRAL_SIGNUP_CREDITS;
+  save();
+  return REFERRAL_SIGNUP_CREDITS;
+}
+
 export function getReferralClaimable() {
   return state.referralClaimable;
 }
