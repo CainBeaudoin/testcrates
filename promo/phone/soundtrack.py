@@ -7,7 +7,8 @@ Every sound hangs off a cue that index.html computes from its own timeline
   python3 soundtrack.py [cues.json] [soundtrack.wav]
 
 Each interaction gets its own sound, and they're musical rather than clicks:
-taps are chimes that climb a scale over a soft kick; page swooshes, sheets
+taps are chimes that climb a scale over a soft kick; the phone's flip and
+spin whoosh; page swooshes, sheets
 sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
 placed" chime, the phone set down (kick + bass), the lock bell, the
 notification ding, buzz and bell, the swipe, the box falling and landing,
@@ -291,6 +292,13 @@ for c in CUES["cues"]:
     if k == "intro":
         whoosh(t, 0.9, 0.9)
         riser(t, t + 1.4, 70, 300, 0.4)
+    elif k == "flip":
+        whoosh(t, c["dur"], 1.0)
+        chime(t + c["dur"] * 0.8, 880, 0.7)
+        chime(t + c["dur"] * 0.8, 1318.51, 0.5)
+    elif k == "spin":
+        whoosh(t, c["dur"] * 0.5, 0.8)
+        whoosh(t + c["dur"] * 0.45, c["dur"] * 0.55, 0.8, up=False)
     elif k == "settle":
         impact(t, 0.5, 1.2)
     elif k == "tap":

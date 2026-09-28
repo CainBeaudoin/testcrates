@@ -25,8 +25,9 @@
 </script>
 <style>
 :root {
-  --text: #f5f3ef;
-  --dim: rgba(245, 243, 239, 0.55);
+  --paper: #f6f4ef;
+  --text: #121212;
+  --dim: rgba(18, 18, 18, 0.55);
   --gold: #F2B84B;
   --green: #9EF58A;
 }
@@ -35,32 +36,58 @@ html, body { margin: 0; background: #000; overflow: hidden; }
   position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
   color: var(--text); font-family: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
   transform-origin: 0 0;
-  background: radial-gradient(ellipse 70% 80% at 58% 42%, #2a251f 0%, #110f0d 55%, #070606 100%);
+  background: radial-gradient(ellipse 80% 90% at 55% 45%, #ffffff 0%, var(--paper) 60%, #ebe7df 100%);
 }
+/* colour: a soft glow behind the subject that changes hue every chapter */
+#orb { width: 1300px; height: 1300px; margin: -650px 0 0 -650px; border-radius: 50%; filter: blur(40px); }
+/* a huge outlined chapter word crawling behind everything, old-catalog style */
+#bigword {
+  position: absolute; left: 0; top: 50%; white-space: nowrap; font-family: Anton, Impact, sans-serif;
+  font-size: 520px; line-height: 1; text-transform: uppercase; color: transparent;
+  -webkit-text-stroke: 3px rgba(18, 18, 18, 0.1); letter-spacing: 0.01em; will-change: transform, opacity;
+}
+/* film grain over the whole frame */
+#grain { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.08; pointer-events: none; }
 #gl, #fx, #fxb { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 .abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
 
 .cap { position: absolute; left: 150px; top: 0; }
+/* the chapter label is a sticker: a black pill, slapped on at an angle */
 .cap .chip {
-  font: 800 22px Inter; letter-spacing: 0.26em; text-transform: uppercase; color: var(--dim);
-  display: flex; gap: 16px; align-items: center; margin-bottom: 26px;
+  font: 800 21px Inter; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,.6);
+  display: inline-flex; gap: 12px; align-items: center; margin-bottom: 30px;
+  background: #121212; padding: 12px 22px 12px 20px; border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.18); transform-origin: 0 50%;
 }
-.cap .chip i { font-style: normal; width: 48px; height: 3px; background: currentColor; display: inline-block; }
-.cap .chip b { color: var(--text); font-weight: 800; }
+.cap .chip i { display: none; }
+.cap .chip b { color: #fff; font-weight: 800; }
+.cap .chip b.gold { color: var(--gold); }
 .cap .hl { font-family: Anton, Impact, sans-serif; text-transform: uppercase; line-height: 0.9; font-size: 168px; letter-spacing: 0.005em; }
 .cap .hl.sm { font-size: 104px; line-height: 0.95; }
 .cap .ln { display: block; white-space: nowrap; }
 .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.035em; margin: 0 -0.035em; }
 .w > span { display: inline-block; will-change: transform; }
-.gold { color: var(--gold); }
-.green { color: var(--green); }
+/* accent words get a highlighter swipe */
+.hl .gold, .hl .green, .hl .red {
+  background: linear-gradient(transparent 38%, var(--hc) 38%, var(--hc) 76%, transparent 76%);
+  background-size: var(--swipe, 100%) 100%; background-repeat: no-repeat; padding: 0 0.05em;
+}
+.hl .gold { --hc: var(--gold); }
+.hl .green { --hc: var(--green); }
+.hl .red { --hc: #FF7A7A; }
+.hl .blue { --hc: #8ED0FF; }
+.hl .violet { --hc: #C3A6FF; }
+.hl .blue, .hl .violet {
+  background: linear-gradient(transparent 38%, var(--hc) 38%, var(--hc) 76%, transparent 76%);
+  background-size: var(--swipe, 100%) 100%; background-repeat: no-repeat; padding: 0 0.05em;
+}
 .cap .sub { font: 600 26px Inter; color: var(--dim); margin-top: 30px; letter-spacing: 0.02em; }
 .cap .sub b { color: var(--text); }
 
 #bell { width: 150px; height: 150px; margin: -75px 0 0 -75px; }
 #bell .disc {
   position: absolute; inset: 0; border-radius: 50%; background: var(--gold);
-  box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 80px rgba(242,184,75,.45);
+  box-shadow: 0 18px 40px rgba(0,0,0,.18), 0 0 60px rgba(242,184,75,.5);
   display: flex; align-items: center; justify-content: center;
 }
 #bell svg { width: 78px; height: 78px; transform-origin: 50% 12%; }
@@ -68,10 +95,10 @@ html, body { margin: 0; background: #000; overflow: hidden; }
 #bell .badge {
   position: absolute; right: -4px; top: -4px; width: 46px; height: 46px; border-radius: 50%;
   background: #e5484d; color: #fff; font: 800 24px Inter; display: flex; align-items: center; justify-content: center;
-  border: 4px solid #110f0d;
+  border: 4px solid var(--paper);
 }
 
-#fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+#fade { position: absolute; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; }
 #scrub { position: fixed; left: 10px; bottom: 8px; font: 12px ui-monospace, monospace; color: #888; z-index: 9; }
 body.render #scrub { display: none; }
 video { display: none; }
@@ -79,6 +106,8 @@ video { display: none; }
 </head>
 <body>
 <div id="stage">
+  <div id="orb" class="abs"></div>
+  <div id="bigword"></div>
   <canvas id="fxb" width="1920" height="1080"></canvas>
   <canvas id="gl"></canvas>
   <canvas id="fx" width="1920" height="1080"></canvas>
@@ -88,6 +117,7 @@ video { display: none; }
     <div class="disc"><svg viewBox="0 0 24 24" fill="#16130f"><path d="M12 2.2c-.8 0-1.4.6-1.4 1.4v.6C7.9 4.9 6 7.3 6 10.2v4.1l-1.6 2.2c-.4.6 0 1.4.7 1.4h13.8c.7 0 1.1-.8.7-1.4L18 14.3v-4.1c0-2.9-1.9-5.3-4.6-6v-.6c0-.8-.6-1.4-1.4-1.4zM9.6 19.4a2.4 2.4 0 0 0 4.8 0z"/></svg></div>
     <div class="badge">1</div>
   </div>
+  <div id="grain"></div>
   <div id="fade"></div>
 </div>
 <div id="scrub"></div>
@@ -151,7 +181,7 @@ function recTime(u) {   // seconds after REC0 → rec time
   const s = RAMP.segs.find((g) => u <= g.o + (g.b - g.a) / g.speed) ?? RAMP.segs[RAMP.segs.length - 1];
   return s.a + (u - s.o) * s.speed;
 }
-const REC0 = 0.8;                            // the recording starts playing on the phone
+const REC0 = 1.3;                            // the recording starts playing on the phone (after the flip)
 const REC_END = REC0 + RAMP.out;             // ends on the "Order placed" tracker
 const T_PUT0 = REC_END + 0.15, T_PUT1 = T_PUT0 + 1.3;    // phone is set down flat
 const T_SLEEP = T_PUT0 + 0.7;                            // screen goes dark
@@ -169,7 +199,7 @@ renderer.setPixelRatio(1);
 renderer.setSize(W, H, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
@@ -191,16 +221,9 @@ rim.position.set(-4, 3, -5);
 const glow = new THREE.PointLight(0xf2b84b, 0, 7, 1.6);
 scene.add(new THREE.AmbientLight(0xffffff, 0.35), key, rim, glow);
 
-// a warm tabletop that fades out into the backdrop
-const floorAlpha = (() => {
-  const c = document.createElement("canvas"); c.width = c.height = 512;
-  const x = c.getContext("2d"), g = x.createRadialGradient(256, 256, 0, 256, 256, 256);
-  g.addColorStop(0, "#fff"); g.addColorStop(0.45, "#bbb"); g.addColorStop(1, "#000");
-  x.fillStyle = g; x.fillRect(0, 0, 512, 512);
-  return new THREE.CanvasTexture(c);
-})();
+// soft contact shadows straight onto the paper backdrop
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 26),
-  new THREE.MeshStandardMaterial({ color: 0x2b2621, roughness: 0.82, metalness: 0, transparent: true, alphaMap: floorAlpha, depthWrite: false }));
+  new THREE.ShadowMaterial({ opacity: 0.2, transparent: true, depthWrite: false }));
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
@@ -522,13 +545,38 @@ function drawScreen(T) {
 
 // ================================================================ POSES =====
 const PX = 1.4, PY = 2.4;
+// A new angle for every chapter: the phone swings to it just after the tap
+// that opens the chapter, and does a full spin after Keep.
+function chapterAngle(T) {
+  const keys = [
+    [0, { ry: -0.2, rx: 0, rz: 0 }],
+    [R0(TAP.drop) + 0.12, { ry: 0.26, rx: 0.05, rz: 0.03 }],
+    [R0(TAP.crate) + 0.12, { ry: -0.06, rx: -0.05, rz: 0 }],
+    [R0(TAP.keep) + 0.1, { ry: 0.3, rx: 0.02, rz: -0.035 }],
+    [R0(TAP.ship) + 0.12, { ry: -0.32, rx: 0.05, rz: 0.02 }],
+  ];
+  const a = { ...keys[0][1] };
+  for (const [t, to] of keys.slice(1)) {
+    const k = E.inOutC(prog(T, t, t + 0.7));
+    for (const n in a) a[n] = lerp(a[n], to[n], k);
+  }
+  a.ry += Math.PI * 2 * E.inOutC(prog(T, R0(TAP.keep) + 0.12, R0(TAP.keep) + 0.95));
+  return a;
+}
 function phonePose(T) {
+  const ang = chapterAngle(T);
   const up = {
-    x: PX, y: PY + 0.05 * Math.sin(T * 0.9), z: 0,
-    rx: 0.035 * Math.sin(T * 0.55), ry: -0.2 + 0.05 * Math.sin(T * 0.37), rz: 0.015 * Math.sin(T * 0.6),
+    x: PX, y: PY + 0.08 * Math.sin(T * 1.1), z: 0,
+    rx: ang.rx + 0.035 * Math.sin(T * 0.7), ry: ang.ry + 0.06 * Math.sin(T * 0.5), rz: ang.rz + 0.02 * Math.sin(T * 0.8),
   };
-  const intro = 1 - E.outC(prog(T, 0, 1.1));
-  up.ry += intro * 1.25; up.y -= intro * 1.3; up.x += intro * 0.6; up.rx += intro * 0.3;
+  // Entrance: it rises into frame showing its back (camera bump and all),
+  // then flips forward onto its screen as it slides over to the right.
+  const rise = 1 - E.outC(prog(T, 0, 0.75));
+  const flip = prog(T, 0.45, 1.3);
+  up.y -= rise * 3.4;
+  up.ry += Math.PI * (1 - E.outBack(flip));
+  up.rx += 0.22 * Math.sin(E.inOutC(flip) * Math.PI);
+  up.x = lerp(0.25, up.x, E.inOutC(flip));
   const k = E.inOutC(prog(T, T_PUT0, T_PUT1));
   const p = {};
   for (const n of ["x", "y", "z", "rx", "ry", "rz"]) p[n] = lerp(up[n], FLAT[n], k);
@@ -583,8 +631,8 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 function camAt(T) {
   // upright: the phone sits right of centre, captions on the left
   let pos = V(0, PY + 0.1, 9.4), look = V(0.25, PY, 0);
-  const intro = 1 - E.outC(prog(T, 0, 1.2));
-  pos.z += intro * 2.2;
+  const intro = 1 - E.outC(prog(T, 0, 1.5));
+  pos.z += intro * 1.6;
   const push = win(T, R0(REC.marks.burst) - 0.2, R0(REC.marks.flash + 1.2), 0.6, 0.6); // lean in for the legendary pull
   pos.z -= 0.75 * push; pos.x += 0.3 * push; look.x += 0.45 * push;
 
@@ -632,7 +680,7 @@ function drawFx(T, shoeP) {
     for (const p of DUST) {
       const rr = 0.8 + p.sp * E.outC(d);
       const [x, y] = project(V(BOX_BASE.x + Math.cos(p.a) * rr, BOX_BASE.y + p.up * Math.sin(d * Math.PI), BOX_BASE.z + Math.sin(p.a) * rr * 0.9));
-      dot(fx, x, y, p.sz * (0.6 + d), `rgba(214,200,178,${0.35 * (1 - d)})`);
+      dot(fx, x, y, p.sz * (0.6 + d), `rgba(140,118,92,${0.3 * (1 - d)})`);
     }
   }
   // burst out of the lid
@@ -641,7 +689,7 @@ function drawFx(T, shoeP) {
     for (const p of BURST) {
       const rr = p.sp * E.outC(b) * 1.3;
       const [x, y] = project(V(BOX_BASE.x + Math.cos(p.a) * rr, BOX_BASE.y + BOX_H + p.up * E.outC(b) - 1.2 * b * b, BOX_BASE.z + Math.sin(p.a) * rr));
-      dot(fx, x, y, p.sz, p.gold ? `rgba(242,184,75,${1 - b})` : `rgba(255,248,230,${1 - b})`);
+      dot(fx, x, y, p.sz, p.gold ? `rgba(242,176,52,${1 - b})` : `rgba(229,72,77,${1 - b})`);
     }
   }
   if (!shoeP) return;
@@ -656,12 +704,12 @@ function drawFx(T, shoeP) {
   for (let i = 0; i < 16; i++) {
     const a0 = (i / 16) * Math.PI * 2, w = 0.07 + 0.03 * Math.sin(i * 2.3);
     const g = fxb.createRadialGradient(0, 0, 0, 0, 0, R);
-    g.addColorStop(0, `rgba(242,184,75,${0.28 * on})`); g.addColorStop(1, "rgba(242,184,75,0)");
+    g.addColorStop(0, `rgba(242,176,52,${0.42 * on})`); g.addColorStop(1, "rgba(242,176,52,0)");
     fxb.beginPath(); fxb.moveTo(0, 0); fxb.arc(0, 0, R, a0 - w, a0 + w); fxb.closePath(); fxb.fillStyle = g; fxb.fill();
   }
   fxb.restore();
   const halo = fxb.createRadialGradient(cx, cy, 0, cx, cy, 420);
-  halo.addColorStop(0, `rgba(255,214,140,${0.35 * on})`); halo.addColorStop(1, "rgba(255,214,140,0)");
+  halo.addColorStop(0, `rgba(255,200,100,${0.45 * on})`); halo.addColorStop(1, "rgba(255,200,100,0)");
   fxb.fillStyle = halo; fxb.fillRect(0, 0, W, H);
   // sparkles drifting around the shoe
   for (const p of SPARK) {
@@ -670,7 +718,7 @@ function drawFx(T, shoeP) {
     const [x, y, z] = project(V(c.x + Math.cos(a) * p.rad, c.y + h, c.z + Math.sin(a) * p.rad));
     const tw = 0.5 + 0.5 * Math.sin(T * 5 + p.ph);
     const ctx = Math.sin(a) < 0 ? fxb : fx; // behind or in front of the shoe
-    dot(ctx, x, y, p.sz * (0.6 + tw * 0.6), `rgba(255,${200 + 40 * tw | 0},120,${on * (0.35 + 0.65 * tw) * (1 - Math.abs(h) / 1.3)})`);
+    dot(ctx, x, y, p.sz * (0.6 + tw * 0.6), `rgba(${230 + 10 * tw | 0},${150 + 50 * tw | 0},30,${on * (0.4 + 0.6 * tw) * (1 - Math.abs(h) / 1.3)})`);
   }
 }
 
@@ -691,13 +739,13 @@ function caption(a, b, chip, lines, opts = {}) {
 function R0(r) { return REC0 + outTime(r); } // rec time → spot time (hoisted: the camera uses it)
 const TAP = Object.fromEntries(REC.taps.map((tp) => [tp.label, tp.t]));
 const CAPS = [
-  caption(R0(0.1), R0(TAP.drop - 0.2), "01 &nbsp;<b>Drops</b>", ["Pick your", "drop."]),
-  caption(R0(TAP.drop - 0.2), R0(TAP.crate - 0.2), "02 &nbsp;<b>Open</b>", ["Open a", "crate."]),
+  caption(R0(0.1), R0(TAP.drop - 0.2), "01 &nbsp;<b>Drops</b>", ["Pick your", "[green]drop."]),
+  caption(R0(TAP.drop - 0.2), R0(TAP.crate - 0.2), "02 &nbsp;<b>Open</b>", ["Open a", "[blue]crate."]),
   caption(R0(TAP.crate - 0.2), R0(TAP.keep - 0.2), "03 &nbsp;<b>Pull</b>", ["Pull a", "[gold]grail."]),
-  caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "it."]),
-  caption(R0(TAP.ship - 0.2), T_PUT0 + 0.6, "05 &nbsp;<b>Ship</b>", ["Ship it", "[green]home."]),
-  caption(T_NOTE + 0.2, T_SWIPE0 + 0.25, "06 &nbsp;<b>Delivered</b>", ["It's", "here."]),
-  caption(T_SHOE1 - 0.6, T_END0 + 0.2, "<b class='gold'>Legendary</b> &nbsp;·&nbsp; $895", ["Air Jordan 1 High", "'85 Chicago"], { sm: true, y: 400 }),
+  caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "[red]it."]),
+  caption(R0(TAP.ship - 0.2), T_PUT0 + 0.6, "05 &nbsp;<b>Ship</b>", ["Ship it", "[violet]home."]),
+  caption(T_NOTE + 0.2, T_SWIPE0 + 0.25, "06 &nbsp;<b>Delivered</b>", ["It's", "[green]here."]),
+  caption(T_SHOE1 - 0.6, T_END0 + 0.2, "<b class='gold'>Legendary</b> &nbsp;·&nbsp; $895", ["Air Jordan 1 High", "'85 [red]Chicago"], { sm: true, y: 400 }),
   caption(T_END0 + 0.3, DURATION + 5, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>", y: 400 }),
 ];
 function updateCaptions(T) {
@@ -711,10 +759,73 @@ function updateCaptions(T) {
       const outK = E.inC(prog(T, c.b - 0.45 + i * 0.04, c.b + i * 0.04));
       w.style.transform = `translateY(${((1 - inK) - outK) * 112}%)`;
     });
-    const chipK = win(T, c.a, c.b, 0.5, 0.35);
-    if (c.chip) { c.chip.style.opacity = chipK; c.chip.style.transform = `translateX(${(1 - chipK) * -30}px)`; }
+    // the sticker slaps on (overshoot, a little tilt), the highlighter swipes in after the words
+    const pop = E.outBack(prog(T, c.a, c.a + 0.35)), gone = E.inC(prog(T, c.b - 0.3, c.b));
+    if (c.chip) {
+      c.chip.style.opacity = Math.min(prog(T, c.a, c.a + 0.1), 1 - gone);
+      c.chip.style.transform = `rotate(${-3 + 3 * (1 - pop)}deg) scale(${pop * (1 - 0.3 * gone)})`;
+    }
+    c.el.style.setProperty("--swipe", `${E.outC(prog(T, c.a + 0.35, c.a + 0.75)) * 100}%`);
     if (c.sub) c.sub.style.opacity = win(T, c.a + 0.5, c.b, 0.6, 0.35);
   }
+}
+
+// ---- colour: a glow and a big outlined word per chapter, plus film grain ---------
+const CHAPTERS = [
+  { a: 0, color: [158, 245, 138], word: "Drops" },
+  { a: R0(TAP.drop - 0.2), color: [124, 200, 255], word: "Open" },
+  { a: R0(TAP.crate - 0.2), color: [242, 184, 75], word: "Grail" },
+  { a: R0(TAP.keep - 0.2), color: [255, 107, 107], word: "Keep" },
+  { a: R0(TAP.ship - 0.2), color: [177, 140, 255], word: "Ship" },
+  { a: T_PUT0 + 0.2, color: [158, 245, 138], word: "Delivered" },
+  { a: T_SWIPE0, color: [242, 184, 75], word: "Open it" },
+  { a: T_SHOE1 - 0.6, color: [255, 107, 107], word: "'85 Chicago" },
+  { a: T_END0 + 0.3, color: [242, 184, 75], word: "Chosen" },
+];
+const orbEl = document.getElementById("orb"), wordEl = document.getElementById("bigword");
+let wordShown = "";
+function updateColor(T) {
+  let i = 0;
+  while (i + 1 < CHAPTERS.length && T >= CHAPTERS[i + 1].a) i++;
+  const cur = CHAPTERS[i], prev = CHAPTERS[Math.max(0, i - 1)];
+  const k = E.inOutC(prog(T, cur.a, cur.a + 0.5));
+  const [r, g, b] = cur.color.map((v, j) => Math.round(lerp(prev.color[j], v, i ? k : 1)));
+  orbEl.style.background = `radial-gradient(circle, rgba(${r},${g},${b},.8) 0%, rgba(${r},${g},${b},.35) 38%, rgba(${r},${g},${b},0) 66%)`;
+  // it sits behind the subject: the phone, then the box and shoe
+  const pp = phonePose(T);
+  const onPhone = project(V(pp.x, pp.y, pp.z));
+  const onBox = project(V(BOX_BASE.x, 1.3, BOX_BASE.z));
+  const m = E.inOutC(prog(T, T_SWIPE0, T_DROP0 + 0.4));
+  const x = lerp(onPhone[0], onBox[0], m), y = lerp(onPhone[1], onBox[1], m);
+  orbEl.style.transform = `translate(${x}px, ${y}px) scale(${1 + 0.04 * Math.sin(T * 3.3)})`;
+  // the word dips out and back in on each chapter change
+  const dip = Math.min(1, Math.abs(T - cur.a) / 0.25, i + 1 < CHAPTERS.length ? Math.abs(CHAPTERS[i + 1].a - T) / 0.25 : 1);
+  if (wordShown !== cur.word) {
+    wordShown = cur.word;
+    wordEl.innerHTML = Array(5).fill(`<span>${cur.word}&nbsp;·&nbsp;</span>`).join("");
+    wordEl.dataset.unit = wordEl.firstChild.offsetWidth; // one repeat, so the crawl loops seamlessly
+  }
+  wordEl.style.opacity = i === 0 ? Math.min(1, T / 0.4) : dip;
+  wordEl.style.transform = `translate(${-((T * 120) % +wordEl.dataset.unit)}px, -50%)`;
+}
+
+// grain: a few noise tiles, a different one (and offset) every 1/12s — film
+// cadence, and far kinder to the encoder than fresh noise every frame
+const GRAIN = (() => {
+  const r = rng(99);
+  return Array.from({ length: 4 }, () => {
+    const c = document.createElement("canvas"); c.width = c.height = 256;
+    const x = c.getContext("2d"), d = x.createImageData(256, 256);
+    for (let i = 0; i < d.data.length; i += 4) { const v = 150 + r() * 105; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+    x.putImageData(d, 0, 0);
+    return c.toDataURL();
+  });
+})();
+const grainEl = document.getElementById("grain");
+function updateGrain(T) {
+  const f = Math.floor(T * 12), r = rng(f + 1);
+  grainEl.style.backgroundImage = `url(${GRAIN[f % GRAIN.length]})`;
+  grainEl.style.backgroundPosition = `${Math.floor(r() * 256)}px ${Math.floor(r() * 256)}px`;
 }
 
 // ---- bell over the phone --------------------------------------------------------
@@ -745,7 +856,9 @@ function updateBell(T) {
 const CUES = [];
 const cue = (t, kind, extra = {}) => CUES.push({ t: +t.toFixed(3), kind, ...extra });
 cue(0.05, "intro");
+cue(0.45, "flip", { dur: 0.85 });         // the phone flips from its back to its screen
 cue(REC0, "settle");
+cue(R0(TAP.keep) + 0.12, "spin", { dur: 0.83 }); // the 360 after Keep
 for (const tp of REC.taps) cue(R0(tp.t), "tap", { label: tp.label });
 cue(R0(TAP.drops + 0.12), "page");
 cue(R0(TAP.drop + 0.12), "page");
@@ -825,6 +938,8 @@ async function renderFrame(T) {
   drawFx(T, sp);
   updateCaptions(T);
   updateBell(T);
+  updateColor(T);
+  updateGrain(T);
   document.getElementById("fade").style.opacity = Math.max(1 - prog(T, 0, 0.5), prog(T, DURATION - 0.5, DURATION));
 }
 window.renderFrame = renderFrame;

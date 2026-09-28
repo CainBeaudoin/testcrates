@@ -33,6 +33,7 @@ def main():
     ap.add_argument("--stills", default=None, help="comma list of times → PNGs, no video")
     ap.add_argument("--stilldir", default="stills")
     ap.add_argument("--page", default="promo/index.html", help="page to render, relative to the repo root")
+    ap.add_argument("--crf", default="19", help="x264 quality (higher = smaller file)")
     ap.add_argument("--cues", default=None, help="write the page's window.CUES (its sound cue list) to this JSON file and exit")
     args = ap.parse_args()
 
@@ -72,7 +73,7 @@ def main():
             cmd += ["-ss", str(args.start), "-i", args.audio, "-c:a", "aac", "-b:a", "192k", "-shortest"]
         cmd += ["-vf", "scale=in_range=pc:out_range=tv:out_color_matrix=bt709,format=yuv420p",
                 "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-color_range", "tv",
-                "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-r", str(args.fps), "-movflags", "+faststart", args.out]
+                "-c:v", "libx264", "-preset", "slow", "-crf", args.crf, "-r", str(args.fps), "-movflags", "+faststart", args.out]
         ff = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         t0 = time.time()
         for i in range(n):
