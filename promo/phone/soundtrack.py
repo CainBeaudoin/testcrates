@@ -258,8 +258,8 @@ def bar_of(k):
 
 
 def wobble(t0, dur, f, rate, g=1.0):
-    """Wobble bass: two detuned saws through a resonant low-pass whose cutoff
-    an LFO swings `rate` times per beat, then driven into saturation."""
+    """Wobble bass, kept clean: two detuned saws through a gently resonant
+    low-pass whose cutoff an LFO swings `rate` times per beat."""
     n = int(dur * SR)
     out, p1, p2, lo, band = [], 0.0, 0.0, 0.0, 0.0
     for k in range(n):
@@ -268,14 +268,14 @@ def wobble(t0, dur, f, rate, g=1.0):
         p2 = (p2 + f * 1.007 / SR) % 1
         saw = (2 * p1 - 1) + (2 * p2 - 1)
         lfo = 0.5 - 0.5 * math.cos(TAU * rate * t / BEAT)
-        cut = 90 + 2600 * lfo ** 1.6
+        cut = 140 + 850 * lfo ** 1.4
         fc = 2 * math.sin(math.pi * min(cut, SR / 6) / SR)
         lo += fc * band
-        hi = saw - lo - 0.35 * band
+        hi = saw - lo - 1.1 * band
         band += fc * hi
         env = min(1, t / 0.004) * min(1, (dur - t) / 0.01)
-        out.append(math.tanh(2.2 * lo) * env + 0.6 * math.sin(TAU * f * t) * env)  # + sub
-    add(L, t0, out, 0.75 * g)
+        out.append(math.tanh(0.8 * lo) * env + 0.25 * math.sin(TAU * f * t) * env)  # + a little sub
+    add(L, t0, out, 0.5 * g)
 
 
 def sub(t0, dur, f, g=1.0):
@@ -332,42 +332,42 @@ while t < T_FLASH - 0.03:
 riser(T_BURST, T_FLASH, 120, 2000, 0.8)
 
 # DROP 1 — the Legendary flash through Ship
-impact(T_FLASH, 1.0, 1.5)
+impact(T_FLASH, 0.35, 1.0)
 half_time(T_FLASH, T_PUT, 1.0, hats16=True)
 for k, b in beats(T_FLASH, T_PUT):
     root, _ = bar_of(k)
-    rate = [2, 2, 3, 4][(k // 4 + k) % 4]  # 8ths, 8ths, triplets, 16ths
+    rate = [1, 2, 1, 2][k % 4]  # a slow, rolling wobble
     wobble(b, BEAT, root, rate, 1.0)
 riser(T_PUT - BAR / 2, T_PUT, 200, 900, 0.4)
 
 # breakdown — the table: pad, sub, half-speed hats, a riser into the landing
-pad(T_PUT, T_OPEN, [55, 110, 164.8, 220], 1.0, att=0.3, rel=0.2)
+pad(T_PUT, T_OPEN, [110, 164.8, 220], 0.45, att=0.3, rel=0.2)
 for k, b in beats(T_PUT, T_LAND):
     root, _ = bar_of(k)
     if k % 4 == 0:
-        sub(b, BAR, root, 1.0)
-        kick(b, 0.8)
+        sub(b, BAR, root, 0.5)
+        kick(b, 0.6)
     if k % 2 == 1:
         hat(b, 0.8)
-riser(T_SWIPE - 0.3, T_LAND, 100, 1600, 0.9)
-impact(T_LAND, 0.8, 0.8)
+riser(T_SWIPE - 0.3, T_LAND, 100, 1600, 0.45)
+impact(T_LAND, 0.3, 0.6)
 # the charge: 16th kicks into the second drop
 for k, b in beats(T_LAND, T_OPEN):
     kick(b, 0.7)
     kick(b + BEAT / 2, 0.5)
 
 # DROP 2 — the box opens: faster wobble, everything on
-impact(T_OPEN, 1.2, 2.0)
+impact(T_OPEN, 0.4, 1.2)
 half_time(T_OPEN, T_END + 0.2, 1.1, hats16=True)
 for k, b in beats(T_OPEN, T_END + 0.2):
     root, chord = bar_of(k)
-    rate = [4, 3, 4, 6][k % 4]
+    rate = [2, 2, 3, 2][k % 4]
     wobble(b, BEAT, root, rate, 1.1)
     if k % 4 == 0:
         pad(b, b + BAR, [c * 2 for c in chord], 0.4, att=0.05, rel=0.4)
 
 # end card: one last hit and let it ring
-impact(T_END + 0.3, 1.2, 2.0)
+impact(T_END + 0.3, 0.4, 1.5)
 pad(T_END + 0.3, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.05, rel=1.5)
 
 L = SFX  # back to the effects bus for the cues
@@ -411,7 +411,7 @@ for c in CUES["cues"]:
         t1 = c["until"]
         riser(t, t1, 90, 1100, 0.6)  # the score carries the snare roll on its own grid
     elif k == "legendary":
-        impact(t, 1.3, 2.2)
+        impact(t, 0.5, 1.4)
         pad(t, t + 2.4, [220, 277.2, 329.6, 440, 554.4], 1.2, att=0.05, rel=1.2)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760, 2217.5]):
             bell(t + 0.05 + i * 0.06, f, 0.8)
@@ -460,8 +460,8 @@ for c in CUES["cues"]:
     elif k == "fall":
         whoosh(t, c["until"] - t + 0.05, 1.0, up=True)
     elif k == "land":
-        impact(t, 1.0, 1.2)
-        cardboard(t, 1.3)
+        impact(t, 0.45, 0.9)
+        cardboard(t, 0.9)
         cardboard(t + 0.16, 0.45)  # a little bounce
         add(L, t, [noise() * math.exp(-j / SR * 5) * 0.2 for j in range(int(0.8 * SR))], 0.3)  # dust
     elif k == "charge":
@@ -476,7 +476,7 @@ for c in CUES["cues"]:
     elif k == "open":
         for i, f in enumerate([220, 261.63, 329.63, 440]):  # the flaps: a quick rising arpeggio
             chime(t + i * 0.06, f, 0.7)
-        impact(t + 0.1, 1.3, 2.4)
+        impact(t + 0.1, 0.5, 1.4)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760, 2217.5]):
             bell(t + 0.15 + i * 0.07, f, 0.8, 1.4)
     elif k == "rise":
@@ -498,7 +498,7 @@ for c in CUES["cues"]:
             blip(s, 1600 + 900 * (s - t) / (c["until"] - t), 0.3, 0.025)
             s += 0.04
     elif k == "endcard":
-        impact(t, 1.3, 2.5)
+        impact(t, 0.5, 1.5)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760]):
             bell(t + 0.05 + i * 0.08, f, 0.7, 1.6)
         kick(t, 0.8)
@@ -507,7 +507,7 @@ for c in CUES["cues"]:
 MUSIC_GAIN, SFX_GAIN = 1.0, 0.6  # the score leads; effects sit on top of it
 L = [MUSIC_GAIN * MUSIC[i] + SFX_GAIN * SFX[i] for i in range(N)]
 peak = max(max(abs(L[i] + PAD_L[i]), abs(L[i] + PAD_R[i])) for i in range(0, N, 7)) or 1
-g = 1.5 / peak
+g = 0.95 / peak  # was 1.5: that drove the whole mix into tanh and blew out the drops
 with wave.open(OUT, "wb") as w:
     w.setnchannels(2)
     w.setsampwidth(2)
