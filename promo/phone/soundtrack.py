@@ -6,11 +6,12 @@ Every sound hangs off a cue that index.html computes from its own timeline
   python ../render.py --page promo/phone/index.html --cues phone/cues.json   # from promo/
   python3 soundtrack.py [cues.json] [soundtrack.wav]
 
-Each interaction gets its own sound: glassy taps, page swooshes, sheets
+Each interaction gets its own sound, and they're musical rather than clicks:
+taps are chimes that climb a scale over a soft kick; page swooshes, sheets
 sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
-placed" chime, the phone set down, the lock click, the notification ding,
-buzz and bell, the swipe, the box falling and landing, the charge rattle,
-the flaps, the shoe rising and the end card. The 128 BPM bed builds with
+placed" chime, the phone set down (kick + bass), the lock bell, the
+notification ding, buzz and bell, the swipe, the box falling and landing,
+the charge tom roll, the flaps, the shoe rising and the end card. The 128 BPM bed builds with
 the action (see "the bed" below).
 """
 import json, math, os, random, struct, sys, wave
@@ -115,10 +116,6 @@ def bell(t0, f, g=1.0, dur=1.2):
     add(L, t0, out, 0.16 * g)
 
 
-def click(t0, g=1.0):
-    add(L, t0, [noise() * math.exp(-k / SR * 500) for k in range(int(0.012 * SR))], 0.3 * g)
-
-
 def thud(t0, g=1.0, f=85, dec=16):
     add(L, t0, [math.sin(TAU * f * k / SR * (1 + 0.6 * math.exp(-k / SR * 30))) * math.exp(-k / SR * dec)
                 for k in range(int(0.3 * SR))], 0.65 * g)
@@ -154,13 +151,29 @@ def pad(t0, t1, freqs, g=1.0, att=0.8, rel=1.0):
 
 
 # ------------------------------------------------------------- the sounds --
-def glass_tap(t0, pitch=1.0):
-    """A finger on glass: a soft body, a bright tick, a tiny airy tail."""
-    thud(t0, 0.8, 190 * pitch, 40)
-    click(t0, 2.0)
-    blip(t0 + 0.004, 2400 * pitch, 1.3, 0.05)
-    blip(t0 + 0.004, 1200 * pitch, 0.8, 0.06)
-    add(L, t0, [noise() * math.exp(-k / SR * 90) * 0.5 for k in range(int(0.05 * SR))], 0.3)
+def chime(t0, f, g=1.0):
+    """A marimba-bell note: a warm fundamental, a woody 4th partial, a glassy
+    shimmer on top. What a tap sounds like — a note, not a click."""
+    out = []
+    for k in range(int(1.1 * SR)):
+        t = k / SR
+        a = min(1, t / 0.003)
+        out.append(a * (math.sin(TAU * f * t) * math.exp(-t * 5)
+                        + 0.45 * math.sin(TAU * f * 4 * t) * math.exp(-t * 22)
+                        + 0.25 * math.sin(TAU * f * 2.76 * t) * math.exp(-t * 9)))
+    add(L, t0, out, 0.3 * g)
+
+
+# The taps climb A minor pentatonic (it sits over the A–F–C–G bassline), so the
+# flow plays as a rising melody: momentum you can hear.
+PENTA = [440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51, 1567.98]
+
+
+def tap_note(t0, i):
+    f = PENTA[min(i, len(PENTA) - 1)]
+    chime(t0, f, 1.0)
+    chime(t0, f / 2, 0.35)      # an octave under, for body
+    kick(t0, 0.35)              # a soft beat under each touch
 
 
 def cardboard(t0, g=1.0):
@@ -272,8 +285,7 @@ groove(T_OPEN + 0.2, T_END + 0.3, 0.5, lambda p: 2 if p < 0.15 else 3)
 pad(T_OPEN, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.2, rel=2.0)
 
 # ------------------------------------------------------------ the cues ------
-TAP_PITCH = {"drops": 1.0, "drop": 1.05, "open": 1.1, "cash": 1.15, "crate": 0.95,
-             "keep": 1.12, "account": 1.0, "ship": 1.08, "confirm": 1.2}
+tap_i = 0
 for c in CUES["cues"]:
     t, k = c["t"], c["kind"]
     if k == "intro":
@@ -282,7 +294,8 @@ for c in CUES["cues"]:
     elif k == "settle":
         impact(t, 0.5, 1.2)
     elif k == "tap":
-        glass_tap(t, TAP_PITCH.get(c.get("label"), 1.0))
+        tap_note(t, tap_i)
+        tap_i += 1
     elif k == "page":
         whoosh(t, 0.3, 0.8, up=False)
     elif k == "sheet":
@@ -292,12 +305,13 @@ for c in CUES["cues"]:
         bell(t, 1318.5, 0.6, 0.4)
         bell(t + 0.07, 1975.5, 0.7, 0.6)
     elif k == "crates":
-        for i in range(3):
-            cardboard(t + i * 0.11, 0.55)
+        for i, f in enumerate([110, 130.81, 164.81]):  # three tuned hits as the crates slide in
+            thud(t + i * 0.11, 0.6, f, 18)
+            chime(t + i * 0.11, f * 4, 0.3)
             whoosh(t + i * 0.11 - 0.08, 0.2, 0.25)
     elif k == "crateOpen":
-        for i in range(4):
-            cardboard(t + i * 0.07, 0.4 + 0.1 * i)
+        for i, f in enumerate([220, 261.63, 329.63]):  # a quick rising arpeggio as the crate cracks
+            chime(t + i * 0.07, f, 0.6)
     elif k == "build":
         t1 = c["until"]
         riser(t, t1, 90, 1100, 1.0)
@@ -321,12 +335,8 @@ for c in CUES["cues"]:
         bell(t + 0.02, 659.3, 0.9)
         bell(t + 0.04, 987.8, 0.7)
     elif k == "scroll":
-        out, lp = [], 0.0
-        n = int(0.7 * SR)
-        for j in range(n):
-            lp += 0.08 * (noise() - lp)
-            out.append(lp * math.sin(math.pi * j / n))
-        add(L, t, out, 0.9)
+        for i, f in enumerate([659.25, 783.99, 880.0, 1046.5, 1174.66]):  # an arpeggio that runs with the scroll
+            chime(t + i * 0.1, f, 0.35)
     elif k == "confirm":
         blip(t + 0.03, 784, 0.8)
         blip(t + 0.1, 1175, 0.8)
@@ -340,13 +350,11 @@ for c in CUES["cues"]:
     elif k == "lift":
         whoosh(t, c["until"] - t, 0.7)
     elif k == "phoneDown":
-        thud(t, 0.9, 140, 26)
-        click(t, 1.6)
-        click(t + 0.11, 0.7)
-        thud(t + 0.11, 0.25, 160, 40)
+        kick(t, 1.0)
+        bass(t, 55.0, 0.6, 1.2)
+        thud(t + 0.11, 0.25, 110, 30)
     elif k == "lock":
-        click(t, 1.3)
-        thud(t, 0.25, 300, 60)
+        bell(t, 440, 0.6, 0.8)
     elif k == "wake":
         riser(t - 0.2, t + 0.3, 400, 900, 0.25)
     elif k == "notify":
@@ -370,13 +378,14 @@ for c in CUES["cues"]:
         t1 = c["until"]
         riser(t, t1, 60, 700, 0.8)
         s = t
-        while s < t1:
+        while s < t1:  # a tom roll that speeds up with the shaking
             p = (s - t) / (t1 - t)
-            cardboard(s, 0.25 + 0.45 * p)
+            thud(s, 0.3 + 0.5 * p, 90 + 80 * p, 22)
+            snare(s, 0.15 + 0.35 * p)
             s += 0.14 - 0.08 * p
     elif k == "open":
-        for i in range(4):
-            cardboard(t + i * 0.06, 0.6)
+        for i, f in enumerate([220, 261.63, 329.63, 440]):  # the flaps: a quick rising arpeggio
+            chime(t + i * 0.06, f, 0.7)
         impact(t + 0.1, 1.3, 2.4)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760, 2217.5]):
             bell(t + 0.15 + i * 0.07, f, 0.8, 1.4)
