@@ -13,7 +13,8 @@ sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
 placed" chime, the phone set down (kick + bass), the lock bell, the
 notification ding, buzz and bell, the swipe, the box falling and landing,
 the charge tom roll, the flaps, the shoe rising, the light leaks, the
-brackets locking on, the price counting up and the end card. Under it all
+brackets locking on, the price counting up, the end card, and the closing
+voice line (voice-tag.wav, a macOS Samantha read of "Sam when, R W A?"). Under it all
 runs a half-time dubstep score with two drops (see "the score" below).
 """
 import json, math, os, random, struct, sys, wave
@@ -231,6 +232,7 @@ def twinkles(t0, t1, g=1.0):
 # downbeat: drop 1 on the Legendary flash, drop 2 on the box opening. It's
 # written to its own bus (MUSIC) and mixed louder than the effects.
 MUSIC = [0.0] * N
+VOICE = [0.0] * N  # the closing voice line, mixed on top and ducking the music
 SFX = L
 L = MUSIC  # the instruments write to L; point it at the music bus for now
 
@@ -497,6 +499,17 @@ for c in CUES["cues"]:
         while s < c["until"]:
             blip(s, 1600 + 900 * (s - t) / (c["until"] - t), 0.3, 0.025)
             s += 0.04
+    elif k == "tag":
+        whoosh(t, 0.45, 1.0)
+    elif k == "voice":
+        v = wave.open(os.path.join(HERE, c["file"]))
+        raw = v.readframes(v.getnframes())
+        vs = [s / 32768 for s in struct.unpack("<%dh" % (len(raw) // 2), raw)][:: v.getnchannels()]
+        add(VOICE, t, vs, 1.0)
+    elif k == "rwa":
+        chime(t, 880, 0.7)
+        chime(t, 1318.51, 0.5)
+        kick(t, 0.6)
     elif k == "endcard":
         impact(t, 0.5, 1.5)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760]):
@@ -505,7 +518,13 @@ for c in CUES["cues"]:
 
 # --------------------------------------------------------------- master ----
 MUSIC_GAIN, SFX_GAIN = 1.0, 0.6  # the score leads; effects sit on top of it
-L = [MUSIC_GAIN * MUSIC[i] + SFX_GAIN * SFX[i] for i in range(N)]
+VOICE_GAIN = 0.9
+v_on = [i for i in range(0, N, 441) if abs(VOICE[i]) > 1e-4]
+v0, v1 = (v_on[0] / SR - 0.15, v_on[-1] / SR + 0.3) if v_on else (DUR, DUR)
+def duck(i):  # music dips ~8 dB while she speaks
+    t = i / SR
+    return 1 - 0.6 * min(1, max(0, (t - v0) / 0.15), max(0, (v1 - t) / 0.3))
+L = [MUSIC_GAIN * MUSIC[i] * duck(i) + SFX_GAIN * SFX[i] + VOICE_GAIN * VOICE[i] for i in range(N)]
 peak = max(max(abs(L[i] + PAD_L[i]), abs(L[i] + PAD_R[i])) for i in range(0, N, 7)) or 1
 g = 0.95 / peak  # was 1.5: that drove the whole mix into tanh and blew out the drops
 with wave.open(OUT, "wb") as w:

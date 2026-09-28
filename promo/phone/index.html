@@ -115,6 +115,19 @@ html, body { margin: 0; background: #000; overflow: hidden; }
 #brackets i:nth-child(2) { right: 0; top: 0; border-right-width: 5px; border-top-width: 5px; }
 #brackets i:nth-child(3) { left: 0; bottom: 0; border-left-width: 5px; border-bottom-width: 5px; }
 #brackets i:nth-child(4) { right: 0; bottom: 0; border-right-width: 5px; border-bottom-width: 5px; }
+/* closing tag: a black panel wipes across, the words land with the voice */
+#tag { position: absolute; inset: 0; background: #0e0e0e; display: none; }
+#tag .edge { position: absolute; top: -10%; bottom: -10%; width: 60px; background: var(--green); }
+#tag .txt {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center;
+  font-family: Anton, Impact, sans-serif; text-transform: uppercase; color: #f6f4ef; font-size: 250px; line-height: 0.95;
+}
+#tag .tw { display: inline-block; will-change: transform, opacity; }
+#tag .q { color: #0e0e0e; background: var(--green); padding: 0 0.12em; margin-top: 0.08em; }
+#tag .stk {
+  position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%) rotate(-3deg);
+  font: 800 22px Inter; letter-spacing: .22em; color: #0e0e0e; background: #f6f4ef; padding: 12px 22px; border-radius: 999px;
+}
 /* light leak: a hot overexposed sweep on the big beats */
 #leak { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
 #fade { position: absolute; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; }
@@ -142,6 +155,11 @@ video { display: none; }
     <div class="nm">AIR JORDAN 1 HIGH '85</div>
     <div class="nm2">CHICAGO</div>
     <div class="ft"><span>LAST SALE&nbsp;&nbsp;/&nbsp;&nbsp;USD</span><b id="hudPrice">$895</b></div>
+  </div>
+  <div id="tag">
+    <div class="edge"></div>
+    <div class="txt"><span class="tw" id="tw1">Sam</span> <span class="tw" id="tw2">when</span><br><span class="tw q" id="tw3">RWA?</span></div>
+    <div class="stk">CHOSEN.WIN</div>
   </div>
   <div id="leak"></div>
   <div id="grain"></div>
@@ -218,7 +236,7 @@ const T_DROP0 = T_SWIPE1 + 0.02, T_LAND = T_DROP0 + 0.45; // box falls onto the 
 const T_CHARGE = T_LAND + 0.18;
 const CHARGE_SPEED = 2.0, OPEN_SPEED = 1.5;              // the crate's baked clips, played faster
 let T_OPEN, T_SHOE0, T_SHOE1, T_END0, DURATION;         // set once the box clips are known
-let T_LOCK, T_CLEAR;                                            // when the shoe's sole clears the flaps; it doesn't spin or tilt before
+let T_LOCK, T_TAG, T_CLEAR;                                            // when the shoe's sole clears the flaps; it doesn't spin or tilt before
 
 // ------------------------------------------------------------ three.js ----
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -342,7 +360,8 @@ T_SHOE0 = T_OPEN + 0.12;
 T_SHOE1 = T_SHOE0 + 1.1;
 T_LOCK = T_SHOE1 - 0.35; // the HUD brackets snap onto the shoe
 T_END0 = T_SHOE1 + 1.9;
-DURATION = T_END0 + 1.8;
+T_TAG = T_END0 + 1.6;    // the closing tag: "Sam when RWA?" (voice-tag.wav starts at T_TAG + 0.15)
+DURATION = T_TAG + 2.5;
 window.DURATION = DURATION;
 
 // ---- shoe ---------------------------------------------------------------------
@@ -784,7 +803,7 @@ const CAPS = [
   caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "[red]it."]),
   caption(R0(TAP.ship - 0.2), T_PUT0 + 0.6, "05 &nbsp;<b>Ship</b>", ["Ship it", "[violet]home."]),
   caption(T_NOTE + 0.2, T_SWIPE0 + 0.25, "06 &nbsp;<b>Delivered</b>", ["It's", "[green]here."]),
-  caption(T_END0 + 0.3, DURATION + 5, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>", y: 400 }),
+  caption(T_END0 + 0.3, T_TAG + 0.15, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>", y: 400 }),
 ];
 function updateCaptions(T) {
   for (const c of CAPS) {
@@ -891,9 +910,32 @@ function updateHud(T) {
   hudPrice.textContent = `$${Math.round(895 * E.outC(prog(T, T_LOCK + 0.2, T_LOCK + 0.8)))}`;
 }
 
+// ---- closing tag ---------------------------------------------------------------------
+const tagEl = document.getElementById("tag"), tagEdge = tagEl.querySelector(".edge"), tagStk = tagEl.querySelector(".stk");
+const TW = [["tw1", 0.15], ["tw2", 0.5], ["tw3", 1.05]].map(([id, d]) => [document.getElementById(id), d]); // on the voice's words
+function updateTag(T) {
+  const k = E.inOutC(prog(T, T_TAG - 0.2, T_TAG + 0.2));
+  tagEl.style.display = k > 0 ? "block" : "none";
+  if (k <= 0) return;
+  // a diagonal wipe from the right, led by a green edge
+  const x = lerp(115, -15, k);
+  tagEl.style.clipPath = `polygon(${x}% 0, 130% 0, 130% 100%, ${x - 12}% 100%)`;
+  tagEdge.style.left = `calc(${x - 6}% - 30px)`;
+  tagEdge.style.transform = "skewX(-6.8deg)";
+  TW.forEach(([el, d], i) => {
+    const p = prog(T, T_TAG + d, T_TAG + d + 0.18);
+    const s = i === 2 ? lerp(1.6, 1, E.outBack(p)) : lerp(1.25, 1, E.outC(p));
+    el.style.opacity = Math.min(1, p * 3);
+    el.style.transform = `scale(${s}) rotate(${i === 2 ? -2 * (1 - p) - 2 : 0}deg)`;
+  });
+  const sp = E.outBack(prog(T, T_TAG + 1.5, T_TAG + 1.8));
+  tagStk.style.opacity = Math.min(1, prog(T, T_TAG + 1.5, T_TAG + 1.6) * 1);
+  tagStk.style.transform = `translateX(-50%) rotate(-3deg) scale(${sp})`;
+}
+
 // ---- light leaks ---------------------------------------------------------------------
 const leakEl = document.getElementById("leak");
-const LEAKS = [REC0 - 0.12, T_PUT0 + 0.05, T_DROP0 - 0.05, T_OPEN + 0.02];
+const LEAKS = [REC0 - 0.12, T_PUT0 + 0.05, T_DROP0 - 0.05, T_OPEN + 0.02, T_TAG - 0.05];
 function updateLeak(T) {
   let a = 0, x = 0;
   for (const t of LEAKS) {
@@ -968,6 +1010,9 @@ cue(T_OPEN, "open");
 cue(T_SHOE0, "rise", { until: T_SHOE1 });
 cue(T_SHOE1, "hover");
 cue(T_END0 + 0.3, "endcard");
+cue(T_TAG - 0.2, "tag");                         // the wipe
+cue(T_TAG + 0.15, "voice", { file: "voice-tag.wav" }); // "Sam when, R W A?"
+cue(T_TAG + 1.05, "rwa");                         // RWA? slams in
 for (const t of LEAKS) cue(t, "leak");
 cue(T_LOCK, "lockon");
 cue(T_LOCK + 0.2, "count", { until: T_LOCK + 0.8 });
@@ -1021,8 +1066,11 @@ async function renderFrame(T) {
   updateColor(T);
   updateHud(T);
   updateLeak(T);
+  updateTag(T);
   updateGrain(T);
-  document.getElementById("fade").style.opacity = Math.max(1 - prog(T, 0, 0.5), prog(T, DURATION - 0.5, DURATION));
+  const fadeEl = document.getElementById("fade");
+  fadeEl.style.background = T > T_TAG ? "#000" : "";
+  fadeEl.style.opacity = Math.max(1 - prog(T, 0, 0.5), prog(T, DURATION - 0.4, DURATION));
 }
 window.renderFrame = renderFrame;
 
