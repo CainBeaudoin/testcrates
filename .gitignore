@@ -3,3 +3,6 @@ promo/phone/frames/
 promo/phone/stills/
 promo/phone/*.jpg
 promo/phone/debug.png
+promo/phone/soundtrack.wav
+promo/phone/*.png
+!promo/phone/aj1-85-chicago.png

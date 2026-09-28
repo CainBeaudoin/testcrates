@@ -114,6 +114,7 @@ def main():
             b = loc.bounding_box()
             if b["y"] < 0 or b["y"] + b["height"] > VH:
                 # off screen (the ship form is taller than the phone): glide it into view
+                marks["scroll"] = round(time.time() - t0, 3)
                 loc.evaluate("el => el.scrollIntoView({ behavior: 'smooth', block: 'center' })")
                 hold(900)
             hold(lead * 1000)  # the cursor glides in during this beat
@@ -141,6 +142,8 @@ def main():
         # three crates; YOUR BOX is the middle one
         tap(page.locator(".box-slot[data-index='1']"), "crate")
         mark("opening")
+        until(page.locator(".reveal-flash, .reveal-vortex, .reveal-rays").first)
+        mark("burst")  # the rarity FX start (index.html hits the Legendary sound here)
         until(page.get_by_role("button", name="Keep"))
         mark("reveal")
         hold(2600)
@@ -176,6 +179,17 @@ def main():
                     "-vf", "scale=in_range=pc:out_range=tv,format=yuv420p", "-color_range", "tv",
                     "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "30", "-g", "10", "-row-mt", "1", "-deadline", "good", "-cpu-used", "4",
                     os.path.join(HERE, "screen.webm")], check=True)
+    # The Legendary flash (after the dark build-up) has no DOM hook worth
+    # polling, so find it in the take: the first big jump in brightness after
+    # the burst starts.
+    probe = subprocess.run([ffmpeg, "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(frames_dir, "%05d.jpg"),
+                            "-vf", "scale=40:80,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-", "-f", "null", "-"],
+                           capture_output=True, text=True, check=True).stdout
+    luma = [float(l.split("=")[1]) for l in probe.splitlines() if "YAVG" in l]
+    for i in range(int(marks["burst"] * FPS) + 5, len(luma)):
+        if luma[i] - luma[i - 1] > 30:
+            marks["flash"] = round(i / FPS, 3)
+            break
     with open(os.path.join(HERE, "taps.json"), "w") as f:
         json.dump({"viewport": [VW, VH], "fps": FPS, "duration": round(n / FPS, 3), "taps": taps, "marks": marks}, f, indent=1)
     print("wrote screen.webm and taps.json", file=sys.stderr)

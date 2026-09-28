@@ -1,0 +1,233 @@
+{
+ "duration": 52.12833337306977,
+ "rec": [
+  1.2,
+  33
+ ],
+ "put": 33.35,
+ "open": 41.62833337306977,
+ "end": 48.328333373069775,
+ "cues": [
+  {
+   "t": 0.05,
+   "kind": "intro"
+  },
+  {
+   "t": 1.55,
+   "kind": "settle"
+  },
+  {
+   "t": 2.5,
+   "kind": "caption"
+  },
+  {
+   "t": 3.415,
+   "kind": "tap",
+   "label": "drops"
+  },
+  {
+   "t": 3.535,
+   "kind": "page"
+  },
+  {
+   "t": 6.604,
+   "kind": "caption"
+  },
+  {
+   "t": 6.804,
+   "kind": "tap",
+   "label": "drop"
+  },
+  {
+   "t": 6.924,
+   "kind": "page"
+  },
+  {
+   "t": 9.948,
+   "kind": "tap",
+   "label": "open"
+  },
+  {
+   "t": 10.048,
+   "kind": "sheet"
+  },
+  {
+   "t": 11.515,
+   "kind": "tap",
+   "label": "cash"
+  },
+  {
+   "t": 11.615,
+   "kind": "pay"
+  },
+  {
+   "t": 12.065,
+   "kind": "crates"
+  },
+  {
+   "t": 14.918,
+   "kind": "caption"
+  },
+  {
+   "t": 15.118,
+   "kind": "tap",
+   "label": "crate"
+  },
+  {
+   "t": 15.218,
+   "kind": "crateOpen"
+  },
+  {
+   "t": 16.831,
+   "kind": "build",
+   "until": 19.2
+  },
+  {
+   "t": 19.2,
+   "kind": "legendary"
+  },
+  {
+   "t": 19.9,
+   "kind": "card"
+  },
+  {
+   "t": 20.213,
+   "kind": "caption"
+  },
+  {
+   "t": 20.413,
+   "kind": "tap",
+   "label": "keep"
+  },
+  {
+   "t": 20.493,
+   "kind": "keep"
+  },
+  {
+   "t": 23.558,
+   "kind": "tap",
+   "label": "account"
+  },
+  {
+   "t": 23.678,
+   "kind": "page"
+  },
+  {
+   "t": 26.325,
+   "kind": "caption"
+  },
+  {
+   "t": 26.525,
+   "kind": "tap",
+   "label": "ship"
+  },
+  {
+   "t": 26.625,
+   "kind": "sheet"
+  },
+  {
+   "t": 27.955,
+   "kind": "scroll"
+  },
+  {
+   "t": 29.786,
+   "kind": "tap",
+   "label": "confirm"
+  },
+  {
+   "t": 29.866,
+   "kind": "confirm"
+  },
+  {
+   "t": 30.159,
+   "kind": "order"
+  },
+  {
+   "t": 33.35,
+   "kind": "lift",
+   "until": 35.35
+  },
+  {
+   "t": 34.45,
+   "kind": "lock"
+  },
+  {
+   "t": 35.33,
+   "kind": "phoneDown"
+  },
+  {
+   "t": 35.8,
+   "kind": "wake"
+  },
+  {
+   "t": 36.15,
+   "kind": "notify"
+  },
+  {
+   "t": 36.15,
+   "kind": "buzz",
+   "dur": 0.45
+  },
+  {
+   "t": 36.2,
+   "kind": "bell"
+  },
+  {
+   "t": 36.35,
+   "kind": "caption"
+  },
+  {
+   "t": 36.77,
+   "kind": "buzz",
+   "dur": 0.33
+  },
+  {
+   "t": 37.3,
+   "kind": "bell"
+  },
+  {
+   "t": 38.05,
+   "kind": "swipe",
+   "dur": 0.6000000000000014
+  },
+  {
+   "t": 38.85,
+   "kind": "fall",
+   "until": 39.470000000000006
+  },
+  {
+   "t": 39.47,
+   "kind": "land"
+  },
+  {
+   "t": 39.92,
+   "kind": "charge",
+   "until": 41.62833337306977
+  },
+  {
+   "t": 41.628,
+   "kind": "open"
+  },
+  {
+   "t": 41.928,
+   "kind": "rise",
+   "until": 44.12833337306977
+  },
+  {
+   "t": 43.528,
+   "kind": "caption"
+  },
+  {
+   "t": 44.128,
+   "kind": "hover"
+  },
+  {
+   "t": 48.628,
+   "kind": "caption"
+  },
+  {
+   "t": 48.628,
+   "kind": "endcard"
+  }
+ ]
+}

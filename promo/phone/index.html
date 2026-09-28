@@ -125,9 +125,11 @@ const REC_END = REC0 + REC.duration;      // ends on the "Order placed" tracker
 const T_PUT0 = REC_END + 0.35, T_PUT1 = T_PUT0 + 2.0;   // phone is set down flat
 const T_SLEEP = T_PUT0 + 1.1;                           // screen goes dark
 const T_WAKE = T_PUT1 + 0.45, T_NOTE = T_WAKE + 0.35;   // lock screen, notification
-const T_DROP0 = T_NOTE + 1.9, T_LAND = T_DROP0 + 0.62;  // box falls onto the screen
+const T_SWIPE0 = T_NOTE + 1.9, T_SWIPE1 = T_SWIPE0 + 0.6; // phone is swiped out of frame
+const T_DROP0 = T_SWIPE1 + 0.2, T_LAND = T_DROP0 + 0.62; // box falls onto the bare table
 const T_CHARGE = T_LAND + 0.45;
 let T_OPEN, T_SHOE0, T_SHOE1, T_END0, DURATION;         // set once the box clips are known
+let T_CLEAR;                                            // when the shoe's sole clears the flaps; it doesn't spin or tilt before
 
 // ------------------------------------------------------------ three.js ----
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -220,12 +222,8 @@ phoneModel.traverse((n) => {
 const boxModel = boxGltf.scene;
 const clips = Object.fromEntries(boxGltf.animations.map((c) => [c.name, c]));
 boxModel.updateMatrixWorld(true);
-const bodyBox = new THREE.Box3().setFromObject(boxModel.getObjectByName("CrateBody") ?? boxModel);
-const bodySize = bodyBox.getSize(new THREE.Vector3()), bodyCenter = bodyBox.getCenter(new THREE.Vector3());
-const BOX_SCALE = 1.5 / Math.max(bodySize.x, bodySize.z);
-const BOX_H = bodySize.y * BOX_SCALE;
-boxModel.scale.setScalar(BOX_SCALE);
-boxModel.position.set(-bodyCenter.x * BOX_SCALE, -bodyBox.min.y * BOX_SCALE, -bodyCenter.z * BOX_SCALE);
+const BOX_RY = -0.5; // how the box ends up facing after it lands
+const BOX_W = 2.4;   // closed box, long side, in world units
 boxModel.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; } });
 const box = new THREE.Group();
 box.add(boxModel);
@@ -245,6 +243,18 @@ function poseClip(name, ct) {
   }
   mixer.update(0);
 }
+// Size and centre the crate from its posed (closed) geometry: it's skinned,
+// so the rest-pose bounds of "CrateBody" say nothing about its real shape.
+poseClip("Open", 0);
+let fit = preciseBox(boxModel);
+boxModel.scale.multiplyScalar(BOX_W / Math.max(fit.max.x - fit.min.x, fit.max.z - fit.min.z));
+fit = preciseBox(boxModel);
+boxModel.position.x -= (fit.min.x + fit.max.x) / 2;
+boxModel.position.z -= (fit.min.z + fit.max.z) / 2;
+boxModel.position.y -= fit.min.y;
+fit = preciseBox(boxModel);
+const BOX_H = fit.max.y - fit.min.y;
+const BOX_LONG_X = fit.max.x - fit.min.x >= fit.max.z - fit.min.z; // the shoe lies along the long side
 T_OPEN = T_CHARGE + clips.Charge.duration;
 T_SHOE0 = T_OPEN + 0.3;
 T_SHOE1 = T_SHOE0 + 2.2;
@@ -257,7 +267,7 @@ const shoe = new THREE.Group();
 const shoeModel = shoeGltf.scene;
 {
   const b = new THREE.Box3().setFromObject(shoeModel), s = b.getSize(new THREE.Vector3());
-  const k = 1.75 / s.x; // heel-to-toe, in world units
+  const k = 1.95 / s.x; // heel-to-toe, in world units; fits inside the 2.4 box
   shoeModel.scale.setScalar(k);
   shoeModel.position.copy(b.getCenter(new THREE.Vector3()).multiplyScalar(-k));
 }
@@ -265,9 +275,35 @@ shoeModel.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.frustumCulled
 shoe.add(shoeModel);
 scene.add(shoe);
 
-// where the box sits: on the lower half of the flat phone's screen
+// Vertex-exact world bounds (the crate's flaps are skinned, so its plain
+// Box3 is the rest pose, not the opened one).
+function preciseBox(root) {
+  const b = new THREE.Box3(), v = new THREE.Vector3();
+  root.updateMatrixWorld(true);
+  root.traverse((n) => {
+    if (!n.isMesh || !n.visible) return;
+    const pos = n.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      if (n.isSkinnedMesh) n.applyBoneTransform(i, v);
+      b.expandByPoint(v.applyMatrix4(n.matrixWorld));
+    }
+  });
+  return b;
+}
+// half the shoe's height, plus what its float tilt can add
+const SHOE_HH = (() => { const s = new THREE.Box3().setFromObject(shoeModel).getSize(new THREE.Vector3()); return s.y / 2 + 0.09 * s.x / 2; })();
+const SHOE_CLEAR = 0.45;     // gap between the sole and the flap tips once it's out
+const SHOE_CAM_Y = 2.3, SHOE_LOOK_Y = 1.62; // tuned with window.__overlap (below)
+
 const FLAT = { x: 0, y: PHONE.z / 2, z: 0.15, rx: -Math.PI / 2, ry: 0.12, rz: 0 };
-const BOX_BASE = new THREE.Vector3(0.05, PHONE.z, 0.95);
+const BOX_BASE = new THREE.Vector3(0, 0, 0.2);
+// the open box's highest point: the tips of the flaps
+box.position.copy(BOX_BASE); box.rotation.set(0, BOX_RY, 0); box.scale.setScalar(1);
+poseClip("Open", clips.Open.duration);
+const FLAP_TOP = preciseBox(boxModel).max.y;
+T_CLEAR = T_SHOE0;
+while (T_CLEAR < T_SHOE1 && shoeY(T_CLEAR) - SHOE_HH < FLAP_TOP + 0.03) T_CLEAR += 1 / 120;
 
 // ---- recording + images -------------------------------------------------------
 // as a blob: plain static servers (python -m http.server) don't answer Range
@@ -287,7 +323,6 @@ const loadImg = (src) => new Promise((r) => { const i = new Image(); i.onload = 
 const appIcon = await loadImg("../../assets/brand/apple-touch-icon.png");
 
 // ================================================================ SCREEN ====
-const CURSOR = new Path2D("M5 2.5v17.2l4.6-4.3 3 6.6 3.1-1.4-3-6.5 6.3-.3z");
 const TAPS = REC.taps;
 const CUR_START = { x: 318, y: 610 };
 
@@ -298,7 +333,7 @@ function cursorAt(r) {
     if (r < m0) break;
     if (r < m1) {
       const k = E.inOutC(prog(r, m0, m1));
-      // a slight arc, like a hand moving a mouse
+      // a slight arc, like a thumb moving across the glass
       return { x: lerp(prev.x, tp.x, k), y: lerp(prev.y, tp.y, k) - Math.sin(k * Math.PI) * 26 };
     }
     prev = tp;
@@ -306,35 +341,62 @@ function cursorAt(r) {
   return prev;
 }
 
+// The "finger": a liquid-glass disc (a touch indicator, not a mouse arrow).
+// It magnifies the app under it, has a bright rim and a specular highlight,
+// and squeezes and flares on each tap.
+const GLASS_R = 50; // canvas px (25pt)
 function drawCursor(r) {
   const last = TAPS[TAPS.length - 1];
   const a = prog(r, 0.4, 0.9) * (1 - prog(r, last.t + 0.9, last.t + 1.3));
   if (a <= 0) return;
-  // tap ripples
+  // tap ripples: a thin glass ring spreading out
   for (const tp of TAPS) {
-    const k = prog(r, tp.t, tp.t + 0.55);
+    const k = prog(r, tp.t, tp.t + 0.6);
     if (k <= 0 || k >= 1) continue;
     sc.beginPath();
-    sc.arc(tp.x * 2, tp.y * 2 + BAR, 22 + 80 * E.outC(k), 0, Math.PI * 2);
-    sc.fillStyle = `rgba(20,20,20,${0.16 * (1 - k)})`;
-    sc.fill();
-    sc.lineWidth = 5;
-    sc.strokeStyle = `rgba(255,255,255,${0.85 * (1 - k)})`;
+    sc.arc(tp.x * 2, tp.y * 2 + BAR, GLASS_R * (0.9 + 1.4 * E.outC(k)), 0, Math.PI * 2);
+    sc.lineWidth = 7 * (1 - k) + 1;
+    sc.strokeStyle = `rgba(255,255,255,${0.7 * (1 - k)})`;
+    sc.shadowColor = `rgba(0,0,0,${0.25 * (1 - k)})`; sc.shadowBlur = 8;
     sc.stroke();
+    sc.shadowColor = "transparent";
   }
-  const p = cursorAt(r);
+  const p = cursorAt(r), cx = p.x * 2, cy = p.y * 2 + BAR;
   let press = 0;
-  for (const tp of TAPS) press = Math.max(press, Math.sin(prog(r, tp.t - 0.1, tp.t + 0.16) * Math.PI));
-  const s = 3.3 * (1 - 0.2 * press);
+  for (const tp of TAPS) press = Math.max(press, Math.sin(prog(r, tp.t - 0.1, tp.t + 0.18) * Math.PI));
+  const R = GLASS_R * (1 - 0.16 * press);
   sc.save();
   sc.globalAlpha = a;
-  sc.translate(p.x * 2, p.y * 2 + BAR);
-  sc.scale(s, s);
-  sc.translate(-5, -2.5); // hotspot = arrow tip
-  sc.shadowColor = "rgba(0,0,0,.35)"; sc.shadowBlur = 6; sc.shadowOffsetY = 1.5;
-  sc.fillStyle = "#fff"; sc.fill(CURSOR);
-  sc.shadowColor = "transparent";
-  sc.lineWidth = 1.3; sc.lineJoin = "round"; sc.strokeStyle = "#111"; sc.stroke(CURSOR);
+  // soft shadow under the glass
+  sc.filter = "blur(9px)";
+  sc.beginPath(); sc.arc(cx, cy + 7, R * 0.96, 0, Math.PI * 2); sc.fillStyle = "rgba(0,0,0,.22)"; sc.fill();
+  sc.filter = "none";
+  // the lens: the app under it, magnified
+  sc.save();
+  sc.beginPath(); sc.arc(cx, cy, R, 0, Math.PI * 2); sc.clip();
+  const m = 1.3, sr = R / m;
+  sc.drawImage(video, cx - sr, cy - BAR - sr, sr * 2, sr * 2, cx - R, cy - R, R * 2, R * 2);
+  // glass body: clear in the middle, milky toward the edge (refraction)
+  const body = sc.createRadialGradient(cx, cy, R * 0.2, cx, cy, R);
+  body.addColorStop(0, `rgba(255,255,255,${0.06 + 0.18 * press})`);
+  body.addColorStop(0.75, `rgba(255,255,255,${0.12 + 0.18 * press})`);
+  body.addColorStop(1, "rgba(255,255,255,.55)");
+  sc.fillStyle = body; sc.fillRect(cx - R, cy - R, R * 2, R * 2);
+  // specular highlight, top-left
+  sc.filter = "blur(4px)";
+  sc.beginPath(); sc.ellipse(cx - R * 0.36, cy - R * 0.42, R * 0.36, R * 0.18, -0.6, 0, Math.PI * 2);
+  sc.fillStyle = "rgba(255,255,255,.75)"; sc.fill();
+  sc.filter = "none";
+  sc.restore();
+  // rim: bright where the light hits, darker opposite
+  const rim = sc.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+  rim.addColorStop(0, "rgba(255,255,255,.95)");
+  rim.addColorStop(0.5, "rgba(255,255,255,.35)");
+  rim.addColorStop(1, "rgba(255,255,255,.8)");
+  sc.beginPath(); sc.arc(cx, cy, R - 1.5, 0, Math.PI * 2);
+  sc.lineWidth = 3; sc.strokeStyle = rim; sc.stroke();
+  sc.beginPath(); sc.arc(cx, cy, R + 0.5, 0, Math.PI * 2);
+  sc.lineWidth = 1.5; sc.strokeStyle = "rgba(0,0,0,.18)"; sc.stroke();
   sc.restore();
 }
 
@@ -446,6 +508,13 @@ function phonePose(T) {
   const buzz = win(T, T_NOTE, T_NOTE + 0.45, 0.05, 0.05) + win(T, T_NOTE + 0.62, T_NOTE + 0.95, 0.05, 0.05);
   p.x += buzz * 0.016 * Math.sin(T * 150);
   p.ry += buzz * 0.012 * Math.sin(T * 131);
+  // swiped off to the left, spinning a little as it goes
+  const sw = prog(T, T_SWIPE0, T_SWIPE1);
+  if (sw > 0) {
+    const e = sw < 0.12 ? -0.25 * Math.sin((sw / 0.12) * Math.PI) : E.inC((sw - 0.12) / 0.88); // tiny wind-up, then gone
+    p.x -= 11 * Math.max(0, e) - 0.25 * Math.min(0, e);
+    p.ry += 0.9 * Math.max(0, e);
+  }
   return p;
 }
 
@@ -453,22 +522,28 @@ function boxPose(T) {
   if (T < T_DROP0) return null;
   const f = prog(T, T_DROP0, T_LAND);
   const y = BOX_BASE.y + 7.5 * (1 - f * f);
-  const ry = -0.5 - 1.1 * (1 - E.outC(f));
+  const ry = BOX_RY - 1.1 * (1 - E.outC(f));
   const b = prog(T, T_LAND, T_LAND + 0.4);
   const squash = b > 0 && b < 1 ? Math.sin(b * Math.PI) * (1 - b * 0.5) : 0;
   return { x: BOX_BASE.x, y, z: BOX_BASE.z, ry, sy: 1 - 0.13 * squash, sx: 1 + 0.07 * squash };
 }
 
+// ∫ of a spin rate that ramps linearly from 0 (at a) to 1 (at b)
+const rampInt = (T, a, b) => (T < a ? 0 : T < b ? (T - a) ** 2 / (2 * (b - a)) : (b - a) / 2 + (T - b));
+function shoeY(T) {
+  const y0 = BOX_BASE.y + SHOE_HH + 0.1;           // resting on the box floor
+  const y1 = FLAP_TOP + SHOE_HH + SHOE_CLEAR;      // floating well above the open flaps
+  return lerp(y0, y1, E.inOutC(prog(T, T_SHOE0, T_SHOE1)));
+}
 function shoePose(T) {
   if (T < T_SHOE0) return null;
-  const k = prog(T, T_SHOE0, T_SHOE1);
-  const rise = E.outC(k);
-  const s = lerp(0.3, 1, E.outBack(clamp(k * 1.3)));
-  const hover = T > T_SHOE1 ? 0.08 * Math.sin((T - T_SHOE1) * 1.6) : 0;
+  const hover = T > T_SHOE1 ? 0.07 * Math.sin((T - T_SHOE1) * 1.6) : 0;
+  const free = E.inOutC(prog(T, T_CLEAR, T_CLEAR + 0.8));
   return {
-    x: BOX_BASE.x, z: BOX_BASE.z,
-    y: BOX_BASE.y + BOX_H * 0.45 + rise * 1.55 + hover,
-    s, ry: -1.3 + (T - T_SHOE0) * 0.55, rx: 0.08 * Math.sin(T * 0.7), rz: 0.1 * Math.sin(T * 0.9 + 1),
+    x: BOX_BASE.x, z: BOX_BASE.z, s: 1,
+    y: shoeY(T) + hover * free,
+    ry: BOX_RY + (BOX_LONG_X ? 0 : Math.PI / 2) + 0.55 * rampInt(T, T_CLEAR, T_CLEAR + 1.0),
+    rx: free * 0.07 * Math.sin((T - T_CLEAR) * 0.7), rz: free * 0.09 * Math.sin((T - T_CLEAR) * 0.9),
   };
 }
 
@@ -483,12 +558,12 @@ function camAt(T) {
 
   const TABLE = [V(0, 6.4, 5.9), V(0, 0.25, 0.25)];
   const NOTE = [V(0.15, 4.5, 3.4), V(0, 0.1, -0.2)];
-  const BOXC = [V(0.5, 4.3, 6.1), V(0.05, 0.9, 0.55)];
-  const SHOE = [V(0.2, 3.35, 6.9), V(-0.95, 1.7, 0.9)];
+  const BOXC = [V(0.5, 4.6, 8.4), V(0, 0.9, 0.2)];
+  const SHOE = [V(0, SHOE_CAM_Y, 9.7), V(-1.2, SHOE_LOOK_Y, 0.2)];
   const blend = (to, a, b) => { const k = E.inOutC(prog(T, a, b)); pos.lerp(to[0], k); look.lerp(to[1], k); };
   blend(TABLE, T_PUT0, T_PUT1 + 0.1);
   blend(NOTE, T_PUT1 + 0.1, T_NOTE + 0.9);
-  blend(BOXC, T_DROP0 - 0.7, T_DROP0 + 0.4);
+  blend(BOXC, T_SWIPE0 + 0.1, T_DROP0 + 0.4);
   blend(SHOE, T_OPEN - 0.1, T_SHOE1 + 0.3);
   // slow orbit around the floating shoe, drifting left to make room for type
   if (T > T_OPEN) {
@@ -589,9 +664,9 @@ const CAPS = [
   caption(R0(TAP.crate - 0.2), R0(TAP.keep - 0.2), "03 &nbsp;<b>Pull</b>", ["Pull a", "[gold]grail."]),
   caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "it."]),
   caption(R0(TAP.ship - 0.2), T_PUT0 + 0.6, "05 &nbsp;<b>Ship</b>", ["Ship it", "[green]home."]),
-  caption(T_NOTE + 0.2, T_DROP0 + 0.5, "06 &nbsp;<b>Delivered</b>", ["It's", "here."]),
-  caption(T_SHOE1 - 0.6, T_END0 + 0.2, "<b class='gold'>Legendary</b> &nbsp;·&nbsp; $895", ["Air Jordan 1 High", "'85 Chicago"], { sm: true, y: 560 }),
-  caption(T_END0 + 0.3, DURATION + 5, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>" }),
+  caption(T_NOTE + 0.2, T_SWIPE0 + 0.25, "06 &nbsp;<b>Delivered</b>", ["It's", "here."]),
+  caption(T_SHOE1 - 0.6, T_END0 + 0.2, "<b class='gold'>Legendary</b> &nbsp;·&nbsp; $895", ["Air Jordan 1 High", "'85 Chicago"], { sm: true, y: 400 }),
+  caption(T_END0 + 0.3, DURATION + 5, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>", y: 400 }),
 ];
 function updateCaptions(T) {
   for (const c of CAPS) {
@@ -615,10 +690,11 @@ const bellEl = document.getElementById("bell");
 const bellSvg = bellEl.querySelector("svg");
 const rings = [...bellEl.querySelectorAll(".ring")];
 function updateBell(T) {
-  const a = win(T, T_NOTE, T_DROP0 - 0.2, 0.35, 0.3);
+  const a = win(T, T_NOTE, T_SWIPE0 + 0.25, 0.35, 0.3);
   bellEl.style.display = a > 0 ? "block" : "none";
   if (a <= 0) return;
-  const [x, y] = project(V(1.75, 0.35, -0.75)); // just off the phone's right edge, level with the notification
+  const pp = phonePose(T);
+  const [x, y] = project(V(pp.x + 1.75, 0.35, -0.75)); // rides along when the phone is swiped away // just off the phone's right edge, level with the notification
   const pop = E.outBack(prog(T, T_NOTE, T_NOTE + 0.45));
   bellEl.style.opacity = a;
   bellEl.style.transform = `translate(${x}px, ${y}px) scale(${pop})`;
@@ -631,6 +707,49 @@ function updateBell(T) {
   });
 }
 
+// ================================================================ CUES =====
+// Every sound in soundtrack.py hangs off this list, so audio can't drift from
+// the picture. ../render.py --cues dumps it.
+const CUES = [];
+const cue = (t, kind, extra = {}) => CUES.push({ t: +t.toFixed(3), kind, ...extra });
+cue(0.05, "intro");
+cue(1.55, "settle");
+for (const tp of REC.taps) cue(REC0 + tp.t, "tap", { label: tp.label });
+cue(R0(TAP.drops + 0.12), "page");
+cue(R0(TAP.drop + 0.12), "page");
+cue(R0(TAP.open + 0.1), "sheet");        // "Open $125 with…"
+cue(R0(TAP.cash + 0.1), "pay");
+cue(R0(TAP.cash + 0.55), "crates");      // three crates slide in
+cue(R0(TAP.crate + 0.1), "crateOpen");
+cue(R0(REC.marks.burst), "build", { until: R0(REC.marks.flash) });
+cue(R0(REC.marks.flash), "legendary");
+cue(R0(REC.marks.flash + 0.7), "card");
+cue(R0(TAP.keep + 0.08), "keep");
+cue(R0(TAP.account + 0.12), "page");
+cue(R0(TAP.ship + 0.1), "sheet");
+cue(R0(REC.marks.scroll), "scroll");
+cue(R0(TAP.confirm + 0.08), "confirm");
+cue(R0(REC.marks.shipped + 0.35), "order"); // "Order placed" toast
+for (const c of CAPS) cue(c.a, "caption");
+cue(T_PUT0, "lift", { until: T_PUT1 });
+cue(T_PUT1 - 0.02, "phoneDown");
+cue(T_SLEEP, "lock");
+cue(T_WAKE, "wake");
+cue(T_NOTE, "notify");
+cue(T_NOTE, "buzz", { dur: 0.45 });
+cue(T_NOTE + 0.62, "buzz", { dur: 0.33 });
+for (let t = T_NOTE; t < T_SWIPE0; t += 1.1) cue(t + 0.05, "bell");
+cue(T_SWIPE0, "swipe", { dur: T_SWIPE1 - T_SWIPE0 });
+cue(T_DROP0, "fall", { until: T_LAND });
+cue(T_LAND, "land");
+cue(T_CHARGE, "charge", { until: T_OPEN });
+cue(T_OPEN, "open");
+cue(T_SHOE0, "rise", { until: T_SHOE1 });
+cue(T_SHOE1, "hover");
+cue(T_END0 + 0.3, "endcard");
+CUES.sort((x, y) => x.t - y.t);
+window.CUES = { duration: DURATION, rec: [REC0, REC_END], put: T_PUT0, open: T_OPEN, end: T_END0, cues: CUES };
+
 // ============================================================ RENDER =====
 async function renderFrame(T) {
   const r = T - REC0;
@@ -638,6 +757,7 @@ async function renderFrame(T) {
   drawScreen(T);
 
   const p = phonePose(T);
+  phone.visible = T < T_SWIPE1 + 0.05;
   phone.position.set(p.x, p.y, p.z);
   phone.rotation.set(p.rx, p.ry, p.rz);
 
@@ -673,6 +793,30 @@ async function renderFrame(T) {
   document.getElementById("fade").style.opacity = Math.max(1 - prog(T, 0, 0.5), prog(T, DURATION - 0.5, DURATION));
 }
 window.renderFrame = renderFrame;
+
+// Screen-space check that the floating shoe never overlaps the box: the gap
+// (px) between the shoe's lowest projected vertex and the box's highest, plus
+// both rects. Used while tuning the shoe camera; not needed for renders.
+window.__overlap = async (T) => {
+  await renderFrame(T);
+  const rect = (root) => {
+    const r = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 }, v = new THREE.Vector3();
+    root.updateMatrixWorld(true);
+    root.traverse((n) => {
+      if (!n.isMesh) return;
+      const pos = n.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 20000));
+      for (let i = 0; i < pos.count; i += step) {
+        v.fromBufferAttribute(pos, i);
+        if (n.isSkinnedMesh) n.applyBoneTransform(i, v);
+        const [x, y] = project(v.applyMatrix4(n.matrixWorld));
+        r.x0 = Math.min(r.x0, x); r.x1 = Math.max(r.x1, x); r.y0 = Math.min(r.y0, y); r.y1 = Math.max(r.y1, y);
+      }
+    });
+    return Object.fromEntries(Object.entries(r).map(([k, x]) => [k, Math.round(x)]));
+  };
+  const s = rect(shoe), b = rect(box);
+  return { T, gap: b.y0 - s.y1, shoe: s, box: b };
+};
 
 async function ready() {
   await document.fonts.load("100px Anton");

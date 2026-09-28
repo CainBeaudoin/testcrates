@@ -6,9 +6,10 @@ pixel is a pure function of t, so the output is deterministic at any fps.
   python render.py --fps 60 --out chosen-launch.mp4 [--start 0 --end 30] [--stills 1,5.5,9]
   python render.py --page promo/phone/index.html --out phone/chosen-phone.mp4
 renderFrame may return a Promise (the phone spot seeks a video); it's awaited.
+  python render.py --page promo/phone/index.html --cues phone/cues.json   # sound cue list for phone/soundtrack.py
 Needs: playwright (Chromium) and an ffmpeg with libx264 (FFMPEG env var or PATH).
 """
-import argparse, functools, http.server, os, shutil, subprocess, sys, threading, time
+import argparse, functools, json, http.server, os, shutil, subprocess, sys, threading, time
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
@@ -32,6 +33,7 @@ def main():
     ap.add_argument("--stills", default=None, help="comma list of times → PNGs, no video")
     ap.add_argument("--stilldir", default="stills")
     ap.add_argument("--page", default="promo/index.html", help="page to render, relative to the repo root")
+    ap.add_argument("--cues", default=None, help="write the page's window.CUES (its sound cue list) to this JSON file and exit")
     args = ap.parse_args()
 
     port = serve()
@@ -45,6 +47,13 @@ def main():
         page.evaluate("window.__ready.then(() => true)")
         duration = page.evaluate("window.DURATION")
         print("renderer:", page.evaluate("window.__glInfo"), file=sys.stderr)
+
+        if args.cues:
+            with open(args.cues, "w") as f:
+                json.dump(page.evaluate("window.CUES"), f, indent=1)
+            print("wrote", args.cues, file=sys.stderr)
+            browser.close()
+            return
 
         if args.stills:
             os.makedirs(args.stilldir, exist_ok=True)
