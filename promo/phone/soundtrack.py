@@ -12,7 +12,8 @@ spin whoosh; page swooshes, sheets
 sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
 placed" chime, the phone set down (kick + bass), the lock bell, the
 notification ding, buzz and bell, the swipe, the box falling and landing,
-the charge tom roll, the flaps, the shoe rising and the end card. The 128 BPM bed builds with
+the charge tom roll, the flaps, the shoe rising, the light leaks, the
+brackets locking on, the price counting up and the end card. The 128 BPM bed builds with
 the action (see "the bed" below).
 """
 import json, math, os, random, struct, sys, wave
@@ -403,6 +404,18 @@ for c in CUES["cues"]:
     elif k == "hover":
         bell(t, 1318.5, 0.6, 1.4)
         twinkles(t + 0.3, T_END + 0.5, 0.8)
+    elif k == "leak":
+        whoosh(t - 0.1, 0.4, 0.6)
+        riser(t - 0.12, t + 0.05, 600, 2400, 0.25)
+    elif k == "lockon":
+        chime(t, 1567.98, 0.8)
+        chime(t + 0.07, 2093.0, 0.8)
+        kick(t, 0.5)
+    elif k == "count":
+        s = t
+        while s < c["until"]:
+            blip(s, 1600 + 900 * (s - t) / (c["until"] - t), 0.3, 0.025)
+            s += 0.04
     elif k == "endcard":
         impact(t, 1.3, 2.5)
         for i, f in enumerate([880, 1108.7, 1318.5, 1760]):
