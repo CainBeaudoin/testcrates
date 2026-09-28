@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CHOSEN.WIN — Launch Spot</title>
+<!--
+  30s launch spot for CHOSEN.WIN, rendered frame-by-frame by promo/render.py.
+  Every pixel is a pure function of time: window.renderFrame(t) poses the
+  3D boxes, the particle canvas and the DOM overlays for second t, so the
+  video comes out identical at any frame rate. Open this page in a browser
+  to scrub it (arrow keys / space) — ?t=7.2 jumps to a moment.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=block">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root {
+  --bg: #060607;
+  --text: #f5f5f5;
+  --dim: rgba(245, 245, 245, 0.55);
+  --panel: #131318;
+  --line: rgba(255, 255, 255, 0.12);
+  --gold: #F2B84B;
+  --green: #4ADE80;
+  --blue: #4FA3F7;
+  --purple: #B678F2;
+  --grey: #B9B9BE;
+}
+html, body { margin: 0; background: #000; overflow: hidden; }
+#stage {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  transform-origin: 0 0;
+}
+#shake { position: absolute; inset: 0; }
+.layer { position: absolute; inset: 0; }
+#bg { background: radial-gradient(ellipse at 50% 55%, var(--spot, #1a1a20) 0%, transparent 60%), var(--bg); }
+#gl, #fx, #fxb { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.scene { position: absolute; inset: 0; display: none; }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.anton { font-family: Anton, Impact, sans-serif; text-transform: uppercase; line-height: 0.92; letter-spacing: 0.005em; }
+.acc-gold { color: var(--gold); }
+.acc-green { color: var(--green); }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.04em; margin: 0 -0.04em; }
+.w > span { display: inline-block; will-change: transform; }
+
+/* prize card — the app's hero card, dark panel over a white product shot */
+.card {
+  width: 420px; height: 590px; border-radius: 30px; background: var(--panel);
+  border: 2px solid var(--rc, #555); overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 30px 80px rgba(0,0,0,.6), 0 0 90px -10px var(--rc, transparent);
+}
+.card .ph { height: 408px; background: #fff; display: flex; align-items: center; justify-content: center; position: relative; }
+.card .ph img { width: 96%; height: 96%; object-fit: contain; }
+.card .meta { padding: 18px 26px 0; }
+.card .rar { font: 800 15px Inter; letter-spacing: 0.22em; color: var(--rc); text-transform: uppercase; }
+.card .nm { font: 700 23px/1.15 Inter; margin-top: 7px; height: 53px; overflow: hidden; }
+.card .pr { font: 38px Anton; margin-top: 6px; letter-spacing: .02em; }
+.card.sm { width: 210px; height: 295px; border-radius: 18px; border-width: 2px; }
+.card.sm .ph { height: 204px; }
+.card.sm .meta { padding: 9px 13px 0; }
+.card.sm .rar { font-size: 9px; letter-spacing: .18em; }
+.card.sm .nm { font-size: 12px; height: 28px; margin-top: 3px; }
+.card.sm .pr { font-size: 20px; margin-top: 2px; }
+
+.chip { font: 800 20px Inter; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); display: flex; gap: 14px; align-items: center; }
+.chip b { color: var(--text); font-weight: 800; }
+.chip i { font-style: normal; width: 44px; height: 3px; background: currentColor; display: inline-block; }
+
+.pill {
+  border-radius: 999px; background: rgba(255,255,255,.06); border: 1.5px solid var(--line);
+  display: flex; align-items: center; gap: 18px; padding: 0 30px; height: 84px; font: 700 26px Inter; white-space: nowrap;
+}
+.opt {
+  width: 640px; height: 118px; border-radius: 26px; background: #111116; border: 2px solid var(--line);
+  display: flex; align-items: center; gap: 26px; padding: 0 30px; box-sizing: border-box;
+}
+.opt .ic { width: 66px; height: 66px; border-radius: 18px; display: flex; align-items: center; justify-content: center; flex: none; }
+.opt .ic svg { width: 36px; height: 36px; }
+.opt .t1 { font: 38px Anton; letter-spacing: .03em; text-transform: uppercase; }
+.opt .t2 { font: 500 20px Inter; color: var(--dim); margin-top: 4px; }
+
+.wm { font: 28px Anton; letter-spacing: .12em; color: rgba(255,255,255,.85); }
+.wm span { color: var(--gold); }
+
+#grain { background-size: 256px 256px; opacity: 0.07; mix-blend-mode: overlay; pointer-events: none; }
+#vig { background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,.65) 100%); pointer-events: none; }
+#flash { background: #fff; opacity: 0; pointer-events: none; }
+#bars { pointer-events: none; }
+
+/* scrub UI when viewed directly (hidden in renders) */
+#scrub { position: fixed; left: 12px; bottom: 12px; font: 600 13px Inter; color: #aaa; z-index: 9; }
+body.render #scrub { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="shake">
+    <div id="bg" class="layer"></div>
+    <canvas id="fxb" width="1920" height="1080"></canvas>
+    <div id="uiBack" class="layer"></div>
+    <canvas id="gl" width="1920" height="1080"></canvas>
+    <canvas id="fx" width="1920" height="1080"></canvas>
+    <div id="ui" class="layer"></div>
+  </div>
+  <div id="grain" class="layer"></div>
+  <div id="vig" class="layer"></div>
+  <div id="flash" class="layer"></div>
+</div>
+<div id="scrub"></div>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
+
+const W = 1920, H = 1080;
+const DURATION = 30;
+window.DURATION = DURATION;
+const A = "../assets/";
+
+// ---------------------------------------------------------------- math ----
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const E = {
+  inQ: (x) => x * x,
+  outQ: (x) => 1 - (1 - x) * (1 - x),
+  outC: (x) => 1 - Math.pow(1 - x, 3),
+  inC: (x) => x * x * x,
+  inOutC: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+  outExpo: (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x)),
+  inExpo: (x) => (x <= 0 ? 0 : Math.pow(2, 10 * x - 10)),
+  outBack: (x, s = 1.70158) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2),
+  outElastic: (x) => (x <= 0 ? 0 : x >= 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1),
+};
+// window: 0 before a, eased 0→1 over [a, a+i], hold, 1→0 over [b-o, b]
+function win(t, a, b, i = 0.25, o = 0.25, ein = E.outC, eout = E.inC) {
+  if (t < a || t > b) return 0;
+  const up = i > 0 ? ein(prog(t, a, a + i)) : 1;
+  const dn = o > 0 ? 1 - eout(prog(t, b - o, b)) : 1;
+  return Math.min(up, dn);
+}
+function hash(n) { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+function noise1(t, seed = 0) { // smooth value noise, -1..1
+  const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f);
+  return lerp(hash(i + seed * 57.3), hash(i + 1 + seed * 57.3), u) * 2 - 1;
+}
+const money = (v, dp = 0) => "$" + v.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+
+// -------------------------------------------------------------- prizes ----
+const RC = { common: "#B9B9BE", uncommon: "#4ADE80", rare: "#4FA3F7", epic: "#B678F2", legendary: "#F2B84B" };
+const RARITY_CYCLE = [RC.common, RC.uncommon, RC.rare, RC.epic, RC.legendary];
+const P = (name, price, rarity, file) => ({ name, price, rarity, img: A + "prizes/" + file });
+const HERO = P("Air Jordan 1 High Off-White Chicago", 6236, "legendary", "air-jordan-1-high-off-white-chicago.jpeg");
+const VAULT = [
+  P("Nike SB Blazer Mid Supreme White", 3669, "legendary", "nike-sb-blazer-mid-supreme-white.png"),
+  P("KAWS Companion Plush Brown", 734, "legendary", "kaws-companion-plush-brown.png"),
+  P("Supreme Box Logo Hoodie Sage (FW16)", 661, "legendary", "supreme-box-logo-hoodie-sage-fw16.jpg"),
+  P("Daniel Arsham Crystal Relic 002 Game Boy", 1468, "legendary", "daniel-arsham-crystal-relic-002-nintendo-game-boy-clear.png"),
+  null, // the slot the hero pull lands in
+  P("Nike Air Force 1 High Supreme White", 1174, "legendary", "nike-air-force-1-high-supreme-white.png"),
+  P("Bearbrick Iron Man Mark 7 400%", 404, "epic", "bearbrick-iron-man-mark-7-400.png"),
+  P("Air Jordan 1 Low Travis Scott Velvet Brown", 550, "legendary", "air-jordan-1-low-travis-scott-velvet-brown.jpg"),
+];
+const VAULT_TOTAL = VAULT.reduce((s, p) => s + (p ? p.price : HERO.price), 0);
+const MULTI = [
+  P("Supreme Hooded Baseball Top Red", 110, "uncommon", "supreme-hooded-baseball-top-red.png"),
+  P("Air Jordan 4 White Thunder", 404, "epic", "air-jordan-4-white-thunder.png"),
+  P("Nike Blazer SB Mid Supreme Black", 3669, "legendary", "nike-blazer-sb-mid-supreme-black.png"),
+  P("Air Jordan 1 Low Travis Scott Canary", 308, "rare", "air-jordan-1-low-travis-scott-canary.png"),
+  P("BAPE Tiger Full Zip Hoodie Grey", 477, "legendary", "bape-tiger-full-zip-hoodie-grey.png"),
+];
+const WALL = [
+  "nike-air-force-1-low-laser-by-mark-smith.png", "bearbrick-scarlet-spider-100-400-set.png", "supreme-astronaut-hoodie-burgundy.png",
+  "air-jordan-4-bred-reimagined.png", "kaws-bff-plush-black.png", "supreme-20th-anniversary-skateboard.png", "nike-kobe-6-protro-all-star.png",
+  "bape-abc-camo-tiger-full-zip-hoodie-green.png", "air-jordan-5-awake-arctic-pink.png", "supreme-ebony-zippo.png",
+  "bearbrick-optimus-prime-100-400-set.png", "denim-tears-big-cotton-wreath-hoodie-purple.png", "air-jordan-1-high-satin-royal.png",
+  "supreme-inflatable-blimp.png", "nike-sb-dunk-low-yuto-horigome.png", "kith-marvel-galactus-vintage-tee-black.png",
+  "air-jordan-4-fear.png", "bearbrick-sesame-street-elmo-400.png", "supreme-gucci-mane-tee-grey.png", "nike-air-max-95-toronto.png",
+  "pop-mart-labubu-the-monster-let-s-checkmate.png", "air-jordan-3-j-balvin-rio.png", "supreme-spin-skateboard-green.png",
+  "new-balance-990v3-miusa-kith-steel-blue.png", "bearbrick-mickey-mouse-bape-100-and-400-set-pink.png", "nike-air-foamposite-pro-wolf-grey.png",
+  "air-jordan-8-ovo-calipari-pack-kentucky-white.png", "supreme-wilson-american-mini-football-brown.png", "essentials-fw23-hoodie-cloud-dance.png",
+  "air-jordan-4-nigel-sylvester-brick-by-brick.png",
+].map((f) => A + "prizes/" + f);
+
+// ------------------------------------------------------------ DOM kit -----
+const ui = document.getElementById("ui");
+function el(html, parent = ui) {
+  const d = document.createElement("div");
+  d.innerHTML = html.trim();
+  const n = d.firstElementChild;
+  parent.appendChild(n);
+  return n;
+}
+const uiBack = document.getElementById("uiBack");
+function scene(id) {
+  const r = el(`<div class="scene" id="${id}"></div>`);
+  r.back = el(`<div class="scene"></div>`, uiBack);
+  return r;
+}
+// kinetic headline: words wrapped for a masked slide-up. *word* = gold, _word_ = green
+function words(text) {
+  let mode = "";
+  return text.split(" ").map((w) => {
+    if (w.startsWith("*")) mode = "acc-gold";
+    if (w.startsWith("_")) mode = "acc-green";
+    const cls = mode;
+    if (/[*_][.!?,]?$/.test(w)) mode = "";
+    return `<span class="w"><span class="${cls}">${w.replace(/[*_]/g, "")}</span></span>`;
+  }).join(" ");
+}
+function kinetic(node, t, t0, { stagger = 0.06, dur = 0.42, out = 1e9, outDur = 0.3 } = {}) {
+  const spans = node.__spans || (node.__spans = [...node.querySelectorAll(".w > span")]);
+  spans.forEach((s, i) => {
+    const pin = E.outExpo(prog(t, t0 + i * stagger, t0 + i * stagger + dur));
+    const pout = E.inC(prog(t, out + i * 0.03, out + i * 0.03 + outDur));
+    s.style.transform = `translateY(${(1 - pin) * 105 - pout * 105}%)`;
+  });
+}
+function place(n, x, y, { s = 1, r = 0, o = 1, sx = 1, sy = 1, extra = "" } = {}) {
+  n.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${r}deg) scale(${s * sx}, ${s * sy}) ${extra}`;
+  n.style.opacity = o;
+}
+function cardHTML(p, cls = "") {
+  return `<div class="abs card ${cls}" style="--rc:${RC[p.rarity]}">
+    <div class="ph"><img src="${p.img}"></div>
+    <div class="meta"><div class="rar">${p.rarity}</div><div class="nm">${p.name}</div><div class="pr">${money(p.price)}</div></div>
+  </div>`;
+}
+const ICON = {
+  cash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v5M18 9.5v5"/></svg>`,
+  keep: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>`,
+  list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="8" cy="8" r="1.6"/></svg>`,
+  ship: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14v12H1zM15 9h4l4 4v3h-8z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+  cursor: `<svg viewBox="0 0 24 24" width="54" height="54"><path d="M5 2.5v17.2l4.6-4.3 3 6.6 3.1-1.4-3-6.5 6.3-.3z" fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+};
+
+// ------------------------------------------------------------ three.js ----
+const glCanvas = document.getElementById("gl");
+const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const gl3 = new THREE.Scene();
+{
+  const pm = new THREE.PMREMGenerator(renderer);
+  gl3.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  pm.dispose();
+}
+const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 200);
+const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+const key = new THREE.DirectionalLight(0xfff4e6, 2.8);
+key.position.set(3, 6, 4);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 0.5, far: 30 });
+key.shadow.radius = 6;
+const rim = new THREE.DirectionalLight(0xffffff, 2.2);
+rim.position.set(-3, 3, -4);
+const glow = new THREE.PointLight(0xf2b84b, 0, 6, 1.6); // light spilling out of an opening box
+gl3.add(ambient, key, rim, glow);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.5 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+gl3.add(ground);
+
+const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(A + "models/box-chosen-od.glb");
+const clipsByName = Object.fromEntries(gltf.animations.map((c) => [c.name, c]));
+const baseModel = gltf.scene;
+baseModel.updateMatrixWorld(true);
+const bodyBox = new THREE.Box3().setFromObject(baseModel.getObjectByName("CrateBody") ?? baseModel);
+const bodySize = bodyBox.getSize(new THREE.Vector3());
+const bodyCenter = bodyBox.getCenter(new THREE.Vector3());
+const BOX_SCALE = 1.6 / Math.max(bodySize.x, bodySize.z); // ~1.6 world units across
+const BOX_H = bodySize.y * BOX_SCALE;
+
+class Box {
+  constructor() {
+    this.group = new THREE.Group();
+    this.model = SkeletonUtils.clone(baseModel);
+    this.model.scale.setScalar(BOX_SCALE);
+    this.model.position.set(-bodyCenter.x * BOX_SCALE, -bodyBox.min.y * BOX_SCALE, -bodyCenter.z * BOX_SCALE); // sits on y=0
+    this.model.traverse((n) => {
+      if (n.isMesh) { n.castShadow = true; n.frustumCulled = false; n.material = n.material.clone(); n.material.envMapIntensity = 0.9; }
+    });
+    this.group.add(this.model);
+    gl3.add(this.group);
+    this.mixer = new THREE.AnimationMixer(this.model);
+    this.actions = {};
+    for (const n of ["Charge", "Open"]) {
+      const a = this.mixer.clipAction(clipsByName[n]);
+      a.setLoop(THREE.LoopOnce, 1);
+      a.clampWhenFinished = true;
+      this.actions[n] = a;
+    }
+  }
+  pose(s) {
+    this.group.visible = !!s && s.s > 0.001;
+    if (!this.group.visible) return;
+    this.group.position.set(s.x || 0, s.y || 0, s.z || 0);
+    this.group.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0);
+    this.group.scale.set(s.s * (s.sx || 1), s.s * (s.sy || 1), s.s * (s.sx || 1));
+    // pose from a baked clip at an explicit time (no mixer clock)
+    const clip = s.clip || "Open";
+    for (const [n, a] of Object.entries(this.actions)) {
+      if (n === clip) { a.enabled = true; a.setEffectiveWeight(1); a.play(); a.time = clamp(s.ct || 0, 0, a.getClip().duration - 1e-4); }
+      else { a.enabled = false; a.stop(); }
+    }
+    this.mixer.update(0);
+  }
+}
+const boxes = Array.from({ length: 5 }, () => new Box());
+const OPEN_DUR = clipsByName.Open.duration; // 1.75
+const CHARGE_DUR = clipsByName.Charge.duration; // 1.71
+
+const _v = new THREE.Vector3();
+function project(x, y, z) {
+  _v.set(x, y, z).project(camera);
+  return [(_v.x + 1) / 2 * W, (1 - _v.y) / 2 * H];
+}
+
+// ------------------------------------------------------------- fx canvas --
+const fxFront = document.getElementById("fx").getContext("2d");
+const fxb = document.getElementById("fxb").getContext("2d");
+let fx = fxFront;
+// glows and rays sit behind the 3D boxes; sparks, rings and confetti in front
+const behind = (fn) => (...a) => { const prev = fx; fx = fxb; try { fn(...a); } finally { fx = prev; } };
+const rays = behind(function rays(cx, cy, color, alpha, rot, n = 14, len = 1400, width = 0.09) {
+  if (alpha <= 0.002) return;
+  fx.save();
+  fx.translate(cx, cy);
+  fx.rotate(rot);
+  fx.globalCompositeOperation = "lighter";
+  const g = fx.createRadialGradient(0, 0, 0, 0, 0, len);
+  g.addColorStop(0, color);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  fx.fillStyle = g;
+  fx.globalAlpha = alpha;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const w = width * (0.6 + hash(i * 3.1) * 0.8);
+    fx.beginPath();
+    fx.moveTo(0, 0);
+    fx.arc(0, 0, len, a - w, a + w);
+    fx.closePath();
+    fx.fill();
+  }
+  fx.restore();
+});
+const glowDisc = behind(function glowDisc(cx, cy, r, color, alpha) {
+  if (alpha <= 0.002) return;
+  fx.save();
+  fx.globalCompositeOperation = "lighter";
+  fx.globalAlpha = alpha;
+  const g = fx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  fx.fillStyle = g;
+  fx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  fx.restore();
+});
+// Deterministic particle burst: particle i's whole life is a formula of (t - t0).
+function burst(t, t0, { x, y, n = 120, colors = ["#fff"], speed = [300, 1400], life = [0.6, 1.6], size = [3, 9], grav = 900, spread = Math.PI * 2, dir = -Math.PI / 2, seed = 1, drag = 1.6, shape = "spark" }) {
+  const age = t - t0;
+  if (age < 0) return;
+  fx.save();
+  fx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < n; i++) {
+    const h1 = hash(i * 1.37 + seed * 91.1), h2 = hash(i * 2.71 + seed * 13.7), h3 = hash(i * 0.91 + seed * 7.3), h4 = hash(i * 5.3 + seed);
+    const L = lerp(life[0], life[1], h3);
+    if (age > L) continue;
+    const a = dir + (h1 - 0.5) * spread;
+    const v = lerp(speed[0], speed[1], Math.pow(h2, 0.7));
+    const k = (1 - Math.exp(-drag * age)) / drag; // velocity with drag, integrated
+    const px = x + Math.cos(a) * v * k;
+    const py = y + Math.sin(a) * v * k + 0.5 * grav * age * age;
+    const fade = 1 - age / L;
+    const sz = lerp(size[0], size[1], h4) * (0.4 + 0.6 * fade);
+    fx.globalAlpha = fade;
+    fx.fillStyle = colors[i % colors.length];
+    if (shape === "spark") {
+      const vx = Math.cos(a) * v * Math.exp(-drag * age), vy = Math.sin(a) * v * Math.exp(-drag * age) + grav * age;
+      const m = Math.hypot(vx, vy) || 1;
+      const tl = Math.min(60, m * 0.03) + sz;
+      fx.strokeStyle = colors[i % colors.length];
+      fx.lineWidth = sz * 0.55;
+      fx.lineCap = "round";
+      fx.beginPath();
+      fx.moveTo(px, py);
+      fx.lineTo(px - (vx / m) * tl, py - (vy / m) * tl);
+      fx.stroke();
+    } else if (shape === "confetti") {
+      fx.save();
+      fx.translate(px, py);
+      fx.rotate(age * (4 + h1 * 8) + h2 * 6);
+      fx.globalCompositeOperation = "source-over";
+      fx.fillRect(-sz, -sz * 0.45 * Math.abs(Math.cos(age * 9 + h3 * 6)), sz * 2, sz * 0.9 * Math.abs(Math.cos(age * 9 + h3 * 6)) + 1);
+      fx.restore();
+    } else {
+      fx.beginPath();
+      fx.arc(px, py, sz, 0, Math.PI * 2);
+      fx.fill();
+    }
+  }
+  fx.restore();
+}
+function ring(t, t0, x, y, color, maxR = 700, dur = 0.7, width = 10, sy = 1) {
+  const p = prog(t, t0, t0 + dur);
+  if (p <= 0 || p >= 1) return;
+  fx.save();
+  fx.globalCompositeOperation = "lighter";
+  fx.strokeStyle = color;
+  fx.globalAlpha = 1 - p;
+  fx.lineWidth = width * (1 - p) + 1;
+  fx.beginPath();
+  fx.ellipse(x, y, maxR * E.outExpo(p), maxR * E.outExpo(p) * sy, 0, 0, Math.PI * 2);
+  fx.stroke();
+  fx.restore();
+}
+function embers(t, alpha, color = "#F2B84B", n = 60, seed = 3) {
+  if (alpha <= 0) return;
+  fx.save();
+  fx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < n; i++) {
+    const sp = 40 + hash(i + seed) * 90;
+    const x = (hash(i * 7.7 + seed) * W + noise1(t * 0.5 + i, i) * 40) % W;
+    const y = H + 40 - ((hash(i * 3.3 + seed) * (H + 80) + t * sp) % (H + 80));
+    const r = 1 + hash(i * 9.1) * 2.6;
+    fx.globalAlpha = alpha * (0.3 + 0.7 * hash(i * 1.9)) * (0.6 + 0.4 * Math.sin(t * 3 + i));
+    fx.fillStyle = color;
+    fx.beginPath();
+    fx.arc(x, y, r, 0, Math.PI * 2);
+    fx.fill();
+  }
+  fx.restore();
+}
+function speedLines(t, alpha, seed = 1) {
+  if (alpha <= 0) return;
+  fx.save();
+  fx.globalAlpha = alpha;
+  fx.strokeStyle = "#fff";
+  for (let i = 0; i < 40; i++) {
+    const y = hash(i * 4.1 + seed) * H;
+    const len = 300 + hash(i * 2.2 + seed) * 900;
+    const x = ((hash(i * 8.8 + seed) * 2 - 0.5) * W - t * 9000 * (0.6 + hash(i) * 0.8)) % (W * 2) + W;
+    fx.lineWidth = 1 + hash(i * 6.6) * 3;
+    fx.beginPath();
+    fx.moveTo(x, y);
+    fx.lineTo(x + len, y);
+    fx.stroke();
+  }
+  fx.restore();
+}
+
+// --------------------------------------------------------------- grain ----
+{
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d");
+  const im = g.createImageData(256, 256);
+  for (let i = 0; i < im.data.length; i += 4) {
+    const v = hash(i * 0.013) * 255;
+    im.data[i] = im.data[i + 1] = im.data[i + 2] = v;
+    im.data[i + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  document.getElementById("grain").style.backgroundImage = `url(${c.toDataURL()})`;
+}
+
+// ================================================================ SCENES ==
+// Beat grid: 120 BPM, a beat every 0.5s — cuts land on beats.
+const T = {
+  open: [0, 2.4], pick: [2.4, 4.8], reveal: [4.8, 9.0], montage: [9.0, 11.0], choose: [11.0, 12.4],
+  cash: [12.4, 15.0], keep: [15.0, 17.4], list: [17.4, 19.8], ship: [19.8, 22.4], loop: [22.4, 25.0], end: [25.0, 30.0],
+};
+const scenes = [];
+function addScene(name, pre, post, build, update) {
+  const root = scene(name);
+  const ctx = build(root) || {};
+  scenes.push({ name, a: T[name][0] - pre, b: T[name][1] + post, root, ctx, update });
+}
+// persistent watermark (CHOSEN.WIN, bottom-right) + action chip (top-left)
+const wm = el(`<div class="abs wm">CHOSEN<span>.WIN</span></div>`);
+
+// ---- S1: cold open — the box drops -------------------------------------
+addScene("open", 0, 0, (r) => ({
+  l1: el(`<div class="abs anton" style="font-size:250px;white-space:nowrap;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.28)">WHAT'S INSIDE?</div>`, r.back),
+  l2: el(`<div class="abs anton" style="font-size:250px;white-space:nowrap">${words("WHAT'S *INSIDE?*")}</div>`, r.back),
+}), (t, c) => {
+  // giant outline type behind the box, solid type wipes in on the landing
+  const drift = t * 40;
+  place(c.l1, 960 - drift, 330, { o: win(t, 0.1, 2.4, 0.5, 0.15) * 0.7, s: 1.05 - t * 0.01 });
+  place(c.l2, 960 - drift, 330, { o: t < 2.25 ? 1 : 1 - prog(t, 2.25, 2.4), s: 1.05 - t * 0.01 });
+  kinetic(c.l2, t, 1.0, { stagger: 0.12, dur: 0.5 });
+});
+
+// ---- S2: pick your crate -----------------------------------------------
+addScene("pick", 0, 0, (r) => {
+  const labels = ["Streetwear", "Sneakers", "Collectibles"].map((n, i) =>
+    el(`<div class="abs" style="text-align:center">
+      <div class="anton" style="font-size:54px;letter-spacing:.04em">${n}</div>
+      <div style="font:700 19px Inter;letter-spacing:.2em;color:var(--dim);margin-top:6px">${["$100 · $250 · $1000", "$100 · $250 · $1000", "$100 · $250 · $1000"][i]}</div>
+    </div>`, r));
+  return {
+    head: el(`<div class="abs anton" style="font-size:120px;white-space:nowrap">${words("PICK YOUR *CRATE.*")}</div>`, r),
+    labels,
+  };
+}, (t, c) => {
+  kinetic(c.head, t, 2.45, { stagger: 0.07, out: 4.2 });
+  place(c.head, 960, 150);
+  c.labels.forEach((n, i) => {
+    const b = boxState.pick(t)[i];
+    const [x, y] = project(b.x, -0.12, b.z);
+    const sel = i === 1 ? 1 : 1 - 0.6 * E.outC(prog(t, 3.7, 3.95));
+    place(n, x, y + 58, { o: win(t, 2.7 + i * 0.08, 4.25, 0.3, 0.15) * sel, s: i === 1 ? 1 + 0.08 * E.outBack(prog(t, 3.7, 3.95)) : 1 });
+    if (i === 1) n.style.color = prog(t, 3.7, 3.72) > 0 ? "var(--gold)" : "";
+  });
+});
+
+// ---- S3: charge → open → legendary --------------------------------------
+addScene("reveal", 0, 0.05, (r) => ({
+  head: el(`<div class="abs anton" style="font-size:150px;white-space:nowrap">${words("OPEN IT.")}</div>`, r),
+  rar: el(`<div class="abs anton" style="font-size:130px;letter-spacing:.08em;color:var(--gold);white-space:nowrap;text-shadow:0 0 60px rgba(242,184,75,.7)">LEGENDARY</div>`, r),
+  card: el(cardHTML(HERO), r),
+  price: el(`<div class="abs anton" style="font-size:96px;white-space:nowrap;text-shadow:0 8px 40px rgba(0,0,0,.6)"></div>`, r),
+  pulled: el(`<div class="abs" style="font:800 22px Inter;letter-spacing:.3em;color:var(--dim)">YOU PULLED</div>`, r),
+}), (t, c) => {
+  kinetic(c.head, t, 4.85, { stagger: 0.1, out: 6.35 });
+  place(c.head, 960, 170);
+  // rarity word slams in on the open
+  const rp = prog(t, 6.75, 6.95);
+  place(c.rar, 960, 150, { o: rp > 0 ? win(t, 6.75, 8.75, 0.05, 0.25) : 0, s: lerp(2.2, 1, E.outExpo(rp)) });
+  // card: born inside the box, rises out, settles right of centre
+  const top = project(0, BOX_H * 0.9, 0);
+  const rise = E.outBack(prog(t, 6.95, 7.65), 1.2);
+  const settle = E.inOutC(prog(t, 7.9, 8.4));
+  const cx = lerp(top[0], lerp(960, 1240, settle), rise);
+  const cy = lerp(top[1], lerp(560, 560, settle), rise);
+  const tilt = (1 - rise) * -14 + Math.sin(t * 2.2) * 1.5 * rise;
+  place(c.card, cx, cy, { s: lerp(0.15, 1.1, rise) * lerp(1, 0.95, settle), r: tilt, o: t > 6.95 ? clamp(rise * 3) * (1 - prog(t, 8.85, 9.0)) : 0,
+    extra: `perspective(1400px) rotateY(${(1 - rise) * 540 - settle * 8}deg)` });
+  // price counts up beside it
+  const cp = E.outExpo(prog(t, 7.95, 8.7));
+  c.price.textContent = money(Math.round(HERO.price * cp));
+  place(c.price, 640, 580, { o: win(t, 7.95, 9.0, 0.2, 0.12) });
+  place(c.pulled, 640, 500, { o: win(t, 7.95, 9.0, 0.2, 0.12) });
+});
+
+// ---- S4: montage — everything that can come out -------------------------
+addScene("montage", 0, 0, (r) => {
+  const wall = el(`<div class="abs" style="width:2600px;height:1500px;left:-340px;top:-210px"></div>`, r);
+  const rows = [];
+  for (let row = 0; row < 4; row++) {
+    const rowEl = el(`<div style="position:absolute;left:0;top:${row * 360}px;display:flex;gap:40px;white-space:nowrap"></div>`, wall);
+    for (let k = 0; k < 14; k++) {
+      const src = WALL[(row * 7 + k * 3) % WALL.length];
+      el(`<div style="width:320px;height:320px;border-radius:32px;background:#fff;flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden"><img src="${src}" style="width:90%;height:90%;object-fit:contain"></div>`, rowEl);
+    }
+    rows.push(rowEl);
+  }
+  const shade = el(`<div class="abs" style="width:1920px;height:1080px;background:radial-gradient(ellipse at center, rgba(6,6,7,.55), rgba(6,6,7,.9))"></div>`, r);
+  const wordsEl = ["SNEAKERS.", "STREETWEAR.", "COLLECTIBLES.", "*GRAILS.*"].map((w) =>
+    el(`<div class="abs anton" style="font-size:230px;white-space:nowrap;text-shadow:0 10px 60px rgba(0,0,0,.7)">${words(w)}</div>`, r));
+  return { wall, rows, shade, wordsEl };
+}, (t, c) => {
+  const lt = t - 9;
+  c.wall.style.transform = `rotate(-9deg) scale(${1.08 - lt * 0.02})`;
+  c.rows.forEach((row, i) => { row.style.transform = `translateX(${(i % 2 ? -1 : 1) * (lt * 260) - (i % 2 ? 300 : 900)}px)`; });
+  c.wall.style.opacity = win(t, 9.0, 11.0, 0.08, 0.12);
+  c.shade.style.opacity = 1;
+  c.wordsEl.forEach((n, i) => {
+    const a = 9.0 + i * 0.5;
+    const on = t >= a && t < a + 0.5;
+    n.style.display = on ? "block" : "none";
+    if (on) {
+      place(n, 960, 540, { s: 1 + (t - a) * 0.12 });
+      kinetic(n, t, a, { stagger: 0.0, dur: 0.18 });
+    }
+  });
+});
+
+// ---- S5: your pull, your call — four ways out ---------------------------
+const OPTS = [
+  { k: "cash", t1: "Cash Back", t2: "Instant USDC to your wallet", c: "var(--green)", bg: "rgba(74,222,128,.14)" },
+  { k: "keep", t1: "Keep It", t2: "Add it to your vault", c: "var(--gold)", bg: "rgba(242,184,75,.14)" },
+  { k: "list", t1: "List It", t2: "Sell it on the marketplace", c: "var(--blue)", bg: "rgba(79,163,247,.14)" },
+  { k: "ship", t1: "Ship It", t2: "Delivered to your door", c: "var(--purple)", bg: "rgba(182,120,242,.14)" },
+];
+addScene("choose", 0, 0, (r) => ({
+  head: el(`<div class="abs anton" style="font-size:124px;white-space:nowrap">${words("YOUR PULL. *YOUR CALL.*")}</div>`, r),
+  card: el(cardHTML(HERO), r),
+  opts: OPTS.map((o) => el(`<div class="abs opt"><div class="ic" style="background:${o.bg};color:${o.c}">${ICON[o.k]}</div><div><div class="t1">${o.t1}</div><div class="t2">${o.t2}</div></div></div>`, r)),
+  cursor: el(`<div class="abs" style="width:54px;height:54px">${ICON.cursor}</div>`, r),
+}), (t, c) => {
+  kinetic(c.head, t, 11.05, { stagger: 0.08 });
+  place(c.head, 960, 150);
+  const ci = E.outC(prog(t, 11.0, 11.35));
+  place(c.card, lerp(1240, 620, ci), 610, { s: 0.95 * lerp(1, 0.92, ci), r: lerp(0, -3, ci) });
+  c.opts.forEach((o, i) => {
+    const p = E.outBack(prog(t, 11.3 + i * 0.1, 11.7 + i * 0.1));
+    const press = i === 0 ? win(t, 12.1, 12.4, 0.06, 0.2) : 0;
+    const hl = i === 0 ? prog(t, 12.1, 12.15) : 0;
+    place(o, 1300 + (1 - p) * 300, 380 + i * 142, { o: clamp(p * 1.4), s: 1 - press * 0.05 });
+    o.style.borderColor = hl ? "var(--green)" : "";
+    o.style.boxShadow = hl ? "0 0 60px -10px rgba(74,222,128,.7)" : "";
+  });
+  const cp = E.inOutC(prog(t, 11.7, 12.1));
+  place(c.cursor, lerp(1800, 1200, cp) + 27, lerp(1000, 400, cp) + 27, { o: win(t, 11.7, 12.4, 0.1, 0.1), s: 1 - 0.15 * win(t, 12.1, 12.3, 0.04, 0.12) });
+});
+
+// action chips share one component
+function chipHTML(n, label, color) {
+  return `<div class="abs chip" style="color:${color}"><i></i><b style="color:${color}">0${n}</b><span style="color:var(--text)">${label}</span></div>`;
+}
+
+// ---- S6: cash back ------------------------------------------------------
+addScene("cash", 0, 0, (r) => ({
+  chip: el(chipHTML(1, "Cash Back", "var(--green)"), r),
+  head: el(`<div class="abs anton" style="font-size:150px;white-space:nowrap">${words("TAKE THE _CASH._")}</div>`, r),
+  wallet: el(`<div class="abs pill" style="height:120px;padding:0 44px;gap:26px;background:#0d1a12;border-color:rgba(74,222,128,.45)">
+    <div class="ic" style="width:64px;height:64px;border-radius:50%;background:#2775CA;display:flex;align-items:center;justify-content:center;font:900 26px Inter;color:#fff">$</div>
+    <div><div style="font:800 17px Inter;letter-spacing:.2em;color:var(--dim)">CASH · USDC</div><div class="amt anton" style="font-size:58px;letter-spacing:.02em;margin-top:2px"></div></div>
+  </div>`, r),
+  card: el(cardHTML(HERO), r),
+  toast: el(`<div class="abs pill" style="background:#0f0f13;border-color:rgba(74,222,128,.35);height:92px">
+    <div style="width:48px;height:48px;border-radius:50%;background:var(--green);color:#04160c;display:flex;align-items:center;justify-content:center"><div style="width:28px;height:28px">${ICON.check}</div></div>
+    <span>Cash back accepted</span><span class="anton" style="color:var(--green);font-size:40px;font-weight:400">+${money(HERO.price, 2)}</span>
+  </div>`, r),
+}), (t, c) => {
+  place(c.chip, 250, 90, { o: win(t, 12.4, 15.0, 0.2, 0.15) });
+  kinetic(c.head, t, 12.45, { out: 14.7 });
+  place(c.head, 960, 820);
+  const wp = E.outBack(prog(t, 12.45, 12.8));
+  const pulse = win(t, 13.3, 14.2, 0.05, 0.6) * 0.06;
+  place(c.wallet, 960, 250, { o: clamp(wp * 2) * (1 - prog(t, 14.8, 15)), s: lerp(0.7, 1, wp) + pulse });
+  c.wallet.style.boxShadow = `0 0 ${120 * pulse * 10}px rgba(74,222,128,${pulse * 8})`;
+  const amt = 1250 + HERO.price * E.outC(prog(t, 13.3, 14.1));
+  c.wallet.querySelector(".amt").textContent = money(amt, 2);
+  // card collapses into cash
+  const cc = E.inC(prog(t, 12.6, 13.2));
+  place(c.card, 960, lerp(560, 520, cc), { s: lerp(0.9, 0.2, cc), r: cc * 25, o: 1 - E.inQ(prog(t, 12.95, 13.2)) });
+  const tp = E.outBack(prog(t, 14.0, 14.35));
+  place(c.toast, 960, lerp(1150, 990, tp), { o: clamp(tp * 2) * (1 - prog(t, 14.8, 15)) });
+});
+
+// ---- S7: keep — into the vault -----------------------------------------
+addScene("keep", 0, 0, (r) => {
+  const grid = el(`<div class="abs" style="width:1000px;height:650px"></div>`, r);
+  const cells = VAULT.map((p, i) => {
+    const x = (i % 4) * 250, y = Math.floor(i / 4) * 330;
+    if (!p) return el(`<div style="position:absolute;left:${x}px;top:${y}px;width:210px;height:295px;border-radius:18px;border:2px dashed rgba(242,184,75,.5);box-sizing:border-box"></div>`, grid);
+    const n = el(cardHTML(p, "sm"), grid);
+    n.style.left = x + "px"; n.style.top = y + "px"; n.style.position = "absolute";
+    return n;
+  });
+  return {
+    chip: el(chipHTML(2, "Keep It", "var(--gold)"), r),
+    head: el(`<div class="abs anton" style="font-size:132px;white-space:nowrap;text-align:left">${words("KEEP THE *HEAT.*")}</div>`, r),
+    sub: el(`<div class="abs" style="font:600 28px Inter;color:var(--dim);white-space:nowrap">Your vault. Every pull, one place.</div>`, r),
+    grid, cells,
+    stat: el(`<div class="abs pill" style="height:76px;font-size:22px"><span style="color:var(--dim);letter-spacing:.18em;font-weight:800">MY VAULT</span><span>8 items</span><span class="anton" style="font-size:34px;font-weight:400;color:var(--gold)">${money(VAULT_TOTAL)}</span></div>`, r),
+    card: el(cardHTML(HERO), r),
+  };
+}, (t, c) => {
+  place(c.chip, 250, 90, { o: win(t, 15.0, 17.4, 0.2, 0.15) });
+  kinetic(c.head, t, 15.05, { out: 17.1 });
+  place(c.head, 420, 470);
+  c.head.style.transformOrigin = "center";
+  place(c.sub, 420, 580, { o: win(t, 15.3, 17.2, 0.3, 0.2) });
+  // vault grid, tilted in perspective, cards dealt in
+  const gp = E.outC(prog(t, 15.0, 15.5));
+  place(c.grid, 1340, 540, { s: lerp(0.9, 0.92, gp) + (t - 15) * 0.01, o: gp * (1 - prog(t, 17.2, 17.4)),
+    extra: `perspective(1600px) rotateY(${lerp(-30, -14, gp)}deg) rotateX(${lerp(12, 6, gp)}deg)` });
+  c.cells.forEach((n, i) => {
+    const p = E.outBack(prog(t, 15.05 + i * 0.04, 15.35 + i * 0.04));
+    n.style.opacity = clamp(p * 2);
+    n.style.transform = `translateY(${(1 - p) * 60}px)`;
+  });
+  // hero card flies into the empty slot (index 4: col 0, row 1)
+  const slotX = 1340 + (-500 + 105) * 0.92, slotY = 540 + (-325 + 330 + 147) * 0.92;
+  const fp = E.inOutC(prog(t, 15.45, 16.1));
+  const arc = Math.sin(fp * Math.PI) * -120;
+  place(c.card, lerp(960, slotX + 40, fp), lerp(540, slotY, fp) + arc, { s: lerp(1.0, 0.47, fp), r: lerp(8, -4, fp), o: t < 16.1 ? win(t, 15.0, 16.12, 0.15, 0.02) : 0,
+    extra: `perspective(1600px) rotateY(${lerp(0, -14, fp)}deg)` });
+  // the real slot fills as the flying card lands
+  const slot = c.cells[4];
+  if (t >= 16.1 && !slot.__filled) { slot.innerHTML = ""; slot.__filled = true; slot.appendChild(el(cardHTML(HERO, "sm"), slot)).style.position = "relative"; slot.style.border = "none"; }
+  if (t < 16.1 && slot.__filled) { slot.innerHTML = ""; slot.__filled = false; slot.style.border = ""; }
+  const sp = E.outBack(prog(t, 16.3, 16.6));
+  place(c.stat, 1340, 960, { o: clamp(sp * 2) * (1 - prog(t, 17.2, 17.4)), s: lerp(0.8, 1, sp) });
+});
+
+// ---- S8: list it — marketplace -------------------------------------------
+addScene("list", 0, 0, (r) => ({
+  chip: el(chipHTML(3, "List It", "var(--blue)"), r),
+  head: el(`<div class="abs anton" style="font-size:132px;white-space:nowrap">${words("NAME YOUR *PRICE.*")}</div>`, r),
+  panel: el(`<div class="abs" style="width:1180px;height:560px;border-radius:36px;background:#101015;border:2px solid var(--line);box-shadow:0 40px 120px rgba(0,0,0,.6)">
+    <div style="position:absolute;left:36px;top:36px;width:420px;height:488px;border-radius:24px;background:#fff;display:flex;align-items:center;justify-content:center"><img src="${HERO.img}" style="width:94%"></div>
+    <div style="position:absolute;left:500px;top:44px;right:44px">
+      <div style="font:800 17px Inter;letter-spacing:.24em;color:var(--blue)">LIST ON MARKETPLACE</div>
+      <div style="font:700 36px/1.15 Inter;margin-top:12px">${HERO.name}</div>
+      <div style="font:600 20px Inter;color:var(--dim);margin-top:10px">Legendary · Size 10 · Verified authentic</div>
+      <div style="font:800 15px Inter;letter-spacing:.2em;color:var(--dim);margin-top:34px">YOUR PRICE</div>
+      <div class="field" style="margin-top:10px;height:96px;border-radius:20px;background:#0a0a0d;border:2px solid var(--line);display:flex;align-items:center;padding:0 28px;font:64px Anton;letter-spacing:.02em"><span class="typed"></span><span class="caret" style="width:4px;height:60px;background:var(--blue);margin-left:6px"></span></div>
+      <div class="btn" style="margin-top:28px;height:92px;border-radius:20px;background:var(--blue);color:#04101f;display:flex;align-items:center;justify-content:center;font:900 26px Inter;letter-spacing:.14em">LIST ITEM</div>
+    </div>
+  </div>`, r),
+  sold: el(`<div class="abs anton" style="font-size:150px;letter-spacing:.06em;color:var(--gold);border:10px solid var(--gold);border-radius:28px;padding:10px 46px 4px;white-space:nowrap;background:rgba(6,6,7,.35);text-shadow:0 0 40px rgba(242,184,75,.5);box-shadow:0 0 60px rgba(242,184,75,.35)">SOLD</div>`, r),
+  gain: el(`<div class="abs anton" style="font-size:110px;color:var(--green);white-space:nowrap;text-shadow:0 0 50px rgba(74,222,128,.5)">+$6,500.00</div>`, r),
+}), (t, c) => {
+  place(c.chip, 250, 90, { o: win(t, 17.4, 19.8, 0.2, 0.15) });
+  kinetic(c.head, t, 17.45, { out: 19.5 });
+  place(c.head, 960, 170);
+  const pp = E.outC(prog(t, 17.4, 17.8));
+  place(c.panel, 960, 610, { o: pp * (1 - prog(t, 19.6, 19.8)), s: lerp(0.94, 1, pp) - prog(t, 19.0, 19.8) * 0.03, extra: `translateY(${(1 - pp) * 60}px)` });
+  const full = "$6,500";
+  const n = Math.floor(clamp((t - 17.85) / 0.09, 0, full.length));
+  c.panel.querySelector(".typed").textContent = full.slice(0, n);
+  c.panel.querySelector(".caret").style.opacity = t < 18.5 ? (Math.floor(t * 4) % 2 ? 1 : 0.2) : 0;
+  const btn = c.panel.querySelector(".btn");
+  const press = win(t, 18.55, 18.85, 0.05, 0.2);
+  btn.style.transform = `scale(${1 - press * 0.05})`;
+  btn.textContent = t > 18.7 ? "LISTED ✓" : "LIST ITEM";
+  btn.style.background = t > 18.7 ? "var(--green)" : "var(--blue)";
+  const sp = prog(t, 18.95, 19.12);
+  place(c.sold, 720, 560, { o: sp > 0 ? 1 - prog(t, 19.6, 19.8) : 0, s: lerp(3, 1, E.outExpo(sp)), r: -12 });
+  const gp = E.outBack(prog(t, 19.1, 19.4));
+  place(c.gain, 1300, 900 - gp * 40, { o: clamp(gp * 2) * (1 - prog(t, 19.6, 19.8)), s: lerp(0.6, 1, gp) });
+});
+
+// ---- S9: ship it — back in the box, out the door -----------------------
+const STEPS = ["Ordered", "Packed", "Shipped", "Delivered"];
+addScene("ship", 0, 0, (r) => ({
+  chip: el(chipHTML(4, "Ship It", "var(--purple)"), r),
+  head: el(`<div class="abs anton" style="font-size:150px;line-height:.9;text-align:left;white-space:nowrap">${words("SHIPPED")}<br>${words("TO YOUR")}<br>${words("*DOOR.*")}</div>`, r),
+  card: el(cardHTML(HERO), r),
+  label: el(`<div class="abs" style="width:300px;background:#f4f1ea;color:#111;border-radius:10px;padding:18px 20px;font:700 15px Inter;box-shadow:0 12px 30px rgba(0,0,0,.45)">
+    <div style="display:flex;justify-content:space-between;font:900 13px Inter;letter-spacing:.14em"><span>CHOSEN.WIN</span><span>PRIORITY</span></div>
+    <div style="font:800 26px Inter;margin-top:10px">SHIP TO: YOU</div>
+    <div style="height:46px;margin-top:10px;background:repeating-linear-gradient(90deg,#111 0 3px,transparent 3px 6px,#111 6px 7px,transparent 7px 11px)"></div>
+    <div style="font:600 12px Inter;margin-top:6px;letter-spacing:.2em">1Z 9C8 W1N 0000 0001</div>
+  </div>`, r),
+  track: el(`<div class="abs" style="width:1500px;height:120px">
+    <div style="position:absolute;left:0;right:0;top:34px;height:8px;border-radius:4px;background:rgba(255,255,255,.1)"></div>
+    <div class="fill" style="position:absolute;left:0;top:34px;height:8px;border-radius:4px;background:var(--purple);box-shadow:0 0 20px var(--purple)"></div>
+    ${STEPS.map((s, i) => `<div class="st" style="position:absolute;left:${i * 500}px;top:0;transform:translateX(-50%);text-align:center">
+      <div class="dot" style="width:76px;height:76px;border-radius:50%;background:#15151b;border:3px solid rgba(255,255,255,.18);margin:0 auto;display:flex;align-items:center;justify-content:center;color:#15151b"><div style="width:36px;height:36px">${ICON.check}</div></div>
+      <div style="font:800 18px Inter;letter-spacing:.18em;margin-top:12px;text-transform:uppercase">${s}</div></div>`).join("")}
+    <div class="truck" style="position:absolute;top:-58px;width:56px;height:56px;color:var(--purple)">${ICON.ship}</div>
+  </div>`, r),
+}), (t, c) => {
+  place(c.chip, 250, 90, { o: win(t, 19.8, 22.4, 0.2, 0.15) });
+  kinetic(c.head, t, 19.85, { stagger: 0.07, out: 22.1 });
+  place(c.head, 420, 400);
+  // card drops into the open box
+  const b = boxState.ship(t);
+  const top = project(b.x, BOX_H * 1.2, 0);
+  const dp = E.inC(prog(t, 20.15, 20.6));
+  place(c.card, lerp(top[0], top[0], dp), lerp(top[1] - 330, top[1] + 20, dp), { s: lerp(0.62, 0.3, dp), r: lerp(-4, 3, dp), o: win(t, 19.8, 20.6, 0.2, 0.08) });
+  // label slaps on once the flaps shut
+  const lp = prog(t, 21.2, 21.35);
+  const [lx, ly] = project(b.x + 0.1, BOX_H * 0.5, 0.8);
+  place(c.label, lx + 20, ly - 10, { o: lp > 0 ? 1 - prog(t, 21.85, 22.0) : 0, s: lerp(1.8, 0.8, E.outExpo(lp)), r: -6 });
+  // tracking
+  const tp = E.inOutC(prog(t, 20.4, 22.2));
+  place(c.track, 960 + 0, 960, { o: win(t, 20.1, 22.4, 0.3, 0.15) });
+  c.track.querySelector(".fill").style.width = tp * 1500 + "px";
+  c.track.querySelector(".truck").style.left = tp * 1500 - 28 + "px";
+  c.track.querySelectorAll(".st").forEach((s, i) => {
+    const on = tp >= i / 3 - 0.001;
+    const d = s.querySelector(".dot");
+    d.style.background = on ? "var(--purple)" : "#15151b";
+    d.style.borderColor = on ? "var(--purple)" : "rgba(255,255,255,.18)";
+    d.style.color = on ? "#140a20" : "#15151b";
+    d.style.transform = `scale(${1 + 0.18 * win(tp, i / 3 - 0.001, i / 3 + 0.08, 0.02, 0.06)})`;
+  });
+});
+
+// ---- S10: cash in, run it back -------------------------------------------
+addScene("loop", 0, 0, (r) => ({
+  head: el(`<div class="abs anton" style="font-size:132px;white-space:nowrap">${words("CASH IN. *RUN IT BACK.*")}</div>`, r),
+  topup: el(`<div class="abs pill" style="height:84px"><span style="color:var(--green);font-weight:900">＋ CASH IN</span><span style="color:var(--dim)">→</span><span class="anton bal" style="font-size:40px;font-weight:400"></span><span style="color:var(--dim);font:800 16px Inter;letter-spacing:.2em">CREDITS</span></div>`, r),
+  minis: MULTI.map((p) => el(cardHTML(p, "sm"), r)),
+}), (t, c) => {
+  kinetic(c.head, t, 22.45, { stagger: 0.07, out: 24.75 });
+  place(c.head, 960, 140);
+  const tp = E.outBack(prog(t, 22.6, 22.9));
+  c.topup.querySelector(".bal").textContent = money(Math.round(250 * E.outC(prog(t, 22.8, 23.3))));
+  place(c.topup, 960, 255, { o: clamp(tp * 2) * (1 - prog(t, 23.5, 23.75)), s: lerp(0.8, 1, tp) });
+  c.minis.forEach((m, i) => {
+    const bs = boxState.loop(t)[i];
+    const o0 = LOOP_OPEN(i);
+    const p = E.outBack(prog(t, o0 + 0.2, o0 + 0.55), 1.4);
+    const [x, y] = project(bs.x, BOX_H * 0.8, 0);
+    place(m, x, lerp(y, y - 215, p), { s: lerp(0.2, 0.85, p), o: t > o0 + 0.2 ? clamp(p * 3) * (1 - prog(t, 24.8, 25.0)) : 0 });
+  });
+});
+
+// ---- S11: end card ---------------------------------------------------------
+addScene("end", 0, 0, (r) => ({
+  logo: el(`<img class="abs" src="${A}brand/chosenclear.png" style="width:1150px">`, r),
+  live: el(`<div class="abs" style="display:flex;align-items:center;gap:14px;font:900 24px Inter;letter-spacing:.3em;padding:14px 28px;border-radius:999px;background:rgba(242,184,75,.12);border:2px solid rgba(242,184,75,.6);color:var(--gold)"><span style="width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 16px var(--gold)" class="dot"></span>NOW LIVE</div>`, r),
+  url: el(`<div class="abs anton" style="font-size:150px;letter-spacing:.14em;white-space:nowrap">${"CHOSEN.WIN".split("").map((ch, i) => `<span class="w"><span class="${i >= 6 ? "acc-gold" : ""}">${ch}</span></span>`).join("")}</div>`, r),
+  tag: el(`<div class="abs" style="font:700 30px Inter;letter-spacing:.34em;color:var(--dim);white-space:nowrap">OPEN IT · WIN IT · YOUR CALL</div>`, r),
+  legal: el(`<div class="abs" style="font:500 15px Inter;letter-spacing:.12em;color:rgba(245,245,245,.35);white-space:nowrap">18+ · PLAY RESPONSIBLY · PRIZE VALUES SHOWN ARE EXAMPLES</div>`, r),
+}), (t, c) => {
+  const [bx, by] = project(0, BOX_H, 0);
+  const lp = E.outBack(prog(t, 25.45, 26.05), 1.3);
+  place(c.logo, lerp(bx, 960, lp), lerp(by, 400, lp), { s: lerp(0.1, 1, lp) + (t - 26) * 0.006, o: t > 25.45 ? clamp(lp * 3) : 0 });
+  kinetic(c.url, t, 26.15, { stagger: 0.045, dur: 0.45 });
+  place(c.url, 960 + 10, 680);
+  const lv = E.outBack(prog(t, 26.7, 27.0));
+  place(c.live, 960, 160, { s: lerp(0.6, 1, lv), o: clamp(lv * 2) });
+  c.live.querySelector(".dot").style.opacity = 0.55 + 0.45 * Math.sin(t * 8);
+  place(c.tag, 960, 820, { o: win(t, 27.1, 40, 0.5, 0), extra: `translateY(${(1 - E.outC(prog(t, 27.1, 27.6))) * 20}px)` });
+  place(c.legal, 960, 1030, { o: win(t, 27.4, 40, 0.5, 0) * 0.9 });
+});
+
+// ============================================================ 3D TIMELINE ==
+const LOOP_OPEN = (i) => 23.55 + [0.12, 0.3, 0, 0.42, 0.22][i]; // centre box first, then outward
+const boxState = {
+  open(t) {
+    // drop from above, land at 1.0 with a squash
+    const fall = prog(t, 0.55, 1.0);
+    const y = t < 1.0 ? lerp(4.2, 0, E.inQ(fall)) : 0;
+    const land = prog(t, 1.0, 1.45);
+    const squash = t >= 1.0 ? 1 - 0.22 * Math.exp(-land * 6) * Math.cos(land * 14) : 1 + fall * 0.08;
+    return [{ s: t < 0.55 ? 0 : 1, y, sy: squash, sx: 1 / Math.sqrt(squash), ry: -0.55 + t * 0.18, rx: t < 1 ? (1 - fall) * 0.35 : 0, ct: 0 }];
+  },
+  pick(t) {
+    const out = E.inOutC(prog(t, 4.2, 4.75));
+    const lift = E.outBack(prog(t, 3.7, 3.95));
+    return [-1, 0, 1].map((k, i) => {
+      if (k === 0) {
+        return { s: 1, x: 0, y: 0.18 * lift, ry: lerp(-0.2 + (t - 2.4) * 0.5, -0.35, E.inOutC(prog(t, 3.7, 4.6))), ct: 0 };
+      }
+      const inP = E.outBack(prog(t, 2.45 + (k > 0 ? 0.08 : 0), 2.95 + (k > 0 ? 0.08 : 0)));
+      return { s: 1, x: k * lerp(7, 2.4, inP) + k * out * 6, ry: k * 0.5 + (t - 2.4) * 0.5 * k, ct: 0, sy: 1 };
+    });
+  },
+  reveal(t) {
+    // charge 4.9→6.6 (baked shake + our own rising tremor), open 6.6→8.35
+    const ch = prog(t, 4.95, 6.65);
+    const tremor = E.inQ(ch) * (t < 6.65 ? 1 : 0);
+    const jx = noise1(t * 38, 1) * 0.05 * tremor, jz = noise1(t * 41, 2) * 0.04 * tremor;
+    const hop = t > 6.6 ? Math.sin(prog(t, 6.6, 6.95) * Math.PI) * 0.25 : 0;
+    const sink = E.inC(prog(t, 7.7, 8.4));
+    const base = { s: 1, x: jx, z: jz, y: hop - sink * 2.6, ry: -0.35 + noise1(t * 30, 3) * 0.05 * tremor, rz: noise1(t * 33, 4) * 0.04 * tremor };
+    if (t < 6.6) return [{ ...base, clip: "Charge", ct: clamp(t - 4.95, 0, CHARGE_DUR) }];
+    return [{ ...base, clip: "Open", ct: (t - 6.6) * 1.15 }];
+  },
+  ship(t) {
+    // open box waits for the card, flaps close (Open clip in reverse), then it slides off right
+    const close = prog(t, 20.6, 21.25);
+    const go = E.inC(prog(t, 21.85, 22.35));
+    const land = E.outBack(prog(t, 19.8, 20.15));
+    return { s: land, x: 1.55 + go * 6, y: 0, ry: -0.5 + go * -0.4, rz: go * -0.08, clip: "Open", ct: OPEN_DUR * (1 - E.inOutC(close)) };
+  },
+  loop(t) {
+    return MULTI.map((_, i) => {
+      const k = i - 2;
+      const pop = E.outBack(prog(t, 22.9 + Math.abs(k) * 0.07, 23.25 + Math.abs(k) * 0.07), 2);
+      const o0 = LOOP_OPEN(i);
+      return { s: pop * 0.92, x: k * 2.25, ry: -0.3 + k * 0.08 + Math.sin(t * 2 + i) * 0.05, clip: "Open", ct: t > o0 ? (t - o0) * 2.2 : 0,
+        y: t > o0 ? Math.sin(prog(t, o0, o0 + 0.3) * Math.PI) * 0.18 : 0 };
+    });
+  },
+  end(t) {
+    const pop = E.outBack(prog(t, 25.0, 25.25), 2);
+    const drop = E.inC(prog(t, 25.7, 26.3));
+    return [{ s: pop * (1 - drop * 0.3), y: -drop * 3.2, ry: -0.35 + (t - 25) * 0.4, clip: "Open", ct: clamp((t - 25.1) * 3.2, 0, OPEN_DUR) }];
+  },
+};
+function camAt(t) {
+  // [pos, look]
+  if (t < 2.4) return [[0, 1.1, lerp(5.6, 4.7, E.outC(prog(t, 0, 2.4)))], [0, 0.5, 0]];
+  if (t < 4.8) {
+    const p = E.inOutC(prog(t, 4.15, 4.8));
+    return [[0, lerp(1.5, 1.2, p), lerp(8.4 - (t - 2.4) * 0.15, 5.6, p)], [0, lerp(-0.1, 0.3, p), 0]];
+  }
+  if (t < 9) {
+    const push = E.inQ(prog(t, 4.8, 6.6));
+    const up = E.inOutC(prog(t, 6.9, 7.8));
+    return [[0, lerp(1.2, 1.5, up), lerp(5.6, 4.7, push) + up * 0.6], [0, lerp(0.3, 0.95, up), 0]];
+  }
+  if (t >= 19.8 && t < 22.4) return [[0, 1.3, 7.2], [0.2, 0.35, 0]];
+  if (t >= 22.4 && t < 25) return [[0, 2.1, lerp(13.4, 12.8, prog(t, 22.4, 25))], [0, 0.95, 0]];
+  if (t >= 25) return [[0, 1.2, 6.2], [0, 0.35, 0]];
+  return [[0, 1.2, 6], [0, 0.3, 0]];
+}
+function boxesAt(t) {
+  if (t < 2.4) return boxState.open(t);
+  if (t < 4.8) return boxState.pick(t);
+  if (t < 9) return boxState.reveal(t);
+  if (t >= 19.8 && t < 22.4) return [boxState.ship(t)];
+  if (t >= 22.4 && t < 25) return boxState.loop(t);
+  if (t >= 25) return boxState.end(t);
+  return [];
+}
+
+// ============================================================ FX TIMELINE ==
+function drawFx(t) {
+  fxFront.clearRect(0, 0, W, H);
+  fxb.clearRect(0, 0, W, H);
+  // S1: landing dust + shock
+  if (t < 2.4) {
+    const [gx, gy] = project(0, 0.05, 0);
+    ring(t, 1.0, gx, gy, "rgba(255,255,255,.7)", 900, 0.7, 14, 0.18);
+    burst(t, 1.0, { x: gx, y: gy, n: 90, colors: ["#c9a27a", "#8a6a4a", "#ffffff"], speed: [300, 1300], life: [0.4, 1.1], size: [2, 6], grav: 300, spread: Math.PI * 0.9, dir: -Math.PI / 2, seed: 11, shape: "dot", drag: 3 });
+    embers(t, 0.35, "#ffffff", 40, 5);
+  }
+  // S2: selection glow under the middle crate
+  if (t >= 2.4 && t < 4.8) {
+    const [gx, gy] = project(0, 0.02, 0);
+    const a = win(t, 3.7, 4.8, 0.15, 0.3);
+    fx = fxb;
+    fx.save();
+    fx.globalCompositeOperation = "lighter";
+    fx.globalAlpha = a * 0.8;
+    const g = fx.createRadialGradient(gx, gy, 0, gx, gy, 380);
+    g.addColorStop(0, "rgba(242,184,75,.8)");
+    g.addColorStop(1, "rgba(242,184,75,0)");
+    fx.fillStyle = g;
+    fx.beginPath();
+    fx.ellipse(gx, gy, 380, 80, 0, 0, Math.PI * 2);
+    fx.fill();
+    fx.restore();
+    fx = fxFront;
+    ring(t, 3.7, gx, gy, "#F2B84B", 420, 0.6, 8, 0.2);
+  }
+  // S3: charge → burst
+  if (t >= 4.8 && t < 9.05) {
+    const [cx, cy] = project(0, BOX_H * 0.7, 0);
+    const ch = prog(t, 4.95, 6.65);
+    // rarity roulette: the glow cycles common→legendary, faster and faster
+    const cyc = Math.floor(Math.pow(ch, 1.6) * 22);
+    const col = t < 6.6 ? RARITY_CYCLE[cyc % 5] : RC.legendary;
+    rays(cx, cy, col, E.inQ(ch) * 0.35 * (t < 6.7 ? 1 : 0), t * 0.8, 16, 1100);
+    glowDisc(cx, cy, 300 + ch * 250, col, E.inQ(ch) * 0.5 * (t < 6.7 ? 1 : 0));
+    burst(t, 5.4, { x: cx, y: cy, n: 40, colors: [col], speed: [60, 260], life: [0.4, 1.2], size: [2, 4], grav: -120, seed: 21, shape: "dot" });
+    // the open
+    const o = win(t, 6.7, 9.0, 0.08, 0.6);
+    rays(cx, cy - 40, "rgba(242,184,75,1)", o * 0.55, t * 0.35, 18, 1500, 0.07);
+    glowDisc(cx, cy, 900, "rgba(242,184,75,1)", o * 0.45);
+    ring(t, 6.72, cx, cy, "#fff", 1100, 0.8, 22);
+    ring(t, 6.8, cx, cy, "#F2B84B", 900, 0.9, 12);
+    burst(t, 6.72, { x: cx, y: cy, n: 220, colors: ["#F2B84B", "#fff3cf", "#ffffff", "#ffcf6b"], speed: [500, 2200], life: [0.7, 1.8], size: [3, 10], grav: 1100, seed: 7 });
+    burst(t, 6.75, { x: cx, y: cy, n: 90, colors: ["#F2B84B", "#fff"], speed: [200, 900], life: [1.0, 2.2], size: [2, 5], grav: 200, seed: 8, shape: "dot", drag: 2 });
+    embers(t, win(t, 6.8, 9.0, 0.3, 0.3) * 0.8, "#F2B84B", 70, 9);
+  }
+  // S4: speed lines on the montage
+  if (t >= 9 && t < 11) speedLines(t, 0.08, 4);
+  // S5→S6 transitions: whoosh lines
+  if (t >= 12.3 && t < 12.55) speedLines(t, 0.25 * win(t, 12.3, 12.55, 0.05, 0.1), 6);
+  // S6: card → cash stream into the wallet
+  if (t >= 12.4 && t < 15) {
+    const wx = 960, wy = 250;
+    fx.save();
+    fx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 90; i++) {
+      const t0 = 12.95 + hash(i * 3.3) * 0.45;
+      const p = prog(t, t0, t0 + 0.55);
+      if (p <= 0 || p >= 1) continue;
+      const e = E.inOutC(p);
+      const sx = 960 + (hash(i * 1.1) - 0.5) * 260, sy = 530 + (hash(i * 2.2) - 0.5) * 300;
+      const mx = lerp(sx, wx, 0.5) + (hash(i * 5.5) - 0.5) * 700, my = lerp(sy, wy, 0.5) + 80;
+      const x = (1 - e) * (1 - e) * sx + 2 * (1 - e) * e * mx + e * e * wx;
+      const y = (1 - e) * (1 - e) * sy + 2 * (1 - e) * e * my + e * e * wy;
+      fx.globalAlpha = Math.sin(p * Math.PI);
+      fx.fillStyle = i % 3 ? "#4ADE80" : "#d9ffe6";
+      fx.beginPath();
+      fx.arc(x, y, 3 + hash(i * 7.1) * 6, 0, Math.PI * 2);
+      fx.fill();
+    }
+    fx.restore();
+    glowDisc(960, 250, 500, "rgba(74,222,128,1)", win(t, 13.3, 14.4, 0.1, 0.8) * 0.35);
+    burst(t, 13.35, { x: 960, y: 250, n: 70, colors: ["#4ADE80", "#fff"], speed: [300, 1100], life: [0.5, 1.2], size: [2, 6], grav: 900, seed: 31 });
+    glowDisc(960, 540, 700, "rgba(74,222,128,1)", 0.12 * win(t, 12.4, 15, 0.3, 0.3));
+  }
+  // S7: slot sparkle
+  if (t >= 15 && t < 17.4) {
+    const sx = 1340 + (-500 + 105) * 0.92 + 40, sy = 540 + (-325 + 330 + 147) * 0.92;
+    glowDisc(sx, sy, 380, "rgba(242,184,75,1)", win(t, 16.08, 17.2, 0.05, 0.9) * 0.6);
+    ring(t, 16.1, sx, sy, "#F2B84B", 320, 0.6, 10);
+    burst(t, 16.1, { x: sx, y: sy, n: 60, colors: ["#F2B84B", "#fff"], speed: [200, 900], life: [0.4, 1.0], size: [2, 6], grav: 600, seed: 41 });
+    glowDisc(1340, 540, 900, "rgba(242,184,75,1)", 0.1 * win(t, 15, 17.4, 0.3, 0.3));
+  }
+  // S8: sold — confetti
+  if (t >= 17.4 && t < 19.8) {
+    glowDisc(960, 560, 900, "rgba(79,163,247,1)", 0.1 * win(t, 17.4, 19.8, 0.3, 0.3));
+    ring(t, 19.0, 720, 560, "#F2B84B", 600, 0.6, 14);
+    burst(t, 19.0, { x: 720, y: 560, n: 160, colors: ["#F2B84B", "#4ADE80", "#4FA3F7", "#B678F2", "#fff"], speed: [500, 1700], life: [1.2, 2.0], size: [6, 12], grav: 1300, seed: 51, shape: "confetti", drag: 2.2 });
+  }
+  // S9: box glow while open
+  if (t >= 19.8 && t < 22.4) {
+    const b = boxState.ship(t);
+    const [cx, cy] = project(b.x, BOX_H, 0);
+    glowDisc(cx, cy, 420, "rgba(182,120,242,1)", win(t, 19.9, 21.2, 0.2, 0.3) * 0.45);
+    glowDisc(960, 540, 900, "rgba(182,120,242,1)", 0.08 * win(t, 19.8, 22.4, 0.3, 0.3));
+    ring(t, 21.22, cx, cy + 40, "rgba(255,255,255,.8)", 500, 0.5, 10, 0.3);
+    speedLines(t, 0.18 * win(t, 21.9, 22.4, 0.1, 0.1), 9);
+  }
+  // S10: five boxes, five bursts, five rarities
+  if (t >= 22.4 && t < 25) {
+    boxState.loop(t).forEach((b, i) => {
+      const o0 = LOOP_OPEN(i);
+      const col = RC[MULTI[i].rarity];
+      const [cx, cy] = project(b.x, BOX_H * 0.7, 0);
+      glowDisc(cx, cy, 260, col, win(t, o0, 25, 0.05, 0.4) * 0.55);
+      rays(cx, cy, col, win(t, o0, 25, 0.05, 0.5) * 0.28, t * 0.5 + i, 12, 420);
+      burst(t, o0 + 0.05, { x: cx, y: cy, n: 60, colors: [col, "#fff"], speed: [300, 1100], life: [0.5, 1.2], size: [2, 6], grav: 1100, seed: 60 + i });
+    });
+  }
+  // S11: logo burst, then slow rays + embers under the end card
+  if (t >= 25) {
+    const [bx, by] = project(0, BOX_H * 0.7, 0);
+    ring(t, 25.45, bx, by, "#fff", 1300, 0.8, 20);
+    burst(t, 25.45, { x: bx, y: by, n: 240, colors: ["#F2B84B", "#fff3cf", "#ffffff"], speed: [600, 2400], life: [0.8, 1.9], size: [3, 10], grav: 1000, seed: 71 });
+    const a = win(t, 25.45, 40, 0.3, 0);
+    rays(960, 420, "rgba(242,184,75,1)", a * 0.16, t * 0.12, 20, 1500, 0.05);
+    glowDisc(960, 420, 900, "rgba(242,184,75,1)", a * 0.16);
+    embers(t, a * 0.8, "#F2B84B", 80, 13);
+  }
+}
+
+// ============================================================== GLOBALS ==
+const bg = document.getElementById("bg");
+const flash = document.getElementById("flash");
+const shakeEl = document.getElementById("shake");
+const grain = document.getElementById("grain");
+function globals(t) {
+  // spotlight tint per scene
+  const spots = [
+    [0, "#1c1c22"], [4.8, "#1c1c22"], [6.7, "#3a2a0c"], [9, "#16161b"], [12.4, "#0e2416"], [15, "#2a200c"],
+    [17.4, "#0d1a2c"], [19.8, "#1e1030"], [22.4, "#1c1c22"], [25, "#2a1f0a"],
+  ];
+  let spot = spots[0][1];
+  for (const [at, c] of spots) if (t >= at) spot = c;
+  bg.style.setProperty("--spot", spot);
+  // white flashes on the big hits
+  const hits = [[1.0, 0.35], [6.72, 0.9], [9.0, 0.25], [11.0, 0.2], [12.4, 0.2], [15.0, 0.2], [17.4, 0.2], [19.0, 0.35], [19.8, 0.2], [22.4, 0.2], [25.45, 0.85]];
+  let f = 0;
+  for (const [at, amt] of hits) f = Math.max(f, amt * (1 - prog(t, at, at + 0.22)) * (t >= at ? 1 : 0));
+  flash.style.opacity = f;
+  // camera shake
+  const shakes = [[1.0, 18, 0.5], [6.72, 26, 0.7], [19.0, 12, 0.4], [25.45, 20, 0.6]];
+  let amp = 0;
+  for (const [at, a, d] of shakes) if (t >= at) amp = Math.max(amp, a * Math.exp(-prog(t, at, at + d) * 5) * (t < at + d ? 1 : 0));
+  amp = Math.max(amp, E.inQ(prog(t, 4.95, 6.65)) * (t < 6.7 ? 5 : 0)); // charge rumble
+  shakeEl.style.transform = amp > 0.05 ? `translate(${noise1(t * 40, 7) * amp}px, ${noise1(t * 43, 8) * amp}px)` : "";
+  // film grain crawl
+  const fr = Math.floor(t * 24);
+  grain.style.backgroundPosition = `${Math.floor(hash(fr) * 256)}px ${Math.floor(hash(fr + 99) * 256)}px`;
+  // watermark
+  place(wm, 1760, 1030, { o: win(t, 2.6, 25.0, 0.4, 0.2) * 0.8 });
+  // fade out
+  document.getElementById("stage").style.filter = t > 29.7 ? `brightness(${1 - prog(t, 29.7, 30)})` : "";
+}
+
+// ============================================================ RENDER =====
+function renderFrame(t) {
+  const [pos, look] = camAt(t);
+  camera.position.set(...pos);
+  camera.lookAt(...look);
+  camera.updateMatrixWorld();
+  const states = boxesAt(t);
+  boxes.forEach((b, i) => b.pose(states[i]));
+  // light spilling from the opening box
+  glow.intensity = t >= 6.6 && t < 9 ? 12 * win(t, 6.6, 9, 0.15, 0.8) : 0;
+  glow.position.set(0, BOX_H * 1.4, 0.3);
+  renderer.render(gl3, camera);
+  drawFx(t);
+  for (const s of scenes) {
+    const on = t >= s.a && t < s.b;
+    s.root.style.display = s.root.back.style.display = on ? "block" : "none";
+    if (on) s.update(t, s.ctx);
+  }
+  globals(t);
+}
+window.renderFrame = renderFrame;
+
+// ---- ready: fonts, images, first frame --------------------------------------
+async function ready() {
+  await document.fonts.load("100px Anton");
+  await Promise.all([400, 500, 600, 700, 800, 900].map((w) => document.fonts.load(`${w} 20px Inter`)));
+  await document.fonts.ready;
+  const imgs = [...document.images];
+  await Promise.all(imgs.map((i) => (i.complete ? Promise.resolve() : new Promise((r) => { i.onload = i.onerror = r; }))));
+  await Promise.all(imgs.map((i) => i.decode().catch(() => {})));
+  // warm every scene once so layout/decode costs are paid before capture
+  for (let t = 0; t < DURATION; t += 0.5) renderFrame(t);
+  renderFrame(0);
+}
+const gli = renderer.getContext();
+window.__glInfo = gli.getParameter(gli.getExtension("WEBGL_debug_renderer_info")?.UNMASKED_RENDERER_WEBGL ?? gli.RENDERER);
+window.__ready = ready();
+
+// ---- interactive scrubbing when opened directly ----------------------------
+if (!navigator.webdriver) {
+  const fit = () => {
+    const s = Math.min(innerWidth / W, innerHeight / H);
+    document.getElementById("stage").style.transform = `scale(${s})`;
+  };
+  addEventListener("resize", fit); fit();
+  let t = parseFloat(new URLSearchParams(location.search).get("t") || "0"), playing = !new URLSearchParams(location.search).has("t"), last = null;
+  const scrub = document.getElementById("scrub");
+  addEventListener("keydown", (e) => {
+    if (e.key === " ") playing = !playing;
+    if (e.key === "ArrowRight") t += e.shiftKey ? 1 : 1 / 60;
+    if (e.key === "ArrowLeft") t -= e.shiftKey ? 1 : 1 / 60;
+  });
+  window.__ready.then(() => {
+    const tick = (now) => {
+      if (playing && last != null) t += (now - last) / 1000;
+      last = now;
+      if (t >= DURATION) t = 0;
+      t = clamp(t, 0, DURATION - 1e-3);
+      renderFrame(t);
+      scrub.textContent = `${t.toFixed(2)}s  —  space: play/pause · ←/→ frame · shift: 1s`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+} else {
+  document.body.classList.add("render");
+}
+</script>
+</body>
+</html>
