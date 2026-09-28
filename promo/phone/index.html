@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CHOSEN — Phone Spot</title>
+<!--
+  The phone spot: the real mobile site (screen.webm, recorded by record.py)
+  plays on a 3D iPhone 17 Pro, a cursor taps through Drops → Open → Keep →
+  Account → Ship, then the phone is set down, the lock screen gets the
+  delivery notification, the CHOSEN box drops onto the screen and opens, and
+  the AJ1 '85 floats out of it.
+
+  Every pixel is a pure function of time: window.renderFrame(t) (async, it
+  seeks the recording) poses everything for second t, so ../render.py can
+  capture it at any fps. Open directly to scrub: space, ←/→, shift, ?t=40.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=block">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root {
+  --text: #f5f3ef;
+  --dim: rgba(245, 243, 239, 0.55);
+  --gold: #F2B84B;
+  --green: #9EF58A;
+}
+html, body { margin: 0; background: #000; overflow: hidden; }
+#stage {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
+  color: var(--text); font-family: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  transform-origin: 0 0;
+  background: radial-gradient(ellipse 70% 80% at 58% 42%, #2a251f 0%, #110f0d 55%, #070606 100%);
+}
+#gl, #fx, #fxb { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+
+.cap { position: absolute; left: 150px; top: 0; }
+.cap .chip {
+  font: 800 22px Inter; letter-spacing: 0.26em; text-transform: uppercase; color: var(--dim);
+  display: flex; gap: 16px; align-items: center; margin-bottom: 26px;
+}
+.cap .chip i { font-style: normal; width: 48px; height: 3px; background: currentColor; display: inline-block; }
+.cap .chip b { color: var(--text); font-weight: 800; }
+.cap .hl { font-family: Anton, Impact, sans-serif; text-transform: uppercase; line-height: 0.9; font-size: 168px; letter-spacing: 0.005em; }
+.cap .hl.sm { font-size: 104px; line-height: 0.95; }
+.cap .ln { display: block; white-space: nowrap; }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.035em; margin: 0 -0.035em; }
+.w > span { display: inline-block; will-change: transform; }
+.gold { color: var(--gold); }
+.green { color: var(--green); }
+.cap .sub { font: 600 26px Inter; color: var(--dim); margin-top: 30px; letter-spacing: 0.02em; }
+.cap .sub b { color: var(--text); }
+
+#bell { width: 150px; height: 150px; margin: -75px 0 0 -75px; }
+#bell .disc {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--gold);
+  box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 80px rgba(242,184,75,.45);
+  display: flex; align-items: center; justify-content: center;
+}
+#bell svg { width: 78px; height: 78px; transform-origin: 50% 12%; }
+#bell .ring { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--gold); }
+#bell .badge {
+  position: absolute; right: -4px; top: -4px; width: 46px; height: 46px; border-radius: 50%;
+  background: #e5484d; color: #fff; font: 800 24px Inter; display: flex; align-items: center; justify-content: center;
+  border: 4px solid #110f0d;
+}
+
+#fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+#scrub { position: fixed; left: 10px; bottom: 8px; font: 12px ui-monospace, monospace; color: #888; z-index: 9; }
+body.render #scrub { display: none; }
+video { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="fxb" width="1920" height="1080"></canvas>
+  <canvas id="gl"></canvas>
+  <canvas id="fx" width="1920" height="1080"></canvas>
+  <div id="caps"></div>
+  <div id="bell" class="abs">
+    <div class="ring"></div><div class="ring"></div>
+    <div class="disc"><svg viewBox="0 0 24 24" fill="#16130f"><path d="M12 2.2c-.8 0-1.4.6-1.4 1.4v.6C7.9 4.9 6 7.3 6 10.2v4.1l-1.6 2.2c-.4.6 0 1.4.7 1.4h13.8c.7 0 1.1-.8.7-1.4L18 14.3v-4.1c0-2.9-1.9-5.3-4.6-6v-.6c0-.8-.6-1.4-1.4-1.4zM9.6 19.4a2.4 2.4 0 0 0 4.8 0z"/></svg></div>
+    <div class="badge">1</div>
+  </div>
+  <div id="fade"></div>
+</div>
+<div id="scrub"></div>
+<video id="rec" muted playsinline preload="auto"></video>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const W = 1920, H = 1080;
+
+// ---------------------------------------------------------------- math ----
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const E = {
+  inC: (x) => x * x * x,
+  outC: (x) => 1 - Math.pow(1 - x, 3),
+  inOutC: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+  outBack: (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+};
+// 0→1 over [a, a+fi], hold, 1→0 over [b-fo, b]
+const win = (t, a, b, fi = 0.3, fo = 0.3) => Math.min(E.outC(prog(t, a, a + fi)), 1 - E.inC(prog(t, b - fo, b)));
+function rng(seed) {
+  return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+// ------------------------------------------------------------ timeline ----
+const REC = await fetch("taps.json").then((r) => r.json());
+const FPS_REC = REC.fps, NREC = Math.round(REC.duration * FPS_REC);
+const REC0 = 1.2;                         // the recording starts playing on the phone
+const REC_END = REC0 + REC.duration;      // ends on the "Order placed" tracker
+const T_PUT0 = REC_END + 0.35, T_PUT1 = T_PUT0 + 2.0;   // phone is set down flat
+const T_SLEEP = T_PUT0 + 1.1;                           // screen goes dark
+const T_WAKE = T_PUT1 + 0.45, T_NOTE = T_WAKE + 0.35;   // lock screen, notification
+const T_DROP0 = T_NOTE + 1.9, T_LAND = T_DROP0 + 0.62;  // box falls onto the screen
+const T_CHARGE = T_LAND + 0.45;
+let T_OPEN, T_SHOE0, T_SHOE1, T_END0, DURATION;         // set once the box clips are known
+
+// ------------------------------------------------------------ three.js ----
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+{
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  pm.dispose();
+}
+const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 200);
+const key = new THREE.DirectionalLight(0xfff1e0, 2.6);
+key.position.set(3.5, 8, 5);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 0.5, far: 30 });
+key.shadow.radius = 5;
+key.shadow.bias = -0.0005;
+const rim = new THREE.DirectionalLight(0xffffff, 1.6);
+rim.position.set(-4, 3, -5);
+const glow = new THREE.PointLight(0xf2b84b, 0, 7, 1.6);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35), key, rim, glow);
+
+// a warm tabletop that fades out into the backdrop
+const floorAlpha = (() => {
+  const c = document.createElement("canvas"); c.width = c.height = 512;
+  const x = c.getContext("2d"), g = x.createRadialGradient(256, 256, 0, 256, 256, 256);
+  g.addColorStop(0, "#fff"); g.addColorStop(0.45, "#bbb"); g.addColorStop(1, "#000");
+  x.fillStyle = g; x.fillRect(0, 0, 512, 512);
+  return new THREE.CanvasTexture(c);
+})();
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 26),
+  new THREE.MeshStandardMaterial({ color: 0x2b2621, roughness: 0.82, metalness: 0, transparent: true, alphaMap: floorAlpha, depthWrite: false }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const [phoneGltf, boxGltf, shoeGltf] = await Promise.all([
+  loader.loadAsync("models/iphone-17-pro.glb"),
+  loader.loadAsync("../../assets/models/box-chosen-od.glb"),
+  loader.loadAsync("models/aj1-85.glb"),
+]);
+
+// ---- phone ------------------------------------------------------------------
+const phone = new THREE.Group();
+phone.rotation.order = "YXZ"; // yaw is applied in world space, so a flat phone still turns on the table
+const phoneModel = phoneGltf.scene;
+{
+  const b = new THREE.Box3().setFromObject(phoneModel);
+  phoneModel.position.sub(b.getCenter(new THREE.Vector3()));
+}
+phone.add(phoneModel);
+scene.add(phone);
+phone.updateMatrixWorld(true);
+const PHONE = new THREE.Box3().setFromObject(phone).getSize(new THREE.Vector3()); // ≈ 1.98 × 4.05 × 0.28
+
+// The display is a canvas we draw every frame (status bar + recording +
+// cursor, later the lock screen). The model's screen UVs point into a rotated
+// atlas patch, so re-project them flat across the glass.
+const SW = 804, SH = 1678, BAR = 108; // 402×839pt @2x; status bar 54pt
+const screenCanvas = document.createElement("canvas");
+screenCanvas.width = SW; screenCanvas.height = SH;
+const sc = screenCanvas.getContext("2d", { willReadFrequently: true });
+const screenTex = new THREE.CanvasTexture(screenCanvas);
+screenTex.colorSpace = THREE.SRGBColorSpace;
+screenTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+phoneModel.traverse((n) => {
+  if (!n.isMesh) return;
+  n.castShadow = true;
+  n.frustumCulled = false;
+  if (n.material.name === "Screen_BG") {
+    const pos = n.geometry.attributes.position, v = new THREE.Vector3(), pts = [];
+    for (let i = 0; i < pos.count; i++) pts.push(v.fromBufferAttribute(pos, i).applyMatrix4(n.matrixWorld).clone());
+    const b = new THREE.Box3().setFromPoints(pts);
+    const uv = new Float32Array(pos.count * 2);
+    pts.forEach((p, i) => { uv[i * 2] = (p.x - b.min.x) / (b.max.x - b.min.x); uv[i * 2 + 1] = (p.y - b.min.y) / (b.max.y - b.min.y); });
+    n.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    n.material = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+  }
+});
+
+// ---- box (the CHOSEN crate, with its baked Charge / Open clips) ---------------
+const boxModel = boxGltf.scene;
+const clips = Object.fromEntries(boxGltf.animations.map((c) => [c.name, c]));
+boxModel.updateMatrixWorld(true);
+const bodyBox = new THREE.Box3().setFromObject(boxModel.getObjectByName("CrateBody") ?? boxModel);
+const bodySize = bodyBox.getSize(new THREE.Vector3()), bodyCenter = bodyBox.getCenter(new THREE.Vector3());
+const BOX_SCALE = 1.5 / Math.max(bodySize.x, bodySize.z);
+const BOX_H = bodySize.y * BOX_SCALE;
+boxModel.scale.setScalar(BOX_SCALE);
+boxModel.position.set(-bodyCenter.x * BOX_SCALE, -bodyBox.min.y * BOX_SCALE, -bodyCenter.z * BOX_SCALE);
+boxModel.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; } });
+const box = new THREE.Group();
+box.add(boxModel);
+scene.add(box);
+const mixer = new THREE.AnimationMixer(boxModel);
+const actions = {};
+for (const n of ["Charge", "Open"]) {
+  const a = mixer.clipAction(clips[n]);
+  a.setLoop(THREE.LoopOnce, 1);
+  a.clampWhenFinished = true;
+  actions[n] = a;
+}
+function poseClip(name, ct) {
+  for (const [n, a] of Object.entries(actions)) {
+    if (n === name) { a.enabled = true; a.setEffectiveWeight(1); a.play(); a.time = clamp(ct, 0, a.getClip().duration - 1e-4); }
+    else { a.enabled = false; a.stop(); }
+  }
+  mixer.update(0);
+}
+T_OPEN = T_CHARGE + clips.Charge.duration;
+T_SHOE0 = T_OPEN + 0.3;
+T_SHOE1 = T_SHOE0 + 2.2;
+T_END0 = T_SHOE1 + 4.2;
+DURATION = T_END0 + 3.8;
+window.DURATION = DURATION;
+
+// ---- shoe ---------------------------------------------------------------------
+const shoe = new THREE.Group();
+const shoeModel = shoeGltf.scene;
+{
+  const b = new THREE.Box3().setFromObject(shoeModel), s = b.getSize(new THREE.Vector3());
+  const k = 1.75 / s.x; // heel-to-toe, in world units
+  shoeModel.scale.setScalar(k);
+  shoeModel.position.copy(b.getCenter(new THREE.Vector3()).multiplyScalar(-k));
+}
+shoeModel.traverse((n) => { if (n.isMesh) { n.castShadow = true; n.frustumCulled = false; n.material.envMapIntensity = 1.1; } });
+shoe.add(shoeModel);
+scene.add(shoe);
+
+// where the box sits: on the lower half of the flat phone's screen
+const FLAT = { x: 0, y: PHONE.z / 2, z: 0.15, rx: -Math.PI / 2, ry: 0.12, rz: 0 };
+const BOX_BASE = new THREE.Vector3(0.05, PHONE.z, 0.95);
+
+// ---- recording + images -------------------------------------------------------
+// as a blob: plain static servers (python -m http.server) don't answer Range
+// requests, and without them a <video> can't seek
+const video = document.getElementById("rec");
+video.src = URL.createObjectURL(await fetch("screen.webm").then((r) => r.blob()));
+await new Promise((r) => (video.readyState >= 2 ? r() : video.addEventListener("loadeddata", r, { once: true })));
+let videoFrame = -1;
+async function seekRecording(f) {
+  if (f === videoFrame) return;
+  videoFrame = f;
+  const done = new Promise((r) => video.addEventListener("seeked", r, { once: true }));
+  video.currentTime = (f + 0.5) / FPS_REC;
+  await done;
+}
+const loadImg = (src) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+const appIcon = await loadImg("../../assets/brand/apple-touch-icon.png");
+
+// ================================================================ SCREEN ====
+const CURSOR = new Path2D("M5 2.5v17.2l4.6-4.3 3 6.6 3.1-1.4-3-6.5 6.3-.3z");
+const TAPS = REC.taps;
+const CUR_START = { x: 318, y: 610 };
+
+function cursorAt(r) {
+  let prev = CUR_START;
+  for (const tp of TAPS) {
+    const m0 = tp.t - 0.8, m1 = tp.t - 0.12;
+    if (r < m0) break;
+    if (r < m1) {
+      const k = E.inOutC(prog(r, m0, m1));
+      // a slight arc, like a hand moving a mouse
+      return { x: lerp(prev.x, tp.x, k), y: lerp(prev.y, tp.y, k) - Math.sin(k * Math.PI) * 26 };
+    }
+    prev = tp;
+  }
+  return prev;
+}
+
+function drawCursor(r) {
+  const last = TAPS[TAPS.length - 1];
+  const a = prog(r, 0.4, 0.9) * (1 - prog(r, last.t + 0.9, last.t + 1.3));
+  if (a <= 0) return;
+  // tap ripples
+  for (const tp of TAPS) {
+    const k = prog(r, tp.t, tp.t + 0.55);
+    if (k <= 0 || k >= 1) continue;
+    sc.beginPath();
+    sc.arc(tp.x * 2, tp.y * 2 + BAR, 22 + 80 * E.outC(k), 0, Math.PI * 2);
+    sc.fillStyle = `rgba(20,20,20,${0.16 * (1 - k)})`;
+    sc.fill();
+    sc.lineWidth = 5;
+    sc.strokeStyle = `rgba(255,255,255,${0.85 * (1 - k)})`;
+    sc.stroke();
+  }
+  const p = cursorAt(r);
+  let press = 0;
+  for (const tp of TAPS) press = Math.max(press, Math.sin(prog(r, tp.t - 0.1, tp.t + 0.16) * Math.PI));
+  const s = 3.3 * (1 - 0.2 * press);
+  sc.save();
+  sc.globalAlpha = a;
+  sc.translate(p.x * 2, p.y * 2 + BAR);
+  sc.scale(s, s);
+  sc.translate(-5, -2.5); // hotspot = arrow tip
+  sc.shadowColor = "rgba(0,0,0,.35)"; sc.shadowBlur = 6; sc.shadowOffsetY = 1.5;
+  sc.fillStyle = "#fff"; sc.fill(CURSOR);
+  sc.shadowColor = "transparent";
+  sc.lineWidth = 1.3; sc.lineJoin = "round"; sc.strokeStyle = "#111"; sc.stroke(CURSOR);
+  sc.restore();
+}
+
+function statusIcons(col, showTime) {
+  sc.fillStyle = col; sc.strokeStyle = col;
+  if (showTime) { sc.font = "600 34px Inter"; sc.textAlign = "center"; sc.textBaseline = "middle"; sc.fillText("9:41", 132, 64); }
+  // signal
+  for (let i = 0; i < 4; i++) { const h = 10 + i * 5; roundRect(560 + i * 11, 74 - h, 7, h, 2); sc.fill(); }
+  // wi-fi
+  sc.lineWidth = 5; sc.lineCap = "round";
+  for (let i = 0; i < 3; i++) { sc.beginPath(); sc.arc(632, 78, 8 + i * 9, -Math.PI * 0.76, -Math.PI * 0.24); sc.stroke(); }
+  // battery
+  sc.lineWidth = 2.5; roundRect(668, 51, 50, 25, 8); sc.globalAlpha *= 0.45; sc.stroke(); sc.globalAlpha /= 0.45;
+  roundRect(672, 55, 38, 17, 5); sc.fill();
+  roundRect(721, 59, 4, 9, 2); sc.globalAlpha *= 0.45; sc.fill(); sc.globalAlpha /= 0.45;
+}
+function roundRect(x, y, w, h, r) { sc.beginPath(); sc.roundRect(x, y, w, h, r); }
+
+function homeBar(col) { sc.fillStyle = col; roundRect(SW / 2 - 136, SH - 22, 272, 10, 5); sc.fill(); }
+
+function luminanceAt(x, y) {
+  const d = sc.getImageData(x, y, 1, 1).data;
+  return { rgb: `rgb(${d[0]},${d[1]},${d[2]})`, l: (0.299 * d[0] + 0.587 * d[1] + 0.114 * d[2]) / 255 };
+}
+
+function drawApp(T) {
+  const r = T - REC0;
+  sc.drawImage(video, 0, BAR, SW, SH - BAR);
+  // status bar takes the app header's colour (it dims with the modals too)
+  const top = luminanceAt(SW / 2, BAR + 2);
+  sc.fillStyle = top.rgb; sc.fillRect(0, 0, SW, BAR);
+  statusIcons(top.l > 0.5 ? "#111" : "#fff", true);
+  const bot = luminanceAt(SW / 2, SH - 40);
+  homeBar(bot.l > 0.5 ? "#111" : "#fff");
+  drawCursor(r);
+}
+
+function drawLock(T) {
+  const g = sc.createLinearGradient(0, 0, 0, SH);
+  g.addColorStop(0, "#221d17"); g.addColorStop(0.55, "#0f0d0b"); g.addColorStop(1, "#050505");
+  sc.fillStyle = g; sc.fillRect(0, 0, SW, SH);
+  const glowG = sc.createRadialGradient(SW / 2, SH * 0.78, 0, SW / 2, SH * 0.78, SW * 0.9);
+  glowG.addColorStop(0, "rgba(242,184,75,.22)"); glowG.addColorStop(1, "rgba(242,184,75,0)");
+  sc.fillStyle = glowG; sc.fillRect(0, 0, SW, SH);
+  statusIcons("#fff", false);
+  sc.fillStyle = "rgba(255,255,255,.82)"; sc.textAlign = "center"; sc.textBaseline = "alphabetic";
+  sc.font = "600 34px Inter"; sc.fillText("Monday, September 28", SW / 2, 252);
+  sc.fillStyle = "#fff"; sc.font = "700 214px Inter"; sc.fillText("9:41", SW / 2, 452);
+
+  // the delivery notification
+  const k = prog(T, T_NOTE, T_NOTE + 0.55);
+  if (k > 0) {
+    const y = lerp(470, 560, E.outBack(k)), a = E.outC(prog(T, T_NOTE, T_NOTE + 0.3));
+    sc.save();
+    sc.globalAlpha = a;
+    const x0 = 30, w = SW - 60, h = 188;
+    roundRect(x0, y, w, h, 46); sc.fillStyle = "rgba(92,86,78,.72)"; sc.fill();
+    sc.lineWidth = 2; sc.strokeStyle = "rgba(255,255,255,.12)"; sc.stroke();
+    // app icon
+    sc.save(); roundRect(x0 + 28, y + 30, 86, 86, 20); sc.clip(); sc.fillStyle = "#fff"; sc.fillRect(x0 + 28, y + 30, 86, 86);
+    sc.drawImage(appIcon, x0 + 30, y + 32, 82, 82); sc.restore();
+    sc.textAlign = "left"; sc.fillStyle = "#fff";
+    sc.font = "700 31px Inter"; sc.fillText("CHOSEN", x0 + 138, y + 62);
+    sc.textAlign = "right"; sc.fillStyle = "rgba(255,255,255,.6)"; sc.font = "500 27px Inter"; sc.fillText("now", x0 + w - 32, y + 62);
+    sc.textAlign = "left"; sc.fillStyle = "#fff"; sc.font = "600 29px Inter";
+    sc.fillText("Delivered: Air Jordan 1 High '85", x0 + 138, y + 108);
+    sc.fillStyle = "rgba(255,255,255,.85)"; sc.font = "400 28px Inter";
+    sc.fillText("Your crate is at the door. Open it.", x0 + 138, y + 146);
+    sc.restore();
+  }
+  // flashlight / camera buttons
+  for (const cx of [128, SW - 128]) { sc.beginPath(); sc.arc(cx, SH - 150, 50, 0, Math.PI * 2); sc.fillStyle = "rgba(255,255,255,.14)"; sc.fill(); }
+  homeBar("#fff");
+  // waking up
+  const wake = prog(T, T_WAKE, T_WAKE + 0.35);
+  if (wake < 1) { sc.fillStyle = `rgba(0,0,0,${1 - wake})`; sc.fillRect(0, 0, SW, SH); }
+}
+
+function drawScreen(T) {
+  if (T < T_SLEEP + 0.4) {
+    drawApp(T);
+    const off = prog(T, T_SLEEP, T_SLEEP + 0.35);
+    if (off > 0) { sc.fillStyle = `rgba(0,0,0,${off})`; sc.fillRect(0, 0, SW, SH); }
+  } else if (T < T_WAKE) {
+    sc.fillStyle = "#000"; sc.fillRect(0, 0, SW, SH);
+  } else {
+    drawLock(T);
+  }
+  screenTex.needsUpdate = true;
+}
+
+// ================================================================ POSES =====
+const PX = 1.4, PY = 2.4;
+function phonePose(T) {
+  const up = {
+    x: PX, y: PY + 0.05 * Math.sin(T * 0.9), z: 0,
+    rx: 0.035 * Math.sin(T * 0.55), ry: -0.2 + 0.05 * Math.sin(T * 0.37), rz: 0.015 * Math.sin(T * 0.6),
+  };
+  const intro = 1 - E.outC(prog(T, 0, 1.7));
+  up.ry += intro * 1.25; up.y -= intro * 1.3; up.x += intro * 0.6; up.rx += intro * 0.3;
+  const k = E.inOutC(prog(T, T_PUT0, T_PUT1));
+  const p = {};
+  for (const n of ["x", "y", "z", "rx", "ry", "rz"]) p[n] = lerp(up[n], FLAT[n], k);
+  p.y += Math.sin(k * Math.PI) * 0.7;
+  // settles with a little rock
+  const st = prog(T, T_PUT1, T_PUT1 + 0.5);
+  if (st > 0 && st < 1) p.rx += 0.03 * Math.sin(st * Math.PI * 3) * (1 - st);
+  // buzz on the notification
+  const buzz = win(T, T_NOTE, T_NOTE + 0.45, 0.05, 0.05) + win(T, T_NOTE + 0.62, T_NOTE + 0.95, 0.05, 0.05);
+  p.x += buzz * 0.016 * Math.sin(T * 150);
+  p.ry += buzz * 0.012 * Math.sin(T * 131);
+  return p;
+}
+
+function boxPose(T) {
+  if (T < T_DROP0) return null;
+  const f = prog(T, T_DROP0, T_LAND);
+  const y = BOX_BASE.y + 7.5 * (1 - f * f);
+  const ry = -0.5 - 1.1 * (1 - E.outC(f));
+  const b = prog(T, T_LAND, T_LAND + 0.4);
+  const squash = b > 0 && b < 1 ? Math.sin(b * Math.PI) * (1 - b * 0.5) : 0;
+  return { x: BOX_BASE.x, y, z: BOX_BASE.z, ry, sy: 1 - 0.13 * squash, sx: 1 + 0.07 * squash };
+}
+
+function shoePose(T) {
+  if (T < T_SHOE0) return null;
+  const k = prog(T, T_SHOE0, T_SHOE1);
+  const rise = E.outC(k);
+  const s = lerp(0.3, 1, E.outBack(clamp(k * 1.3)));
+  const hover = T > T_SHOE1 ? 0.08 * Math.sin((T - T_SHOE1) * 1.6) : 0;
+  return {
+    x: BOX_BASE.x, z: BOX_BASE.z,
+    y: BOX_BASE.y + BOX_H * 0.45 + rise * 1.55 + hover,
+    s, ry: -1.3 + (T - T_SHOE0) * 0.55, rx: 0.08 * Math.sin(T * 0.7), rz: 0.1 * Math.sin(T * 0.9 + 1),
+  };
+}
+
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+function camAt(T) {
+  // upright: the phone sits right of centre, captions on the left
+  let pos = V(0, PY + 0.1, 9.4), look = V(0.25, PY, 0);
+  const intro = 1 - E.outC(prog(T, 0, 1.9));
+  pos.z += intro * 2.2;
+  const push = win(T, REC0 + REC.marks.reveal - 0.3, REC0 + REC.marks.reveal + 4, 0.8, 0.9); // lean in for the legendary pull
+  pos.z -= 0.75 * push; pos.x += 0.3 * push; look.x += 0.45 * push;
+
+  const TABLE = [V(0, 6.4, 5.9), V(0, 0.25, 0.25)];
+  const NOTE = [V(0.15, 4.5, 3.4), V(0, 0.1, -0.2)];
+  const BOXC = [V(0.5, 4.3, 6.1), V(0.05, 0.9, 0.55)];
+  const SHOE = [V(0.2, 3.35, 6.9), V(-0.95, 1.7, 0.9)];
+  const blend = (to, a, b) => { const k = E.inOutC(prog(T, a, b)); pos.lerp(to[0], k); look.lerp(to[1], k); };
+  blend(TABLE, T_PUT0, T_PUT1 + 0.1);
+  blend(NOTE, T_PUT1 + 0.1, T_NOTE + 0.9);
+  blend(BOXC, T_DROP0 - 0.7, T_DROP0 + 0.4);
+  blend(SHOE, T_OPEN - 0.1, T_SHOE1 + 0.3);
+  // slow orbit around the floating shoe, drifting left to make room for type
+  if (T > T_OPEN) {
+    const a = (T - T_OPEN) * 0.06;
+    const c = BOX_BASE;
+    const dx = pos.x - c.x, dz = pos.z - c.z;
+    pos.x = c.x + dx * Math.cos(a) - dz * Math.sin(a);
+    pos.z = c.z + dx * Math.sin(a) + dz * Math.cos(a);
+  }
+  // landing jolt
+  const j = prog(T, T_LAND, T_LAND + 0.35);
+  if (j > 0 && j < 1) { const m = 0.05 * (1 - j); pos.y += m * Math.sin(j * 60); look.y += m * Math.sin(j * 60); }
+  return [pos, look];
+}
+
+// =================================================================== FX =====
+const fx = document.getElementById("fx").getContext("2d");
+const fxb = document.getElementById("fxb").getContext("2d");
+const _v = new THREE.Vector3();
+function project(v) { _v.copy(v).project(camera); return [(_v.x + 1) / 2 * W, (1 - _v.y) / 2 * H, _v.z]; }
+
+const DUST = (() => { const r = rng(7); return Array.from({ length: 34 }, () => ({ a: r() * Math.PI * 2, sp: 0.6 + r() * 1.3, up: 0.1 + r() * 0.35, sz: 6 + r() * 16 })); })();
+const BURST = (() => { const r = rng(11); return Array.from({ length: 60 }, () => ({ a: r() * Math.PI * 2, sp: 0.4 + r() * 1.1, up: 1.4 + r() * 2.6, sz: 2 + r() * 5, gold: r() < 0.7 })); })();
+const SPARK = (() => { const r = rng(23); return Array.from({ length: 80 }, () => ({ a: r() * Math.PI * 2, rad: 0.7 + r() * 1.3, h: -0.9 + r() * 2.1, sp: 0.15 + r() * 0.35, ph: r() * 10, sz: 1.5 + r() * 3.5 })); })();
+
+function dot(ctx, x, y, r, col) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); }
+
+function drawFx(T, shoeP) {
+  fx.clearRect(0, 0, W, H);
+  fxb.clearRect(0, 0, W, H);
+  // dust off the landing
+  const d = prog(T, T_LAND, T_LAND + 1.1);
+  if (d > 0 && d < 1) {
+    for (const p of DUST) {
+      const rr = 0.8 + p.sp * E.outC(d);
+      const [x, y] = project(V(BOX_BASE.x + Math.cos(p.a) * rr, BOX_BASE.y + p.up * Math.sin(d * Math.PI), BOX_BASE.z + Math.sin(p.a) * rr * 0.9));
+      dot(fx, x, y, p.sz * (0.6 + d), `rgba(214,200,178,${0.35 * (1 - d)})`);
+    }
+  }
+  // burst out of the lid
+  const b = prog(T, T_OPEN + 0.15, T_OPEN + 1.6);
+  if (b > 0 && b < 1) {
+    for (const p of BURST) {
+      const rr = p.sp * E.outC(b) * 1.3;
+      const [x, y] = project(V(BOX_BASE.x + Math.cos(p.a) * rr, BOX_BASE.y + BOX_H + p.up * E.outC(b) - 1.2 * b * b, BOX_BASE.z + Math.sin(p.a) * rr));
+      dot(fx, x, y, p.sz, p.gold ? `rgba(242,184,75,${1 - b})` : `rgba(255,248,230,${1 - b})`);
+    }
+  }
+  if (!shoeP) return;
+  const c = V(shoeP.x, shoeP.y, shoeP.z);
+  const [cx, cy] = project(c);
+  const on = win(T, T_OPEN + 0.1, DURATION + 1, 0.9, 0.3);
+  // god rays behind everything
+  fxb.save();
+  fxb.translate(cx, cy);
+  fxb.rotate(T * 0.12);
+  const R = 1100;
+  for (let i = 0; i < 16; i++) {
+    const a0 = (i / 16) * Math.PI * 2, w = 0.07 + 0.03 * Math.sin(i * 2.3);
+    const g = fxb.createRadialGradient(0, 0, 0, 0, 0, R);
+    g.addColorStop(0, `rgba(242,184,75,${0.28 * on})`); g.addColorStop(1, "rgba(242,184,75,0)");
+    fxb.beginPath(); fxb.moveTo(0, 0); fxb.arc(0, 0, R, a0 - w, a0 + w); fxb.closePath(); fxb.fillStyle = g; fxb.fill();
+  }
+  fxb.restore();
+  const halo = fxb.createRadialGradient(cx, cy, 0, cx, cy, 420);
+  halo.addColorStop(0, `rgba(255,214,140,${0.35 * on})`); halo.addColorStop(1, "rgba(255,214,140,0)");
+  fxb.fillStyle = halo; fxb.fillRect(0, 0, W, H);
+  // sparkles drifting around the shoe
+  for (const p of SPARK) {
+    const a = p.a + (T - T_OPEN) * p.sp;
+    const h = ((p.h + (T - T_OPEN) * 0.18 + 1.2) % 2.4) - 1.2;
+    const [x, y, z] = project(V(c.x + Math.cos(a) * p.rad, c.y + h, c.z + Math.sin(a) * p.rad));
+    const tw = 0.5 + 0.5 * Math.sin(T * 5 + p.ph);
+    const ctx = Math.sin(a) < 0 ? fxb : fx; // behind or in front of the shoe
+    dot(ctx, x, y, p.sz * (0.6 + tw * 0.6), `rgba(255,${200 + 40 * tw | 0},120,${on * (0.35 + 0.65 * tw) * (1 - Math.abs(h) / 1.3)})`);
+  }
+}
+
+// ============================================================ CAPTIONS ======
+const capsEl = document.getElementById("caps");
+function caption(a, b, chip, lines, opts = {}) {
+  const el = document.createElement("div");
+  el.className = "cap";
+  const chipHTML = chip ? `<div class="chip"><i></i>${chip}</div>` : "";
+  const hl = lines.map((ln) => `<span class="ln">${ln.split(" ").map((w) => {
+    const m = w.match(/^\[(\w+)\](.*)$/);
+    return m ? `<span class="w"><span class="${m[1]}">${m[2]}</span></span>` : `<span class="w"><span>${w}</span></span>`;
+  }).join(" ")}</span>`).join("");
+  el.innerHTML = `${chipHTML}<div class="hl ${opts.sm ? "sm" : ""}">${hl}</div>${opts.sub ? `<div class="sub">${opts.sub}</div>` : ""}`;
+  capsEl.appendChild(el);
+  return { el, a, b, words: [...el.querySelectorAll(".w > span")], chip: el.querySelector(".chip"), sub: el.querySelector(".sub"), y: opts.y ?? 540 };
+}
+const R0 = (r) => REC0 + r;
+const TAP = Object.fromEntries(REC.taps.map((tp) => [tp.label, tp.t]));
+const CAPS = [
+  caption(R0(1.3), R0(TAP.drop - 0.2), "01 &nbsp;<b>Drops</b>", ["Pick your", "drop."]),
+  caption(R0(TAP.drop - 0.2), R0(TAP.crate - 0.2), "02 &nbsp;<b>Open</b>", ["Open a", "crate."]),
+  caption(R0(TAP.crate - 0.2), R0(TAP.keep - 0.2), "03 &nbsp;<b>Pull</b>", ["Pull a", "[gold]grail."]),
+  caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "it."]),
+  caption(R0(TAP.ship - 0.2), T_PUT0 + 0.6, "05 &nbsp;<b>Ship</b>", ["Ship it", "[green]home."]),
+  caption(T_NOTE + 0.2, T_DROP0 + 0.5, "06 &nbsp;<b>Delivered</b>", ["It's", "here."]),
+  caption(T_SHOE1 - 0.6, T_END0 + 0.2, "<b class='gold'>Legendary</b> &nbsp;·&nbsp; $895", ["Air Jordan 1 High", "'85 Chicago"], { sm: true, y: 560 }),
+  caption(T_END0 + 0.3, DURATION + 5, "CHOSEN.WIN", ["It's already", "[gold]chosen."], { sub: "Open it. Keep it. <b>Ship it.</b>" }),
+];
+function updateCaptions(T) {
+  for (const c of CAPS) {
+    const on = T > c.a - 0.1 && T < c.b + 0.8;
+    c.el.style.display = on ? "block" : "none";
+    if (!on) continue;
+    c.el.style.transform = `translateY(${c.y - c.el.offsetHeight / 2}px)`;
+    c.words.forEach((w, i) => {
+      const inK = E.outC(prog(T, c.a + i * 0.07, c.a + i * 0.07 + 0.6));
+      const outK = E.inC(prog(T, c.b - 0.45 + i * 0.04, c.b + i * 0.04));
+      w.style.transform = `translateY(${((1 - inK) - outK) * 112}%)`;
+    });
+    const chipK = win(T, c.a, c.b, 0.5, 0.35);
+    if (c.chip) { c.chip.style.opacity = chipK; c.chip.style.transform = `translateX(${(1 - chipK) * -30}px)`; }
+    if (c.sub) c.sub.style.opacity = win(T, c.a + 0.5, c.b, 0.6, 0.35);
+  }
+}
+
+// ---- bell over the phone --------------------------------------------------------
+const bellEl = document.getElementById("bell");
+const bellSvg = bellEl.querySelector("svg");
+const rings = [...bellEl.querySelectorAll(".ring")];
+function updateBell(T) {
+  const a = win(T, T_NOTE, T_DROP0 - 0.2, 0.35, 0.3);
+  bellEl.style.display = a > 0 ? "block" : "none";
+  if (a <= 0) return;
+  const [x, y] = project(V(1.75, 0.35, -0.75)); // just off the phone's right edge, level with the notification
+  const pop = E.outBack(prog(T, T_NOTE, T_NOTE + 0.45));
+  bellEl.style.opacity = a;
+  bellEl.style.transform = `translate(${x}px, ${y}px) scale(${pop})`;
+  const dt = (T - T_NOTE) % 1.1;
+  bellSvg.style.transform = `rotate(${24 * Math.sin(dt * 22) * Math.exp(-dt * 3.2)}deg)`;
+  rings.forEach((r, i) => {
+    const k = ((T - T_NOTE - i * 0.55) % 1.1) / 1.1;
+    r.style.opacity = T - T_NOTE - i * 0.55 > 0 ? (1 - k) * 0.8 : 0;
+    r.style.transform = `scale(${1 + k * 1.1})`;
+  });
+}
+
+// ============================================================ RENDER =====
+async function renderFrame(T) {
+  const r = T - REC0;
+  if (T < T_SLEEP + 0.4) await seekRecording(clamp(Math.floor(r * FPS_REC), 0, NREC - 1));
+  drawScreen(T);
+
+  const p = phonePose(T);
+  phone.position.set(p.x, p.y, p.z);
+  phone.rotation.set(p.rx, p.ry, p.rz);
+
+  const bp = boxPose(T);
+  box.visible = !!bp;
+  if (bp) {
+    box.position.set(bp.x, bp.y, bp.z);
+    box.rotation.set(0, bp.ry, 0);
+    box.scale.set(bp.sx, bp.sy, bp.sx);
+    if (T < T_CHARGE) poseClip("Open", 0);
+    else if (T < T_OPEN) poseClip("Charge", T - T_CHARGE);
+    else poseClip("Open", (T - T_OPEN) * 1.1);
+  }
+  const sp = shoePose(T);
+  shoe.visible = !!sp;
+  if (sp) {
+    shoe.position.set(sp.x, sp.y, sp.z);
+    shoe.rotation.set(sp.rx, sp.ry, sp.rz);
+    shoe.scale.setScalar(sp.s);
+  }
+  glow.intensity = T > T_OPEN ? 9 * win(T, T_OPEN, DURATION + 1, 0.4, 0.3) : 0;
+  glow.position.set(BOX_BASE.x, BOX_BASE.y + BOX_H + 0.6, BOX_BASE.z + 0.4);
+
+  const [pos, look] = camAt(T);
+  camera.position.copy(pos);
+  camera.lookAt(look);
+  camera.updateMatrixWorld();
+  renderer.render(scene, camera);
+
+  drawFx(T, sp);
+  updateCaptions(T);
+  updateBell(T);
+  document.getElementById("fade").style.opacity = Math.max(1 - prog(T, 0, 0.5), prog(T, DURATION - 0.5, DURATION));
+}
+window.renderFrame = renderFrame;
+
+async function ready() {
+  await document.fonts.load("100px Anton");
+  await Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 20px Inter`)));
+  await document.fonts.ready;
+  for (const t of [0.5, 20, T_PUT1, T_NOTE + 1, T_LAND, T_SHOE1, T_END0 + 1]) await renderFrame(t);
+  await renderFrame(0);
+}
+const gli = renderer.getContext();
+window.__glInfo = gli.getParameter(gli.getExtension("WEBGL_debug_renderer_info")?.UNMASKED_RENDERER_WEBGL ?? gli.RENDERER);
+window.__ready = ready();
+
+// ---- interactive scrubbing when opened directly -----------------------------------
+if (!navigator.webdriver) {
+  const fit = () => {
+    const s = Math.min(innerWidth / W, innerHeight / H);
+    document.getElementById("stage").style.transform = `scale(${s})`;
+  };
+  addEventListener("resize", fit); fit();
+  const qs = new URLSearchParams(location.search);
+  let t = parseFloat(qs.get("t") || "0"), playing = !qs.has("t"), last = null, busy = false;
+  const scrub = document.getElementById("scrub");
+  addEventListener("keydown", (e) => {
+    if (e.key === " ") playing = !playing;
+    if (e.key === "ArrowRight") t += e.shiftKey ? 1 : 1 / 30;
+    if (e.key === "ArrowLeft") t -= e.shiftKey ? 1 : 1 / 30;
+  });
+  window.__ready.then(() => {
+    const tick = async (now) => {
+      if (playing && last != null) t += (now - last) / 1000;
+      last = now;
+      if (t >= DURATION) t = 0;
+      t = clamp(t, 0, DURATION - 1e-3);
+      if (!busy) { busy = true; await renderFrame(t); busy = false; }
+      scrub.textContent = `${t.toFixed(2)}s / ${DURATION.toFixed(1)}  —  space: play/pause · ←/→ frame · shift: 1s`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+} else {
+  document.body.classList.add("render");
+}
+</script>
+</body>
+</html>

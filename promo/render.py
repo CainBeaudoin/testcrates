@@ -4,6 +4,8 @@ The page exposes window.__ready (Promise) and window.renderFrame(t) — every
 pixel is a pure function of t, so the output is deterministic at any fps.
 
   python render.py --fps 60 --out chosen-launch.mp4 [--start 0 --end 30] [--stills 1,5.5,9]
+  python render.py --page promo/phone/index.html --out phone/chosen-phone.mp4
+renderFrame may return a Promise (the phone spot seeks a video); it's awaited.
 Needs: playwright (Chromium) and an ffmpeg with libx264 (FFMPEG env var or PATH).
 """
 import argparse, functools, http.server, os, shutil, subprocess, sys, threading, time
@@ -29,6 +31,7 @@ def main():
     ap.add_argument("--audio", default=None)
     ap.add_argument("--stills", default=None, help="comma list of times → PNGs, no video")
     ap.add_argument("--stilldir", default="stills")
+    ap.add_argument("--page", default="promo/index.html", help="page to render, relative to the repo root")
     args = ap.parse_args()
 
     port = serve()
@@ -37,7 +40,7 @@ def main():
         page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
         page.on("console", lambda m: print("[page]", m.text, file=sys.stderr))
         page.on("pageerror", lambda e: print("[pageerror]", e, file=sys.stderr))
-        page.goto(f"http://127.0.0.1:{port}/promo/index.html")
+        page.goto(f"http://127.0.0.1:{port}/{args.page}")
         page.wait_for_function("window.__ready", timeout=60000)
         page.evaluate("window.__ready.then(() => true)")
         duration = page.evaluate("window.DURATION")
