@@ -204,13 +204,18 @@ const FOCUS = [
   [REC.marks.flash - 0.25, REC.marks.flash + 0.9],
   [REC.marks.shipped + 0.2, REC.marks.shipped + 0.9],
 ];
+// Jump cuts: stretches of the take that are skipped outright. The "Open $125
+// with…" Credits/Cash sheet and its Cash tap go — Open cuts straight to the
+// crate carousel already spinning (6.72s is the first frame after the sheet).
+const TAP_AT = (label) => REC.taps.find((tp) => tp.label === label).t;
+const JUMPS = [[TAP_AT("open") + 0.08, 6.72]];
 const RAMP = (() => {
-  const cuts = [...new Set([0, REC.duration, ...FOCUS.flat().map((x) => clamp(x, 0, REC.duration))])].sort((a, b) => a - b);
+  const cuts = [...new Set([0, REC.duration, ...[...FOCUS, ...JUMPS].flat().map((x) => clamp(x, 0, REC.duration))])].sort((a, b) => a - b);
   const segs = [];
   let o = 0;
   for (let i = 0; i + 1 < cuts.length; i++) {
     const a = cuts[i], b = cuts[i + 1], mid = (a + b) / 2;
-    const speed = FOCUS.some(([x, y]) => mid > x && mid < y) ? 1 : FAST;
+    const speed = JUMPS.some(([x, y]) => mid > x && mid < y) ? Infinity : FOCUS.some(([x, y]) => mid > x && mid < y) ? 1 : FAST;
     segs.push({ a, b, o, speed });
     o += (b - a) / speed;
   }
@@ -223,7 +228,7 @@ function outTime(r) {   // rec time → seconds after REC0
 }
 function recTime(u) {   // seconds after REC0 → rec time
   u = clamp(u, 0, RAMP.out);
-  const s = RAMP.segs.find((g) => u <= g.o + (g.b - g.a) / g.speed) ?? RAMP.segs[RAMP.segs.length - 1];
+  const s = RAMP.segs.find((g) => g.speed !== Infinity && u <= g.o + (g.b - g.a) / g.speed) ?? RAMP.segs[RAMP.segs.length - 1];
   return s.a + (u - s.o) * s.speed;
 }
 const REC0 = 1.0;                            // the recording starts playing on the phone (after the flip)
@@ -432,7 +437,8 @@ const appIcon = await loadImg("../../assets/brand/apple-touch-icon.png");
 const shoeShot = await loadImg("aj1-85-chicago.png");
 
 // ================================================================ SCREEN ====
-const TAPS = REC.taps.filter((tp) => tp.t <= SHIP_REC); // nothing after Ship is shown
+// nothing after Ship is shown, and nothing inside a jump cut (the Cash tap)
+const TAPS = REC.taps.filter((tp) => tp.t <= SHIP_REC && !JUMPS.some(([a, b]) => tp.t > a && tp.t < b));
 const CUR_START = { x: 318, y: 610 };
 
 function cursorAt(r) {
@@ -1029,9 +1035,8 @@ cue(R0(TAP.keep) + 0.08, "spin", { dur: 0.54 }); // the 360 after Keep
 for (const tp of TAPS) cue(R0(tp.t), "tap", { label: tp.label });
 cue(R0(TAP.drops + 0.12), "page");
 cue(R0(TAP.drop + 0.12), "page");
-cue(R0(TAP.open + 0.1), "sheet");        // "Open $125 with…"
-cue(R0(TAP.cash + 0.1), "pay");
-cue(R0(TAP.cash + 0.55), "crates");      // three crates slide in
+cue(R0(JUMPS[0][1]) - 0.05, "page");      // the cut from Open to the crates
+cue(R0(JUMPS[0][1]), "crates");           // the crate carousel spinning in
 cue(R0(TAP.crate + 0.1), "crateOpen");
 cue(R0(REC.marks.burst), "build", { until: R0(REC.marks.flash) });
 cue(R0(REC.marks.flash), "legendary");
