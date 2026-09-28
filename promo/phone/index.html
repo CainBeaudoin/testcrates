@@ -120,14 +120,46 @@ function rng(seed) {
 // ------------------------------------------------------------ timeline ----
 const REC = await fetch("taps.json").then((r) => r.json());
 const FPS_REC = REC.fps, NREC = Math.round(REC.duration * FPS_REC);
-const REC0 = 1.2;                         // the recording starts playing on the phone
-const REC_END = REC0 + REC.duration;      // ends on the "Order placed" tracker
-const T_PUT0 = REC_END + 0.35, T_PUT1 = T_PUT0 + 2.0;   // phone is set down flat
-const T_SLEEP = T_PUT0 + 1.1;                           // screen goes dark
-const T_WAKE = T_PUT1 + 0.45, T_NOTE = T_WAKE + 0.35;   // lock screen, notification
-const T_SWIPE0 = T_NOTE + 1.9, T_SWIPE1 = T_SWIPE0 + 0.6; // phone is swiped out of frame
-const T_DROP0 = T_SWIPE1 + 0.2, T_LAND = T_DROP0 + 0.62; // box falls onto the bare table
-const T_CHARGE = T_LAND + 0.45;
+// Speed ramp: the take plays at 1× around each tap (so the glide and press
+// read), through the Legendary flash and on the "Order placed" toast, and at
+// FAST× through the loading and waiting in between. rec time r ↔ output time.
+const FAST = 1.9;
+const FOCUS = [
+  ...REC.taps.map((tp) => [tp.t - 0.6, tp.t + 0.4]),
+  [REC.marks.flash - 0.4, REC.marks.flash + 1.3],
+  [REC.marks.shipped + 0.2, REC.marks.shipped + 1.4],
+];
+const RAMP = (() => {
+  const cuts = [...new Set([0, REC.duration, ...FOCUS.flat().map((x) => clamp(x, 0, REC.duration))])].sort((a, b) => a - b);
+  const segs = [];
+  let o = 0;
+  for (let i = 0; i + 1 < cuts.length; i++) {
+    const a = cuts[i], b = cuts[i + 1], mid = (a + b) / 2;
+    const speed = FOCUS.some(([x, y]) => mid > x && mid < y) ? 1 : FAST;
+    segs.push({ a, b, o, speed });
+    o += (b - a) / speed;
+  }
+  return { segs, out: o };
+})();
+function outTime(r) {   // rec time → seconds after REC0
+  r = clamp(r, 0, REC.duration);
+  const s = RAMP.segs.find((g) => r <= g.b) ?? RAMP.segs[RAMP.segs.length - 1];
+  return s.o + (r - s.a) / s.speed;
+}
+function recTime(u) {   // seconds after REC0 → rec time
+  u = clamp(u, 0, RAMP.out);
+  const s = RAMP.segs.find((g) => u <= g.o + (g.b - g.a) / g.speed) ?? RAMP.segs[RAMP.segs.length - 1];
+  return s.a + (u - s.o) * s.speed;
+}
+const REC0 = 0.8;                            // the recording starts playing on the phone
+const REC_END = REC0 + RAMP.out;             // ends on the "Order placed" tracker
+const T_PUT0 = REC_END + 0.15, T_PUT1 = T_PUT0 + 1.3;    // phone is set down flat
+const T_SLEEP = T_PUT0 + 0.7;                            // screen goes dark
+const T_WAKE = T_PUT1 + 0.25, T_NOTE = T_WAKE + 0.2;     // lock screen, notification
+const T_SWIPE0 = T_NOTE + 1.35, T_SWIPE1 = T_SWIPE0 + 0.45; // phone is swiped out of frame
+const T_DROP0 = T_SWIPE1 + 0.05, T_LAND = T_DROP0 + 0.5;  // box falls onto the bare table
+const T_CHARGE = T_LAND + 0.25;
+const CHARGE_SPEED = 1.5, OPEN_SPEED = 1.3;              // the crate's baked clips, played faster
 let T_OPEN, T_SHOE0, T_SHOE1, T_END0, DURATION;         // set once the box clips are known
 let T_CLEAR;                                            // when the shoe's sole clears the flaps; it doesn't spin or tilt before
 
@@ -255,11 +287,11 @@ boxModel.position.y -= fit.min.y;
 fit = preciseBox(boxModel);
 const BOX_H = fit.max.y - fit.min.y;
 const BOX_LONG_X = fit.max.x - fit.min.x >= fit.max.z - fit.min.z; // the shoe lies along the long side
-T_OPEN = T_CHARGE + clips.Charge.duration;
-T_SHOE0 = T_OPEN + 0.3;
-T_SHOE1 = T_SHOE0 + 2.2;
-T_END0 = T_SHOE1 + 4.2;
-DURATION = T_END0 + 3.8;
+T_OPEN = T_CHARGE + clips.Charge.duration / CHARGE_SPEED;
+T_SHOE0 = T_OPEN + 0.2;
+T_SHOE1 = T_SHOE0 + 1.5;
+T_END0 = T_SHOE1 + 2.8;
+DURATION = T_END0 + 2.8;
 window.DURATION = DURATION;
 
 // ---- shoe ---------------------------------------------------------------------
@@ -423,7 +455,7 @@ function luminanceAt(x, y) {
 }
 
 function drawApp(T) {
-  const r = T - REC0;
+  const r = recTime(T - REC0);
   sc.drawImage(video, 0, BAR, SW, SH - BAR);
   // status bar takes the app header's colour (it dims with the modals too)
   const top = luminanceAt(SW / 2, BAR + 2);
@@ -495,7 +527,7 @@ function phonePose(T) {
     x: PX, y: PY + 0.05 * Math.sin(T * 0.9), z: 0,
     rx: 0.035 * Math.sin(T * 0.55), ry: -0.2 + 0.05 * Math.sin(T * 0.37), rz: 0.015 * Math.sin(T * 0.6),
   };
-  const intro = 1 - E.outC(prog(T, 0, 1.7));
+  const intro = 1 - E.outC(prog(T, 0, 1.1));
   up.ry += intro * 1.25; up.y -= intro * 1.3; up.x += intro * 0.6; up.rx += intro * 0.3;
   const k = E.inOutC(prog(T, T_PUT0, T_PUT1));
   const p = {};
@@ -551,9 +583,9 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 function camAt(T) {
   // upright: the phone sits right of centre, captions on the left
   let pos = V(0, PY + 0.1, 9.4), look = V(0.25, PY, 0);
-  const intro = 1 - E.outC(prog(T, 0, 1.9));
+  const intro = 1 - E.outC(prog(T, 0, 1.2));
   pos.z += intro * 2.2;
-  const push = win(T, REC0 + REC.marks.reveal - 0.3, REC0 + REC.marks.reveal + 4, 0.8, 0.9); // lean in for the legendary pull
+  const push = win(T, R0(REC.marks.burst) - 0.2, R0(REC.marks.flash + 1.2), 0.6, 0.6); // lean in for the legendary pull
   pos.z -= 0.75 * push; pos.x += 0.3 * push; look.x += 0.45 * push;
 
   const TABLE = [V(0, 6.4, 5.9), V(0, 0.25, 0.25)];
@@ -656,10 +688,10 @@ function caption(a, b, chip, lines, opts = {}) {
   capsEl.appendChild(el);
   return { el, a, b, words: [...el.querySelectorAll(".w > span")], chip: el.querySelector(".chip"), sub: el.querySelector(".sub"), y: opts.y ?? 540 };
 }
-const R0 = (r) => REC0 + r;
+function R0(r) { return REC0 + outTime(r); } // rec time → spot time (hoisted: the camera uses it)
 const TAP = Object.fromEntries(REC.taps.map((tp) => [tp.label, tp.t]));
 const CAPS = [
-  caption(R0(1.3), R0(TAP.drop - 0.2), "01 &nbsp;<b>Drops</b>", ["Pick your", "drop."]),
+  caption(R0(0.1), R0(TAP.drop - 0.2), "01 &nbsp;<b>Drops</b>", ["Pick your", "drop."]),
   caption(R0(TAP.drop - 0.2), R0(TAP.crate - 0.2), "02 &nbsp;<b>Open</b>", ["Open a", "crate."]),
   caption(R0(TAP.crate - 0.2), R0(TAP.keep - 0.2), "03 &nbsp;<b>Pull</b>", ["Pull a", "[gold]grail."]),
   caption(R0(TAP.keep - 0.2), R0(TAP.ship - 0.2), "04 &nbsp;<b>Keep</b>", ["Keep", "it."]),
@@ -713,8 +745,8 @@ function updateBell(T) {
 const CUES = [];
 const cue = (t, kind, extra = {}) => CUES.push({ t: +t.toFixed(3), kind, ...extra });
 cue(0.05, "intro");
-cue(1.55, "settle");
-for (const tp of REC.taps) cue(REC0 + tp.t, "tap", { label: tp.label });
+cue(REC0, "settle");
+for (const tp of REC.taps) cue(R0(tp.t), "tap", { label: tp.label });
 cue(R0(TAP.drops + 0.12), "page");
 cue(R0(TAP.drop + 0.12), "page");
 cue(R0(TAP.open + 0.1), "sheet");        // "Open $125 with…"
@@ -748,11 +780,14 @@ cue(T_SHOE0, "rise", { until: T_SHOE1 });
 cue(T_SHOE1, "hover");
 cue(T_END0 + 0.3, "endcard");
 CUES.sort((x, y) => x.t - y.t);
-window.CUES = { duration: DURATION, rec: [REC0, REC_END], put: T_PUT0, open: T_OPEN, end: T_END0, cues: CUES };
+window.CUES = {
+  duration: DURATION, rec: [REC0, REC_END], burst: R0(REC.marks.burst), flash: R0(REC.marks.flash),
+  put: T_PUT0, swipe: T_SWIPE0, land: T_LAND, open: T_OPEN, end: T_END0, cues: CUES,
+};
 
 // ============================================================ RENDER =====
 async function renderFrame(T) {
-  const r = T - REC0;
+  const r = recTime(T - REC0);
   if (T < T_SLEEP + 0.4) await seekRecording(clamp(Math.floor(r * FPS_REC), 0, NREC - 1));
   drawScreen(T);
 
@@ -768,8 +803,8 @@ async function renderFrame(T) {
     box.rotation.set(0, bp.ry, 0);
     box.scale.set(bp.sx, bp.sy, bp.sx);
     if (T < T_CHARGE) poseClip("Open", 0);
-    else if (T < T_OPEN) poseClip("Charge", T - T_CHARGE);
-    else poseClip("Open", (T - T_OPEN) * 1.1);
+    else if (T < T_OPEN) poseClip("Charge", (T - T_CHARGE) * CHARGE_SPEED);
+    else poseClip("Open", (T - T_OPEN) * OPEN_SPEED);
   }
   const sp = shoePose(T);
   shoe.visible = !!sp;

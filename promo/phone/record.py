@@ -108,7 +108,7 @@ def main():
                     raise TimeoutError(f"never became visible: {loc}")
                 pump()
 
-        def tap(locator, label, lead=0.9):
+        def tap(locator, label, lead=0.5):
             loc = page.locator(locator).first if isinstance(locator, str) else locator
             until(loc)
             b = loc.bounding_box()
@@ -116,7 +116,7 @@ def main():
                 # off screen (the ship form is taller than the phone): glide it into view
                 marks["scroll"] = round(time.time() - t0, 3)
                 loc.evaluate("el => el.scrollIntoView({ behavior: 'smooth', block: 'center' })")
-                hold(900)
+                hold(650)
             hold(lead * 1000)  # the cursor glides in during this beat
             box = loc.bounding_box()  # measured after the beat: cards animate into place
             x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
@@ -127,17 +127,19 @@ def main():
         def mark(name):
             marks[name] = round(time.time() - t0, 3)
 
-        hold(1200)
+        # Waits are only as long as the UI needs to settle; index.html also
+        # speed-ramps whatever dead time is left between taps.
+        hold(500)
         tap(".nav-tab[data-nav='screen-category']", "drops")
         until(page.get_by_text("Time to Choose"))
-        hold(1800)
+        hold(1300)
         # the Sneakers drop card (its box art, not its Open button)
         tap(page.locator(".category-wrap[data-tier='sneakers'] .category-box-canvas"), "drop")
-        hold(2200)
+        hold(1300)
         tap(page.locator(".category-wrap[data-tier='sneakers'] .category-open-btn"), "open")
-        hold(600)
+        hold(350)
         tap(page.get_by_text("Cash", exact=True), "cash")
-        hold(2400)
+        hold(1900)
         mark("boxes")
         # three crates; YOUR BOX is the middle one
         tap(page.locator(".box-slot[data-index='1']"), "crate")
@@ -146,17 +148,17 @@ def main():
         mark("burst")  # the rarity FX start (index.html hits the Legendary sound here)
         until(page.get_by_role("button", name="Keep"))
         mark("reveal")
-        hold(2600)
+        hold(3300)  # the card lands ~3.1s after the burst starts; let it sit a beat
         tap(page.get_by_role("button", name="Keep"), "keep")
-        hold(2200)
+        hold(1100)
         tap(page.locator(".nav-tab[data-nav='screen-account']:not([data-account-group])"), "account")
         until(page.locator("[data-item-action='ship']").first)
-        hold(2000)
+        hold(1000)
         tap(page.locator("[data-item-action='ship']").first, "ship")
-        hold(1400)
+        hold(700)
         tap(page.locator("#shipForm button[type='submit']"), "confirm")
         mark("shipped")
-        hold(3200)
+        hold(1900)
         mark("end")
         browser.close()
 
@@ -180,14 +182,17 @@ def main():
                     "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "30", "-g", "10", "-row-mt", "1", "-deadline", "good", "-cpu-used", "4",
                     os.path.join(HERE, "screen.webm")], check=True)
     # The Legendary flash (after the dark build-up) has no DOM hook worth
-    # polling, so find it in the take: the first big jump in brightness after
-    # the burst starts.
+    # polling, so find it in the take by brightness.
     probe = subprocess.run([ffmpeg, "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(frames_dir, "%05d.jpg"),
                             "-vf", "scale=40:80,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-", "-f", "null", "-"],
                            capture_output=True, text=True, check=True).stdout
     luma = [float(l.split("=")[1]) for l in probe.splitlines() if "YAVG" in l]
-    for i in range(int(marks["burst"] * FPS) + 5, len(luma)):
-        if luma[i] - luma[i - 1] > 30:
+    # It fades up over a few frames, so compare against the darkest point since
+    # the burst, and stop at the Keep tap (its white screen is brighter still).
+    keep = next(tp["t"] for tp in taps if tp["label"] == "keep")
+    i0 = int((marks["burst"] + 0.8) * FPS)
+    for i in range(i0, int(keep * FPS)):
+        if luma[i] - min(luma[i0:i + 1]) > 25:
             marks["flash"] = round(i / FPS, 3)
             break
     with open(os.path.join(HERE, "taps.json"), "w") as f:

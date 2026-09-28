@@ -10,8 +10,8 @@ Each interaction gets its own sound: glassy taps, page swooshes, sheets
 sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
 placed" chime, the phone set down, the lock click, the notification ding,
 buzz and bell, the swipe, the box falling and landing, the charge rattle,
-the flaps, the shoe rising and the end card. A 120 BPM bed runs under the
-app flow, drops to a drone on the table, and comes back on the reveal.
+the flaps, the shoe rising and the end card. The 128 BPM bed builds with
+the action (see "the bed" below).
 """
 import json, math, os, random, struct, sys, wave
 
@@ -212,31 +212,64 @@ def twinkles(t0, t1, g=1.0):
 
 
 # ------------------------------------------------------------ the bed -------
+# 128 BPM, and it builds with the action: the app flow starts on kick and
+# bass and stacks hats, claps and 16ths as it heads for the pull; it drops out
+# for the Legendary build, slams back in full on the flash through Ship; on
+# the table a heartbeat speeds up into the box landing; the reveal is the
+# full groove with the pad.
 A1, F1, C2, G1 = 55.0, 43.65, 65.41, 49.0
 BARS = [A1, F1, C2, G1]
+BEAT = 60 / 128
 
 
-def groove(t0, t1, g=1.0, claps=True):
-    b = t0
+def groove(t0, t1, g=1.0, level=lambda p: 3):
+    """level(p) → 0 kick+bass, 1 +off-beat hats, 2 +claps, 3 +16th hats."""
+    b, n = t0, 0
     while b < t1 - 1e-6:
-        beat = round((b - t0) * 2)
+        lv = level((b - t0) / max(1e-6, t1 - t0))
         kick(b, 0.8 * g)
-        root = BARS[int((b - t0) // 2) % 4]
-        bass(b, root, 0.24, g)
-        bass(b + 0.25, root * (2 if beat % 2 else 1), 0.22, 0.8 * g)
-        hat(b + 0.25, g)
-        if claps and beat % 2 == 1:
+        root = BARS[(n // 8) % 4]
+        bass(b, root, BEAT * 0.5, g)
+        bass(b + BEAT / 2, root * (2 if n % 2 else 1), BEAT * 0.45, 0.8 * g)
+        if lv >= 1:
+            hat(b + BEAT / 2, g)
+        if lv >= 2 and n % 2 == 1:
             snare(b, 0.6 * g)
-        b += 0.5
+        if lv >= 3:
+            hat(b + BEAT / 4, 0.5 * g)
+            hat(b + BEAT * 3 / 4, 0.5 * g)
+        b += BEAT
+        n += 1
+
+
+def heartbeat(t0, t1, g=1.0):
+    """Double thumps that come faster and harder toward t1."""
+    t = t0
+    while t < t1:
+        p = (t - t0) / (t1 - t0)
+        thud(t, (0.5 + 0.6 * p) * g, 55, 14)
+        thud(t + 0.16, (0.35 + 0.5 * p) * g, 50, 16)
+        t += 0.8 - 0.55 * p
 
 
 rec0, rec1 = CUES["rec"]
-T_PUT, T_OPEN, T_END = CUES["put"], CUES["open"], CUES["end"]
-groove(rec0 + 0.3, T_PUT, 0.28)                                     # under the app flow, well below the taps
-pad(0, rec0 + 2, [110, 164.8, 220], 0.7, att=0.4, rel=1.5)
-pad(T_PUT - 0.3, T_OPEN + 0.3, [55, 110, 164.8], 0.8, att=1.5, rel=0.4)  # the table: a drone
-groove(T_OPEN + 0.5, T_END + 0.2, 0.5)                             # the reveal
-pad(T_OPEN, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.2, rel=2.5)
+T_BURST, T_FLASH = CUES["burst"], CUES["flash"]
+T_PUT, T_SWIPE, T_LAND = CUES["put"], CUES["swipe"], CUES["land"]
+T_OPEN, T_END = CUES["open"], CUES["end"]
+pad(0, rec0 + 1, [110, 164.8, 220], 0.7, att=0.3, rel=0.8)
+# app flow: builds toward the pull, gets louder as it goes
+groove(rec0, T_BURST, 0.24, lambda p: 0 if p < 0.2 else 1 if p < 0.45 else 2 if p < 0.75 else 3)
+riser(T_BURST - 1.2, T_BURST, 120, 600, 0.35)
+# after the flash: everything on, a notch louder, riding into the put-down
+groove(T_FLASH + 0.35, T_PUT, 0.3, lambda p: 3)
+riser(T_PUT - 1.0, T_PUT + 0.2, 150, 900, 0.4)
+# the table: drone + a quickening heartbeat, a riser into the landing
+pad(T_PUT - 0.1, T_OPEN + 0.3, [55, 110, 164.8], 0.8, att=0.6, rel=0.4)
+heartbeat(T_PUT + 0.3, T_LAND - 0.1, 1.0)
+riser(T_SWIPE - 0.4, T_LAND, 100, 1400, 0.7)
+# the reveal
+groove(T_OPEN + 0.2, T_END + 0.3, 0.5, lambda p: 2 if p < 0.15 else 3)
+pad(T_OPEN, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.2, rel=2.0)
 
 # ------------------------------------------------------------ the cues ------
 TAP_PITCH = {"drops": 1.0, "drop": 1.05, "open": 1.1, "cash": 1.15, "crate": 0.95,

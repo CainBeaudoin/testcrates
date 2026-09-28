@@ -1,6 +1,6 @@
 # CHOSEN phone spot
 
-`chosen-phone.mp4` is a ~52-second 1920×1080, 60fps spot with a synthesized soundtrack. Every interaction has its own sound.
+`chosen-phone.mp4` is a ~31-second 1920×1080, 60fps spot with a synthesized soundtrack. Every interaction has its own sound.
 It plays the real mobile site on a 3D iPhone 17 Pro. A liquid-glass touch disc (a lens that magnifies the app under it) taps through Drops → Sneakers → Open → Cash → crate, which pulls a Legendary AJ1 '85 Chicago, then Keep → Account → Ship → Confirm shipment.
 Next the phone is set down on a table, the lock screen wakes with a "Delivered" notification and a ringing bell, and the phone is swiped out of frame. The CHOSEN crate drops onto the bare table, charges and opens.
 The 3D AJ1 '85 lifts straight out along the box's long side, then floats and slowly spins above the flaps. It never overlaps the box on screen: `window.__overlap(t)` measures the gap in pixels. The spot ends on "It's already chosen."
@@ -12,7 +12,7 @@ The 3D AJ1 '85 lifts straight out along the box's long side, then floats and slo
   The prize and the shipping address are fixed so every take is the same:
   - The recorder adds "Air Jordan 1 High '85 Chicago" to the Sneakers pool for the take only. The app's catalog is untouched.
   - A demo shipping address is pre-saved in localStorage.
-- `index.html` is the scene. `window.renderFrame(t)` is async because it seeks the recording, and every pixel is a function of `t`. The screen is a canvas drawn each frame: the status bar, the recording, the cursor, and later the lock screen. Open the page directly to scrub: space plays or pauses, ←/→ steps a frame, shift steps 1s, and `?t=40` jumps to a time.
+- `index.html` is the scene. It speed-ramps the take: 1× around each tap, the Legendary flash and the "Order placed" toast, and 1.9× through the waiting in between (`FOCUS` / `FAST`). `window.renderFrame(t)` is async because it seeks the recording, and every pixel is a function of `t`. The screen is a canvas drawn each frame: the status bar, the recording, the cursor, and later the lock screen. Open the page directly to scrub: space plays or pauses, ←/→ steps a frame, shift steps 1s, and `?t=40` jumps to a time.
 - `lab.html?shot` renders `models/aj1-85.glb` as the square product photo `aj1-85-chicago.png`, which the recording uses as the prize image. That way the card on the phone and the shoe out of the box are the same shoe. `lab.html?phone` shows the iPhone with a UV test grid on its screen.
 
 - `soundtrack.py` synthesizes `soundtrack.wav` (stdlib only) from `cues.json`. That file is the scene's own cue list (`window.CUES`), written out by `render.py --cues`, so every sound lands on its frame.
