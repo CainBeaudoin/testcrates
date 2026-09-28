@@ -13,8 +13,8 @@ sliding up, the crate charge and Legendary hit, Keep, Ship and the "Order
 placed" chime, the phone set down (kick + bass), the lock bell, the
 notification ding, buzz and bell, the swipe, the box falling and landing,
 the charge tom roll, the flaps, the shoe rising, the light leaks, the
-brackets locking on, the price counting up and the end card. The 128 BPM bed builds with
-the action (see "the bed" below).
+brackets locking on, the price counting up and the end card. Under it all
+runs a half-time dubstep score with two drops (see "the score" below).
 """
 import json, math, os, random, struct, sys, wave
 
@@ -173,9 +173,8 @@ PENTA = [440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51,
 
 def tap_note(t0, i):
     f = PENTA[min(i, len(PENTA) - 1)]
-    chime(t0, f, 1.0)
-    chime(t0, f / 2, 0.35)      # an octave under, for body
-    kick(t0, 0.35)              # a soft beat under each touch
+    chime(t0, f, 0.8)
+    chime(t0, f / 2, 0.25)      # an octave under, for body
 
 
 def cardboard(t0, g=1.0):
@@ -226,65 +225,152 @@ def twinkles(t0, t1, g=1.0):
         t += 0.18 + rng.random() * 0.35
 
 
-# ------------------------------------------------------------ the bed -------
-# 128 BPM, and it builds with the action: the app flow starts on kick and
-# bass and stacks hats, claps and 16ths as it heads for the pull; it drops out
-# for the Legendary build, slams back in full on the flash through Ship; on
-# the table a heartbeat speeds up into the box landing; the reveal is the
-# full groove with the pad.
-A1, F1, C2, G1 = 55.0, 43.65, 65.41, 49.0
-BARS = [A1, F1, C2, G1]
-BEAT = 60 / 128
-
-
-def groove(t0, t1, g=1.0, level=lambda p: 3):
-    """level(p) → 0 kick+bass, 1 +off-beat hats, 2 +claps, 3 +16th hats."""
-    b, n = t0, 0
-    while b < t1 - 1e-6:
-        lv = level((b - t0) / max(1e-6, t1 - t0))
-        kick(b, 0.8 * g)
-        root = BARS[(n // 8) % 4]
-        bass(b, root, BEAT * 0.5, g)
-        bass(b + BEAT / 2, root * (2 if n % 2 else 1), BEAT * 0.45, 0.8 * g)
-        if lv >= 1:
-            hat(b + BEAT / 2, g)
-        if lv >= 2 and n % 2 == 1:
-            snare(b, 0.6 * g)
-        if lv >= 3:
-            hat(b + BEAT / 4, 0.5 * g)
-            hat(b + BEAT * 3 / 4, 0.5 * g)
-        b += BEAT
-        n += 1
-
-
-def heartbeat(t0, t1, g=1.0):
-    """Double thumps that come faster and harder toward t1."""
-    t = t0
-    while t < t1:
-        p = (t - t0) / (t1 - t0)
-        thud(t, (0.5 + 0.6 * p) * g, 55, 14)
-        thud(t + 0.16, (0.35 + 0.5 * p) * g, 50, 16)
-        t += 0.8 - 0.55 * p
-
+# ---------------------------------------------------------- the score -------
+# A continuous half-time dubstep track, so the spot flows as music and the taps
+# ride on top of it. The tempo is nudged (~140 BPM) so both drops land on a
+# downbeat: drop 1 on the Legendary flash, drop 2 on the box opening. It's
+# written to its own bus (MUSIC) and mixed louder than the effects.
+MUSIC = [0.0] * N
+SFX = L
+L = MUSIC  # the instruments write to L; point it at the music bus for now
 
 rec0, rec1 = CUES["rec"]
 T_BURST, T_FLASH = CUES["burst"], CUES["flash"]
 T_PUT, T_SWIPE, T_LAND = CUES["put"], CUES["swipe"], CUES["land"]
 T_OPEN, T_END = CUES["open"], CUES["end"]
-pad(0, rec0 + 1, [110, 164.8, 220], 0.7, att=0.3, rel=0.8)
-# app flow: builds toward the pull, gets louder as it goes
-groove(rec0, T_BURST, 0.24, lambda p: 0 if p < 0.2 else 1 if p < 0.45 else 2 if p < 0.75 else 3)
-riser(T_BURST - 1.2, T_BURST, 120, 600, 0.35)
-# after the flash: everything on, a notch louder, riding into the put-down
-groove(T_FLASH + 0.35, T_PUT, 0.3, lambda p: 3)
-riser(T_PUT - 1.0, T_PUT + 0.2, 150, 900, 0.4)
-# the table: drone + a quickening heartbeat, a riser into the landing
-pad(T_PUT - 0.1, T_OPEN + 0.3, [55, 110, 164.8], 0.8, att=0.6, rel=0.4)
-heartbeat(T_PUT + 0.3, T_LAND - 0.1, 1.0)
-riser(T_SWIPE - 0.4, T_LAND, 100, 1400, 0.7)
-# the reveal
-groove(T_OPEN + 0.2, T_END + 0.3, 0.5, lambda p: 2 if p < 0.15 else 3)
-pad(T_OPEN, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.2, rel=2.0)
+n_beats = max(1, round((T_OPEN - T_FLASH) / (60 / 140)))
+BEAT = (T_OPEN - T_FLASH) / n_beats          # ≈ 60/140
+BAR = BEAT * 4
+ROOTS = [55.0, 43.65, 65.41, 49.0]           # A  F  C  G  (one per bar)
+CHORDS = [[220, 261.63, 329.63], [174.61, 220, 261.63], [261.63, 329.63, 392], [196, 246.94, 293.66]]
+
+
+def beats(t0, t1):
+    """Beat times on the grid (anchored to the flash) inside [t0, t1)."""
+    k = math.ceil((t0 - T_FLASH) / BEAT - 1e-6)
+    while T_FLASH + k * BEAT < t1 - 1e-6:
+        yield k, T_FLASH + k * BEAT
+        k += 1
+
+
+def bar_of(k):
+    return ROOTS[(k // 4) % 4], CHORDS[(k // 4) % 4]
+
+
+def wobble(t0, dur, f, rate, g=1.0):
+    """Wobble bass: two detuned saws through a resonant low-pass whose cutoff
+    an LFO swings `rate` times per beat, then driven into saturation."""
+    n = int(dur * SR)
+    out, p1, p2, lo, band = [], 0.0, 0.0, 0.0, 0.0
+    for k in range(n):
+        t = k / SR
+        p1 = (p1 + f / SR) % 1
+        p2 = (p2 + f * 1.007 / SR) % 1
+        saw = (2 * p1 - 1) + (2 * p2 - 1)
+        lfo = 0.5 - 0.5 * math.cos(TAU * rate * t / BEAT)
+        cut = 90 + 2600 * lfo ** 1.6
+        fc = 2 * math.sin(math.pi * min(cut, SR / 6) / SR)
+        lo += fc * band
+        hi = saw - lo - 0.35 * band
+        band += fc * hi
+        env = min(1, t / 0.004) * min(1, (dur - t) / 0.01)
+        out.append(math.tanh(2.2 * lo) * env + 0.6 * math.sin(TAU * f * t) * env)  # + sub
+    add(L, t0, out, 0.75 * g)
+
+
+def sub(t0, dur, f, g=1.0):
+    add(L, t0, [math.sin(TAU * f * k / SR) * min(1, k / 200) * min(1, (dur - k / SR) / 0.02) for k in range(int(dur * SR))], 0.5 * g)
+
+
+def pluck(t0, f, g=1.0):
+    out, lo = [], 0.0
+    for k in range(int(0.3 * SR)):
+        t = k / SR
+        saw = 2 * ((f * t) % 1) - 1
+        lo += (0.05 + 0.4 * math.exp(-t * 25)) * (saw - lo)
+        out.append(lo * math.exp(-t * 9))
+    add(L, t0, out, 0.22 * g)
+
+
+def half_time(t0, t1, g=1.0, hats16=False):
+    """Kick on 1 (and the and-of-3), snare on 3, hats on 8ths (or 16ths)."""
+    for k, b in beats(t0, t1):
+        pos = k % 4
+        if pos == 0:
+            kick(b, 1.0 * g)
+        if pos == 2:
+            snare(b, 1.2 * g)
+            thud(b, 0.4 * g, 180, 30)
+        if pos == 3:
+            kick(b + BEAT / 2, 0.7 * g)
+        hat(b + BEAT / 2, 0.9 * g)
+        if hats16:
+            hat(b + BEAT / 4, 0.5 * g)
+            hat(b + BEAT * 3 / 4, 0.5 * g)
+
+
+# intro: a reverse swell into the first bar
+riser(0, rec0 + 0.1, 80, 500, 0.6)
+pad(0, rec0 + 1.5, [110, 164.8, 220], 0.9, att=0.4, rel=1.0)
+
+# A — the app flow: half-time groove, sub, and a plucked chord riff
+half_time(rec0, T_BURST, 0.95, hats16=False)
+for k, b in beats(rec0, T_BURST):
+    root, chord = bar_of(k)
+    if k % 4 == 0:
+        sub(b, BAR * 0.95, root, 0.6)
+        pad(b, b + BAR, chord, 0.18, att=0.05, rel=0.3)
+    for e in range(2):  # 8th-note arpeggio
+        pluck(b + e * BEAT / 2, chord[(k * 2 + e) % 3] * 2, 0.8)
+
+# build — snare roll + sweep up to the flash (the "build" cue adds its riser)
+t = T_BURST
+while t < T_FLASH - 0.03:
+    p = (t - T_BURST) / (T_FLASH - T_BURST)
+    snare(t, 0.35 + 0.8 * p)
+    t += BEAT / 2 if p < 0.4 else BEAT / 4 if p < 0.75 else BEAT / 8
+riser(T_BURST, T_FLASH, 120, 2000, 0.8)
+
+# DROP 1 — the Legendary flash through Ship
+impact(T_FLASH, 1.0, 1.5)
+half_time(T_FLASH, T_PUT, 1.0, hats16=True)
+for k, b in beats(T_FLASH, T_PUT):
+    root, _ = bar_of(k)
+    rate = [2, 2, 3, 4][(k // 4 + k) % 4]  # 8ths, 8ths, triplets, 16ths
+    wobble(b, BEAT, root, rate, 1.0)
+riser(T_PUT - BAR / 2, T_PUT, 200, 900, 0.4)
+
+# breakdown — the table: pad, sub, half-speed hats, a riser into the landing
+pad(T_PUT, T_OPEN, [55, 110, 164.8, 220], 1.0, att=0.3, rel=0.2)
+for k, b in beats(T_PUT, T_LAND):
+    root, _ = bar_of(k)
+    if k % 4 == 0:
+        sub(b, BAR, root, 1.0)
+        kick(b, 0.8)
+    if k % 2 == 1:
+        hat(b, 0.8)
+riser(T_SWIPE - 0.3, T_LAND, 100, 1600, 0.9)
+impact(T_LAND, 0.8, 0.8)
+# the charge: 16th kicks into the second drop
+for k, b in beats(T_LAND, T_OPEN):
+    kick(b, 0.7)
+    kick(b + BEAT / 2, 0.5)
+
+# DROP 2 — the box opens: faster wobble, everything on
+impact(T_OPEN, 1.2, 2.0)
+half_time(T_OPEN, T_END + 0.2, 1.1, hats16=True)
+for k, b in beats(T_OPEN, T_END + 0.2):
+    root, chord = bar_of(k)
+    rate = [4, 3, 4, 6][k % 4]
+    wobble(b, BEAT, root, rate, 1.1)
+    if k % 4 == 0:
+        pad(b, b + BAR, [c * 2 for c in chord], 0.4, att=0.05, rel=0.4)
+
+# end card: one last hit and let it ring
+impact(T_END + 0.3, 1.2, 2.0)
+pad(T_END + 0.3, DUR, [220, 277.2, 329.6, 440], 1.0, att=0.05, rel=1.5)
+
+L = SFX  # back to the effects bus for the cues
 
 # ------------------------------------------------------------ the cues ------
 tap_i = 0
@@ -323,12 +409,7 @@ for c in CUES["cues"]:
             chime(t + i * 0.07, f, 0.6)
     elif k == "build":
         t1 = c["until"]
-        riser(t, t1, 90, 1100, 1.0)
-        s = t
-        while s < t1 - 0.05:
-            p = (s - t) / (t1 - t)
-            snare(s, 0.25 + 0.5 * p)
-            s += 0.25 if p < 0.4 else 0.125 if p < 0.75 else 0.0625
+        riser(t, t1, 90, 1100, 0.6)  # the score carries the snare roll on its own grid
     elif k == "legendary":
         impact(t, 1.3, 2.2)
         pad(t, t + 2.4, [220, 277.2, 329.6, 440, 554.4], 1.2, att=0.05, rel=1.2)
@@ -423,6 +504,8 @@ for c in CUES["cues"]:
         kick(t, 0.8)
 
 # --------------------------------------------------------------- master ----
+MUSIC_GAIN, SFX_GAIN = 1.0, 0.6  # the score leads; effects sit on top of it
+L = [MUSIC_GAIN * MUSIC[i] + SFX_GAIN * SFX[i] for i in range(N)]
 peak = max(max(abs(L[i] + PAD_L[i]), abs(L[i] + PAD_R[i])) for i in range(0, N, 7)) or 1
 g = 1.5 / peak
 with wave.open(OUT, "wb") as w:
