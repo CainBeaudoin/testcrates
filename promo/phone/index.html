@@ -198,7 +198,7 @@ const FPS_REC = REC.fps, NREC = Math.round(REC.duration * FPS_REC);
 // Speed ramp: the take plays at 1× for a beat around each tap (the press
 // reads), through the Legendary flash and on the "Order placed" toast, and at
 // FAST× through everything else — loading, typing, waiting. rec time r ↔ output time.
-const FAST = 3.4;
+const FAST = 4.0;
 const FOCUS = [
   ...REC.taps.map((tp) => [tp.t - 0.3, tp.t + 0.2]),
   [REC.marks.flash - 0.25, REC.marks.flash + 0.9],
@@ -227,11 +227,17 @@ function recTime(u) {   // seconds after REC0 → rec time
   return s.a + (u - s.o) * s.speed;
 }
 const REC0 = 1.0;                            // the recording starts playing on the phone (after the flip)
-const REC_END = REC0 + RAMP.out;             // ends on the "Order placed" tracker
-const T_PUT0 = REC_END + 0.05, T_PUT1 = T_PUT0 + 0.9;    // phone is set down flat
+// The take is cut at Ship: right after the tap the phone flips, and while its
+// back is to us the screen swaps to "We're packing your order" — the address
+// form and Confirm never make the edit.
+const SHIP_REC = REC.taps.find((tp) => tp.label === "ship").t;
+const T_SHIP = REC0 + outTime(SHIP_REC);
+const T_FLIP0 = T_SHIP + 0.18, T_FLIP1 = T_FLIP0 + 0.6;   // the ship flip
+const T_PACK = (T_FLIP0 + T_FLIP1) / 2;                   // screen swaps while it faces away
+const T_PUT0 = T_FLIP1 + 0.8, T_PUT1 = T_PUT0 + 0.75;    // phone is set down flat
 const T_SLEEP = T_PUT0 + 0.45;                           // screen goes dark
 const T_WAKE = T_PUT1 + 0.12, T_NOTE = T_WAKE + 0.1;     // lock screen, notification
-const T_SWIPE0 = T_NOTE + 0.95, T_SWIPE1 = T_SWIPE0 + 0.35; // phone is swiped out of frame
+const T_SWIPE0 = T_NOTE + 0.85, T_SWIPE1 = T_SWIPE0 + 0.35; // phone is swiped out of frame
 const T_DROP0 = T_SWIPE1 + 0.02, T_LAND = T_DROP0 + 0.45; // box falls onto the bare table
 const T_CHARGE = T_LAND + 0.18;
 const CHARGE_SPEED = 2.0, OPEN_SPEED = 1.5;              // the crate's baked clips, played faster
@@ -359,9 +365,9 @@ T_OPEN = T_CHARGE + clips.Charge.duration / CHARGE_SPEED;
 T_SHOE0 = T_OPEN + 0.12;
 T_SHOE1 = T_SHOE0 + 1.1;
 T_LOCK = T_SHOE1 - 0.35; // the HUD brackets snap onto the shoe
-T_END0 = T_SHOE1 + 1.9;
-T_TAG = T_END0 + 1.6;    // the closing tag: "Sam when RWA?" (voice-tag.wav starts at T_TAG + 0.15)
-DURATION = T_TAG + 2.5;
+T_END0 = T_SHOE1 + 1.6;
+T_TAG = T_END0 + 1.35;    // the closing tag: "Sam when RWA?" (voice-tag.wav starts at T_TAG + 0.15)
+DURATION = T_TAG + 2.3;
 window.DURATION = DURATION;
 
 // ---- shoe ---------------------------------------------------------------------
@@ -423,9 +429,10 @@ async function seekRecording(f) {
 }
 const loadImg = (src) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = src; });
 const appIcon = await loadImg("../../assets/brand/apple-touch-icon.png");
+const shoeShot = await loadImg("aj1-85-chicago.png");
 
 // ================================================================ SCREEN ====
-const TAPS = REC.taps;
+const TAPS = REC.taps.filter((tp) => tp.t <= SHIP_REC); // nothing after Ship is shown
 const CUR_START = { x: 318, y: 610 };
 
 function cursorAt(r) {
@@ -525,7 +532,7 @@ function luminanceAt(x, y) {
 }
 
 function drawApp(T) {
-  const r = recTime(T - REC0);
+  const r = Math.min(recTime(T - REC0), SHIP_REC - 0.03); // hold the frame at Ship: the address form never shows
   sc.drawImage(video, 0, BAR, SW, SH - BAR);
   // status bar takes the app header's colour (it dims with the modals too)
   const top = luminanceAt(SW / 2, BAR + 2);
@@ -577,9 +584,50 @@ function drawLock(T) {
   if (wake < 1) { sc.fillStyle = `rgba(0,0,0,${1 - wake})`; sc.fillRect(0, 0, SW, SH); }
 }
 
+// "We're packing your order": drawn in the app's own look (cream, black type,
+// green accents), shown from the ship flip until the phone is put down.
+function drawPacking(T) {
+  sc.fillStyle = "#f4f1ec"; sc.fillRect(0, 0, SW, SH);
+  statusIcons("#111", true);
+  sc.fillStyle = "#111"; sc.font = "64px Anton"; sc.textAlign = "left"; sc.textBaseline = "alphabetic";
+  sc.fillText("CHOSEN", 48, 196);
+  // the shoe on a white card, bobbing a touch
+  const bob = Math.sin((T - T_PACK) * 4) * 6;
+  roundRect(48, 240, SW - 96, 600, 40); sc.fillStyle = "#fff"; sc.fill();
+  sc.drawImage(shoeShot, 90, 250 + bob, SW - 180, SW - 180);
+  sc.fillStyle = "#111"; sc.font = "800 60px Inter";
+  sc.fillText("We're packing", 48, 950);
+  sc.fillText("your order", 48, 1022);
+  sc.fillStyle = "rgba(17,17,17,.55)"; sc.font = "500 30px Inter";
+  sc.fillText("Air Jordan 1 High '85 Chicago", 48, 1080);
+  // progress: fills while we watch, with a moving sheen
+  const k = lerp(0.18, 0.62, E.outC(prog(T, T_PACK, T_PUT0 + 0.4)));
+  roundRect(48, 1140, SW - 96, 22, 11); sc.fillStyle = "#e3ded5"; sc.fill();
+  roundRect(48, 1140, (SW - 96) * k, 22, 11); sc.fillStyle = "#6fdc5a"; sc.fill();
+  const sh = 48 + ((T - T_PACK) * 500) % ((SW - 96) * k);
+  const g = sc.createLinearGradient(sh - 60, 0, sh + 60, 0);
+  g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.5, "rgba(255,255,255,.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
+  sc.fillStyle = g; roundRect(48, 1140, (SW - 96) * k, 22, 11); sc.fill();
+  // steps
+  const steps = ["Placed", "Packing", "Shipped", "Delivered"];
+  steps.forEach((st, i) => {
+    const x = 48 + i * ((SW - 96) / 3);
+    const done = i === 0, now = i === 1;
+    sc.beginPath(); sc.arc(x + 14, 1222, 14, 0, Math.PI * 2);
+    sc.fillStyle = done ? "#111" : now ? `rgba(111,220,90,${0.55 + 0.45 * Math.sin((T - T_PACK) * 8)})` : "#d8d2c8"; sc.fill();
+    sc.fillStyle = done || now ? "#111" : "rgba(17,17,17,.4)"; sc.font = "700 24px Inter";
+    sc.textAlign = i === 3 ? "right" : i === 0 ? "left" : "center";
+    sc.fillText(st, i === 3 ? SW - 48 : i === 0 ? x : x + 14, 1275);
+  });
+  sc.textAlign = "left";
+  sc.fillStyle = "rgba(17,17,17,.5)"; sc.font = "600 26px Inter";
+  sc.fillText("Order CH-L1V281 · ships to Brooklyn, NY", 48, 1370);
+  homeBar("#111");
+}
+
 function drawScreen(T) {
   if (T < T_SLEEP + 0.4) {
-    drawApp(T);
+    if (T < T_PACK) drawApp(T); else drawPacking(T);
     const off = prog(T, T_SLEEP, T_SLEEP + 0.35);
     if (off > 0) { sc.fillStyle = `rgba(0,0,0,${off})`; sc.fillRect(0, 0, SW, SH); }
   } else if (T < T_WAKE) {
@@ -608,6 +656,7 @@ function chapterAngle(T) {
     for (const n in a) a[n] = lerp(a[n], to[n], k);
   }
   a.ry += Math.PI * 2 * E.inOutC(prog(T, R0(TAP.keep) + 0.08, R0(TAP.keep) + 0.62));
+  a.ry -= Math.PI * 2 * E.inOutC(prog(T, T_FLIP0, T_FLIP1)); // the ship flip, the other way round
   return a;
 }
 function phonePose(T) {
@@ -977,7 +1026,7 @@ cue(0.05, "intro");
 cue(0.42, "flip", { dur: 0.56 });         // the phone flips from its back to its screen
 cue(REC0, "settle");
 cue(R0(TAP.keep) + 0.08, "spin", { dur: 0.54 }); // the 360 after Keep
-for (const tp of REC.taps) cue(R0(tp.t), "tap", { label: tp.label });
+for (const tp of TAPS) cue(R0(tp.t), "tap", { label: tp.label });
 cue(R0(TAP.drops + 0.12), "page");
 cue(R0(TAP.drop + 0.12), "page");
 cue(R0(TAP.open + 0.1), "sheet");        // "Open $125 with…"
@@ -989,10 +1038,8 @@ cue(R0(REC.marks.flash), "legendary");
 cue(R0(REC.marks.flash + 0.7), "card");
 cue(R0(TAP.keep + 0.08), "keep");
 cue(R0(TAP.account + 0.12), "page");
-cue(R0(TAP.ship + 0.1), "sheet");
-cue(R0(REC.marks.scroll), "scroll");
-cue(R0(TAP.confirm + 0.08), "confirm");
-cue(R0(REC.marks.shipped + 0.35), "order"); // "Order placed" toast
+cue(T_FLIP0, "spin", { dur: T_FLIP1 - T_FLIP0 }); // the ship flip
+cue(T_FLIP1 - 0.05, "order");                    // lands on "We're packing your order"
 for (const c of CAPS) cue(c.a, "caption");
 cue(T_PUT0, "lift", { until: T_PUT1 });
 cue(T_PUT1 - 0.02, "phoneDown");
@@ -1018,14 +1065,14 @@ cue(T_LOCK, "lockon");
 cue(T_LOCK + 0.2, "count", { until: T_LOCK + 0.8 });
 CUES.sort((x, y) => x.t - y.t);
 window.CUES = {
-  duration: DURATION, rec: [REC0, REC_END], burst: R0(REC.marks.burst), flash: R0(REC.marks.flash),
+  duration: DURATION, rec: [REC0, T_PACK], burst: R0(REC.marks.burst), flash: R0(REC.marks.flash),
   put: T_PUT0, swipe: T_SWIPE0, land: T_LAND, open: T_OPEN, end: T_END0, cues: CUES,
 };
 
 // ============================================================ RENDER =====
 async function renderFrame(T) {
-  const r = recTime(T - REC0);
-  if (T < T_SLEEP + 0.4) await seekRecording(clamp(Math.floor(r * FPS_REC), 0, NREC - 1));
+  const r = Math.min(recTime(T - REC0), SHIP_REC - 0.03); // hold the frame at Ship: the address form never shows
+  if (T < T_PACK) await seekRecording(clamp(Math.floor(r * FPS_REC), 0, NREC - 1));
   drawScreen(T);
 
   const p = phonePose(T);

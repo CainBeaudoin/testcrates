@@ -2,7 +2,7 @@
 
 `chosen-phone.mp4` is a ~21-second 1920×1080, 60fps spot with a synthesized soundtrack. Every interaction has its own sound.
 The look is warm white paper with film grain, a colour glow behind the subject that changes every chapter (green, blue, gold, red, violet), a huge outlined chapter word crawling behind, black type with sticker labels and highlighter accents.
-It plays the real mobile site on a 3D iPhone 17 Pro. The phone enters on its back and flips to its screen, swings to a new angle each chapter, and spins after Keep. A liquid-glass touch disc (a lens that magnifies the app under it) taps through Drops → Sneakers → Open → Cash → crate, which pulls a Legendary AJ1 '85 Chicago, then Keep → Account → Ship → Confirm shipment.
+It plays the real mobile site on a 3D iPhone 17 Pro. The phone enters on its back and flips to its screen, swings to a new angle each chapter, and spins after Keep. A liquid-glass touch disc (a lens that magnifies the app under it) taps through Drops → Sneakers → Open → Cash → crate, which pulls a Legendary AJ1 '85 Chicago, then Keep → Account → Ship. On Ship the phone flips, and while it faces away the screen swaps to a drawn "We're packing your order" screen, so the address form never makes the edit (the take still records it).
 Next the phone is set down on a table, the lock screen wakes with a "Delivered" notification and a ringing bell, and the phone is swiped out of frame. The CHOSEN crate drops onto the bare table, charges and opens.
 The 3D AJ1 '85 lifts straight out along the box's long side, then floats and slowly spins above the flaps. It never overlaps the box on screen: `window.__overlap(t)` measures the gap in pixels. The spot ends on "It's already chosen."
 
