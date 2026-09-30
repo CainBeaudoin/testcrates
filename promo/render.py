@@ -5,6 +5,7 @@ pixel is a pure function of t, so the output is deterministic at any fps.
 
   python render.py --fps 60 --out chosen-launch.mp4 [--start 0 --end 30] [--stills 1,5.5,9]
   python render.py --page promo/phone/index.html --out phone/chosen-phone.mp4
+  python render.py --page promo/spin.html --size 800x800 --fps 50 --frames /tmp/spin   # PNG frames → GIF
 renderFrame may return a Promise (the phone spot seeks a video); it's awaited.
   python render.py --page promo/phone/index.html --cues phone/cues.json   # sound cue list for phone/soundtrack.py
 Needs: playwright (Chromium) and an ffmpeg with libx264 (FFMPEG env var or PATH).
@@ -35,12 +36,15 @@ def main():
     ap.add_argument("--page", default="promo/index.html", help="page to render, relative to the repo root")
     ap.add_argument("--crf", default="19", help="x264 quality (higher = smaller file)")
     ap.add_argument("--cues", default=None, help="write the page's window.CUES (its sound cue list) to this JSON file and exit")
+    ap.add_argument("--size", default=f"{W}x{H}", help="viewport WxH")
+    ap.add_argument("--frames", default=None, help="write numbered PNG frames to this dir instead of a video (e.g. for a GIF)")
     args = ap.parse_args()
 
     port = serve()
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--use-angle=metal", "--enable-gpu", "--ignore-gpu-blocklist", "--enable-unsafe-swiftshader"])
-        page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
+        vw, vh = (int(v) for v in args.size.split("x"))
+        page = browser.new_page(viewport={"width": vw, "height": vh}, device_scale_factor=1)
         page.on("console", lambda m: print("[page]", m.text, file=sys.stderr))
         page.on("pageerror", lambda e: print("[pageerror]", e, file=sys.stderr))
         page.goto(f"http://127.0.0.1:{port}/{args.page}")
@@ -67,6 +71,14 @@ def main():
 
         end = duration if args.end is None else args.end
         n = int(round((end - args.start) * args.fps))
+        if args.frames:
+            os.makedirs(args.frames, exist_ok=True)
+            for i in range(n):
+                page.evaluate(f"window.renderFrame({args.start + i / args.fps})")
+                page.screenshot(path=os.path.join(args.frames, f"f{i:05d}.png"))
+            browser.close()
+            print(f"wrote {n} frames to {args.frames}", file=sys.stderr)
+            return
         ffmpeg = os.environ.get("FFMPEG") or shutil.which("ffmpeg")
         cmd = [ffmpeg, "-y", "-loglevel", "error", "-f", "image2pipe", "-framerate", str(args.fps), "-c:v", "mjpeg", "-i", "-"]
         if args.audio:

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CHOSEN Box Spin</title>
+<!--
+  The CHOSEN box turning one full 360° on white, as a seamless loop.
+  Rendered to promo/box-spin.gif by render.py (--page spin.html). Like the
+  launch spot, window.renderFrame(t) is a pure function of time; t=DURATION
+  lands exactly back on t=0.
+-->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+html, body { margin: 0; background: #fff; overflow: hidden; }
+canvas { display: block; }
+</style>
+</head>
+<body>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const SIZE = Math.min(innerWidth, innerHeight);
+const DURATION = 4; // seconds per full turn
+window.DURATION = DURATION;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE);
+renderer.setClearColor(0xffffff, 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+pm.dispose();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+// key light straight overhead so the contact shadow stays put while the box turns
+const key = new THREE.DirectionalLight(0xffffff, 2.4);
+key.position.set(0.4, 6, 0.6);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -2, right: 2, top: 2, bottom: -2, near: 0.5, far: 12 });
+key.shadow.radius = 8;
+const front = new THREE.DirectionalLight(0xffffff, 1.4);
+front.position.set(0, 1.5, 5);
+scene.add(key, front);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.16 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync("../assets/models/box-chosen-od.glb");
+const model = gltf.scene;
+model.updateMatrixWorld(true);
+const body = new THREE.Box3().setFromObject(model.getObjectByName("CrateBody") ?? model);
+const size = body.getSize(new THREE.Vector3());
+const center = body.getCenter(new THREE.Vector3());
+const s = 1.6 / Math.max(size.x, size.z);
+model.scale.setScalar(s);
+model.position.set(-center.x * s, -body.min.y * s, -center.z * s);
+model.traverse((n) => {
+  if (n.isMesh) { n.castShadow = true; n.frustumCulled = false; n.material.envMapIntensity = 0.9; }
+});
+// hold the closed pose: the Open clip at time 0 (the rest pose has its flaps up)
+const mixer = new THREE.AnimationMixer(model);
+const open = mixer.clipAction(gltf.animations.find((c) => c.name === "Open"));
+open.play();
+open.time = 0;
+mixer.update(0);
+
+const spin = new THREE.Group();
+spin.add(model);
+scene.add(spin);
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+camera.position.set(0, 1.6, 3.9);
+camera.lookAt(0, size.y * s * 0.5, 0);
+
+window.renderFrame = (t) => {
+  spin.rotation.y = ((t % DURATION) / DURATION) * Math.PI * 2;
+  renderer.render(scene, camera);
+};
+window.renderFrame(0);
+window.__glInfo = "spin";
+window.__ready = Promise.resolve();
+
+if (!navigator.webdriver) {
+  const tick = (now) => { window.renderFrame(now / 1000); requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>
