@@ -8137,3 +8137,68 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 .mcv-row-btn.is-buy { border-color: transparent; background: var(--text); color: var(--text-inverse); }
 .mcv-row-btn:hover { opacity: 0.85; }
 .mcv-panel .prize-browser { padding-top: 12px; }
+
+/* --- Profile pictures ------------------------------------------------------
+   Every username shows with its picture (avatarHTML / renderAvatarInto). */
+.avatar-gen { background: none; }
+.avatar-gen svg { display: block; width: 100%; height: 100%; }
+.avatar-xs { width: 16px; height: 16px; }
+.avatar-sm { width: 24px; height: 24px; }
+.avatar-md { width: 34px; height: 34px; }
+.market-item-seller { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.listing-seller { display: flex; align-items: center; gap: 6px; }
+.offer-row-info .avatar-circle { vertical-align: -3px; }
+.leaderboard-row .avatar-circle { margin-right: -6px; }
+
+/* --- A drop's listings: tick the boxes to buy together ------------------- */
+button.mcv-listing {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button.mcv-listing:hover { background: color-mix(in srgb, var(--text) 3%, transparent); }
+button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b) 10%, transparent); }
+.mcv-check {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.mcv-check.is-blank { visibility: hidden; }
+.is-sel > .mcv-check { background: var(--text); border-color: var(--text); }
+.is-sel > .mcv-check::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border-left: 2px solid var(--text-inverse);
+  border-bottom: 2px solid var(--text-inverse);
+  transform: rotate(-45deg);
+}
+.mcv-tabs { align-items: center; }
+.mcv-selall {
+  margin-left: auto;
+  padding: 6px 4px;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.mcv-selall:hover { color: var(--text); }
+.mcv-buy:disabled { opacity: 0.45; cursor: default; transform: none; }

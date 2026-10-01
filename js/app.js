@@ -2997,7 +2997,7 @@ function marketItemCardHTML(listing) {
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
           ${priceOrOffer}
-          <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+          <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${avatarHTML(listing.isPlayer ? player.getUsername() : listing.seller, "avatar-xs")}${listing.isPlayer ? "You" : listing.seller}</span>
         </div>
       </div>
     </div>`;
@@ -3029,7 +3029,7 @@ function offerRowHTML(offer, { showActions } = {}) {
       <img src="${listing ? listing.image : ""}" alt="">
       <div class="offer-row-info">
         <b>${listing ? listing.name : "Item"}</b><br>
-        Offer ${verb} <b>${otherParty}</b>
+        Offer ${verb} ${avatarHTML(otherParty, "avatar-xs")} <b>${otherParty}</b>
       </div>
       <span class="offer-row-amount">$${offer.amount.toLocaleString()}</span>
       ${actions}
@@ -3163,7 +3163,7 @@ function renderMarketGrid() {
     });
     marketGrid.innerHTML = rows.length
       ? rows.map(([key, ls]) => crateGroupCardHTML(key, ls)).join("")
-      : `<div class="market-empty">No sealed crates match these filters.</div>`;
+      : `<div class="market-empty">No drops match these filters.</div>`;
     marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
     marketGrid.querySelectorAll("[data-crate-group]").forEach((el) => {
       el.addEventListener("click", () => {
@@ -3239,7 +3239,7 @@ function openListingModal(id, navIds = null) {
   const listMeta = itemMetaText(listing.name, listing.category);
   listingMeta.textContent = listMeta;
   listingMeta.classList.toggle("hidden", !listMeta);
-  listingSeller.innerHTML = listing.isPlayer ? "Held by <b>you</b>" : `Held by <b>${listing.seller}</b>`;
+  listingSeller.innerHTML = `${avatarHTML(listing.isPlayer ? player.getUsername() : listing.seller, "avatar-xs")} ${listing.isPlayer ? "Held by <b>you</b>" : `Held by <b>${listing.seller}</b>`}`;
 
   // Simulated market data — every listing gets this, not just ones the
   // player owns, same deterministic day-by-day model the vault uses.
@@ -3405,29 +3405,54 @@ function resolveBotOnMyOffer(offerId) {
 
 const DEFAULT_AVATAR_URL = "assets/avatars/default.png";
 
-// Deterministic per-username gradient + initial for the simulated cast —
-// the player themself gets the real default avatar image instead (see
-// renderAvatarInto).
-function avatarStyle(username) {
-  let h = 0;
-  for (let i = 0; i < username.length; i++) h = (h * 31 + username.charCodeAt(i)) >>> 0;
-  const h1 = h % 360;
-  const h2 = (h1 + 55) % 360;
-  return {
-    background: `linear-gradient(135deg, hsl(${h1},70%,48%), hsl(${h2},70%,32%))`,
-    initial: username.charAt(0).toUpperCase(),
-  };
+// Profile pictures for the simulated cast: each username gets its own
+// picture, drawn here rather than fetched — a soft blend of a few colours
+// from one of a handful of palettes, placed by a hash of the name, so the
+// same person always looks the same everywhere they appear. The player
+// gets the real default avatar image instead.
+const AVATAR_PALETTES = [
+  ["#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1"],
+  ["#5f27cd", "#ff9ff3", "#54a0ff", "#00d2d3"],
+  ["#f8b195", "#f67280", "#c06c84", "#6c5b7b"],
+  ["#2d3436", "#00b894", "#fdcb6e", "#e17055"],
+  ["#0984e3", "#74b9ff", "#a29bfe", "#fd79a8"],
+  ["#264653", "#2a9d8f", "#e9c46a", "#f4a261"],
+  ["#22223b", "#4a4e69", "#9a8c98", "#f2e9e4"],
+  ["#ff9f1c", "#ffbf69", "#cbf3f0", "#2ec4b6"],
+];
+function nameHash(name) {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619) >>> 0;
+  // Final mix, so every bit depends on every letter: without it the low
+  // bits (which pick the palette) clustered, and most names came out in
+  // the same two colourways.
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b) >>> 0;
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+function avatarSVG(username) {
+  const h = nameHash(username);
+  const pal = AVATAR_PALETTES[h % AVATAR_PALETTES.length];
+  const pick = (n) => pal[(h >>> n) % pal.length];
+  const bg = pick(3);
+  const a = pick(7) === bg ? pal[(pal.indexOf(bg) + 1) % pal.length] : pick(7);
+  const b = pick(11) === a || pick(11) === bg ? pal[(pal.indexOf(bg) + 2) % pal.length] : pick(11);
+  const v = (n, lo, hi) => lo + ((h >>> n) % (hi - lo + 1));
+  const id = `av${h.toString(36)}`;
+  return `<svg viewBox="0 0 80 80" aria-hidden="true"><defs><filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${v(2, 6, 9)}"/></filter></defs><rect width="80" height="80" fill="${bg}"/><g filter="url(#${id})"><circle cx="${v(5, 10, 40)}" cy="${v(9, 50, 75)}" r="${v(13, 26, 36)}" fill="${a}"/><ellipse cx="${v(17, 45, 72)}" cy="${v(21, 8, 34)}" rx="${v(4, 18, 28)}" ry="${v(8, 14, 24)}" fill="${b}" transform="rotate(${v(12, 0, 90)} 40 40)"/></g></svg>`;
+}
+// A username's picture as markup, for rows built from strings.
+function avatarHTML(username, cls = "") {
+  const inner = username === player.getUsername() ? `<img src="${DEFAULT_AVATAR_URL}" alt="">` : avatarSVG(username);
+  return `<span class="avatar-circle avatar-gen ${cls}">${inner}</span>`;
 }
 
 function renderAvatarInto(el, username) {
-  if (username === player.getUsername()) {
-    el.style.background = "none";
-    el.innerHTML = `<img src="${DEFAULT_AVATAR_URL}" alt="${username}">`;
-  } else {
-    const { background, initial } = avatarStyle(username);
-    el.style.background = background;
-    el.textContent = initial;
-  }
+  el.style.background = "none";
+  el.innerHTML = username === player.getUsername() ? `<img src="${DEFAULT_AVATAR_URL}" alt="${username}">` : avatarSVG(username);
 }
 
 function renderIdentity() {
@@ -4222,6 +4247,7 @@ function renderLeaderboard({ fit = true } = {}) {
       (r, i) => `
       <div class="leaderboard-row ${r.isPlayer ? "you" : ""}" data-username="${r.username}">
         <span class="leaderboard-rank">#${start + i + 1}</span>
+        ${avatarHTML(r.username, "avatar-sm")}
         <span class="leaderboard-name">${r.isPlayer ? "You" : r.username}</span>
         <span class="leaderboard-xp">${r.xp.toLocaleString()} XP</span>
       </div>`
@@ -5796,7 +5822,9 @@ const screenMarketEl = document.getElementById("screen-marketplace");
 const marketCrateView = document.getElementById("marketCrateView");
 let marketCrateKey = null; // the crate whose page is open, or null
 let marketCrateTab = "listings"; // "listings" | "inside"
-let marketCrateQty = 1;
+// The boxes ticked to buy together (listing ids). Starts on the cheapest;
+// the − / + step through the cheapest ones, and any row can be ticked.
+let marketCrateSel = new Set();
 // Your offers per crate: { amount, qty, sent, bought, counter: {listingId, amount} | null, status }.
 const crateOffers = {};
 
@@ -5843,8 +5871,10 @@ function marketCrateViewHTML(key) {
   const pool = supply.livePool(key);
   const all = crateListingsFor(key);
   const buyable = all.filter((l) => !l.isPlayer);
-  marketCrateQty = Math.max(1, Math.min(marketCrateQty, buyable.length || 1));
-  const pick = buyable.slice(0, marketCrateQty);
+  // Drop ticks on boxes that have sold or come down since.
+  marketCrateSel = new Set([...marketCrateSel].filter((id) => buyable.some((l) => l.id === id)));
+  const pick = buyable.filter((l) => marketCrateSel.has(l.id));
+  const qty = pick.length;
   const total = pick.reduce((sum, l) => sum + l.price, 0);
   const low = buyable[0];
   const rating = low ? crateRating(low.price, key) : null;
@@ -5864,31 +5894,34 @@ function marketCrateViewHTML(key) {
 
   const buyHTML = buyable.length
     ? `<div class="mcv-qty">
-         <button class="qty-btn" data-mcv="qty-minus" aria-label="Fewer"${marketCrateQty <= 1 ? " disabled" : ""}>−</button>
-         <span class="qty-value">${marketCrateQty}</span>
-         <button class="qty-btn" data-mcv="qty-plus" aria-label="More"${marketCrateQty >= buyable.length ? " disabled" : ""}>+</button>
+         <button class="qty-btn" data-mcv="qty-minus" aria-label="Fewer"${qty <= 0 ? " disabled" : ""}>−</button>
+         <span class="qty-value">${qty}</span>
+         <button class="qty-btn" data-mcv="qty-plus" aria-label="More"${qty >= buyable.length ? " disabled" : ""}>+</button>
          <span class="mcv-qty-of">of ${buyable.length}</span>
        </div>
-       <button class="category-open-btn mcv-buy" data-mcv="buy">${marketCrateQty > 1 ? `Buy ${marketCrateQty} for` : "Buy for"} $${total.toLocaleString()}</button>
-       ${marketCrateQty > 1 && pick[pick.length - 1].price !== pick[0].price ? `<span class="mcv-ev">The ${marketCrateQty} cheapest: $${pick[0].price.toLocaleString()} up to $${pick[pick.length - 1].price.toLocaleString()} each</span>` : ""}
-       <button class="mcv-btn mcv-btn-outline" data-mcv="offer">Make an offer</button>`
+       <button class="category-open-btn mcv-buy" data-mcv="buy"${qty ? "" : " disabled"}>${qty ? `${qty > 1 ? `Buy ${qty} for` : "Buy for"} $${total.toLocaleString()}` : "Tick the boxes to buy"}</button>
+       ${qty > 1 && pick[qty - 1].price !== pick[0].price ? `<span class="mcv-ev">$${pick[0].price.toLocaleString()} up to $${pick[qty - 1].price.toLocaleString()} each</span>` : ""}
+       <button class="mcv-btn mcv-btn-outline" data-mcv="offer">${qty > 1 ? `Offer on ${qty}` : "Make an offer"}</button>`
     : `<span class="mcv-ev">No one else has one listed right now.</span>
        ${st.soldOut ? "" : `<button class="category-open-btn mcv-buy" data-mcv="buy-drop">Buy from the drop for ${cat.label}</button>`}`;
 
   const listingRows = all
     .map((l) => {
       const r = l.isPlayer ? null : crateRating(l.price, key);
-      return `
-        <div class="mcv-listing${l.isPlayer ? " is-mine" : ""}">
+      const who = `
+          ${avatarHTML(l.isPlayer ? player.getUsername() : l.seller, "avatar-md")}
           <div class="mcv-listing-who">
             <b>${l.isPlayer ? "You" : l.seller}</b>
             <span>Series ${l.series}${r ? ` · <span class="market-item-fmv fmv-${r.key}">${r.label}</span>` : ""}</span>
           </div>
-          <span class="mcv-listing-price">$${l.price.toLocaleString()}</span>
-          ${l.isPlayer ? `<button class="mcv-row-btn" data-mcv="unlist" data-listing="${l.id}">Unlist</button>` : `<button class="mcv-row-btn is-buy" data-mcv="buy-one" data-listing="${l.id}">Buy</button>`}
-        </div>`;
+          <span class="mcv-listing-price">$${l.price.toLocaleString()}</span>`;
+      if (l.isPlayer)
+        return `<div class="mcv-listing is-mine"><span class="mcv-check is-blank"></span>${who}<button class="mcv-row-btn" data-mcv="unlist" data-listing="${l.id}">Unlist</button></div>`;
+      const on = marketCrateSel.has(l.id);
+      return `<button class="mcv-listing${on ? " is-sel" : ""}" data-mcv="toggle" data-listing="${l.id}" role="checkbox" aria-checked="${on}"><span class="mcv-check"></span>${who}</button>`;
     })
     .join("");
+  const allSel = buyable.length > 0 && qty === buyable.length;
 
   return `
     <button class="drop-detail-back mcv-back" data-mcv="back">&larr; Market</button>
@@ -5914,6 +5947,7 @@ function marketCrateViewHTML(key) {
         <div class="mcv-tabs" role="tablist">
           <button class="mcv-tab${marketCrateTab === "listings" ? " active" : ""}" data-mcv-tab="listings" role="tab">Listings <span>${all.length}</span></button>
           <button class="mcv-tab${marketCrateTab === "inside" ? " active" : ""}" data-mcv-tab="inside" role="tab">What&rsquo;s inside</button>
+          ${marketCrateTab === "listings" && buyable.length > 1 ? `<button class="mcv-selall" data-mcv="${allSel ? "sel-none" : "sel-all"}">${allSel ? "Clear" : "Select all"}</button>` : ""}
         </div>
         ${
           marketCrateTab === "listings"
@@ -5930,19 +5964,23 @@ function renderMarketCrate() {
   const keep = (sel) => marketCrateView.querySelector(sel)?.scrollTop ?? 0;
   const tilesTop = keep(".prize-tiles");
   const listTop = keep(".mcv-listings");
+  // Carry the box picture over, so ticking a row doesn't blink it.
+  const boxSrc = marketCrateView.querySelector(".mcv-box")?.src;
   marketCrateView.innerHTML = marketCrateViewHTML(marketCrateKey);
+  if (boxSrc) marketCrateView.querySelector(".mcv-box").src = boxSrc;
   const tiles = marketCrateView.querySelector(".prize-tiles");
   if (tiles) tiles.scrollTop = tilesTop;
   const list = marketCrateView.querySelector(".mcv-listings");
   if (list) list.scrollTop = listTop;
-  marketCrateView.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+  if (!boxSrc) marketCrateView.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
 }
 
 function openMarketCrate(key) {
   if (!CATEGORIES[key]) return;
+  if (marketCrateKey !== key) marketCrateView.innerHTML = "";
   marketCrateKey = key;
   marketCrateTab = "listings";
-  marketCrateQty = 1;
+  marketCrateSel = new Set(buyableListings(key).slice(0, 1).map((l) => l.id));
   screenMarketEl.classList.add("is-crate-view");
   marketCrateView.hidden = false;
   renderMarketCrate();
@@ -5957,9 +5995,10 @@ function closeMarketCrate() {
   marketCrateView.innerHTML = "";
 }
 
-// The cheapest `qty` boxes, each at its own price.
-function buyCheapestCrates(key, qty) {
-  const pick = buyableListings(key).slice(0, qty);
+// The ticked boxes, each at its own price.
+function buySelectedCrates(key) {
+  const pick = buyableListings(key).filter((l) => marketCrateSel.has(l.id));
+  if (!pick.length) return;
   const total = pick.reduce((sum, l) => sum + l.price, 0);
   if (player.getWallet().cash < total) {
     showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
@@ -5971,7 +6010,7 @@ function buyCheapestCrates(key, qty) {
     if (buyCrateListing(l.id, null, { quiet: true })) bought += 1;
   });
   if (bought) showToast(bought > 1 ? `${bought} sealed crates bought for $${total.toLocaleString()}. They're in your account` : `Sealed ${CATEGORIES[key].badge} crate bought. It's in your account`, ICONS.bell);
-  marketCrateQty = 1;
+  marketCrateSel = new Set(buyableListings(key).slice(0, 1).map((l) => l.id));
   renderMarketCrate();
 }
 
@@ -6038,13 +6077,23 @@ marketCrateView.addEventListener("click", async (e) => {
   playClick();
   const act = btn.dataset.mcv;
   if (act === "back") return closeMarketCrate();
-  if (act === "qty-minus") marketCrateQty -= 1;
-  else if (act === "qty-plus") marketCrateQty += 1;
-  else if (act === "buy") return buyCheapestCrates(key, marketCrateQty);
-  else if (act === "buy-one") {
-    if (buyCrateListing(btn.dataset.listing)) renderMarketCrate();
-    return;
-  } else if (act === "offer") return offerOnCrates(key, marketCrateQty);
+  const buyable = buyableListings(key);
+  if (act === "qty-minus") {
+    // Untick the dearest ticked box.
+    const last = buyable.filter((l) => marketCrateSel.has(l.id)).pop();
+    if (last) marketCrateSel.delete(last.id);
+  } else if (act === "qty-plus") {
+    // Tick the cheapest box not yet ticked.
+    const next = buyable.find((l) => !marketCrateSel.has(l.id));
+    if (next) marketCrateSel.add(next.id);
+  } else if (act === "toggle") {
+    const id = btn.dataset.listing;
+    if (marketCrateSel.has(id)) marketCrateSel.delete(id);
+    else marketCrateSel.add(id);
+  } else if (act === "sel-all") marketCrateSel = new Set(buyable.map((l) => l.id));
+  else if (act === "sel-none") marketCrateSel = new Set();
+  else if (act === "buy") return buySelectedCrates(key);
+  else if (act === "offer") return offerOnCrates(key, Math.max(1, marketCrateSel.size));
   else if (act === "accept-counter") {
     const amount = Number(btn.dataset.amount);
     if (buyCrateListing(btn.dataset.listing, amount)) {
