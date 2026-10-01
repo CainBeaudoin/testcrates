@@ -1671,9 +1671,10 @@ pullDetailCloseBtn.addEventListener("click", () => {
 // ---- Category screen -------------------------------------------------
 
 // A crate page's "What's inside": one tab per tier, best first, and that
-// tier's prizes as tiles — picture, name, price and each one's own odds —
-// so you look through a tier at a time rather than scrolling one long
-// list. A Mystery tab comes first: the pieces with no odds, released when
+// tier's prizes as tiles — picture, name and value. Odds are given per
+// tier (the Odds boxes above), never per item, so no single piece reads
+// as a number to chase. You look through a tier at a time rather than
+// scrolling one long list. A Mystery tab comes first: the pieces with no odds, released when
 // the crate's mystery bar fills. The open tab is remembered per crate.
 const prizeTabByKey = {};
 
@@ -1686,7 +1687,6 @@ function prizeTabOf(key, pool) {
 function prizeBrowserHTML(key, pool) {
   const tab = prizeTabOf(key, pool);
   const tiers = DISPLAY_RARITY_ORDER.filter((r) => pool.some((p) => p.rarity === r));
-  const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
   const tabs = [
     supply.hasMystery(key)
       ? `<button class="prize-tab is-mystery${tab === "mystery" ? " active" : ""}" data-prize-tab="mystery" role="tab" aria-selected="${tab === "mystery"}">${ICONS.mystery}Mystery</button>`
@@ -1704,7 +1704,7 @@ function prizeBrowserHTML(key, pool) {
         <div class="prize-tile is-mystery">
           <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
           <span class="prize-tile-name">${p.name}</span>
-          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>No odds</span></span>
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b></span>
         </div>`
       )
       .join("");
@@ -1722,7 +1722,7 @@ function prizeBrowserHTML(key, pool) {
         <div class="prize-tile" style="--rarity-color:${RARITY_META[p.rarity].color}">
           <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
           <span class="prize-tile-name">${p.name}</span>
-          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>${formatOdds((p.weight / totalWeight) * 100)}</span></span>
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b></span>
         </div>`
     )
     .join("");
@@ -5669,20 +5669,20 @@ function renderCrateModal() {
       </div>`;
   }).join("");
 
-  // Every prize, grouped Grail down, each with its own odds; the mystery
-  // items first, with none.
+  // Every prize, grouped Grail down, with its value; odds are per tier
+  // only. The mystery items first.
   const list = document.getElementById("crateModalList");
   const scrollTop = list.scrollTop;
-  const prizeCell = (p, foot) => `
+  const prizeCell = (p) => `
           <div class="crate-prize" title="${p.name}">
             <span class="crate-prize-media"><img src="${p.image}" alt="" loading="lazy"></span>
             <span class="crate-prize-name">${p.name}</span>
-            <span class="crate-prize-foot"><b>$${p.price.toLocaleString()}</b><span>${foot}</span></span>
+            <span class="crate-prize-foot"><b>$${p.price.toLocaleString()}</b></span>
           </div>`;
   const mysteryHTML = supply.hasMystery(key)
     ? `<div class="crate-tier">
         <div class="crate-tier-head is-mystery"><span>Mystery</span><span>No odds · released when the bar fills</span></div>
-        <div class="crate-tier-items">${supply.mysteryItems(key).map((p) => prizeCell(p, "No odds")).join("")}</div>
+        <div class="crate-tier-items">${supply.mysteryItems(key).map((p) => prizeCell(p)).join("")}</div>
       </div>`
     : "";
   list.innerHTML =
@@ -5697,7 +5697,7 @@ function renderCrateModal() {
           <span>${meta.label}</span>
           <span>${formatOdds((tierWeight(r) / totalWeight) * 100)}</span>
         </div>
-        <div class="crate-tier-items">${items.map((p) => prizeCell(p, formatOdds((p.weight / totalWeight) * 100))).join("")}</div>
+        <div class="crate-tier-items">${items.map((p) => prizeCell(p)).join("")}</div>
       </div>`;
     }).join("");
   list.scrollTop = scrollTop;
