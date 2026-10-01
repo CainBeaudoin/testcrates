@@ -7878,7 +7878,11 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   /* --k tier stacks (each about 1.4 tiles wide) and --m mystery tiles (one
      tile wide) share the row. The tile size comes first; then each stack
      takes an even share of what the mystery tile leaves. */
-  --wl-size: min(var(--wl-max), calc((100cqi - (var(--k, 3) + var(--m, 0) - 1) * var(--wl-gap)) / (var(--k, 3) * 1.4 + var(--m, 0))));
+  /* Tiles are sized as if the mystery tile were always there, so a crate
+     without one (Stocks) has tiles the same size as its neighbours and
+     its row, card and button line up with theirs; its stacks just spread
+     wider to fill the row. */
+  --wl-size: min(var(--wl-max), calc((100cqi - var(--k, 3) * var(--wl-gap)) / (var(--k, 3) * 1.4 + 1)));
   --wl-share: calc((100cqi - (var(--k, 3) + var(--m, 0) - 1) * var(--wl-gap) - var(--m, 0) * var(--wl-size)) / var(--k, 3));
   display: flex;
   align-items: center;
