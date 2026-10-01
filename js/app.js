@@ -5304,7 +5304,12 @@ function showHomeSlide(i, { instant = false } = {}) {
 let homeBoxViewers = [];
 
 
+// The Mystery demo's live box (see runMysteryDemo); released with the rest.
+let hmDemoViewer = null;
+
 function releaseHomeViewers() {
+  hmDemoViewer?.dispose();
+  hmDemoViewer = null;
   // A billboard crate still loading when Home is left would otherwise land
   // after this and run on, unseen, holding a context; bumping the token
   // makes it dispose itself on arrival (see playHeroShow).
@@ -5507,6 +5512,7 @@ function homeMysteryDemoHTML() {
         <span class="hm-demo-drop"><i>?</i></span>
         <img class="hm-demo-prize" alt="">
         <img class="hm-demo-crate" alt="">
+        <canvas class="hm-demo-canvas"></canvas>
       </div>
       <p class="hm-demo-caption"></p>
     </div>`;
@@ -5521,32 +5527,78 @@ function cutOutHomeMystery(root = homeMysteryEl) {
   });
 }
 
+// The demo, start to finish (it loops):
+//   1. Open is tapped; each box fills the bar.          "Every box opened fills the bar"
+//   2. Full: the bar turns to Unlocked.                    "Full bar, mystery unlocked"
+//   3. The box opens, the ? drops in, the box shuts.
+//   4. The taps carry on — every box now has a shot.     "Now every box has a shot at it"
+//   5. One hits: the box opens and the piece rises out; the bar reads
+//      Claimed, then drains back to empty.               "Hit. It's theirs, and the bar resets"
+// The box is the live 3D one (its flaps really open); its still picture
+// stands in until that's ready, or if it can't be made.
 let hmDemoRun = 0;
 function runMysteryDemo() {
   const run = ++hmDemoRun;
   const el = homeMysteryEl.querySelector(".hm-demo");
   if (!el) return;
   const row = el.querySelector(".hm-demo-row");
+  const bar = el.querySelector(".hm-demo-bar");
   const fill = el.querySelector(".hm-demo-bar-track i");
   const pctEl = el.querySelector(".hm-demo-bar-pct");
   const prize = el.querySelector(".hm-demo-prize");
+  const canvas = el.querySelector(".hm-demo-canvas");
+  const caption = el.querySelector(".hm-demo-caption");
   let crateUrl = "";
   getBoxSnapshot("sneakers", "od").then((url) => {
     crateUrl = url;
     el.querySelector(".hm-demo-crate").src = url;
   });
   cutoutImage(MYSTERY_BY_LINE.sneakers[0].image).then((url) => (prize.src = url));
+  hmDemoViewer?.dispose();
+  hmDemoViewer = null;
+  createBoxViewer(canvas, "sneakers", "od", { fitOpen: true, syncSpin: false })
+    .then((viewer) => {
+      if (run !== hmDemoRun || !canvas.isConnected) return viewer.dispose();
+      viewer.setPaused(true); // face forward and hold, for the drop
+      hmDemoViewer = viewer;
+      el.classList.add("has-3d");
+    })
+    .catch(() => {});
+
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = () => run === hmDemoRun && el.isConnected;
   const onScreen = () => !document.hidden && document.getElementById("screen-home").classList.contains("active");
-  // One line under the crate, saying only what the picture can't: what
-  // fills the bar, and what a full one does.
-  const caption = el.querySelector(".hm-demo-caption");
   const say = (text) => (caption.textContent ? swapText(caption, text) : (caption.textContent = text));
-  const setBar = (p) => {
+  const setBar = (p, label = `${Math.round(p)}%`) => {
     fill.style.width = `${p}%`;
-    pctEl.textContent = `${Math.round(p)}%`;
+    pctEl.textContent = label;
   };
+  const barState = (state) => {
+    bar.classList.toggle("is-unlocked", state === "unlocked");
+    bar.classList.toggle("is-claimed", state === "claimed");
+  };
+  const tap = () => {
+    el.classList.remove("is-tap");
+    void el.offsetWidth;
+    el.classList.add("is-tap");
+    const mini = document.createElement("img");
+    mini.className = "hm-demo-mini";
+    mini.src = crateUrl;
+    mini.alt = "";
+    row.appendChild(mini);
+    // Keep the row to what fits: the oldest slide off the front.
+    while (row.children.length > 7) row.firstElementChild.remove();
+  };
+  const open = async () => {
+    const v = hmDemoViewer;
+    if (!v) return wait(350);
+    v.open();
+    await wait(v.mouthClearMs * 0.85);
+  };
+  // Never waits on the box longer than the fold should take: its close
+  // resolves on animation frames, which a backgrounded tab doesn't draw.
+  const close = (ms) => Promise.race([hmDemoViewer?.close(ms) ?? Promise.resolve(), wait(ms + 250)]);
+
   (async () => {
     while (alive()) {
       // Off screen, or the crate picture not ready yet (the mini crates
@@ -5555,36 +5607,54 @@ function runMysteryDemo() {
         await wait(crateUrl ? 800 : 250);
         continue;
       }
+      // 1. Boxes fill the bar.
       el.dataset.phase = "buy";
       row.innerHTML = "";
+      barState("");
       setBar(0);
       say("Every box opened fills the bar");
       await wait(500);
-      const buys = 6;
-      for (let i = 1; i <= buys && alive(); i++) {
-        el.classList.remove("is-tap");
-        void el.offsetWidth;
-        el.classList.add("is-tap");
-        const mini = document.createElement("img");
-        mini.className = "hm-demo-mini";
-        mini.src = crateUrl;
-        mini.alt = "";
-        row.appendChild(mini);
-        setBar((i / buys) * 100);
-        await wait(620);
+      for (let i = 1; i <= 5 && alive(); i++) {
+        tap();
+        setBar(i * 20);
+        await wait(600);
       }
       if (!alive()) break;
+      // 2. Unlocked.
       el.dataset.phase = "full";
+      barState("unlocked");
+      setBar(100, "Unlocked");
       say("Full bar, mystery unlocked");
-      await wait(500);
+      await wait(700);
+      // 3. Into the box.
+      await open();
       el.dataset.phase = "drop";
       await wait(900);
-      el.dataset.phase = "shake";
-      await wait(650);
+      await close(700);
+      // 4. Every box has a shot now.
+      el.dataset.phase = "chance";
+      say("Now every box has a shot at it");
+      for (let j = 0; j < 3 && alive(); j++) {
+        await wait(650);
+        tap();
+      }
+      await wait(350);
+      // 5. A hit: it opens and the piece comes out; the bar is claimed.
+      el.dataset.phase = "hit";
+      await open();
       el.dataset.phase = "reveal";
-      await wait(2600);
+      barState("claimed");
+      setBar(100, "Claimed");
+      say("A hit. Claimed, and the bar starts over");
+      await wait(1900);
+      barState("");
+      el.classList.add("is-draining");
+      setBar(0);
+      await wait(1000);
+      el.classList.remove("is-draining");
       el.dataset.phase = "out";
-      await wait(600);
+      await close(800);
+      await wait(400);
     }
   })();
 }
