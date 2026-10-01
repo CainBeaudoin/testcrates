@@ -3064,15 +3064,14 @@ function renderMarketplace() {
     });
 
     const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", stocks: "Stocks" };
-    const cats = ["all", "crates", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
+    const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
     marketCategoryFilter.innerHTML = cats
-      .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : c === "crates" ? "Sealed crates" : CATEGORY_LABELS[c] ?? c}</option>`)
+      .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
       .join("");
     marketCategoryFilter.value = marketCategoryValue;
     marketCategoryFilter.addEventListener("change", () => {
       playClick();
       marketCategoryValue = marketCategoryFilter.value;
-      marketCrateFocus = null;
       renderMarketGrid();
     });
 
@@ -3120,61 +3119,80 @@ function renderMarketplace() {
   renderMarketGrid();
 }
 
-function renderMarketGrid() {
-  let listings = marketCategoryValue === "crates" ? [] : market.getListings();
-  // Sealed boxes show under All and under Sealed crates; any item-only
-  // filter (brand, size, the vault's offer-only rows) is about items.
-  const itemOnlyFilter = marketBrandValue !== "all" || marketSizeValue !== "all";
-  let crates =
-    (marketCategoryValue === "all" || marketCategoryValue === "crates") && !itemOnlyFilter ? market.getCrateListings() : [];
-  if (marketCrateFocus) crates = crates.filter((l) => l.crateKey === marketCrateFocus);
-  if (marketFmvValue !== "all") crates = crates.filter((l) => crateRating(l.price, l.crateKey)?.key === marketFmvValue);
-  marketCount.textContent = market.getListings().length + market.getCrateListings().length;
+// Items or Crates: sealed boxes are their own tab, so they don't crowd
+// the sneakers, streetwear and collectibles.
+let marketKind = "items";
+const marketKindEl = document.getElementById("marketKind");
+marketKindEl.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-kind]");
+  if (!btn || btn.dataset.kind === marketKind) return;
+  playClick();
+  marketKind = btn.dataset.kind;
+  renderMarketGrid();
+});
+liquidTabs(marketKindEl, ".active");
 
+function renderMarketGrid() {
+  marketCount.textContent = market.getListings().length + market.getCrateListings().length;
+  marketKindEl.querySelectorAll("[data-kind]").forEach((b) => {
+    const on = b.dataset.kind === marketKind;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  document.getElementById("marketKindItems").textContent = market.getListings().length;
+  document.getElementById("marketKindCrates").textContent = new Set(market.getCrateListings().map((l) => l.crateKey)).size;
+  document.querySelector(".market-shell").classList.toggle("is-crates", marketKind === "crates");
+  const min = Number(marketPriceMin.value);
+  const max = Number(marketPriceMax.value);
+  const sort = marketSort.value;
+
+  if (marketKind === "crates") {
+    // One card per crate; a price or value filter keeps a crate if any of
+    // its boxes passes, and the card shows the cheapest that does.
+    let crates = market.getCrateListings();
+    if (marketFmvValue !== "all") crates = crates.filter((l) => crateRating(l.price, l.crateKey)?.key === marketFmvValue);
+    if (min) crates = crates.filter((l) => l.price >= min);
+    if (max) crates = crates.filter((l) => l.price <= max);
+    const groups = new Map();
+    crates.forEach((l) => groups.set(l.crateKey, [...(groups.get(l.crateKey) ?? []), l]));
+    const rows = [...groups.entries()].map(([key, ls]) => [key, ls.sort((a, b) => a.price - b.price)]);
+    rows.sort(([, a], [, b]) => {
+      if (sort === "price-asc") return a[0].price - b[0].price;
+      if (sort === "price-desc") return b[0].price - a[0].price;
+      return Math.max(...b.map((l) => l.ts)) - Math.max(...a.map((l) => l.ts));
+    });
+    marketGrid.innerHTML = rows.length
+      ? rows.map(([key, ls]) => crateGroupCardHTML(key, ls)).join("")
+      : `<div class="market-empty">No sealed crates match these filters.</div>`;
+    marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+    marketGrid.querySelectorAll("[data-crate-group]").forEach((el) => {
+      el.addEventListener("click", () => {
+        playClick();
+        openMarketCrate(el.dataset.crateGroup);
+      });
+    });
+    return;
+  }
+
+  let listings = market.getListings();
   if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
   if (marketCategoryValue !== "all") listings = listings.filter((l) => l.category === marketCategoryValue);
   if (marketSizeValue !== "all") listings = listings.filter((l) => l.size === marketSizeValue);
   if (marketFmvValue !== "all") listings = listings.filter((l) => market.fmvRating(l)?.key === marketFmvValue);
   if (marketListedOnly.checked) listings = listings.filter((l) => l.price != null);
-
-  const min = Number(marketPriceMin.value);
-  const max = Number(marketPriceMax.value);
   if (min) listings = listings.filter((l) => (l.price ?? l.catalogPrice) >= min);
   if (max) listings = listings.filter((l) => (l.price ?? l.catalogPrice) <= max);
 
-  if (min) crates = crates.filter((l) => l.price >= min);
-  if (max) crates = crates.filter((l) => l.price <= max);
-
-  // One run, sealed boxes and items together, under whichever sort.
-  const sort = marketSort.value;
   const priceOf = (l) => l.price ?? l.catalogPrice;
-  const rows = [...crates.map((l) => ({ l, crate: true })), ...listings.map((l) => ({ l, crate: false }))].sort((a, b) => {
-    if (sort === "price-asc") return priceOf(a.l) - priceOf(b.l);
-    if (sort === "price-desc") return priceOf(b.l) - priceOf(a.l);
-    return b.l.ts - a.l.ts;
+  listings.sort((a, b) => {
+    if (sort === "price-asc") return priceOf(a) - priceOf(b);
+    if (sort === "price-desc") return priceOf(b) - priceOf(a);
+    return b.ts - a.ts;
   });
-  listings = rows.filter((r) => !r.crate).map((r) => r.l);
 
-  const focusChip = marketCrateFocus
-    ? `<div class="market-focus"><span>Sealed ${crateName(marketCrateFocus)}s</span><button class="market-focus-clear" aria-label="Show all listings">×</button></div>`
-    : "";
-  marketGrid.innerHTML = rows.length
-    ? focusChip + rows.map((r) => (r.crate ? crateListingCardHTML(r.l) : marketItemCardHTML(r.l))).join("")
-    : `${focusChip}<div class="market-empty">No listings match these filters.</div>`;
-  marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
-  marketGrid.querySelectorAll("[data-crate-listing]").forEach((el) => {
-    el.addEventListener("click", () => {
-      playClick();
-      openMarketCrate(el.dataset.crateListing);
-    });
-  });
-  marketGrid.querySelector(".market-focus-clear")?.addEventListener("click", () => {
-    playClick();
-    marketCrateFocus = null;
-    marketCategoryValue = "all";
-    marketCategoryFilter.value = "all";
-    renderMarketGrid();
-  });
+  marketGrid.innerHTML = listings.length
+    ? listings.map(marketItemCardHTML).join("")
+    : `<div class="market-empty">No listings match these filters.</div>`;
 
   const marketGridIds = listings.map((l) => l.id);
   marketGrid.querySelectorAll(".market-item[data-listing]").forEach((el) => {
@@ -5695,7 +5713,7 @@ function unlistSealedCrate(tokenId) {
 }
 
 // `amount` is the asking price, or an offer the seller took.
-function buyCrateListing(listingId, amount = null) {
+function buyCrateListing(listingId, amount = null, { quiet = false } = {}) {
   const listing = market.getCrateListing(listingId);
   if (!listing || listing.isPlayer) return false;
   const price = amount ?? listing.price;
@@ -5709,8 +5727,7 @@ function buyCrateListing(listingId, amount = null) {
   player.addCrates(listing.crateKey, listing.series, 1, price, "cash");
   renderWallet({ pulse: "cash" });
   closeCrateModal();
-  if (marketCrateListingId === listing.id) closeMarketCrate();
-  showToast(`Sealed ${CATEGORIES[listing.crateKey].badge} crate bought. It's in your account`, ICONS.bell);
+  if (!quiet) showToast(`Sealed ${CATEGORIES[listing.crateKey].badge} crate bought. It's in your account`, ICONS.bell);
   renderMarketGrid();
   refreshSupplyViews();
   return true;
@@ -5718,7 +5735,6 @@ function buyCrateListing(listingId, amount = null) {
 
 // A sold-out drop's button: the sealed boxes on the market, or (if none
 // are listed right now) the series itself.
-let marketCrateFocus = null; // crate key the market is narrowed to, or null
 function soldOutAction(key) {
   const listed = market.getCrateListings().some((l) => l.crateKey === key && !l.isPlayer);
   if (!listed) {
@@ -5726,10 +5742,9 @@ function soldOutAction(key) {
     openCrateModal({ key });
     return;
   }
-  marketCrateFocus = key;
-  marketCategoryValue = "crates";
-  if (marketCategoryFilter.options.length) marketCategoryFilter.value = "crates";
+  marketKind = "crates";
   document.querySelector('.nav-tab[data-nav="screen-marketplace"]').click();
+  openMarketCrate(key);
 }
 
 // ---- Account: sealed crates --------------------------------------------------
@@ -5769,176 +5784,43 @@ inventoryGrid.addEventListener("click", async (e) => {
   else openCrateModal({ key: player.getCrate(tokenId).crateKey, tokenId });
 });
 
-// ---- Market: a sealed box's own page ------------------------------------------
-// Clicking a sealed listing opens it as a page in Market, laid out like a
-// crate's page on Drops: the box with its price, seller and value on the
-// left (Buy, or Make an offer), the crate's live odds and what's inside on
-// the right, and more of the same crate listed below.
+// ---- Market: sealed crates, one card per crate --------------------------------
+// Boxes of the same crate are the same thing to a buyer — only the price
+// differs — so the market shows each crate once: a count of how many are
+// listed and the cheapest. Its page has the listings as an order book
+// (every box at its own price), a quantity that buys the cheapest N at
+// what each actually costs, and offers that go to every seller at once.
+// The crate's live odds and what's inside sit in a second tab.
 
 const screenMarketEl = document.getElementById("screen-marketplace");
 const marketCrateView = document.getElementById("marketCrateView");
-let marketCrateListingId = null;
-// Your offers on sealed listings, by listing: { amount, status, counterAmount }.
+let marketCrateKey = null; // the crate whose page is open, or null
+let marketCrateTab = "listings"; // "listings" | "inside"
+let marketCrateQty = 1;
+// Your offers per crate: { amount, qty, sent, bought, counter: {listingId, amount} | null, status }.
 const crateOffers = {};
 
-function marketCrateViewHTML(listing) {
-  const key = listing.crateKey;
-  const cat = CATEGORIES[key];
-  const st = supply.status(key);
-  const pool = supply.livePool(key);
-  const rating = listing.isPlayer ? null : crateRating(listing.price, key);
-  const offers = crateOffers[listing.id] ?? [];
-  const offerRows = offers
-    .map((o) => {
-      const status =
-        o.status === "pending"
-          ? `<span class="mcv-offer-status">Waiting…</span>`
-          : o.status === "accepted"
-            ? `<span class="mcv-offer-status is-yes">Accepted</span>`
-            : o.status === "countered"
-              ? `<span class="mcv-offer-status">Countered $${o.counterAmount.toLocaleString()}</span><button class="mcv-offer-accept" data-mcv="accept-counter" data-amount="${o.counterAmount}">Accept</button>`
-              : `<span class="mcv-offer-status is-no">Declined</span>`;
-      return `<div class="mcv-offer"><b>$${o.amount.toLocaleString()}</b>${status}</div>`;
-    })
-    .join("");
-  const actions = listing.isPlayer
-    ? `<button class="mcv-btn mcv-btn-outline" data-mcv="unlist">Unlist</button>`
-    : `<button class="category-open-btn mcv-buy" data-mcv="buy">Buy for $${listing.price.toLocaleString()}</button>
-       <button class="mcv-btn mcv-btn-outline" data-mcv="offer">Make an offer</button>`;
-  const more = market
+function crateListingsFor(key) {
+  return market
     .getCrateListings()
-    .filter((l) => l.crateKey === key && l.id !== listing.id)
-    .sort((a, b) => a.price - b.price);
-  return `
-    <button class="drop-detail-back mcv-back" data-mcv="back">&larr; Market</button>
-    <div class="category-wrap drop-detail-active mcv" data-tier="${key}">
-      <div class="category-card mcv-card">
-        <img class="mcv-box sealed-box" data-box="${key}" alt="">
-        <div class="mcv-tags">
-          ${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}
-          <span class="market-item-size">Sealed</span>
-          <span class="market-item-size">Series ${listing.series}</span>
-          ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
-        </div>
-        <h3 class="mcv-name">${crateName(key)}</h3>
-        <span class="mcv-seller">${listing.isPlayer ? "Your listing" : `Sold by <b>${listing.seller}</b>`} · drop price ${cat.label}</span>
-        <div class="mcv-price">$${listing.price.toLocaleString()}</div>
-        <span class="mcv-ev">A box averages $${Math.round(st.ev).toLocaleString()} right now</span>
-        <div class="mcv-actions">${actions}</div>
-        ${offerRows ? `<div class="mcv-offers"><span class="mcv-offers-label">Your offers</span>${offerRows}</div>` : ""}
-      </div>
-      <div class="prize-dropdown">
-        <div class="odds-panel">${buildOddsPanelHTML(pool.filter((p) => p.left > 0))}</div>
-        <div class="prize-dropdown-header"><span>What&rsquo;s inside</span></div>
-        <div class="prize-list prize-browser">${prizeBrowserHTML(key, pool)}</div>
-      </div>
-    </div>
-    ${
-      more.length
-        ? `<div class="mcv-more"><h3 class="mcv-more-title">More sealed ${crateName(key)}s</h3><div class="market-grid">${more.map(crateListingCardHTML).join("")}</div></div>`
-        : ""
-    }`;
+    .filter((l) => l.crateKey === key)
+    .sort((a, b) => a.price - b.price || a.ts - b.ts);
+}
+// The boxes you could buy: everyone's but yours, cheapest first.
+function buyableListings(key) {
+  return crateListingsFor(key).filter((l) => !l.isPlayer);
 }
 
-function renderMarketCrate() {
-  const listing = market.getCrateListing(marketCrateListingId);
-  if (!listing) return closeMarketCrate();
-  const top = marketCrateView.querySelector(".prize-tiles")?.scrollTop ?? 0;
-  marketCrateView.innerHTML = marketCrateViewHTML(listing);
-  marketCrateView.querySelector(".prize-tiles").scrollTop = top;
-  marketCrateView.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
-}
-
-function openMarketCrate(listingId) {
-  if (!market.getCrateListing(listingId)) return;
-  marketCrateListingId = listingId;
-  screenMarketEl.classList.add("is-crate-view");
-  marketCrateView.hidden = false;
-  marketCrateView.innerHTML = "";
-  renderMarketCrate();
-  window.scrollTo({ top: 0 });
-}
-
-function closeMarketCrate() {
-  if (marketCrateListingId === null) return;
-  marketCrateListingId = null;
-  screenMarketEl.classList.remove("is-crate-view");
-  marketCrateView.hidden = true;
-  marketCrateView.innerHTML = "";
-}
-
-async function offerOnCrate(listing) {
-  const st = supply.status(listing.crateKey);
-  const amount = await promptAmount(
-    "Make an offer",
-    `${crateName(listing.crateKey)}, asking $${listing.price.toLocaleString()}. A box averages $${Math.round(st.ev).toLocaleString()} right now.`,
-    Math.round(listing.price * 0.9)
-  );
-  if (!amount) return;
-  if (player.getWallet().cash < amount) {
-    showToast("Not enough Cash to back that offer. Add funds to continue", ICONS.bell);
-    openAddFundsModal();
-    return;
-  }
-  const offer = { amount, status: "pending" };
-  (crateOffers[listing.id] ??= []).unshift(offer);
-  renderMarketCrate();
-  // The seller answers after a beat, like offers on items.
-  setTimeout(() => {
-    if (!market.getCrateListing(listing.id)) return;
-    Object.assign(offer, market.botDecision(amount, listing.price));
-    if (offer.status === "accepted") {
-      if (buyCrateListing(listing.id, amount)) showToast(`Offer accepted. Sealed crate bought for $${amount.toLocaleString()}`, ICONS.bell);
-      else offer.status = "declined";
-    }
-    if (marketCrateListingId === listing.id) renderMarketCrate();
-  }, 1100);
-}
-
-marketCrateView.addEventListener("click", async (e) => {
-  const other = e.target.closest("[data-crate-listing]");
-  if (other) {
-    playClick();
-    openMarketCrate(other.dataset.crateListing);
-    return;
-  }
-  const act = e.target.closest("[data-mcv]")?.dataset.mcv;
-  if (!act) {
-    // Tabs and the odds boxes switch the tier on show.
-    const tab = e.target.closest("[data-prize-tab]");
-    if (!tab) return;
-    playClick();
-    const listing = market.getCrateListing(marketCrateListingId);
-    prizeTabByKey[listing.crateKey] = tab.dataset.prizeTab;
-    marketCrateView.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(listing.crateKey, supply.livePool(listing.crateKey));
-    return;
-  }
-  playClick();
-  const listing = market.getCrateListing(marketCrateListingId);
-  if (act === "back" || !listing) return closeMarketCrate();
-  if (act === "buy") buyCrateListing(listing.id);
-  else if (act === "offer") await offerOnCrate(listing);
-  else if (act === "accept-counter") {
-    const amount = Number(e.target.closest("[data-amount]").dataset.amount);
-    if (buyCrateListing(listing.id, amount)) showToast(`Sealed crate bought for $${amount.toLocaleString()}`, ICONS.bell);
-  } else if (act === "unlist") {
-    const token = player.getCrates().find((t) => t.listingId === listing.id);
-    if (token) unlistSealedCrate(token.id);
-    else market.removeCrateListing(listing.id);
-    closeMarketCrate();
-    renderMarketGrid();
-  }
-});
-
-// ---- Market: sealed crate listings ----------------------------------------------
-
-function crateListingCardHTML(listing) {
-  const key = listing.crateKey;
+function crateGroupCardHTML(key, listings) {
   const st = supply.status(key);
-  const rating = listing.isPlayer ? null : crateRating(listing.price, key);
+  const low = listings[0];
+  const rating = low.isPlayer ? null : crateRating(low.price, key);
   return `
-    <div class="market-item sealed-item" data-crate-listing="${listing.id}">
-      <div class="market-item-media sealed-media"><img class="sealed-box" data-box="${key}" alt=""></div>
+    <div class="market-item sealed-item crate-group" data-crate-group="${key}">
+      <div class="market-item-media sealed-media">
+        <img class="sealed-box" data-box="${key}" alt="">
+        <span class="crate-group-count">${listings.length}&times;</span>
+      </div>
       <div class="market-item-body">
         <div class="market-item-tags">
           ${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}
@@ -5946,15 +5828,240 @@ function crateListingCardHTML(listing) {
           ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
         </div>
         <span class="market-item-name">${crateName(key)}</span>
-        <span class="view-inside">View what&rsquo;s inside</span>
+        <span class="crate-group-sub">${listings.length} listed</span>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
-          <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
-          <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+          <span class="market-item-price"><span class="crate-group-from">from</span> ${ICONS.cash}${low.price.toLocaleString()}</span>
         </div>
       </div>
     </div>`;
 }
+
+function marketCrateViewHTML(key) {
+  const cat = CATEGORIES[key];
+  const st = supply.status(key);
+  const pool = supply.livePool(key);
+  const all = crateListingsFor(key);
+  const buyable = all.filter((l) => !l.isPlayer);
+  marketCrateQty = Math.max(1, Math.min(marketCrateQty, buyable.length || 1));
+  const pick = buyable.slice(0, marketCrateQty);
+  const total = pick.reduce((sum, l) => sum + l.price, 0);
+  const low = buyable[0];
+  const rating = low ? crateRating(low.price, key) : null;
+
+  const offerRows = (crateOffers[key] ?? [])
+    .map((o) => {
+      const head = `<b>$${o.amount.toLocaleString()}</b><span class="mcv-offer-qty">${o.qty > 1 ? `× ${o.qty}` : ""} · to ${plural(o.sent, "seller", "sellers")}</span>`;
+      let status;
+      if (o.status === "pending") status = `<span class="mcv-offer-status">Waiting…</span>`;
+      else if (o.counter && market.getCrateListing(o.counter.listingId))
+        status = `<span class="mcv-offer-status">${o.bought ? `Bought ${o.bought} · ` : ""}Best counter $${o.counter.amount.toLocaleString()}</span><button class="mcv-offer-accept" data-mcv="accept-counter" data-listing="${o.counter.listingId}" data-amount="${o.counter.amount}">Accept</button>`;
+      else if (o.bought) status = `<span class="mcv-offer-status is-yes">Bought ${o.bought}</span>`;
+      else status = `<span class="mcv-offer-status is-no">No takers</span>`;
+      return `<div class="mcv-offer">${head}${status}</div>`;
+    })
+    .join("");
+
+  const buyHTML = buyable.length
+    ? `<div class="mcv-qty">
+         <button class="qty-btn" data-mcv="qty-minus" aria-label="Fewer"${marketCrateQty <= 1 ? " disabled" : ""}>−</button>
+         <span class="qty-value">${marketCrateQty}</span>
+         <button class="qty-btn" data-mcv="qty-plus" aria-label="More"${marketCrateQty >= buyable.length ? " disabled" : ""}>+</button>
+         <span class="mcv-qty-of">of ${buyable.length}</span>
+       </div>
+       <button class="category-open-btn mcv-buy" data-mcv="buy">${marketCrateQty > 1 ? `Buy ${marketCrateQty} for` : "Buy for"} $${total.toLocaleString()}</button>
+       ${marketCrateQty > 1 && pick[pick.length - 1].price !== pick[0].price ? `<span class="mcv-ev">The ${marketCrateQty} cheapest: $${pick[0].price.toLocaleString()} up to $${pick[pick.length - 1].price.toLocaleString()} each</span>` : ""}
+       <button class="mcv-btn mcv-btn-outline" data-mcv="offer">Make an offer</button>`
+    : `<span class="mcv-ev">No one else has one listed right now.</span>
+       ${st.soldOut ? "" : `<button class="category-open-btn mcv-buy" data-mcv="buy-drop">Buy from the drop for ${cat.label}</button>`}`;
+
+  const listingRows = all
+    .map((l) => {
+      const r = l.isPlayer ? null : crateRating(l.price, key);
+      return `
+        <div class="mcv-listing${l.isPlayer ? " is-mine" : ""}">
+          <div class="mcv-listing-who">
+            <b>${l.isPlayer ? "You" : l.seller}</b>
+            <span>Series ${l.series}${r ? ` · <span class="market-item-fmv fmv-${r.key}">${r.label}</span>` : ""}</span>
+          </div>
+          <span class="mcv-listing-price">$${l.price.toLocaleString()}</span>
+          ${l.isPlayer ? `<button class="mcv-row-btn" data-mcv="unlist" data-listing="${l.id}">Unlist</button>` : `<button class="mcv-row-btn is-buy" data-mcv="buy-one" data-listing="${l.id}">Buy</button>`}
+        </div>`;
+    })
+    .join("");
+
+  return `
+    <button class="drop-detail-back mcv-back" data-mcv="back">&larr; Market</button>
+    <div class="category-wrap drop-detail-active mcv" data-tier="${key}">
+      <div class="category-card mcv-card">
+        <div class="mcv-box-wrap">
+          <img class="mcv-box sealed-box" data-box="${key}" alt="">
+          <span class="crate-group-count">${all.length}&times;</span>
+        </div>
+        <div class="mcv-tags">
+          ${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}
+          <span class="market-item-size">Sealed</span>
+          ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
+        </div>
+        <h3 class="mcv-name">${crateName(key)}</h3>
+        <span class="mcv-seller">${plural(all.length, "box", "boxes")} listed · drop price ${cat.label}</span>
+        ${low ? `<div class="mcv-price"><span class="crate-group-from">from</span> $${low.price.toLocaleString()}</div>` : ""}
+        <span class="mcv-ev">A box averages $${Math.round(st.ev).toLocaleString()} right now</span>
+        <div class="mcv-actions">${buyHTML}</div>
+        ${offerRows ? `<div class="mcv-offers"><span class="mcv-offers-label">Your offers</span>${offerRows}</div>` : ""}
+      </div>
+      <div class="prize-dropdown mcv-panel">
+        <div class="mcv-tabs" role="tablist">
+          <button class="mcv-tab${marketCrateTab === "listings" ? " active" : ""}" data-mcv-tab="listings" role="tab">Listings <span>${all.length}</span></button>
+          <button class="mcv-tab${marketCrateTab === "inside" ? " active" : ""}" data-mcv-tab="inside" role="tab">What&rsquo;s inside</button>
+        </div>
+        ${
+          marketCrateTab === "listings"
+            ? `<div class="mcv-listings">${listingRows || `<div class="market-empty">Nothing listed right now.</div>`}</div>`
+            : `<div class="odds-panel">${buildOddsPanelHTML(pool.filter((p) => p.left > 0))}</div>
+               <div class="prize-list prize-browser">${prizeBrowserHTML(key, pool)}</div>`
+        }
+      </div>
+    </div>`;
+}
+
+function renderMarketCrate() {
+  if (marketCrateKey === null) return;
+  const keep = (sel) => marketCrateView.querySelector(sel)?.scrollTop ?? 0;
+  const tilesTop = keep(".prize-tiles");
+  const listTop = keep(".mcv-listings");
+  marketCrateView.innerHTML = marketCrateViewHTML(marketCrateKey);
+  const tiles = marketCrateView.querySelector(".prize-tiles");
+  if (tiles) tiles.scrollTop = tilesTop;
+  const list = marketCrateView.querySelector(".mcv-listings");
+  if (list) list.scrollTop = listTop;
+  marketCrateView.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+}
+
+function openMarketCrate(key) {
+  if (!CATEGORIES[key]) return;
+  marketCrateKey = key;
+  marketCrateTab = "listings";
+  marketCrateQty = 1;
+  screenMarketEl.classList.add("is-crate-view");
+  marketCrateView.hidden = false;
+  renderMarketCrate();
+  window.scrollTo({ top: 0 });
+}
+
+function closeMarketCrate() {
+  if (marketCrateKey === null) return;
+  marketCrateKey = null;
+  screenMarketEl.classList.remove("is-crate-view");
+  marketCrateView.hidden = true;
+  marketCrateView.innerHTML = "";
+}
+
+// The cheapest `qty` boxes, each at its own price.
+function buyCheapestCrates(key, qty) {
+  const pick = buyableListings(key).slice(0, qty);
+  const total = pick.reduce((sum, l) => sum + l.price, 0);
+  if (player.getWallet().cash < total) {
+    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
+    openAddFundsModal();
+    return;
+  }
+  let bought = 0;
+  pick.forEach((l) => {
+    if (buyCrateListing(l.id, null, { quiet: true })) bought += 1;
+  });
+  if (bought) showToast(bought > 1 ? `${bought} sealed crates bought for $${total.toLocaleString()}. They're in your account` : `Sealed ${CATEGORIES[key].badge} crate bought. It's in your account`, ICONS.bell);
+  marketCrateQty = 1;
+  renderMarketCrate();
+}
+
+// One price per box, sent to everyone selling this crate. Sellers who take
+// it sell to you (cheapest listing first, up to how many you asked for);
+// of the rest, the lowest counter is offered back.
+async function offerOnCrates(key, qty) {
+  const sellers = buyableListings(key);
+  if (!sellers.length) return;
+  const st = supply.status(key);
+  const amount = await promptAmount(
+    qty > 1 ? `Offer on ${qty} boxes` : "Make an offer",
+    `Your price per box goes to all ${plural(sellers.length, "seller", "sellers")} of the ${crateName(key)}. Cheapest is $${sellers[0].price.toLocaleString()}; a box averages $${Math.round(st.ev).toLocaleString()} right now.`,
+    Math.round(sellers[0].price * 0.9)
+  );
+  if (!amount) return;
+  if (player.getWallet().cash < amount * qty) {
+    showToast("Not enough Cash to back that offer. Add funds to continue", ICONS.bell);
+    openAddFundsModal();
+    return;
+  }
+  const offer = { amount, qty, sent: sellers.length, bought: 0, counter: null, status: "pending" };
+  (crateOffers[key] ??= []).unshift(offer);
+  renderMarketCrate();
+  setTimeout(() => {
+    const answers = buyableListings(key).map((l) => ({ l, d: market.botDecision(amount, l.price) }));
+    answers
+      .filter((a) => a.d.status === "accepted")
+      .slice(0, qty)
+      .forEach((a) => {
+        if (buyCrateListing(a.l.id, amount, { quiet: true })) offer.bought += 1;
+      });
+    if (offer.bought < qty) {
+      const best = answers.filter((a) => a.d.status === "countered" && market.getCrateListing(a.l.id)).sort((a, b) => a.d.counterAmount - b.d.counterAmount)[0];
+      if (best) offer.counter = { listingId: best.l.id, amount: best.d.counterAmount };
+    }
+    offer.status = "answered";
+    if (offer.bought) showToast(`Offer taken: ${plural(offer.bought, "sealed crate", "sealed crates")} bought at $${amount.toLocaleString()} each`, ICONS.bell);
+    if (marketCrateKey === key) renderMarketCrate();
+  }, 1100);
+}
+
+marketCrateView.addEventListener("click", async (e) => {
+  const key = marketCrateKey;
+  if (key === null) return;
+  const tabBtn = e.target.closest("[data-mcv-tab]");
+  if (tabBtn) {
+    playClick();
+    marketCrateTab = tabBtn.dataset.mcvTab;
+    renderMarketCrate();
+    return;
+  }
+  const btn = e.target.closest("[data-mcv]");
+  if (!btn) {
+    // Tier tabs and odds boxes switch the tier on show.
+    const tab = e.target.closest("[data-prize-tab]");
+    if (!tab) return;
+    playClick();
+    prizeTabByKey[key] = tab.dataset.prizeTab;
+    marketCrateView.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.livePool(key));
+    return;
+  }
+  if (btn.disabled) return;
+  playClick();
+  const act = btn.dataset.mcv;
+  if (act === "back") return closeMarketCrate();
+  if (act === "qty-minus") marketCrateQty -= 1;
+  else if (act === "qty-plus") marketCrateQty += 1;
+  else if (act === "buy") return buyCheapestCrates(key, marketCrateQty);
+  else if (act === "buy-one") {
+    if (buyCrateListing(btn.dataset.listing)) renderMarketCrate();
+    return;
+  } else if (act === "offer") return offerOnCrates(key, marketCrateQty);
+  else if (act === "accept-counter") {
+    const amount = Number(btn.dataset.amount);
+    if (buyCrateListing(btn.dataset.listing, amount)) {
+      (crateOffers[key] ?? []).forEach((o) => {
+        if (o.counter?.listingId === btn.dataset.listing) {
+          o.counter = null;
+          o.bought += 1;
+        }
+      });
+    }
+  } else if (act === "unlist") {
+    const token = player.getCrates().find((t) => t.listingId === btn.dataset.listing);
+    if (token) unlistSealedCrate(token.id);
+    else market.removeCrateListing(btn.dataset.listing);
+  } else if (act === "buy-drop") return openPaymentPicker(key);
+  renderMarketCrate();
+});
 
 // ---- The crowd ---------------------------------------------------------------------
 // One simulated player doing one thing: buying a box off a drop and
@@ -6092,7 +6199,7 @@ function refreshSupplyViews() {
       }
     });
   }
-  if (marketCrateListingId !== null && screenMarketEl.classList.contains("active")) renderMarketCrate();
+  if (marketCrateKey !== null && screenMarketEl.classList.contains("active")) renderMarketCrate();
   if (crateModalCtx) renderCrateModal();
 }
 

@@ -8034,3 +8034,106 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   /* Sealed crates: the same bottom-aligned row, two buttons. */
   #inventoryGrid .sealed-item .sealed-sub { margin-bottom: 10px; }
 }
+
+/* --- Market: Items / Crates ---------------------------------------------
+   Sealed boxes are their own tab, so they don't crowd the items. The pill
+   behind the active tab is the liquid one (motion.js). */
+.market-kind {
+  --pill-bg: var(--text);
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--control-fill);
+}
+.market-kind-btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.market-kind-btn span { margin-left: 4px; opacity: 0.6; }
+.market-kind-btn.active { color: var(--text-inverse); }
+.market-kind:not(.has-liquid) .market-kind-btn.active { background: var(--text); }
+/* Crates have no brand, size or category, and are always priced. */
+.market-shell.is-crates .market-listed-toggle,
+.market-shell.is-crates .market-filter-group:has(#marketCategoryFilter),
+.market-shell.is-crates .market-filter-group:has(#marketBrandFilter),
+.market-shell.is-crates .market-filter-group:has(#marketShoeSizeFilter),
+.market-shell.is-crates .market-filter-group:has(#marketClothingSizeFilter) { display: none; }
+
+/* One card per crate: how many are listed, and the cheapest. */
+.crate-group { cursor: pointer; }
+.crate-group-count {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.crate-group-sub { display: block; font-size: 0.68rem; color: var(--text-dim); }
+.crate-group-from { font-size: 0.66rem; font-weight: 600; color: var(--text-dim); }
+
+/* The crate's page: box and buying on the left; Listings / What's inside. */
+.mcv-box-wrap { position: relative; width: min(100%, 240px); margin: 0 auto; }
+.mcv-box-wrap .mcv-box { width: 100%; margin: 0; }
+.mcv-box-wrap .crate-group-count { top: 10px; left: 0; }
+.mcv-qty { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.mcv-qty .qty-btn:disabled { opacity: 0.35; cursor: default; }
+.mcv-qty .qty-btn:disabled:hover { background: var(--control-fill); color: var(--text); }
+.mcv-qty-of { font-size: 0.72rem; color: var(--text-faint); }
+.mcv-offer-qty { color: var(--text-dim); }
+.mcv-panel { display: flex; flex-direction: column; min-height: 0; }
+.mcv-tabs { display: flex; gap: 6px; padding: 14px 16px 10px; border-bottom: 1px solid var(--hairline); }
+.mcv-tab {
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mcv-tab span { margin-left: 4px; opacity: 0.6; }
+.mcv-tab.active { background: var(--text); color: var(--text-inverse); }
+.mcv-listings { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mcv-listing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+.mcv-listing.is-mine { background: color-mix(in srgb, var(--text) 4%, transparent); }
+.mcv-listing-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.mcv-listing-who b { font-size: 0.8rem; color: var(--text); }
+.mcv-listing-who > span { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-dim); }
+.mcv-listing-price { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.mcv-row-btn {
+  padding: 7px 16px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mcv-row-btn.is-buy { border-color: transparent; background: var(--text); color: var(--text-inverse); }
+.mcv-row-btn:hover { opacity: 0.85; }
+.mcv-panel .prize-browser { padding-top: 12px; }

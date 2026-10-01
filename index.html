@@ -379,6 +379,10 @@ try {
         </aside>
 
         <div class="market-content">
+          <div class="market-kind" id="marketKind" role="tablist" aria-label="Show">
+            <button type="button" class="market-kind-btn active" data-kind="items" role="tab">Items <span id="marketKindItems"></span></button>
+            <button type="button" class="market-kind-btn" data-kind="crates" role="tab">Crates <span id="marketKindCrates"></span></button>
+          </div>
           <div id="marketGrid" class="market-grid" data-reveal="stagger"></div>
         </div>
       </div>
