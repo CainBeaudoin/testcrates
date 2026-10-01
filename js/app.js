@@ -5451,21 +5451,20 @@ function grailTileHTML(g) {
 }
 
 // ---- Home: Mystery --------------------------------------------------------
-// Two halves. On the left, a demo that loops on its own: someone taps Open,
-// boxes pile up, the mystery bar charges, and at full a mystery piece drops
-// into a crate, which shakes and reveals it. On the right, the three that
-// are actually happening: one ring per line, a circle with its bottom cut
-// flat, charging round the arc for that line's cheapest drop, its top
-// mystery piece standing on the flat, and a padlock plate on the flat edge
-// (locked with the % while it charges, open once it's unlocked).
+// Two halves, packed: on the left, a demo that loops on its own (Open is
+// tapped, boxes fill the bar, a mystery piece goes into the crate and,
+// on a hit, comes out); on the right, the three that are actually
+// happening, one card per line, stacked to the demo's height. Each card is
+// tinted like that line's drop card: the line's top mystery piece in a
+// thin rounded-square ring that fills with its cheapest drop's charge, the
+// piece's name and value, and a lock pill (the % while it charges,
+// Unlocked once it has).
 const homeMysteryEl = document.getElementById("homeMystery");
 const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
-// The dial: a rounded square (14..186 each way, corners of 32) — the
-// same soft-cornered shape as the site's buttons and cards. The charge runs
-// all the way round it from the bottom edge, leaving a gap there (58..142)
-// that the lock plate fills, so the line runs into it.
+// The ring: a rounded square (14..186 each way, corners of 32 — the site's
+// soft-cornered shape), the charge running clockwise from the top middle.
 const HM_DIAL_ARC =
-  "M 58 186 L 46 186 A 32 32 0 0 1 14 154 L 14 46 A 32 32 0 0 1 46 14 L 154 14 A 32 32 0 0 1 186 46 L 186 154 A 32 32 0 0 1 154 186 L 142 186";
+  "M 100 14 L 154 14 A 32 32 0 0 1 186 46 L 186 154 A 32 32 0 0 1 154 186 L 46 186 A 32 32 0 0 1 14 154 L 14 46 A 32 32 0 0 1 46 14 Z";
 
 // The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
@@ -5488,15 +5487,18 @@ function homeMysteryCardHTML(line) {
     <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
       <span class="hm-dial">
         <svg class="hm-dial-svg" viewBox="0 0 200 200" aria-hidden="true">
-          <defs><linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
+          <defs><linearGradient id="hmStroke-${line}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
           <path class="hm-ring-track" d="${HM_DIAL_ARC}"/>
           <path class="hm-ring-fill" d="${HM_DIAL_ARC}" pathLength="100" stroke="url(#hmStroke-${line})"/>
         </svg>
         <span class="hm-disc"><img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt=""></span>
-        <span class="hm-badge">${hmBadgeHTML(!!ready, pct)}</span>
       </span>
-      <span class="hm-line">${CATEGORIES[key].badge}</span>
-      <b class="hm-value">$${item.price.toLocaleString()}</b>
+      <span class="hm-info">
+        <span class="hm-line">${CATEGORIES[key].badge} · ${CATEGORIES[key].label} drop</span>
+        <span class="hm-name">${item.name}</span>
+        <b class="hm-value">$${item.price.toLocaleString()}</b>
+      </span>
+      <span class="hm-badge">${hmBadgeHTML(!!ready, pct)}</span>
     </button>`;
 }
 

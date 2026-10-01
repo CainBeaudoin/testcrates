@@ -8441,114 +8441,6 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   background: linear-gradient(135deg, #f6d27a, #b678f2);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
 }
-/* Demo on the left, the three live dials on the right. */
-.home-mystery {
-  display: grid;
-  grid-template-columns: minmax(300px, 0.85fr) 1.6fr;
-  align-items: center;
-  gap: 40px;
-}
-.hm-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-
-/* --- The dials: a circle cut flat across the bottom. The charge runs
-   round the arc; the piece stands on the flat of a white disc; a padlock
-   plate sits on the flat edge — shut with the % while charging, open once
-   unlocked. */
-.hm-card {
-  --p: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.hm-dial {
-  position: relative;
-  display: block;
-  width: min(100%, 230px);
-  aspect-ratio: 200 / 190;
-  margin-bottom: 14px;
-  transition: scale 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.hm-card:hover .hm-dial { scale: 1.04; }
-.hm-dial-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 7; stroke-linecap: round; }
-.hm-ring-fill {
-  fill: none;
-  stroke-width: 7;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: calc(100 - var(--p));
-  filter: drop-shadow(0 0 5px rgba(182, 120, 242, 0.55));
-  transition: stroke-dashoffset 1.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.motion-armed .home-mystery:not(.in) .hm-ring-fill { stroke-dashoffset: 100; }
-.hm-card.is-empty .hm-ring-fill { opacity: 0; }
-.hm-card.is-ready .hm-ring-fill { animation: hmGlow 2.4s ease-in-out infinite; }
-@keyframes hmGlow { 50% { filter: drop-shadow(0 0 13px rgba(182, 120, 242, 0.95)); } }
-/* The tile inside the dial: a white rounded square, 28..172 by 26..160. */
-.hm-disc {
-  position: absolute;
-  left: 14%;
-  top: calc(100% * 26 / 190);
-  width: 72%;
-  height: calc(100% * 134 / 190);
-  border-radius: 20px;
-  background: radial-gradient(circle at 50% 30%, #fff, #f4eefb);
-  box-shadow: inset 0 -10px 24px -14px rgba(120, 70, 180, 0.35);
-}
-.hm-card.is-ready .hm-disc { background: radial-gradient(circle at 50% 35%, #fff, #f1e3ff); }
-.hm-item {
-  position: absolute;
-  left: 50%;
-  bottom: 12%;
-  width: 74%;
-  height: 66%;
-  translate: -50% 0;
-  object-fit: contain;
-  object-position: bottom;
-  filter: drop-shadow(0 8px 8px rgba(40, 20, 70, 0.22));
-  transition: translate 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-:root[data-theme="light"] .hm-item { mix-blend-mode: multiply; }
-.hm-card:hover .hm-item { translate: -50% -5px; }
-.hm-badge {
-  position: absolute;
-  left: 50%;
-  top: calc(100% * 176 / 190);
-  translate: -50% -50%;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  border-radius: var(--r-pill);
-  background: var(--surface-1);
-  box-shadow: 0 0 0 1px var(--hairline), 0 4px 12px -4px rgba(0, 0, 0, 0.18);
-  font-size: 0.72rem;
-  font-weight: 800;
-  white-space: nowrap;
-  color: var(--text);
-}
-.hm-badge svg { width: 12px; height: 12px; }
-.hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: 0 6px 16px -6px rgba(182, 120, 242, 0.8); }
-.hm-arrow { display: inline-block; transition: transform 0.2s ease; }
-.hm-card:hover .hm-arrow { transform: translateX(3px); }
-.hm-line { font-size: 0.66rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
-.hm-value {
-  font-size: 1.25rem;
-  font-weight: 900;
-  background: linear-gradient(90deg, #d99a1e, #9b5ce0);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 /* --- The demo: Open is tapped, boxes pile up, the bar charges, a mystery
    piece drops into the crate, it shakes and reveals it. Driven by
    runMysteryDemo setting data-phase; it all loops. */
@@ -8708,11 +8600,6 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   .home-mystery { grid-template-columns: 1fr; gap: 28px; }
 }
 @media (max-width: 640px) {
-  .hm-rings { gap: 8px; }
-  .hm-badge { font-size: 0.58rem; padding: 3px 8px; gap: 3px; }
-  .hm-badge svg { width: 9px; height: 9px; }
-  .hm-value { font-size: 0.95rem; }
-  .hm-line { font-size: 0.56rem; }
   .hm-demo-box { height: 175px; }
   .hm-demo-caption { font-size: 1.2rem; margin-top: -10px; }
   .hm-demo-crate { width: 250px; height: 175px; margin-bottom: -30px; }
@@ -8829,114 +8716,6 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   .hm-demo-canvas { width: 250px; height: 210px; bottom: -24px; }
 }
 
-/* --- Home: Mystery in its own night sky -------------------------------------
-   The whole section sits on a dark panel — deep violet-black, a scatter of
-   stars, a glow rising from below — so it breaks away from the rest of the
-   page. Inside it the page's own colour tokens are swapped for light-on-
-   dark ones, so the heading, dials, bar and caption all follow without
-   rules of their own. */
-.home-mystery-block {
-  --text: #f6f1fb;
-  --text-dim: rgba(246, 241, 251, 0.62);
-  --hairline: rgba(255, 255, 255, 0.14);
-  --line-strong: rgba(255, 255, 255, 0.3);
-  --surface-1: #251c35;
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  padding: 34px 40px 40px;
-  border-radius: var(--r-2xl, 28px);
-  background:
-    radial-gradient(70% 60% at 78% 0%, rgba(182, 120, 242, 0.32), transparent 70%),
-    radial-gradient(60% 55% at 12% 100%, rgba(242, 184, 75, 0.16), transparent 70%),
-    linear-gradient(180deg, #17111f, #100c16);
-  color: var(--text);
-  box-shadow: 0 30px 60px -30px rgba(40, 20, 70, 0.55);
-}
-/* Stars. */
-.home-mystery-block::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    radial-gradient(1.2px 1.2px at 8% 18%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 22% 62%, rgba(255, 255, 255, 0.45), transparent),
-    radial-gradient(1.5px 1.5px at 35% 12%, rgba(255, 255, 255, 0.55), transparent),
-    radial-gradient(1px 1px at 47% 82%, rgba(255, 255, 255, 0.35), transparent),
-    radial-gradient(1.2px 1.2px at 58% 30%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1px 1px at 69% 70%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1.6px 1.6px at 81% 16%, rgba(246, 210, 122, 0.7), transparent),
-    radial-gradient(1px 1px at 90% 54%, rgba(255, 255, 255, 0.45), transparent),
-    radial-gradient(1.3px 1.3px at 96% 88%, rgba(201, 156, 247, 0.65), transparent),
-    radial-gradient(1px 1px at 4% 90%, rgba(255, 255, 255, 0.4), transparent);
-  animation: hmTwinkle 6s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-@keyframes hmTwinkle { from { opacity: 0.55; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .home-mystery-block::before { animation: none; } }
-.home-mystery-block .home-block-head { margin-bottom: 18px; }
-/* Brighter golds and violets for text on the dark. */
-.home-mystery-block .hm-value { background-image: linear-gradient(90deg, #f6d27a, #d3a6ff); }
-.home-mystery-block .hm-demo-caption em { background-image: linear-gradient(90deg, #f6d27a, #e7a3e8, #c69bff); }
-.home-mystery-block .hm-demo-bar-label { color: #d3a6ff; }
-.home-mystery-block .hm-demo-cursor { background: #fff; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
-.home-mystery-block .hm-ring-track { stroke: rgba(255, 255, 255, 0.12); }
-.home-mystery-block .hm-demo-bar-track { background: rgba(255, 255, 255, 0.1); }
-.home-mystery-block .hm-disc { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px -14px rgba(182, 120, 242, 0.55); }
-.home-mystery-block .hm-demo-crate,
-.home-mystery-block .hm-demo-mini { filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)); }
-@media (max-width: 640px) {
-  .home-mystery-block { padding: 24px 16px 26px; border-radius: var(--r-xl, 24px); }
-}
-
-/* --- Mystery, rearranged ------------------------------------------------------
-   The dark band runs the full width of the window (its content stays on
-   the page's column); the lock plate is a rounded rectangle filling the
-   gap at the bottom of each dial, so the charge line runs into it; and in
-   the demo the bar sits beside Open, the opened boxes line up under it,
-   and the freed height goes to a bigger prize. */
-.home-mystery-block {
-  border-radius: 0;
-  overflow: visible;
-  background: none;
-  box-shadow: none;
-  padding: 56px 0 60px;
-}
-.home-mystery-block::before { left: 50%; right: auto; width: 100vw; translate: -50% 0; }
-/* The band itself, behind the stars. */
-.home-mystery-block::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  z-index: -2;
-  width: 100vw;
-  translate: -50% 0;
-  background:
-    radial-gradient(45% 70% at 80% 0%, rgba(182, 120, 242, 0.32), transparent 70%),
-    radial-gradient(40% 65% at 15% 100%, rgba(242, 184, 75, 0.16), transparent 70%),
-    linear-gradient(180deg, #17111f, #100c16);
-  pointer-events: none;
-}
-/* The band is wider than the page column: clip it at the window's edge —
-   on the full-width shell, not the screen (which is only the column wide)
-   — with clip, not hidden, so nothing becomes a scroll container. */
-.shell-main { overflow-x: clip; }
-.home-mystery-block + .home-block { margin-top: 56px; }
-
-/* Lock plate: fills the gap 58..142 of the dial's 200, less a breath
-   each side; corners to match the dial. */
-.hm-badge {
-  left: 31%;
-  width: 38%;
-  translate: 0 -50%;
-  justify-content: center;
-  padding: 5px 4px;
-  border-radius: 9px;
-}
-
 /* Demo: bar beside Open, boxes under it, more room for the prize. */
 .hm-demo-top { gap: 14px; }
 .hm-demo-top .hm-demo-bar { flex: 1; min-width: 0; }
@@ -8947,20 +8726,133 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @keyframes hmReveal { from { opacity: 0; scale: 0.3; translate: 0 50px; } to { opacity: 1; scale: 1; translate: 0 -40px; } }
 .hm-demo[data-phase="out"] .hm-demo-prize { translate: 0 -40px; }
 @media (max-width: 640px) {
-  .home-mystery-block { padding: 40px 0 44px; }
-  .hm-badge { left: 27%; width: 46%; padding: 3px 2px; border-radius: 7px; }
   .hm-demo-top .hm-demo-bar-label { display: none; }
   .hm-demo-box { height: 230px; }
   .hm-demo-prize { width: 200px; height: 150px; margin-left: -100px; bottom: 80px; }
 }
 
-/* Square, not squashed: the dial is drawn on a 200 x 200 square and the
-   tile inside it is square too (30..170 each way). */
-.hm-dial { aspect-ratio: 1; }
-.hm-disc { left: 15%; top: 15%; width: 70%; height: 70%; }
-.hm-badge { top: 93%; }
-@media (max-width: 640px) {
-  /* "Unlocked ->" needs the plate's whole width on a phone. */
-  .hm-card.is-ready .hm-badge svg { display: none; }
-  .hm-card.is-ready .hm-badge { gap: 2px; font-size: 0.54rem; }
+
+/* --- Home: Mystery (rebuilt to sit with the rest of Home) --------------------
+   Light, like every other block: the demo on a white card on the left, and
+   on the right the three live mysteries as compact cards stacked to the
+   same height, each tinted like its line's drop card. Thin lines; the
+   gold-to-violet is kept only for the charge itself. */
+.home-mystery {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
 }
+.hm-demo {
+  padding: 20px 22px 18px;
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(90% 70% at 50% 100%, rgba(182, 120, 242, 0.12), transparent 70%),
+    var(--surface-1);
+  justify-content: space-between;
+}
+.hm-rings { display: flex; flex-direction: column; gap: 12px; }
+
+/* One live mystery: ring and piece, then what it is, then the lock. */
+.hm-card {
+  --p: 0;
+  --tint: #efe3d4;
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px 12px 12px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: linear-gradient(100deg, var(--tint), var(--surface-1) 70%);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+.hm-card[data-line="sneakers"] { --tint: #f3ddcb; }
+.hm-card[data-line="streetwear"] { --tint: #dfe6f1; }
+.hm-card[data-line="collectibles"] { --tint: #f5e7c6; }
+:root:not([data-theme="light"]) .hm-card { --tint: rgba(255, 255, 255, 0.07); }
+.hm-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px -16px rgba(60, 30, 100, 0.35); }
+.hm-dial { position: relative; flex: 0 0 auto; width: 96px; aspect-ratio: 1; }
+.hm-dial-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 10%, transparent); stroke-width: 5; }
+.hm-ring-fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p));
+  transition: stroke-dashoffset 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.motion-armed .home-mystery:not(.in) .hm-ring-fill { stroke-dashoffset: 100; }
+.hm-card.is-empty .hm-ring-fill { opacity: 0; }
+.hm-card.is-ready .hm-ring-fill { filter: drop-shadow(0 0 4px rgba(182, 120, 242, 0.6)); }
+.hm-disc {
+  position: absolute;
+  inset: 14%;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+.hm-item { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; transition: scale 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+:root[data-theme="light"] .hm-item { mix-blend-mode: multiply; }
+.hm-card:hover .hm-item { scale: 1.06; }
+.hm-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hm-line { font-size: 0.62rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.hm-name { overflow: hidden; font-size: 0.82rem; font-weight: 600; line-height: 1.3; color: var(--text); white-space: nowrap; text-overflow: ellipsis; }
+.hm-value { font-size: 1.15rem; font-weight: 900; color: var(--text); }
+.hm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface-1);
+  box-shadow: 0 0 0 1px var(--hairline);
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--text);
+}
+.hm-badge svg { width: 12px; height: 12px; }
+.hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: none; }
+.hm-arrow { display: inline-block; transition: transform 0.2s ease; }
+.hm-card:hover .hm-arrow { transform: translateX(3px); }
+
+/* The demo, lighter: thinner bar, the caption at section-title weight but
+   smaller, so it reads as part of the card, not a banner. */
+.hm-demo-bar-track { height: 7px; }
+.hm-demo-caption { font-size: 1.15rem; margin-top: -10px; }
+.hm-demo-box { height: 230px; }
+.hm-demo-crate { width: 280px; height: 196px; }
+.hm-demo-canvas { width: 280px; height: 230px; }
+.hm-demo-prize { width: 220px; height: 165px; margin-left: -110px; bottom: 84px; }
+
+@media (max-width: 900px) {
+  .home-mystery { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .hm-card { gap: 12px; padding: 10px 12px 10px 10px; }
+  .hm-dial { width: 76px; }
+  .hm-name { font-size: 0.76rem; }
+  .hm-value { font-size: 1rem; }
+  .hm-badge { padding: 6px 9px; font-size: 0.68rem; }
+  .hm-card.is-ready .hm-badge .hm-arrow { display: none; }
+  .hm-demo { padding: 16px 16px 14px; }
+}
+/* Names wrap to two lines rather than cutting off. */
+.hm-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }
+/* The crate fills its card: the snapshot and the live box are framed with
+   room to spin, so they're drawn large and pulled down into the space. */
+.hm-demo-crate { width: 380px; height: 270px; margin-bottom: -62px; }
+.hm-demo-canvas { width: 380px; height: 320px; bottom: -64px; }
+.hm-demo-drop { top: 18px; }
+@media (max-width: 640px) {
+  .hm-demo-crate { width: 300px; height: 215px; margin-bottom: -48px; }
+  .hm-demo-canvas { width: 300px; height: 255px; bottom: -50px; }
+}
+.hm-demo { overflow: hidden; }
