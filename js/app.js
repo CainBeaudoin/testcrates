@@ -5508,11 +5508,7 @@ function homeMysteryDemoHTML() {
         <img class="hm-demo-prize" alt="">
         <img class="hm-demo-crate" alt="">
       </div>
-      <ol class="hm-demo-steps">
-        <li data-step="1">Boxes get opened</li>
-        <li data-step="2">The bar charges</li>
-        <li data-step="3">A mystery piece unlocks</li>
-      </ol>
+      <p class="hm-demo-caption"></p>
     </div>`;
 }
 
@@ -5543,21 +5539,26 @@ function runMysteryDemo() {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = () => run === hmDemoRun && el.isConnected;
   const onScreen = () => !document.hidden && document.getElementById("screen-home").classList.contains("active");
-  const step = (n) => el.querySelectorAll(".hm-demo-steps li").forEach((li) => li.classList.toggle("is-on", Number(li.dataset.step) === n));
+  // One line under the crate, saying only what the picture can't: what
+  // fills the bar, and what a full one does.
+  const caption = el.querySelector(".hm-demo-caption");
+  const say = (text) => (caption.textContent ? swapText(caption, text) : (caption.textContent = text));
   const setBar = (p) => {
     fill.style.width = `${p}%`;
     pctEl.textContent = `${Math.round(p)}%`;
   };
   (async () => {
     while (alive()) {
-      if (!onScreen()) {
-        await wait(800);
+      // Off screen, or the crate picture not ready yet (the mini crates
+      // would show as broken images): wait.
+      if (!onScreen() || !crateUrl) {
+        await wait(crateUrl ? 800 : 250);
         continue;
       }
       el.dataset.phase = "buy";
       row.innerHTML = "";
       setBar(0);
-      step(1);
+      say("Every box opened fills the bar");
       await wait(500);
       const buys = 6;
       for (let i = 1; i <= buys && alive(); i++) {
@@ -5570,12 +5571,11 @@ function runMysteryDemo() {
         mini.alt = "";
         row.appendChild(mini);
         setBar((i / buys) * 100);
-        if (i === 3) step(2);
         await wait(620);
       }
       if (!alive()) break;
       el.dataset.phase = "full";
-      step(3);
+      say("Full bar, mystery unlocked");
       await wait(500);
       el.dataset.phase = "drop";
       await wait(900);
