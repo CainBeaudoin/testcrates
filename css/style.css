@@ -7741,3 +7741,81 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   .prize-modal-card.crate-modal-card { width: 100%; max-width: none; max-height: calc(100vh - 32px); }
   #crateModal { padding: 16px 12px; }
 }
+
+/* --- What's left: the live row of pieces still inside a crate ------------
+   Small white tiles of the best of what's left, a rarity dot under each,
+   and +N for the rest. A button where it opens the breakdown; a plain row
+   inside cards that already open it. */
+.whats-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--control-fill);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+button.whats-left:hover { background: var(--control-fill-hover); }
+.whats-left-label {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.whats-left-thumbs { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.wl-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+  border-radius: var(--r-xs);
+  background: #fff;
+}
+.wl-thumb img { width: 100%; height: 100%; object-fit: contain; }
+/* Rarity as a dot, not a ring: says which tier at a glance, adds no frame. */
+.wl-thumb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rarity-color);
+  transform: translateX(-50%);
+}
+.wl-more {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+/* Home: sits in the crate panel where "Could contain" was. */
+.whats-left-home { margin-top: 0; background: rgba(255, 255, 255, 0.55); }
+:root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
+/* Inside sealed cards: no ground of its own, smaller tiles. */
+.whats-left-mini { margin-top: 6px; padding: 0; background: none; cursor: inherit; }
+.whats-left-mini .wl-thumb { width: 24px; height: 24px; }
+.whats-left-mini .whats-left-label { display: none; }
+@media (max-width: 640px) {
+  .wl-thumb { width: 24px; height: 24px; }
+  .whats-left { padding: 6px 8px; }
+}
+/* Drops' cards run five across and narrow: the label sits above the row
+   rather than beside it, and the row never runs past the card. */
+.category-card .whats-left { flex-direction: column; align-items: flex-start; gap: 7px; padding: 8px 10px 11px; }
+.whats-left-thumbs { max-width: 100%; overflow: hidden; padding-bottom: 6px; margin-bottom: -6px; }

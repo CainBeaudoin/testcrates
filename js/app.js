@@ -1681,26 +1681,30 @@ function buildOddsPanelHTML(pool) {
   `;
 }
 
-// A crate's supply on its card: how many of the drop are left to buy,
-// how many Grails are still in the series, and the way into the full list.
-// The data-supply attribute lets refreshSupplyViews update it in place as
-// the crowd buys and opens.
+// What's left in a crate, on its card: small pictures of the best pieces
+// still inside, best first, and how many more there are. No counts, no bar
+// and no single tier singled out — an Epic or a Rare is a win too, and a
+// row of the real remaining pieces says what a box can still give without
+// asking anyone to read numbers. When the top pieces are gone, they simply
+// stop showing. The full breakdown is one click away (openCrateModal).
+// data-supply lets refreshSupplyViews redraw it in place as the crowd opens.
 function buildSupplyHTML(tierKey) {
-  return `<div class="supply-block" data-supply="${tierKey}">${supplyBlockInner(tierKey)}</div>`;
+  return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's left in this crate">${whatsLeftInner(tierKey)}</button>`;
 }
-function supplyBlockInner(tierKey) {
-  const st = supply.status(tierKey);
-  const pct = Math.round((st.sold / st.total) * 100);
-  const head = st.soldOut
-    ? `<b>Sold out</b> · ${st.unopened} sealed out there`
-    : `<b>${st.unsold}</b> of ${st.total} left`;
-  return `
-    <div class="supply-line">
-      <span class="supply-count">${head}</span>
-      <span class="supply-grails">${st.grailsLeft} ${st.grailsLeft === 1 ? "Grail" : "Grails"}</span>
-    </div>
-    <div class="supply-track"><i style="width:${pct}%"></i></div>
-    <button class="supply-whats-left" data-whats-left="${tierKey}">What&rsquo;s left</button>`;
+function whatsLeftInner(tierKey, max = 4) {
+  const live = supply
+    .livePool(tierKey)
+    .filter((p) => p.left > 0)
+    .sort((a, b) => rankOf(b.rarity) - rankOf(a.rarity) || b.price - a.price);
+  const shown = live.slice(0, max);
+  const more = live.length - shown.length;
+  return `<span class="whats-left-label">What&rsquo;s left</span>
+    <span class="whats-left-thumbs">${shown
+      .map(
+        (p) =>
+          `<span class="wl-thumb" style="--rarity-color:${RARITY_META[p.rarity].color}" title="${p.name} · ${RARITY_META[p.rarity].label}"><img src="${p.image}" alt=""></span>`
+      )
+      .join("")}${more > 0 ? `<span class="wl-more">+${more}</span>` : ""}</span>`;
 }
 
 let categoryBoxViewers = [];
@@ -1971,7 +1975,7 @@ function openPaymentPicker(key, quantity = 1) {
   pendingCategoryKey = key;
   pendingQuantity = quantity;
   setPayMode("open");
-  paySupplyEl.textContent = `${s.unsold.toLocaleString()} of ${s.total} left in Series ${s.series} · ${s.grailsLeft} ${s.grailsLeft === 1 ? "Grail" : "Grails"} still in it`;
+  paySupplyEl.textContent = `${s.unsold.toLocaleString()} of ${s.total} left in Series ${s.series}`;
 
   // Stocks settle in Cash only (real USDC, not a Credits reward balance), so
   // the picker shows the one option it has. It used to be skipped, which
@@ -5086,38 +5090,22 @@ function releaseHomeViewers() {
 // your pity — rounds left to a guaranteed Rare+ — which the bar under them
 // fills toward.
 function homeCrateCardHTML(key, cat) {
-  const top = [...cat.pool].sort(byPriceDesc);
   const st = supply.status(key);
   return `
       <div class="home-crate" data-tier="${key}" data-line="${lineOf(key)}">
         <div class="crate-panel">
           <span class="crate-brand" title="Powered by ${cat.poweredBy ?? "Chosen"}">${brandMarkHTML(cat.poweredBy ?? "Chosen")}</span>
           <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
-          <div class="crate-could">
-            <span>Could contain</span>
-            <span class="crate-could-thumbs">${top
-              .slice(0, 3)
-              .map((p) => `<img src="${p.image}" alt="" title="${p.name}">`)
-              .join("")}</span>
-          </div>
+          <button class="whats-left whats-left-home" data-supply="${key}" data-whats-left="${key}" aria-label="See what's left in this crate">${whatsLeftInner(key, 4)}</button>
         </div>
         <div class="crate-body">
           <div class="crate-title">
             <span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span>
             <span class="crate-price">$${cat.price.toLocaleString()}</span>
           </div>
-          <div class="crate-facts" data-supply-facts="${key}">${homeCrateFactsInner(key)}</div>
-          <div class="crate-supply" data-supply-bar="${key}" title="How much of this drop has sold"><i style="width:${Math.round((st.sold / st.total) * 100)}%"></i></div>
           <button class="home-btn home-btn-solid home-crate-open" data-supply-btn="${key}">${st.soldOut ? "Sold out · Market" : "Open"}</button>
         </div>
       </div>`;
-}
-
-function homeCrateFactsInner(key) {
-  const st = supply.status(key);
-  return `
-            <span><i>Grails left</i><b>${st.grailsLeft}</b></span>
-            <span><i>${st.soldOut ? "Sealed" : "Left"}</i><b>${st.soldOut ? st.unopened : st.unsold}/${st.total}</b></span>`;
 }
 
 function renderHomeCrates() {
@@ -5147,7 +5135,9 @@ function renderHomeCrates() {
       card.addEventListener("mouseenter", () => viewer.setPaused(true));
       card.addEventListener("mouseleave", () => viewer.setPaused(false));
     });
-    card.addEventListener("click", () => {
+    card.addEventListener("click", (e) => {
+      // The "What's left" row opens the breakdown instead (its own handler).
+      if (e.target.closest("[data-whats-left]")) return;
       playClick();
       homeSeeCrate(key);
     });
@@ -5500,7 +5490,7 @@ function renderCrateModal() {
   document.getElementById("crateModalStats").innerHTML = [
     [`${st.unopened}<small>/${st.total}</small>`, "boxes still sealed"],
     [st.soldOut ? "Sold out" : `${st.unsold}`, st.soldOut ? `the ${cat.label} drop` : `left at ${cat.label}`],
-    [`${st.grailsLeft}`, st.grailsLeft === 1 ? "Grail left" : "Grails left"],
+    [`${st.byRarity.legendary + st.byRarity.epic + st.byRarity.rare}`, "Rare or better left"],
     [`$${Math.round(st.ev).toLocaleString()}`, "average box value now"],
   ]
     .map(([big, small]) => `<div class="crate-stat"><b>${big}</b><span>${small}</span></div>`)
@@ -5618,7 +5608,7 @@ async function listSealedCrate(tokenId) {
   const suggested = Math.round(Math.max(cat.price, st.ev));
   const price = await promptAmount(
     `List ${crateName(token.crateKey)}`,
-    `A box is worth about $${Math.round(st.ev).toLocaleString()} on average right now (${plural(st.grailsLeft, "Grail")} in ${plural(st.unopened, "sealed box", "sealed boxes")}). Drop price ${cat.label}.`,
+    `A box is worth about $${Math.round(st.ev).toLocaleString()} on average right now, across ${plural(st.unopened, "sealed box", "sealed boxes")}. Drop price ${cat.label}.`,
     suggested
   );
   if (!price) return;
@@ -5696,7 +5686,7 @@ function sealedCrateCardHTML(token) {
         </div>
         <span class="market-item-name">${crateName(key)}</span>
         <span class="sealed-sub">Series ${token.series} · paid $${token.paid.toLocaleString()}</span>
-        <span class="sealed-sub">${plural(st.grailsLeft, "Grail")} left · ${st.unopened} sealed</span>
+        <span class="whats-left whats-left-mini">${whatsLeftInner(key, 4)}</span>
         <div class="item-actions">
           <button class="item-action-btn" data-sealed-act="open">Open</button>
           <button class="item-action-btn" data-sealed-act="${listing ? "unlist" : "list"}">${listing ? "Unlist" : "List"}</button>
@@ -5746,7 +5736,7 @@ function crateListingCardHTML(listing) {
           ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
         </div>
         <span class="market-item-name">${crateName(key)}</span>
-        <span class="sealed-sub">${plural(st.grailsLeft, "Grail")} left · ${st.unopened} sealed</span>
+        <span class="whats-left whats-left-mini">${whatsLeftInner(key, 4)}</span>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
           <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
@@ -5869,14 +5859,9 @@ function catchUpCrowd() {
 
 function refreshSupplyViews() {
   document.querySelectorAll("[data-supply]").forEach((el) => {
-    el.innerHTML = supplyBlockInner(el.dataset.supply);
+    el.innerHTML = whatsLeftInner(el.dataset.supply);
     const btn = el.closest(".category-card")?.querySelector(".category-open-btn");
     if (btn) btn.textContent = supply.status(el.dataset.supply).soldOut ? "Sold out · Market" : "Open";
-  });
-  document.querySelectorAll("[data-supply-facts]").forEach((el) => (el.innerHTML = homeCrateFactsInner(el.dataset.supplyFacts)));
-  document.querySelectorAll("[data-supply-bar]").forEach((el) => {
-    const st = supply.status(el.dataset.supplyBar);
-    el.firstElementChild.style.width = `${Math.round((st.sold / st.total) * 100)}%`;
   });
   document.querySelectorAll("[data-supply-btn]").forEach((el) => {
     el.textContent = supply.status(el.dataset.supplyBtn).soldOut ? "Sold out · Market" : "Open";
