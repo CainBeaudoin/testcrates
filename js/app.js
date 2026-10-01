@@ -5460,22 +5460,39 @@ function mysteryLead(line) {
     .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
 }
 
+// The arch: open at the bottom, its two sides standing on a flat floor.
+// The charge runs along it from the bottom of the left side, over the top
+// and down the right (pathLength 100, so the % is the dash).
+const HM_ARCH_OPEN = "M 22 228 L 22 104 A 78 78 0 0 1 178 104 L 178 228";
+const HM_ARCH_SHUT = `${HM_ARCH_OPEN} Z`;
+
 function homeMysteryCardHTML(line) {
   const key = mysteryLead(line);
   const ready = supply.readyItem(key);
   const top = [...MYSTERY_BY_LINE[line]].sort((a, b) => b.price - a.price)[0];
   const item = ready ?? top;
   const pct = Math.floor(supply.charge(key) * 100);
+  // Motes of light rising inside the arch, each its own column and pace.
+  const motes = [32, 58, 81, 104, 127, 150, 170]
+    .map((x, i) => `<circle class="hm-mote" cx="${x}" cy="226" r="${i % 3 ? 1.4 : 2}" style="--d:${(i * 0.73) % 4}s;--t:${3.2 + (i % 3) * 0.9}s"/>`)
+    .join("");
   return `
-    <button class="hm-card${ready ? " is-ready" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
-      <span class="hm-ring-wrap">
-        <svg class="hm-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs><linearGradient id="hmGrad-${line}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="1" stop-color="#b678f2"/></linearGradient></defs>
-          <circle class="hm-ring-track" cx="60" cy="60" r="54"/>
-          <circle class="hm-ring-fill" cx="60" cy="60" r="54" pathLength="100" stroke="url(#hmGrad-${line})"/>
+    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
+      <span class="hm-arch">
+        <svg class="hm-arch-svg" viewBox="0 0 200 240" aria-hidden="true">
+          <defs>
+            <linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient>
+            <radialGradient id="hmGlow-${line}" cx="0.5" cy="0.32" r="0.75"><stop offset="0" class="hm-glow-a"/><stop offset="1" class="hm-glow-b"/></radialGradient>
+            <clipPath id="hmClip-${line}"><path d="${HM_ARCH_SHUT}"/></clipPath>
+          </defs>
+          <path class="hm-arch-glow" d="${HM_ARCH_SHUT}" fill="url(#hmGlow-${line})"/>
+          <g clip-path="url(#hmClip-${line})">${motes}</g>
+          <path class="hm-ring-track" d="${HM_ARCH_OPEN}"/>
+          <path class="hm-ring-fill" d="${HM_ARCH_OPEN}" pathLength="100" stroke="url(#hmStroke-${line})"/>
+          <path class="hm-floor" d="M 4 228 L 196 228"/>
         </svg>
-        <span class="hm-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="hm-stage"><img class="hm-item" src="${item.image}" alt=""></span>
+        <img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt="">
+        <img class="hm-reflect" src="${item.image}" data-cutout="${item.image}" alt="">
         <span class="hm-badge">${ready ? `Unlocked <span class="hm-arrow" aria-hidden="true">&rarr;</span>` : `${pct}%`}</span>
       </span>
       <span class="hm-line">${CATEGORIES[key].badge}</span>
@@ -5483,10 +5500,19 @@ function homeMysteryCardHTML(line) {
     </button>`;
 }
 
+// The pieces stand in the arch cut out of their white photo backgrounds.
+function cutOutHomeMystery(root = homeMysteryEl) {
+  root?.querySelectorAll("img[data-cutout]").forEach((img) => {
+    cutoutImage(img.dataset.cutout).then((url) => {
+      if (url && img.isConnected) img.src = url;
+    });
+  });
+}
+
 function renderHomeMystery() {
   if (!homeMysteryEl) return;
   homeMysteryEl.innerHTML = HOME_MYSTERY_LINES.map(homeMysteryCardHTML).join("");
-  document.getElementById("homeMysterySub").textContent = `The ultimate grails. No odds until a drop's bar fills, then one unlocks and every box has a ${MYSTERY_CHANCE_LABEL} shot at it.`;
+  cutOutHomeMystery();
 }
 
 // Live: each ring follows its drop's charge, and is drawn again when the
@@ -5497,12 +5523,15 @@ function refreshHomeMystery() {
     const key = card.dataset.key;
     const ready = !!supply.readyItem(key);
     if (ready !== card.classList.contains("is-ready")) {
-      card.outerHTML = homeMysteryCardHTML(card.dataset.line);
+      const line = card.dataset.line;
+      card.outerHTML = homeMysteryCardHTML(line);
+      cutOutHomeMystery(homeMysteryEl.querySelector(`.hm-card[data-line="${line}"]`));
       return;
     }
     if (ready) return;
     const pct = Math.floor(supply.charge(key) * 100);
     card.style.setProperty("--p", pct);
+    card.classList.toggle("is-empty", pct === 0);
     card.querySelector(".hm-badge").textContent = `${pct}%`;
   });
 }

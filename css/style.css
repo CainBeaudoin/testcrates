@@ -8442,7 +8442,11 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
 }
 .home-mystery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-/* No card: the ring, the piece and two lines of text, straight on the page. */
+/* An arch, like a vault doorway: the charge runs up one side, over the top
+   and down the other in a gold-to-violet line; the bottom is a flat floor
+   the piece stands on, with its reflection under it and the % on a plate
+   at the threshold. Inside, a violet glow and motes of light rising. Full,
+   the line glows and the motes quicken. */
 .hm-card {
   --p: 0;
   display: flex;
@@ -8456,62 +8460,85 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   font: inherit;
   cursor: pointer;
 }
-.hm-ring-wrap {
+.hm-arch {
   position: relative;
   display: block;
-  width: min(100%, 250px);
-  aspect-ratio: 1;
-  margin-bottom: 10px;
-  container-type: inline-size;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  width: min(100%, 230px);
+  aspect-ratio: 200 / 240;
+  margin-bottom: 12px;
 }
-.hm-card:hover .hm-ring-wrap { transform: scale(1.04); }
-.hm-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
-.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 6; }
+.hm-arch-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hm-glow-a { stop-color: #b678f2; stop-opacity: 0.26; }
+.hm-glow-b { stop-color: #b678f2; stop-opacity: 0.02; }
+.hm-card.is-ready .hm-glow-a { stop-color: #e9b0ff; stop-opacity: 0.5; }
+.hm-arch-glow { transition: opacity 0.3s ease; }
+.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 5; stroke-linecap: round; }
 .hm-ring-fill {
   fill: none;
-  stroke-width: 6;
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-dasharray: 100;
   stroke-dashoffset: calc(100 - var(--p));
-  filter: drop-shadow(0 0 5px rgba(182, 120, 242, 0.5));
+  filter: drop-shadow(0 0 4px rgba(182, 120, 242, 0.55));
   transition: stroke-dashoffset 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .motion-armed .home-mystery:not(.in) .hm-ring-fill { stroke-dashoffset: 100; }
 .hm-card.is-ready .hm-ring-fill { animation: hmGlow 2.4s ease-in-out infinite; }
-@keyframes hmGlow { 50% { filter: drop-shadow(0 0 14px rgba(182, 120, 242, 0.9)); } }
-.hm-orbit { position: absolute; inset: 0; animation: hmSpin 14s linear infinite; pointer-events: none; }
-.hm-orbit i {
-  --a: 0deg;
-  --s: 9px;
+@keyframes hmGlow { 50% { filter: drop-shadow(0 0 12px rgba(182, 120, 242, 0.95)); } }
+.hm-floor { stroke: color-mix(in srgb, var(--text) 16%, transparent); stroke-width: 1.2; stroke-linecap: round; }
+.hm-mote {
+  fill: #f6d27a;
+  opacity: 0;
+  transform-box: fill-box;
+  animation: hmMote var(--t, 4s) linear infinite;
+  animation-delay: var(--d, 0s);
+}
+.hm-mote:nth-child(even) { fill: #c99cf7; }
+@keyframes hmMote {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-190px); }
+}
+.hm-card.is-ready .hm-mote { animation-duration: 2.2s; }
+/* The piece stands on the floor (y 228 of 240), its reflection under it. */
+.hm-item {
   position: absolute;
-  top: 50%;
   left: 50%;
-  width: var(--s);
-  height: var(--s);
-  margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
-  background: #f2b84b;
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  transform: rotate(var(--a)) translateY(-55cqw);
+  bottom: calc(100% * 12 / 240);
+  width: 64%;
+  height: 52%;
+  object-fit: contain;
+  object-position: bottom;
+  translate: -50% 0;
+  filter: drop-shadow(0 10px 10px rgba(40, 20, 70, 0.25));
+  transition: translate 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.hm-orbit i:nth-child(2) { --a: 120deg; --s: 7px; background: #b678f2; }
-.hm-orbit i:nth-child(3) { --a: 240deg; --s: 5px; background: #d9a8ff; }
-@keyframes hmSpin { to { transform: rotate(360deg); } }
-.hm-stage {
+.hm-reflect {
   position: absolute;
-  inset: 12%;
-  border-radius: 50%;
-  background: #fff;
-  overflow: hidden;
-  box-shadow: 0 14px 34px -14px rgba(60, 30, 100, 0.45);
+  left: 50%;
+  top: calc(100% * 228 / 240);
+  width: 64%;
+  height: 52%;
+  object-fit: contain;
+  object-position: bottom;
+  translate: -50% 0;
+  /* Flipped in place: it already sits below the floor, so it has to turn
+     over around its own middle (around its top it swung back up over the
+     piece, and showed as a faint box behind it). */
+  transform: scaleY(-1);
+  transform-origin: center;
+  opacity: 0.22;
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 35%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 35%);
+  pointer-events: none;
 }
-.hm-item { position: absolute; inset: 12%; width: 76%; height: 76%; object-fit: contain; }
+.hm-card:hover .hm-item { translate: -50% -6px; }
 .hm-badge {
   position: absolute;
   left: 50%;
-  bottom: 1%;
-  translate: -50% 0;
-  padding: 4px 11px;
+  top: calc(100% * 228 / 240);
+  translate: -50% -50%;
+  padding: 4px 12px;
   border-radius: var(--r-pill);
   background: var(--surface-1);
   box-shadow: 0 0 0 1px var(--hairline), 0 4px 12px -4px rgba(0, 0, 0, 0.18);
@@ -8519,9 +8546,12 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   font-weight: 800;
   white-space: nowrap;
   color: var(--text);
+  z-index: 1;
 }
-.hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: none; }
-.hm-line { font-size: 0.66rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
+.hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: 0 6px 16px -6px rgba(182, 120, 242, 0.8); }
+.hm-arrow { display: inline-block; margin-left: 2px; transition: transform 0.2s ease; }
+.hm-card:hover .hm-arrow { transform: translateX(3px); }
+.hm-line { margin-top: 8px; font-size: 0.66rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
 .hm-value {
   font-size: 1.3rem;
   font-weight: 900;
@@ -8531,16 +8561,13 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   color: transparent;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hm-orbit, .hm-card.is-ready .hm-ring-fill { animation: none; }
+  .hm-mote, .hm-card.is-ready .hm-ring-fill { animation: none; }
 }
 @media (max-width: 640px) {
-  .home-mystery { gap: 10px; }
-  .hm-ring-wrap { margin-bottom: 6px; }
-  .hm-badge { font-size: 0.58rem; padding: 3px 7px; }
+  .home-mystery { gap: 12px; }
+  .hm-badge { font-size: 0.58rem; padding: 3px 8px; }
   .hm-value { font-size: 0.95rem; }
-  .hm-orbit i { --s: 6px; }
-  .hm-orbit i:nth-child(2) { --s: 5px; }
-  .hm-orbit i:nth-child(3) { --s: 4px; }
+  .hm-line { font-size: 0.56rem; }
 }
 /* --- Home: scroll-linked motion ------------------------------------------------
    Where the browser can tie an animation to scroll position (view
@@ -8608,6 +8635,10 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @keyframes saRing { from { stroke-dashoffset: 100; } to { stroke-dashoffset: calc(100 - var(--p)); } }
 @keyframes saHeroOut { to { opacity: 0; translate: 0 -80px; } }
 @keyframes saHeroOutSlow { to { opacity: 0.2; translate: 0 -30px; scale: 0.94; } }
-/* Unlocked: just the word and a way to it. */
-.hm-arrow { display: inline-block; margin-left: 2px; transition: transform 0.2s ease; }
-.hm-card:hover .hm-arrow { transform: translateX(3px); }
+/* Nothing charged yet: no line at all (a round cap on an empty dash
+   draws a dot). */
+.hm-card.is-empty .hm-ring-fill { opacity: 0; }
+/* Light theme: the cut-out pieces multiply into the glow, so any off-white
+   the cutout left at their edges disappears into it. */
+:root[data-theme="light"] .hm-item,
+:root[data-theme="light"] .hm-reflect { mix-blend-mode: multiply; }
