@@ -1626,26 +1626,42 @@ pullDetailCloseBtn.addEventListener("click", () => {
 
 // ---- Category screen -------------------------------------------------
 
-function buildPrizeListHTML(pool) {
-  const sorted = [...pool].sort((a, b) => {
-    const rarityDiff = DISPLAY_RARITY_ORDER.indexOf(a.rarity) - DISPLAY_RARITY_ORDER.indexOf(b.rarity);
-    return rarityDiff !== 0 ? rarityDiff : b.price - a.price;
-  });
-  return sorted
-    .map((p) => {
-      const meta = RARITY_META[p.rarity];
-      const leftHTML = p.left == null ? "" : p.left > 0 ? `<span class="prize-row-left">${p.left} left</span>` : `<span class="prize-row-left is-gone">Gone</span>`;
-      return `
-        <div class="prize-row${p.left === 0 ? " is-gone" : ""}">
-          <img src="${p.image}" alt="" loading="lazy">
-          <div class="prize-row-info">
-            <span class="prize-row-name">${p.name}</span>
-            <span class="prize-row-rarity" style="color:${meta.color}">${meta.label}</span>
-          </div>
-          <span class="prize-row-price">$${p.price.toLocaleString()}${leftHTML}</span>
-        </div>`;
+// A crate page's "What's inside": one tab per tier, best first, and that
+// tier's prizes as tiles — picture, name, price and how many are left — so
+// you look through a tier at a time rather than scrolling one long list.
+// The open tab is remembered per crate, so live refreshes and coming back
+// keep your place; it starts on the best tier that still has stock.
+const prizeTabByKey = {};
+
+function prizeTabOf(key, pool) {
+  const tiers = DISPLAY_RARITY_ORDER.filter((r) => pool.some((p) => p.rarity === r));
+  if (tiers.includes(prizeTabByKey[key])) return prizeTabByKey[key];
+  return tiers.find((r) => pool.some((p) => p.rarity === r && p.left > 0)) ?? tiers[0];
+}
+
+function prizeBrowserHTML(key, pool) {
+  const tab = prizeTabOf(key, pool);
+  const tiers = DISPLAY_RARITY_ORDER.filter((r) => pool.some((p) => p.rarity === r));
+  const tabs = tiers
+    .map((r) => {
+      const meta = RARITY_META[r];
+      const out = !pool.some((p) => p.rarity === r && p.left > 0);
+      return `<button class="prize-tab${r === tab ? " active" : ""}${out ? " is-out" : ""}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}</button>`;
     })
     .join("");
+  const tiles = pool
+    .filter((p) => p.rarity === tab)
+    .sort((a, b) => (b.left > 0) - (a.left > 0) || b.price - a.price)
+    .map(
+      (p) => `
+        <div class="prize-tile${p.left === 0 ? " is-gone" : ""}" style="--rarity-color:${RARITY_META[p.rarity].color}">
+          <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
+          <span class="prize-tile-name">${p.name}</span>
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>${p.left > 0 ? `${p.left} left` : "Gone"}</span></span>
+        </div>`
+    )
+    .join("");
+  return `<div class="prize-tabs" role="tablist">${tabs}</div><div class="prize-tiles">${tiles}</div>`;
 }
 
 // Expected value + odds-by-rarity for one tier's pool. Price ranges are
@@ -1684,7 +1700,7 @@ function buildOddsPanelHTML(pool) {
       const range = b.min === b.max ? `$${b.min.toLocaleString()}` : `$${b.min.toLocaleString()}-$${b.max.toLocaleString()}`;
       const pct = b.pct >= 10 ? Math.round(b.pct) : Math.round(b.pct * 10) / 10;
       return `
-        <div class="odds-bucket">
+        <div class="odds-bucket" data-prize-tab="${b.rarity}">
           <span class="odds-bucket-rarity" style="color:${meta.color}">${meta.label}</span>
           <span class="odds-bucket-range">${range}</span>
           <span class="odds-bucket-pct">${pct}%</span>
@@ -1933,13 +1949,23 @@ function renderCategories() {
     prizePanel.className = "prize-dropdown";
     prizePanel.innerHTML = `
       <div class="prize-dropdown-header">
-        <span>Pulls</span>
+        <span>What&rsquo;s inside</span>
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
       <div class="odds-panel hidden">${buildOddsPanelHTML(supply.livePool(key).filter((p) => p.left > 0))}</div>
       <label for="prizeListToggleAll" class="prize-list-toggle-label">View all prizes</label>
-      <div class="prize-list">${buildPrizeListHTML(supply.livePool(key))}</div>
+      <div class="prize-list prize-browser">${prizeBrowserHTML(key, supply.livePool(key))}</div>
     `;
+    // Tabs, and the odds boxes, switch the tier on show.
+    prizePanel.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-prize-tab]");
+      if (!tab || !wrap.classList.contains("drop-detail-active")) return;
+      playClick();
+      prizeTabByKey[key] = tab.dataset.prizeTab;
+      const browser = prizePanel.querySelector(".prize-browser");
+      browser.innerHTML = prizeBrowserHTML(key, supply.livePool(key));
+      browser.scrollTop = 0;
+    });
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
       playClick();
       // Toggled in lockstep across all three tiers — independent per-card
@@ -5639,7 +5665,7 @@ document.addEventListener("click", (e) => {
   const wrap = btn.closest(".category-wrap");
   if (wrap) {
     if (!wrap.classList.contains("drop-detail-active")) openTierDetail(wrap);
-    else wrap.querySelector(".prize-dropdown")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    else wrap.querySelector(".prize-browser")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return;
   }
   openCratePage(btn.dataset.whatsLeft);
@@ -5910,7 +5936,7 @@ function refreshSupplyViews() {
       if (odds) odds.innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
       if (list) {
         const top = list.scrollTop;
-        list.innerHTML = buildPrizeListHTML(pool);
+        list.innerHTML = prizeBrowserHTML(wrap.dataset.tier, pool);
         list.scrollTop = top;
       }
     });

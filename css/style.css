@@ -1056,51 +1056,99 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
   }
 }
 
-.prize-row {
+/* --- A crate page's "What's inside": tier tabs over prize tiles -------
+   One tier at a time, so a crate with forty prizes is five short looks
+   rather than one long scroll. Tiles are the same white tile, tier-colour
+   edge as the stacks on the cards, at a size you can see the piece. */
+.prize-browser { border-top: none; padding: 0 16px 16px; }
+.prize-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--hairline);
+  gap: 6px;
+  padding: 2px 0 12px;
+  background: var(--panel);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.prize-row:last-child { border-bottom: none; }
-
-.prize-row img {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-  background: var(--well);
-  border-radius: var(--r-xs);
+.prize-tabs::-webkit-scrollbar { display: none; }
+.prize-tab {
   flex: 0 0 auto;
-}
-
-.prize-row-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.prize-row-name {
+  padding: 7px 14px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font: inherit;
   font-size: 0.72rem;
-  color: var(--text);
-  white-space: nowrap;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.prize-tab:hover { color: var(--text); }
+.prize-tab.active {
+  border-color: var(--rarity-color);
+  background: color-mix(in srgb, var(--rarity-color) 14%, var(--panel));
+  color: color-mix(in srgb, var(--rarity-color) 70%, var(--text));
+}
+/* A tier with nothing left still opens (you can see what went), but reads
+   as spent. */
+.prize-tab.is-out:not(.active) { opacity: 0.5; }
+.prize-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: 10px;
+}
+.prize-tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.prize-tile-img {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border: 1.5px solid var(--rarity-color);
+  border-radius: var(--r-sm);
+  background: #fff;
+}
+.prize-tile-img img { width: 100%; height: 100%; object-fit: contain; }
+.prize-tile-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.prize-row-rarity {
-  font-size: 0.6rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
-.prize-row-price {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1.3;
   color: var(--text);
-  flex: 0 0 auto;
+}
+.prize-tile-foot { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: auto; }
+.prize-tile-foot b { font-size: 0.82rem; color: var(--text); }
+.prize-tile-foot span { font-size: 0.66rem; font-weight: 600; color: var(--text-faint); white-space: nowrap; }
+.prize-tile.is-gone { opacity: 0.4; }
+.prize-tile.is-gone img { filter: grayscale(1); }
+@media (max-width: 640px) {
+  .prize-browser { padding: 0 12px 12px; }
+  .prize-tiles { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .prize-tabs { gap: 5px; }
+  .prize-tab { flex: 1 1 auto; padding: 6px 8px; font-size: 0.66rem; }
+  .prize-tile-img { padding: 6px; }
+}
+/* The odds boxes open their tier's tab. */
+.drop-detail-active .odds-bucket[data-prize-tab] { cursor: pointer; transition: background 0.15s ease; }
+.drop-detail-active .odds-bucket[data-prize-tab]:hover { background: var(--control-fill-hover); }
+/* The card's own What's inside row would repeat the panel beside it. */
+.drop-detail-active .category-card .whats-left { display: none; }
+/* The page grows with the tier you're looking at instead of scrolling a
+   box inside itself: the crate card stays in view beside it (desktop),
+   and the tabs stay pinned under the header while the tiles go by. The
+   panel clips rather than hides its overflow, so the tabs can stick to
+   the page. */
+.drop-detail-active .prize-dropdown { overflow: clip; }
+.drop-detail-active .prize-list.prize-browser { max-height: none; overflow: visible; }
+.drop-detail-active .prize-tabs { top: var(--topbar-h, 64px); }
+@media (min-width: 641px) {
+  .drop-detail-active { height: auto; min-height: 0; align-items: flex-start; }
+  .drop-detail-active .category-card { position: sticky; top: calc(var(--topbar-h, 64px) + 16px); }
 }
 
 /* --- Recent pulls: a live ticker of pulls across the platform (yours +
@@ -7537,9 +7585,6 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .supply-whats-left:hover { color: var(--text); }
 
 /* Prize rows on a crate's page: how many of each are left, gone ones faded. */
-.prize-row-left { display: block; font-size: 0.62rem; font-weight: 600; color: var(--text-faint); text-align: right; }
-.prize-row.is-gone { opacity: 0.4; }
-.prize-row.is-gone img { filter: grayscale(1); }
 
 /* --- Buy dialog: open now, or keep it sealed --------------------------- */
 .pay-mode[hidden] { display: none; }
