@@ -118,14 +118,14 @@ export function registerCrates(categories, seedShape = () => null, mystery = {})
   }
   // Once: a couple of crates start full, their mystery item revealed, so
   // there's one to see.
-  if (!state.mysteryExamples) {
+  if (!state.mysteryExamples2) {
     ["sneakers", "collectibles250"].forEach((key) => {
       const m = mysteries.get(key);
       if (!m || !crate(key)) return;
       crate(key).charge = m.target;
       crate(key).ready = m.items[Math.floor(Math.random() * m.items.length)].name;
     });
-    state.mysteryExamples = true;
+    state.mysteryExamples2 = true;
   }
   delete state.reserved;
   // A mystery round that never finished (the page closed before a box was

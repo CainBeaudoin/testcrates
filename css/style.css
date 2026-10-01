@@ -8338,23 +8338,41 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
    crate's own page. */
 .category-wrap:not(.drop-detail-active) .category-card .mystery-bar { display: none; }
 
-/* Mystery tile, charging: a sneaker silhouette with a question mark over
-   it, on the dark tile inside the charge ring, the % along the bottom. */
+/* Mystery tile, charging: the crate's own top mystery piece on white,
+   tinted over in the mystery colours so it reads as a shape rather than
+   an item, a question mark on top, the % along the bottom. */
 .wl-mystery-tile { position: relative; overflow: hidden; }
-.wl-mystery-sil { position: absolute; left: 10%; right: 10%; top: 34%; width: 80%; fill: rgba(255, 255, 255, 0.34); }
+.wl-mystery-hint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 10%;
+  object-fit: contain;
+  background: #fff;
+  filter: grayscale(0.4);
+}
+.wl-mystery:not(.is-ready) .wl-mystery-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(160deg, rgba(64, 44, 96, 0.56), rgba(28, 20, 40, 0.7));
+}
 .wl-mystery-q {
   position: relative;
+  z-index: 2;
   font-style: normal;
   font-weight: 900;
   font-size: calc(var(--wl-size) * 0.46);
   line-height: 1;
-  background: linear-gradient(180deg, #f6d27a, #b678f2);
+  background: linear-gradient(180deg, #f6d27a, #c99cf7);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   margin-top: -6%;
 }
-.wl-mystery-tile b { position: absolute; bottom: 7%; left: 0; right: 0; text-align: center; }
+.wl-mystery-tile b { position: absolute; z-index: 2; bottom: 7%; left: 0; right: 0; text-align: center; }
 /* Unlocked: the item itself, on white, the ring full and gently pulsing. */
 .wl-mystery.is-ready .wl-mystery-tile {
   background:

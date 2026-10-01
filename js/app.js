@@ -37,20 +37,33 @@ function upperBand(pool, minPrice) {
   });
 }
 
-// Mystery items: pieces far above any crate's normal range — the three
-// most valuable in the catalogue, $7k to $11k. They have no odds. Each
-// crate's mystery charge fills with every box opened, and the opening that
-// fills it releases one (see supply.js). They're held out of every odds
-// table, including the $1,200 Sneakers crate they came from, so no listed
-// percentage ever covers them.
-const MYSTERY_ITEMS = [...SNEAKER_1000_POOL]
-  .sort((a, b) => b.price - a.price)
-  .slice(0, 3)
-  .map((p) => ({ ...p, rarity: "legendary" }));
-const MYSTERY_NAMES = new Set(MYSTERY_ITEMS.map((p) => p.name));
-// The charge to fill, in money opened through the crate: the mystery
-// items' average value. Shown only as a share of full, never as money.
-const MYSTERY_TARGET = Math.round(MYSTERY_ITEMS.reduce((sum, p) => sum + p.price, 0) / MYSTERY_ITEMS.length);
+// Mystery items, per line: each line's three most valuable pieces — a
+// Sneakers crate's are sneakers ($7k to $11k), a Collectibles crate's
+// collectibles, a Streetwear crate's streetwear. They have no odds until a
+// crate's mystery bar fills and unlocks one (see supply.js), and they're
+// held out of every odds table, so no listed percentage ever covers them.
+const topThree = (pool) =>
+  [...pool]
+    .sort((a, b) => b.price - a.price)
+    .slice(0, 3)
+    .map((p) => ({ ...p, rarity: "legendary" }));
+const MYSTERY_BY_LINE = {
+  sneakers: topThree(SNEAKER_1000_POOL),
+  streetwear: topThree(STREETWEAR_POOL),
+  collectibles: topThree(COLLECTIBLES_POOL),
+};
+const MYSTERY_NAMES = new Set(Object.values(MYSTERY_BY_LINE).flat().map((p) => p.name));
+const general = (pool) => pool.filter((p) => !MYSTERY_NAMES.has(p.name));
+// The charge to fill, in money opened through the crate: the line's
+// mystery items' average value, and never fewer than 30 boxes' worth (a
+// Streetwear piece is worth far less than a Sneakers one, and its bar
+// would otherwise fill in a handful of boxes). Shown only as a share of
+// full, never as money.
+function mysteryTarget(line, price) {
+  const items = MYSTERY_BY_LINE[line];
+  const avg = items.reduce((sum, p) => sum + p.price, 0) / items.length;
+  return Math.round(Math.max(avg, price * 30));
+}
 // Once unlocked, every box's chance at the mystery item.
 const MYSTERY_CHANCE = 0.03;
 const MYSTERY_CHANCE_LABEL = `${Math.round(MYSTERY_CHANCE * 100)}%`;
@@ -74,21 +87,21 @@ const CATEGORIES = {
     label: "$150",
     badge: "Sneakers",
     price: 150,
-    pool: SNEAKER_POOL,
+    pool: general(SNEAKER_POOL),
     poweredBy: "ODTO",
   },
   streetwear: {
     label: "$120",
     badge: "Streetwear",
     price: 120,
-    pool: STREETWEAR_POOL,
+    pool: general(STREETWEAR_POOL),
     poweredBy: "ODTO",
   },
   collectibles: {
     label: "$180",
     badge: "Collectibles",
     price: 180,
-    pool: COLLECTIBLES_POOL,
+    pool: general(COLLECTIBLES_POOL),
     poweredBy: "ODTO",
   },
   // Higher price bands of the same line. `line` groups them with their
@@ -99,7 +112,7 @@ const CATEGORIES = {
     badge: "Sneakers",
     line: "sneakers",
     price: 300,
-    pool: SNEAKER_250_POOL,
+    pool: general(SNEAKER_250_POOL),
     poweredBy: "ODTO",
   },
   sneakers1000: {
@@ -107,7 +120,7 @@ const CATEGORIES = {
     badge: "Sneakers",
     line: "sneakers",
     price: 1200,
-    pool: SNEAKER_1000_POOL.filter((p) => !MYSTERY_NAMES.has(p.name)),
+    pool: general(SNEAKER_1000_POOL),
     poweredBy: "ODTO",
   },
   streetwear250: {
@@ -115,7 +128,7 @@ const CATEGORIES = {
     badge: "Streetwear",
     line: "streetwear",
     price: 300,
-    pool: upperBand(STREETWEAR_POOL, 176),
+    pool: upperBand(general(STREETWEAR_POOL), 176),
     poweredBy: "ODTO",
   },
   streetwear500: {
@@ -123,7 +136,7 @@ const CATEGORIES = {
     badge: "Streetwear",
     line: "streetwear",
     price: 600,
-    pool: upperBand(STREETWEAR_POOL, 330),
+    pool: upperBand(general(STREETWEAR_POOL), 330),
     poweredBy: "ODTO",
   },
   collectibles250: {
@@ -131,7 +144,7 @@ const CATEGORIES = {
     badge: "Collectibles",
     line: "collectibles",
     price: 300,
-    pool: upperBand(COLLECTIBLES_POOL, 206),
+    pool: upperBand(general(COLLECTIBLES_POOL), 206),
     poweredBy: "ODTO",
   },
   collectibles500: {
@@ -139,7 +152,7 @@ const CATEGORIES = {
     badge: "Collectibles",
     line: "collectibles",
     price: 600,
-    pool: upperBand(COLLECTIBLES_POOL, 367),
+    pool: upperBand(general(COLLECTIBLES_POOL), 367),
     poweredBy: "ODTO",
   },
 };
@@ -220,7 +233,7 @@ supply.registerCrates(
   Object.fromEntries(
     Object.entries(CATEGORIES)
       .filter(([, cat]) => !cat.openOnBuy)
-      .map(([key]) => [key, { items: MYSTERY_ITEMS, target: MYSTERY_TARGET, chance: MYSTERY_CHANCE }])
+      .map(([key, cat]) => [key, { items: MYSTERY_BY_LINE[lineOf(key)], target: mysteryTarget(lineOf(key), cat.price), chance: MYSTERY_CHANCE }])
   )
 );
 // The player's sealed crates count against their series; anything else
@@ -1865,9 +1878,6 @@ function whatsLeftInner(tierKey) {
       .join("")}${mysteryHTML}</span>`;
 }
 
-// A plain sneaker side-on, for the mystery tile's silhouette.
-const SNEAKER_SILHOUETTE = `<svg class="wl-mystery-sil" viewBox="0 0 64 32" aria-hidden="true"><path d="M3 24.5c0-2.3 1.4-4 3.6-4.4l9.4-1.6 6.8-9.2c1-1.4 3-1.7 4.3-.6l3.3 2.6 4.9 3.6c1 .7 2.2 1.2 3.4 1.4l11.8 2.2c5 .9 8.6 3.7 9.4 7.3.3 1.5-.8 2.9-2.4 2.9H6.6C4.6 28.7 3 27.1 3 25.1z"/><rect x="3" y="27" width="58" height="3.2" rx="1.6"/></svg>`;
-
 function mysteryTileHTML(key) {
   if (!supply.hasMystery(key)) return "";
   const ready = supply.readyItem(key);
@@ -1876,9 +1886,12 @@ function mysteryTileHTML(key) {
         <span class="wl-mystery-tile"><img src="${ready.image}" alt=""></span>
       </span>`;
   }
+  // Charging: the crate's own top mystery piece (a sneaker for Sneakers, a
+  // collectible for Collectibles…), tinted over, with a question mark.
   const pct = Math.floor(supply.charge(key) * 100);
+  const hint = supply.mysteryItems(key)[0];
   return `<span class="wl-mystery${pct >= 90 ? " is-hot" : ""}" style="--charge:${pct}" data-tip="Mystery item · ${pct}% charged" aria-label="Mystery item, ${pct}% charged">
-      <span class="wl-mystery-tile">${SNEAKER_SILHOUETTE}<i class="wl-mystery-q">?</i><b>${pct}%</b></span>
+      <span class="wl-mystery-tile"><img class="wl-mystery-hint" src="${hint.image}" alt=""><i class="wl-mystery-q">?</i><b>${pct}%</b></span>
     </span>`;
 }
 
@@ -6305,6 +6318,18 @@ function crowdStep() {
       }
     } else if (supply.botHeld(key) > botListedCount(key)) {
       // Unlisted boxes get opened; listed ones wait for a buyer.
+      const prize = supply.crowdOpenHeld(key);
+      if (prize) return crowdPull(prize, key);
+    } else if (botListedCount(key) > 0 && Math.random() < 0.5) {
+      // Every box the crowd holds is listed: someone buys the cheapest and
+      // opens it. Without this a sold-out crate's last boxes sat listed
+      // forever, its series never finished, and it stopped producing
+      // pulls (the feed ended up all Stocks, which can't be held).
+      const cheapest = market
+        .getCrateListings()
+        .filter((l) => l.crateKey === key && !l.isPlayer)
+        .sort((a, b) => a.price - b.price)[0];
+      market.removeCrateListing(cheapest.id);
       const prize = supply.crowdOpenHeld(key);
       if (prize) return crowdPull(prize, key);
     }
