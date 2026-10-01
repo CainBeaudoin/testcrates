@@ -8441,84 +8441,25 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   background: linear-gradient(135deg, #f6d27a, #b678f2);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
 }
-/* One composition rather than three things in a row: the middle arch tall
-   and in front, the other two lower and tucked in behind it either side,
-   overlapping it, all three on one floor that runs out past them, a soft
-   glow behind the group. Each arch's inside is frosted glass, so the arches
-   behind blur through the one in front. Hover brings one forward. */
+/* Demo on the left, the three live dials on the right. */
 .home-mystery {
-  --hm-w: 300px;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  padding: 10px 0 0;
-  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.85fr) 1.6fr;
+  align-items: center;
+  gap: 40px;
 }
-.home-mystery::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: min(1000px, 100%);
-  height: 90%;
-  translate: -50% -50%;
-  z-index: -1;
-  background: radial-gradient(closest-side, rgba(182, 120, 242, 0.22), rgba(242, 184, 75, 0.08) 55%, transparent);
-  pointer-events: none;
-}
-/* The shared floor, under all three, fading out at the ends. */
-.home-mystery::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  /* The labels' height, the arch's margin, then the floor's height inside
-     the centre arch (12 of its 240 units; the arch is 1.2x its width). */
-  bottom: calc(var(--hm-label) + 12px + var(--hm-w) * 0.06);
-  width: min(880px, 96%);
-  height: 1.5px;
-  translate: -50% 0;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text) 22%, transparent) 20%, color-mix(in srgb, var(--text) 22%, transparent) 80%, transparent);
-  pointer-events: none;
-}
-.home-mystery { --hm-label: 56px; }
-/* Fixed line heights, so --hm-label is exact: 4 gap + 8 margin + 12 line
-   + 4 gap + 28 value. */
-.home-mystery .hm-line { line-height: 12px; }
-.home-mystery .hm-value { line-height: 28px; }
-/* The smaller side arches sit their floor 1.08% of --hm-w higher off the
-   card bottom than their size alone would, so all three floors meet. */
-.hm-card[data-pos="left"] .hm-arch,
-.hm-card[data-pos="right"] .hm-arch { margin-bottom: calc(12px + var(--hm-w) * 0.0108); }
-.hm-card[data-pos="center"] { z-index: 2; }
-.hm-card[data-pos="left"],
-.hm-card[data-pos="right"] { z-index: 1; }
-.hm-card[data-pos="left"] .hm-arch,
-.hm-card[data-pos="right"] .hm-arch { width: calc(var(--hm-w) * 0.82); }
-.hm-card[data-pos="center"] .hm-arch { width: var(--hm-w); }
-/* Tucked in: each side arch slides under the middle one by a fifth of
-   its width. */
-.hm-card[data-pos="left"] { margin-right: calc(var(--hm-w) * -0.17); }
-.hm-card[data-pos="right"] { margin-left: calc(var(--hm-w) * -0.17); }
-.hm-card[data-pos="left"] .hm-line,
-.hm-card[data-pos="left"] .hm-value { translate: -14% 0; }
-.hm-card[data-pos="right"] .hm-line,
-.hm-card[data-pos="right"] .hm-value { translate: 14% 0; }
-.hm-card:hover { z-index: 3; }
-/* All three floors on one line: the labels under each are the same height. */
-.hm-card { height: auto; }
-.hm-card .hm-floor { display: none; }
-/* An arch, like a vault doorway: the charge runs up one side, over the top
-   and down the other in a gold-to-violet line; the bottom is a flat floor
-   the piece stands on, with its reflection under it and the % on a plate
-   at the threshold. Inside, a violet glow and motes of light rising. Full,
-   the line glows and the motes quicken. */
+.hm-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+
+/* --- The dials: a circle cut flat across the bottom. The charge runs
+   round the arc; the piece stands on the flat of a white disc; a padlock
+   plate sits on the flat edge — shut with the % while charging, open once
+   unlocked. */
 .hm-card {
   --p: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 0;
   border: none;
   background: none;
@@ -8526,138 +8467,247 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   font: inherit;
   cursor: pointer;
 }
-.hm-arch {
+.hm-dial {
   position: relative;
   display: block;
   width: min(100%, 230px);
-  aspect-ratio: 200 / 240;
-  margin-bottom: 12px;
+  aspect-ratio: 200 / 190;
+  margin-bottom: 14px;
   transition: scale 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.hm-card:hover .hm-arch { scale: 1.03; }
-/* The arch's inside as frosted glass: the same shape as the line (sides
-   at 11% and 89%, top of the curve at 26/240, floor at 228/240). */
-.hm-glass {
-  position: absolute;
-  left: 11%;
-  right: 11%;
-  top: calc(100% * 26 / 240);
-  bottom: calc(100% * 12 / 240);
-  border-radius: 999px 999px 0 0;
-  background:
-    radial-gradient(120% 70% at 50% 18%, rgba(182, 120, 242, 0.3), rgba(182, 120, 242, 0.06) 70%),
-    color-mix(in srgb, var(--bg, #f6f3ee) 55%, transparent);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-.hm-card.is-ready .hm-glass {
-  background:
-    radial-gradient(120% 70% at 50% 18%, rgba(233, 176, 255, 0.55), rgba(242, 184, 75, 0.12) 70%),
-    color-mix(in srgb, var(--bg, #f6f3ee) 50%, transparent);
-}
-.hm-arch-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 5; stroke-linecap: round; }
+.hm-card:hover .hm-dial { scale: 1.04; }
+.hm-dial-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 9%, transparent); stroke-width: 7; stroke-linecap: round; }
 .hm-ring-fill {
   fill: none;
-  stroke-width: 5;
+  stroke-width: 7;
   stroke-linecap: round;
   stroke-dasharray: 100;
   stroke-dashoffset: calc(100 - var(--p));
-  filter: drop-shadow(0 0 4px rgba(182, 120, 242, 0.55));
+  filter: drop-shadow(0 0 5px rgba(182, 120, 242, 0.55));
   transition: stroke-dashoffset 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .motion-armed .home-mystery:not(.in) .hm-ring-fill { stroke-dashoffset: 100; }
+.hm-card.is-empty .hm-ring-fill { opacity: 0; }
 .hm-card.is-ready .hm-ring-fill { animation: hmGlow 2.4s ease-in-out infinite; }
-@keyframes hmGlow { 50% { filter: drop-shadow(0 0 12px rgba(182, 120, 242, 0.95)); } }
-.hm-floor { stroke: color-mix(in srgb, var(--text) 16%, transparent); stroke-width: 1.2; stroke-linecap: round; }
-.hm-mote {
-  fill: #f6d27a;
-  opacity: 0;
-  transform-box: fill-box;
-  animation: hmMote var(--t, 4s) linear infinite;
-  animation-delay: var(--d, 0s);
+@keyframes hmGlow { 50% { filter: drop-shadow(0 0 13px rgba(182, 120, 242, 0.95)); } }
+.hm-dial-base { stroke: color-mix(in srgb, var(--text) 18%, transparent); stroke-width: 1.5; stroke-linecap: round; }
+/* The disc: radius 74 about (100,100), cut flat at y 160. */
+.hm-disc {
+  position: absolute;
+  left: 13%;
+  top: calc(100% * 26 / 190);
+  width: 74%;
+  height: calc(100% * 148 / 190);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #fff, #f4eefb);
+  clip-path: inset(0 0 9.5% 0);
+  box-shadow: inset 0 -10px 24px -14px rgba(120, 70, 180, 0.35);
 }
-.hm-mote:nth-child(even) { fill: #c99cf7; }
-@keyframes hmMote {
-  0% { opacity: 0; transform: translateY(0); }
-  15% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateY(-190px); }
-}
-.hm-card.is-ready .hm-mote { animation-duration: 2.2s; }
-/* The piece stands on the floor (y 228 of 240), its reflection under it. */
+.hm-card.is-ready .hm-disc { background: radial-gradient(circle at 50% 35%, #fff, #f1e3ff); }
 .hm-item {
   position: absolute;
   left: 50%;
-  bottom: calc(100% * 12 / 240);
-  width: 64%;
-  height: 52%;
+  bottom: 11%;
+  width: 70%;
+  height: 60%;
+  translate: -50% 0;
   object-fit: contain;
   object-position: bottom;
-  translate: -50% 0;
-  filter: drop-shadow(0 10px 10px rgba(40, 20, 70, 0.25));
+  filter: drop-shadow(0 8px 8px rgba(40, 20, 70, 0.22));
   transition: translate 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.hm-reflect {
-  position: absolute;
-  left: 50%;
-  top: calc(100% * 228 / 240);
-  width: 64%;
-  height: 52%;
-  object-fit: contain;
-  object-position: bottom;
-  translate: -50% 0;
-  /* Flipped in place: it already sits below the floor, so it has to turn
-     over around its own middle (around its top it swung back up over the
-     piece, and showed as a faint box behind it). */
-  transform: scaleY(-1);
-  transform-origin: center;
-  opacity: 0.22;
-  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 35%);
-  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent 35%);
-  pointer-events: none;
-}
-.hm-card:hover .hm-item { translate: -50% -6px; }
+:root[data-theme="light"] .hm-item { mix-blend-mode: multiply; }
+.hm-card:hover .hm-item { translate: -50% -5px; }
 .hm-badge {
   position: absolute;
   left: 50%;
-  top: calc(100% * 228 / 240);
+  top: calc(100% * 168 / 190);
   translate: -50% -50%;
-  padding: 4px 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
   border-radius: var(--r-pill);
   background: var(--surface-1);
   box-shadow: 0 0 0 1px var(--hairline), 0 4px 12px -4px rgba(0, 0, 0, 0.18);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
   color: var(--text);
-  z-index: 1;
 }
+.hm-badge svg { width: 12px; height: 12px; }
 .hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: 0 6px 16px -6px rgba(182, 120, 242, 0.8); }
-.hm-arrow { display: inline-block; margin-left: 2px; transition: transform 0.2s ease; }
+.hm-arrow { display: inline-block; transition: transform 0.2s ease; }
 .hm-card:hover .hm-arrow { transform: translateX(3px); }
-.hm-line { margin-top: 8px; font-size: 0.66rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
+.hm-line { font-size: 0.66rem; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); }
 .hm-value {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 900;
   background: linear-gradient(90deg, #d99a1e, #9b5ce0);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
+
+/* --- The demo: Open is tapped, boxes pile up, the bar charges, a mystery
+   piece drops into the crate, it shakes and reveals it. Driven by
+   runMysteryDemo setting data-phase; it all loops. */
+.hm-demo { display: flex; flex-direction: column; gap: 16px; }
+.hm-demo-top { position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.hm-demo-open {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  border-radius: var(--r-pill);
+  background: #9ff58c;
+  color: #111;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1.5px #111;
+}
+.hm-demo-plus {
+  position: absolute;
+  right: -4px;
+  top: -6px;
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #9b5ce0;
+  opacity: 0;
+}
+.hm-demo.is-tap .hm-demo-open { animation: hmTap 0.3s ease; }
+.hm-demo.is-tap .hm-demo-plus { animation: hmPlus 0.6s ease-out; }
+@keyframes hmTap { 40% { scale: 0.92; } }
+@keyframes hmPlus { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 6px -18px; } }
+/* A pointer resting on Open, dipping on each tap. */
+.hm-demo-cursor {
+  position: absolute;
+  left: 52px;
+  top: 22px;
+  width: 18px;
+  height: 18px;
+  background: #111;
+  clip-path: polygon(0 0, 0 78%, 24% 60%, 40% 100%, 55% 94%, 39% 55%, 72% 55%);
+  filter: drop-shadow(0 0 0.5px #fff) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+}
+.hm-demo.is-tap .hm-demo-cursor { animation: hmCursor 0.3s ease; }
+@keyframes hmCursor { 40% { translate: -2px 3px; scale: 0.9; } }
+:root:not([data-theme="light"]) .hm-demo-cursor { background: #fff; }
+.hm-demo-row { display: flex; align-items: center; gap: 2px; min-width: 0; overflow: hidden; }
+.hm-demo-mini { width: 34px; height: 34px; object-fit: contain; animation: hmMini 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes hmMini { from { opacity: 0; scale: 0.3; translate: -12px 0; } }
+.hm-demo-bar { display: flex; align-items: center; gap: 10px; }
+.hm-demo-bar-label { display: inline-flex; align-items: center; gap: 5px; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #9b5ce0; }
+.hm-demo-bar-label svg { width: 12px; height: 12px; color: #f2b84b; }
+.hm-demo-bar-track { position: relative; flex: 1; height: 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 9%, transparent); overflow: hidden; }
+.hm-demo-bar-track i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #f2b84b, #e08ad0, #9b5ce0); transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.hm-demo[data-phase="full"] .hm-demo-bar-track,
+.hm-demo[data-phase="drop"] .hm-demo-bar-track { box-shadow: 0 0 14px rgba(182, 120, 242, 0.7); }
+.hm-demo-bar-pct { min-width: 38px; text-align: right; font-size: 0.8rem; font-weight: 900; color: var(--text); }
+/* The crate, the piece falling into it, and the reveal. */
+.hm-demo-box { position: relative; height: 230px; display: grid; place-items: end center; }
+/* The snapshot frames the box with room to spin, so it's drawn large and
+   pulled in at the bottom. */
+.hm-demo-crate { position: relative; z-index: 2; width: 300px; height: 210px; margin-bottom: -38px; object-fit: contain; }
+.hm-demo[data-phase="shake"] .hm-demo-crate { animation: hmShake 0.6s ease; }
+@keyframes hmShake {
+  15%, 55% { rotate: -4deg; translate: -3px 0; }
+  35%, 75% { rotate: 4deg; translate: 3px 0; }
+}
+.hm-demo-drop {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  border-radius: 12px;
+  background: linear-gradient(150deg, #3b2a5a, #1d1628);
+  box-shadow: 0 0 0 2px #b678f2, 0 0 18px rgba(182, 120, 242, 0.7);
+  opacity: 0;
+}
+.hm-demo-drop i {
+  font-style: normal;
+  font-weight: 900;
+  font-size: 1.5rem;
+  background: linear-gradient(180deg, #f6d27a, #c99cf7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hm-demo[data-phase="full"] .hm-demo-drop { opacity: 1; animation: hmHover 0.5s ease both; }
+.hm-demo[data-phase="drop"] .hm-demo-drop { animation: hmDrop 0.9s cubic-bezier(0.5, 0, 0.9, 0.6) both; }
+@keyframes hmHover { from { opacity: 0; translate: 0 -10px; scale: 0.6; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes hmDrop {
+  0% { opacity: 1; translate: 0 0; scale: 1; }
+  80% { opacity: 1; translate: 0 92px; scale: 0.55; }
+  100% { opacity: 0; translate: 0 104px; scale: 0.4; }
+}
+.hm-demo-prize {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  z-index: 3;
+  width: 150px;
+  height: 110px;
+  margin-left: -75px;
+  object-fit: contain;
+  opacity: 0;
+  scale: 0.3;
+  filter: drop-shadow(0 12px 14px rgba(60, 30, 100, 0.35));
+}
+.hm-demo[data-phase="reveal"] .hm-demo-prize { animation: hmReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.hm-demo[data-phase="out"] .hm-demo-prize { opacity: 1; scale: 1; translate: 0 -46px; transition: opacity 0.5s ease; opacity: 0; }
+@keyframes hmReveal { from { opacity: 0; scale: 0.3; translate: 0 30px; } to { opacity: 1; scale: 1; translate: 0 -46px; } }
+.hm-demo-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 40px;
+  width: 240px;
+  height: 200px;
+  margin-left: -120px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(242, 184, 75, 0.55), rgba(182, 120, 242, 0.35) 55%, transparent);
+  opacity: 0;
+  scale: 0.4;
+  transition: opacity 0.5s ease, scale 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hm-demo[data-phase="reveal"] .hm-demo-glow { opacity: 1; scale: 1; }
+.hm-demo-steps { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; counter-reset: hm; }
+.hm-demo-steps li {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-dim);
+  counter-increment: hm;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.hm-demo-steps li::before { content: counter(hm); display: block; margin-bottom: 2px; font-size: 0.85rem; font-weight: 900; }
+.hm-demo-steps li.is-on { background: linear-gradient(135deg, rgba(242, 184, 75, 0.22), rgba(182, 120, 242, 0.26)); color: var(--text); }
 @media (prefers-reduced-motion: reduce) {
-  .hm-mote, .hm-card.is-ready .hm-ring-fill { animation: none; }
+  .hm-card.is-ready .hm-ring-fill, .hm-demo * { animation: none !important; }
 }
 @media (max-width: 900px) {
-  .home-mystery { --hm-w: 220px; }
+  .home-mystery { grid-template-columns: 1fr; gap: 28px; }
 }
 @media (max-width: 640px) {
-  .home-mystery { --hm-w: 150px; --hm-label: 46px; }
-  .home-mystery .hm-line { line-height: 10px; }
-  .home-mystery .hm-value { line-height: 20px; }
-  .hm-badge { font-size: 0.58rem; padding: 3px 8px; }
+  .hm-rings { gap: 8px; }
+  .hm-badge { font-size: 0.58rem; padding: 3px 8px; gap: 3px; }
+  .hm-badge svg { width: 9px; height: 9px; }
   .hm-value { font-size: 0.95rem; }
   .hm-line { font-size: 0.56rem; }
+  .hm-demo-box { height: 190px; }
+  .hm-demo-crate { width: 250px; height: 175px; margin-bottom: -30px; }
 }
 /* --- Home: scroll-linked motion ------------------------------------------------
    Where the browser can tie an animation to scroll position (view
@@ -8725,10 +8775,3 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @keyframes saRing { from { stroke-dashoffset: 100; } to { stroke-dashoffset: calc(100 - var(--p)); } }
 @keyframes saHeroOut { to { opacity: 0; translate: 0 -80px; } }
 @keyframes saHeroOutSlow { to { opacity: 0.2; translate: 0 -30px; scale: 0.94; } }
-/* Nothing charged yet: no line at all (a round cap on an empty dash
-   draws a dot). */
-.hm-card.is-empty .hm-ring-fill { opacity: 0; }
-/* Light theme: the cut-out pieces multiply into the glow, so any off-white
-   the cutout left at their edges disappears into it. */
-:root[data-theme="light"] .hm-item,
-:root[data-theme="light"] .hm-reflect { mix-blend-mode: multiply; }

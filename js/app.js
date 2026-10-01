@@ -55,14 +55,14 @@ const MYSTERY_BY_LINE = {
 const MYSTERY_NAMES = new Set(Object.values(MYSTERY_BY_LINE).flat().map((p) => p.name));
 const general = (pool) => pool.filter((p) => !MYSTERY_NAMES.has(p.name));
 // The charge to fill, in money opened through the crate: the line's
-// mystery items' average value, and never fewer than 30 boxes' worth (a
+// mystery items' average value, and never fewer than 80 boxes' worth (a
 // Streetwear piece is worth far less than a Sneakers one, and its bar
 // would otherwise fill in a handful of boxes). Shown only as a share of
 // full, never as money.
 function mysteryTarget(line, price) {
   const items = MYSTERY_BY_LINE[line];
   const avg = items.reduce((sum, p) => sum + p.price, 0) / items.length;
-  return Math.round(Math.max(avg, price * 30));
+  return Math.round(Math.max(avg, price * 80));
 }
 // Once unlocked, every box's chance at the mystery item.
 const MYSTERY_CHANCE = 0.03;
@@ -5446,14 +5446,18 @@ function grailTileHTML(g) {
 }
 
 // ---- Home: Mystery --------------------------------------------------------
-// One ring per line, no card around it: the line's top mystery piece in the
-// middle, and the ring filling with the mystery charge of the line's
-// cheapest drop, which is where it leads. The detail (every crate's charge,
-// the other pieces) lives on the drops themselves.
+// Two halves. On the left, a demo that loops on its own: someone taps Open,
+// boxes pile up, the mystery bar charges, and at full a mystery piece drops
+// into a crate, which shakes and reveals it. On the right, the three that
+// are actually happening: one ring per line, a circle with its bottom cut
+// flat, charging round the arc for that line's cheapest drop, its top
+// mystery piece standing on the flat, and a padlock plate on the flat edge
+// (locked with the % while it charges, open once it's unlocked).
 const homeMysteryEl = document.getElementById("homeMystery");
-// Left to right: the Sneakers piece (the most valuable) takes the middle,
-// the tallest arch, with the other two tucked in behind it either side.
-const HOME_MYSTERY_LINES = ["streetwear", "sneakers", "collectibles"];
+const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
+// The dial: a circle (centre 100,100, radius 88) cut flat at y 168. The
+// charge runs from the left end of the cut, over the top, to the right end.
+const HM_DIAL_ARC = "M 44.1 168 A 88 88 0 1 1 155.9 168";
 
 // The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
@@ -5462,11 +5466,9 @@ function mysteryLead(line) {
     .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
 }
 
-// The arch: open at the bottom, its two sides standing on a flat floor.
-// The charge runs along it from the bottom of the left side, over the top
-// and down the right (pathLength 100, so the % is the dash).
-const HM_ARCH_OPEN = "M 22 228 L 22 104 A 78 78 0 0 1 178 104 L 178 228";
-const HM_ARCH_SHUT = `${HM_ARCH_OPEN} Z`;
+function hmBadgeHTML(ready, pct) {
+  return ready ? `${ICONS.unlock}<span>Unlocked</span><span class="hm-arrow" aria-hidden="true">&rarr;</span>` : `${ICONS.lock}<span>${pct}%</span>`;
+}
 
 function homeMysteryCardHTML(line) {
   const key = mysteryLead(line);
@@ -5474,34 +5476,47 @@ function homeMysteryCardHTML(line) {
   const top = [...MYSTERY_BY_LINE[line]].sort((a, b) => b.price - a.price)[0];
   const item = ready ?? top;
   const pct = Math.floor(supply.charge(key) * 100);
-  // Motes of light rising inside the arch, each its own column and pace.
-  const motes = [32, 58, 81, 104, 127, 150, 170]
-    .map((x, i) => `<circle class="hm-mote" cx="${x}" cy="226" r="${i % 3 ? 1.4 : 2}" style="--d:${(i * 0.73) % 4}s;--t:${3.2 + (i % 3) * 0.9}s"/>`)
-    .join("");
   return `
-    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-pos="${["left", "center", "right"][HOME_MYSTERY_LINES.indexOf(line)]}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
-      <span class="hm-arch">
-        <span class="hm-glass" aria-hidden="true"></span>
-        <svg class="hm-arch-svg" viewBox="0 0 200 240" aria-hidden="true">
-          <defs>
-            <linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient>
-            <clipPath id="hmClip-${line}"><path d="${HM_ARCH_SHUT}"/></clipPath>
-          </defs>
-          <g clip-path="url(#hmClip-${line})">${motes}</g>
-          <path class="hm-ring-track" d="${HM_ARCH_OPEN}"/>
-          <path class="hm-ring-fill" d="${HM_ARCH_OPEN}" pathLength="100" stroke="url(#hmStroke-${line})"/>
-          <path class="hm-floor" d="M 4 228 L 196 228"/>
+    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
+      <span class="hm-dial">
+        <svg class="hm-dial-svg" viewBox="0 0 200 190" aria-hidden="true">
+          <defs><linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
+          <path class="hm-ring-track" d="${HM_DIAL_ARC}"/>
+          <path class="hm-ring-fill" d="${HM_DIAL_ARC}" pathLength="100" stroke="url(#hmStroke-${line})"/>
+          <path class="hm-dial-base" d="M 30 168 L 170 168"/>
         </svg>
-        <img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt="">
-        <img class="hm-reflect" src="${item.image}" data-cutout="${item.image}" alt="">
-        <span class="hm-badge">${ready ? `Unlocked <span class="hm-arrow" aria-hidden="true">&rarr;</span>` : `${pct}%`}</span>
+        <span class="hm-disc"><img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt=""></span>
+        <span class="hm-badge">${hmBadgeHTML(!!ready, pct)}</span>
       </span>
       <span class="hm-line">${CATEGORIES[key].badge}</span>
       <b class="hm-value">$${item.price.toLocaleString()}</b>
     </button>`;
 }
 
-// The pieces stand in the arch cut out of their white photo backgrounds.
+function homeMysteryDemoHTML() {
+  return `
+    <div class="hm-demo" aria-hidden="true" data-phase="idle">
+      <div class="hm-demo-top">
+        <span class="hm-demo-open">Open<i class="hm-demo-plus">+1</i></span>
+        <span class="hm-demo-cursor"></span>
+        <span class="hm-demo-row"></span>
+      </div>
+      <div class="hm-demo-bar"><span class="hm-demo-bar-label">${ICONS.mystery}Mystery</span><span class="hm-demo-bar-track"><i></i></span><b class="hm-demo-bar-pct">0%</b></div>
+      <div class="hm-demo-box">
+        <span class="hm-demo-glow"></span>
+        <span class="hm-demo-drop"><i>?</i></span>
+        <img class="hm-demo-prize" alt="">
+        <img class="hm-demo-crate" alt="">
+      </div>
+      <ol class="hm-demo-steps">
+        <li data-step="1">Boxes get opened</li>
+        <li data-step="2">The bar charges</li>
+        <li data-step="3">A mystery piece unlocks</li>
+      </ol>
+    </div>`;
+}
+
+// The pieces stand on their discs cut out of their white photo backgrounds.
 function cutOutHomeMystery(root = homeMysteryEl) {
   root?.querySelectorAll("img[data-cutout]").forEach((img) => {
     cutoutImage(img.dataset.cutout).then((url) => {
@@ -5510,10 +5525,75 @@ function cutOutHomeMystery(root = homeMysteryEl) {
   });
 }
 
+let hmDemoRun = 0;
+function runMysteryDemo() {
+  const run = ++hmDemoRun;
+  const el = homeMysteryEl.querySelector(".hm-demo");
+  if (!el) return;
+  const row = el.querySelector(".hm-demo-row");
+  const fill = el.querySelector(".hm-demo-bar-track i");
+  const pctEl = el.querySelector(".hm-demo-bar-pct");
+  const prize = el.querySelector(".hm-demo-prize");
+  let crateUrl = "";
+  getBoxSnapshot("sneakers", "od").then((url) => {
+    crateUrl = url;
+    el.querySelector(".hm-demo-crate").src = url;
+  });
+  cutoutImage(MYSTERY_BY_LINE.sneakers[0].image).then((url) => (prize.src = url));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const alive = () => run === hmDemoRun && el.isConnected;
+  const onScreen = () => !document.hidden && document.getElementById("screen-home").classList.contains("active");
+  const step = (n) => el.querySelectorAll(".hm-demo-steps li").forEach((li) => li.classList.toggle("is-on", Number(li.dataset.step) === n));
+  const setBar = (p) => {
+    fill.style.width = `${p}%`;
+    pctEl.textContent = `${Math.round(p)}%`;
+  };
+  (async () => {
+    while (alive()) {
+      if (!onScreen()) {
+        await wait(800);
+        continue;
+      }
+      el.dataset.phase = "buy";
+      row.innerHTML = "";
+      setBar(0);
+      step(1);
+      await wait(500);
+      const buys = 6;
+      for (let i = 1; i <= buys && alive(); i++) {
+        el.classList.remove("is-tap");
+        void el.offsetWidth;
+        el.classList.add("is-tap");
+        const mini = document.createElement("img");
+        mini.className = "hm-demo-mini";
+        mini.src = crateUrl;
+        mini.alt = "";
+        row.appendChild(mini);
+        setBar((i / buys) * 100);
+        if (i === 3) step(2);
+        await wait(620);
+      }
+      if (!alive()) break;
+      el.dataset.phase = "full";
+      step(3);
+      await wait(500);
+      el.dataset.phase = "drop";
+      await wait(900);
+      el.dataset.phase = "shake";
+      await wait(650);
+      el.dataset.phase = "reveal";
+      await wait(2600);
+      el.dataset.phase = "out";
+      await wait(600);
+    }
+  })();
+}
+
 function renderHomeMystery() {
   if (!homeMysteryEl) return;
-  homeMysteryEl.innerHTML = HOME_MYSTERY_LINES.map(homeMysteryCardHTML).join("");
+  homeMysteryEl.innerHTML = `${homeMysteryDemoHTML()}<div class="hm-rings">${HOME_MYSTERY_LINES.map(homeMysteryCardHTML).join("")}</div>`;
   cutOutHomeMystery();
+  runMysteryDemo();
 }
 
 // Live: each ring follows its drop's charge, and is drawn again when the
@@ -5533,7 +5613,7 @@ function refreshHomeMystery() {
     const pct = Math.floor(supply.charge(key) * 100);
     card.style.setProperty("--p", pct);
     card.classList.toggle("is-empty", pct === 0);
-    card.querySelector(".hm-badge").textContent = `${pct}%`;
+    card.querySelector(".hm-badge").innerHTML = hmBadgeHTML(false, pct);
   });
 }
 

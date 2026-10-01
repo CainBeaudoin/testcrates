@@ -116,16 +116,23 @@ export function registerCrates(categories, seedShape = () => null, mystery = {})
     if (c.charge == null) c.charge = mysteries.has(key) ? mysteries.get(key).target * (0.4 + Math.random() * 0.5) : 0;
     if (c.ready && !mysteryByName(key, c.ready)) c.ready = null;
   }
-  // Once: a couple of crates start full, their mystery item revealed, so
-  // there's one to see.
-  if (!state.mysteryExamples2) {
-    ["sneakers", "collectibles250"].forEach((key) => {
+  // Once: a mix to see — the Sneakers $150 crate unlocked, every other
+  // crate somewhere along its charge (earlier builds left most of them
+  // unlocked at once, which said nothing).
+  if (!state.mysteryMix3) {
+    for (const key of mysteries.keys()) {
+      const c = crate(key);
       const m = mysteries.get(key);
-      if (!m || !crate(key)) return;
-      crate(key).charge = m.target;
-      crate(key).ready = m.items[Math.floor(Math.random() * m.items.length)].name;
-    });
-    state.mysteryExamples2 = true;
+      if (!c) continue;
+      if (key === "sneakers") {
+        c.charge = m.target;
+        c.ready = m.items[0].name;
+      } else {
+        c.ready = null;
+        c.charge = m.target * (0.2 + Math.random() * 0.65);
+      }
+    }
+    state.mysteryMix3 = true;
   }
   delete state.reserved;
   // A mystery round that never finished (the page closed before a box was
