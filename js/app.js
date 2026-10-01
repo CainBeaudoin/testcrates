@@ -1499,16 +1499,13 @@ document.getElementById("liveBarAll").addEventListener("click", () => {
   setTimeout(() => document.getElementById("recentPulls")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
 });
 
-// Minimize to a pill, remembered.
+// Minimize to a pill, for this visit. Every visit starts with the bar
+// showing: minimizing is a choice made each time, not a setting that
+// quietly hides the live feed from then on.
 function setLiveBarMinimized(min) {
   document.body.classList.toggle("live-bar-min", min);
   liveBarPinned = false;
   setLiveBarOpen(false);
-  try {
-    localStorage.setItem(LIVE_BAR_KEY, min ? "min" : "open");
-  } catch {
-    // Not remembering is survivable.
-  }
 }
 document.getElementById("liveBarMin").addEventListener("click", () => {
   playClick();
@@ -1518,10 +1515,11 @@ liveBarPill.addEventListener("click", () => {
   playClick();
   setLiveBarMinimized(false);
 });
+// Earlier builds remembered "minimized" across visits; clear it.
 try {
-  if (localStorage.getItem(LIVE_BAR_KEY) === "min") document.body.classList.add("live-bar-min");
+  localStorage.removeItem(LIVE_BAR_KEY);
 } catch {
-  // Default to showing it.
+  // Nothing stored, nothing to clear.
 }
 
 // ---- The dock: collapse, and drag it wherever ---------------------------
