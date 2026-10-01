@@ -1700,7 +1700,8 @@ function buildOddsPanelHTML(pool) {
 
 // What's inside a crate, on its card: the pieces still in it, dealt into
 // small stacks by tier — the Grails in one, the Epics in the next, then the
-// Rares — each piece edged in its tier's colour. No counts and no single
+// Rares — each piece edged in its tier's colour, which names the tier on its
+// own (the tooltip spells it out). No counts and no single
 // tier singled out: an Epic or a Rare is a win too, and a fan of the real
 // remaining pieces says what a box can still give without anyone reading
 // numbers. A tier that's run dry drops out and the next one down steps in,
@@ -1732,7 +1733,6 @@ function whatsLeftInner(tierKey) {
           <span class="wl-fan">${cards
             .map((p, i) => `<span class="wl-thumb" style="--i:${cards.length - 1 - i}"><img src="${p.image}" alt=""></span>`)
             .join("")}</span>
-          <span class="wl-tier">${meta.label}</span>
         </span>`;
       })
       .join("")}</span>`;

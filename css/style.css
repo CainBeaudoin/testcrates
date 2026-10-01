@@ -7781,13 +7781,7 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   color: var(--text-dim);
 }
 .whats-left-thumbs { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
-.wl-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-}
+.wl-stack { display: flex; flex: 0 0 auto; }
 /* Room for the fan: the top tile plus one step per tile behind it. */
 .wl-fan {
   position: relative;
@@ -7839,29 +7833,25 @@ button.whats-left:hover .wl-thumb,
   .wl-legendary .wl-thumb::after { animation: none; display: none; }
   .wl-thumb { transition: none; }
 }
-.wl-tier {
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--rarity-color) 78%, #000);
-  line-height: 1;
-}
-:root:not([data-theme="light"]) .wl-tier { color: var(--rarity-color); }
 /* Home: sits in the crate panel where "Could contain" was. */
 .whats-left-home { --wl-size: 42px; --wl-step: 12px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
 .whats-left-home .whats-left-thumbs { width: 100%; justify-content: space-between; padding: 0 4px; }
 :root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
 /* Inside sealed cards: no ground of its own, smaller stacks, no labels. */
 .whats-left-mini { --wl-size: 27px; --wl-step: 8px; margin-top: 6px; padding: 0; background: none; cursor: inherit; }
-.whats-left-mini .whats-left-label,
-.whats-left-mini .wl-tier { display: none; }
+.whats-left-mini .whats-left-label { display: none; }
 .whats-left-mini .whats-left-thumbs { gap: 8px; }
 
 /* The label sits above the stacks rather than beside them: Drops' cards
    run five across and narrow, and three fans need the card's full width. */
 .whats-left:not(.whats-left-mini) { flex-direction: column; align-items: flex-start; gap: 8px; padding: 9px 11px 10px; }
 .whats-left-thumbs { max-width: 100%; }
+/* Very narrow cards (Home's row squeezed between breakpoints): the fans
+   close up further, sized off the row's own width rather than the screen. */
+.whats-left:not(.whats-left-mini) { container: wl / inline-size; }
+@container wl (max-width: 128px) {
+  .whats-left-thumbs { --wl-size: 20px; --wl-step: 4px; gap: 4px !important; padding: 0 !important; }
+}
 /* Phones: cards run two across, so the fans close up to fit. */
 @media (max-width: 640px) {
   .whats-left:not(.whats-left-mini),
