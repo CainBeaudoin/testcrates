@@ -46,6 +46,7 @@ const CATEGORIES = {
     poweredBy: "Robinhood Chain",
     boxKind: "printer", // generic printer model, not the shoe box
     cashOnly: true, // real USDC settlement, not a Credits reward balance
+    openOnBuy: true, // a Stocks box opens when it's bought: no sealed holding or resale
   },
   sneakers: {
     label: "$125",
@@ -155,6 +156,11 @@ function crateBoxKind(cat) {
   return cat.boxKind === "printer" ? "printer" : "od";
 }
 
+// Whether a crate's boxes can be kept sealed (and so held and traded).
+function keepsSealed(key) {
+  return !CATEGORIES[key]?.openOnBuy;
+}
+
 function tierKeyOf(key) {
   if (CATEGORIES[key]) return key;
   return LEGACY_TIER_KEYS[key] ?? "sneakers";
@@ -193,6 +199,16 @@ Object.keys(CATEGORIES).forEach((key) => {
   const mine = player.getCrates().filter((t) => t.crateKey === key);
   mine.forEach((t) => (t.series = supply.status(key).series));
   supply.reconcile(key, mine.length);
+  // Crates that can't be kept sealed have no boxes in anyone's hands: any
+  // the crowd was holding (from before the rule, or the first-run seed)
+  // get opened, and their listings come down.
+  if (!keepsSealed(key)) {
+    market
+      .getCrateListings()
+      .filter((l) => l.crateKey === key && !l.isPlayer)
+      .forEach((l) => market.removeCrateListing(l.id));
+    while (supply.botHeld(key) > 0 && supply.crowdOpenHeld(key));
+  }
 });
 
 const MAX_BATCH_QTY = 8;
@@ -560,6 +576,7 @@ const allScreens = Array.from(document.querySelectorAll(".screen"));
 function showScreen(el) {
   allScreens.forEach((s) => s.classList.remove("active"));
   el.classList.add("active");
+  if (el.id !== "screen-account") avatarBtn.classList.remove("active");
   // Home's live boxes (its crate row and the billboard) are rebuilt when
   // Home is shown again; holding their WebGL contexts open elsewhere would
   // crowd out the Drops and opening screens.
@@ -1681,30 +1698,44 @@ function buildOddsPanelHTML(pool) {
   `;
 }
 
-// What's left in a crate, on its card: small pictures of the best pieces
-// still inside, best first, and how many more there are. No counts, no bar
-// and no single tier singled out — an Epic or a Rare is a win too, and a
-// row of the real remaining pieces says what a box can still give without
-// asking anyone to read numbers. When the top pieces are gone, they simply
-// stop showing. The full breakdown is one click away (openCrateModal).
-// data-supply lets refreshSupplyViews redraw it in place as the crowd opens.
+// What's inside a crate, on its card: the pieces still in it, dealt into
+// small stacks by tier — the Grails in one, the Epics in the next, then the
+// Rares — each piece edged in its tier's colour. No counts and no single
+// tier singled out: an Epic or a Rare is a win too, and a fan of the real
+// remaining pieces says what a box can still give without anyone reading
+// numbers. A tier that's run dry drops out and the next one down steps in,
+// so there are always three stacks while the crate has three tiers left.
+// The full breakdown is one click away (openCrateModal). data-supply lets
+// refreshSupplyViews redraw it in place as the crowd opens.
 function buildSupplyHTML(tierKey) {
-  return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's left in this crate">${whatsLeftInner(tierKey)}</button>`;
+  return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate">${whatsLeftInner(tierKey)}</button>`;
 }
-function whatsLeftInner(tierKey, max = 4) {
+const WL_STACKS = 3; // tiers shown
+const WL_DEPTH = 3; // pieces per stack
+function whatsLeftInner(tierKey) {
   const live = supply
     .livePool(tierKey)
     .filter((p) => p.left > 0)
-    .sort((a, b) => rankOf(b.rarity) - rankOf(a.rarity) || b.price - a.price);
-  const shown = live.slice(0, max);
-  const more = live.length - shown.length;
-  return `<span class="whats-left-label">What&rsquo;s left</span>
-    <span class="whats-left-thumbs">${shown
-      .map(
-        (p) =>
-          `<span class="wl-thumb" style="--rarity-color:${RARITY_META[p.rarity].color}" title="${p.name} · ${RARITY_META[p.rarity].label}"><img src="${p.image}" alt=""></span>`
-      )
-      .join("")}${more > 0 ? `<span class="wl-more">+${more}</span>` : ""}</span>`;
+    .sort((a, b) => b.price - a.price);
+  const stacks = Object.keys(RARITY_META)
+    .sort((a, b) => rankOf(b) - rankOf(a))
+    .map((rarity) => ({ rarity, items: live.filter((p) => p.rarity === rarity) }))
+    .filter((t) => t.items.length)
+    .slice(0, WL_STACKS);
+  return `<span class="whats-left-label">What&rsquo;s inside</span>
+    <span class="whats-left-thumbs">${stacks
+      .map(({ rarity, items }) => {
+        const meta = RARITY_META[rarity];
+        // Dealt back to front so the best piece lands on top.
+        const cards = items.slice(0, WL_DEPTH).reverse();
+        return `<span class="wl-stack wl-${rarity}" style="--rarity-color:${meta.color};--n:${cards.length}" title="${meta.label}: ${items.map((p) => p.name).join(", ")}">
+          <span class="wl-fan">${cards
+            .map((p, i) => `<span class="wl-thumb" style="--i:${cards.length - 1 - i}"><img src="${p.image}" alt=""></span>`)
+            .join("")}</span>
+          <span class="wl-tier">${meta.label}</span>
+        </span>`;
+      })
+      .join("")}</span>`;
 }
 
 let categoryBoxViewers = [];
@@ -1975,6 +2006,7 @@ function openPaymentPicker(key, quantity = 1) {
   pendingCategoryKey = key;
   pendingQuantity = quantity;
   setPayMode("open");
+  payModeEl.hidden = !keepsSealed(key);
   paySupplyEl.textContent = `${s.unsold.toLocaleString()} of ${s.total} left in Series ${s.series}`;
 
   // Stocks settle in Cash only (real USDC, not a Credits reward balance), so
@@ -2045,7 +2077,7 @@ function tryPurchase(currency) {
   const tokens = player.addCrates(key, supply.status(key).series, qty, cat.price, currency);
   refreshSupplyViews();
 
-  if (payMode === "keep") {
+  if (payMode === "keep" && keepsSealed(key)) {
     showToast(qty > 1 ? `${qty} sealed ${cat.badge} crates are in your account` : `Sealed ${cat.badge} crate added to your account`, ICONS.bell);
     return true;
   }
@@ -2733,7 +2765,7 @@ navTabs.forEach((tab) => {
 // across two tabs meant the same item's story was in two places.
 const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
-  holdings: ["crates", "vault", "portfolio"],
+  holdings: ["vault", "portfolio"],
   activity: ["activity"],
   rewards: ["rewards"],
   clips: ["clips"],
@@ -2744,6 +2776,8 @@ const accountToggles = Array.from(document.querySelectorAll(".account-toggle"));
 // Shared by the Account sub-nav and by the rail's Rewards tab, which opens
 // a group that has no sub-nav item of its own to click.
 function showAccountGroup(group) {
+  // Rewards has its own tab; everything else on Account is the avatar's.
+  avatarBtn.classList.toggle("active", group !== "rewards");
   accountNavItems.forEach((i) => i.classList.toggle("active", i.dataset.group === group));
   const sections = ACCOUNT_NAV_GROUPS[group] ?? [];
   accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
@@ -3386,7 +3420,7 @@ usernameBtn.addEventListener("click", async () => {
 });
 
 avatarBtn.addEventListener("click", () => {
-  document.querySelector('.nav-tab[data-nav="screen-account"]').click();
+  document.querySelector(".nav-tab-account").click();
 });
 
 // Rewards is a rail tab now, so these jump straight to it rather than
@@ -3896,19 +3930,22 @@ function renderAccount() {
   market.maybeSpawnIncomingOffer();
   renderHeaderStats();
 
+  // Sealed crates lead My Items: they're the things you can still open.
   const collectibles = player.getInventory().filter((i) => i.category !== "stocks");
-  vaultCount.textContent = collectibles.length;
-  inventoryGrid.innerHTML = collectibles.length
-    ? collectibles.map(inventoryItemHTML).join("")
-    : `<div class="market-empty">Keep, Ship or List a prize from a crate reveal to see it here.</div>`;
-  inventoryGrid.querySelectorAll(".market-item").forEach((el) => {
+  const crates = player.getCrates();
+  vaultCount.textContent = crates.length + collectibles.length;
+  inventoryGrid.innerHTML =
+    crates.length || collectibles.length
+      ? crates.map(sealedCrateCardHTML).join("") + collectibles.map(inventoryItemHTML).join("")
+      : `<div class="market-empty">Keep a prize from a reveal, or keep a crate sealed when you buy it, to see it here.</div>`;
+  inventoryGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+  inventoryGrid.querySelectorAll(".market-item[data-item]").forEach((el) => {
     el.addEventListener("click", (e) => {
       if (e.target.closest(".item-actions")) return;
       openItemDetail(el.dataset.item);
     });
   });
 
-  renderSealedCrates();
   renderPortfolio();
 
   renderActivity();
@@ -5096,7 +5133,7 @@ function homeCrateCardHTML(key, cat) {
         <div class="crate-panel">
           <span class="crate-brand" title="Powered by ${cat.poweredBy ?? "Chosen"}">${brandMarkHTML(cat.poweredBy ?? "Chosen")}</span>
           <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
-          <button class="whats-left whats-left-home" data-supply="${key}" data-whats-left="${key}" aria-label="See what's left in this crate">${whatsLeftInner(key, 4)}</button>
+          <button class="whats-left whats-left-home" data-supply="${key}" data-whats-left="${key}" aria-label="See what's inside this crate">${whatsLeftInner(key)}</button>
         </div>
         <div class="crate-body">
           <div class="crate-title">
@@ -5136,7 +5173,7 @@ function renderHomeCrates() {
       card.addEventListener("mouseleave", () => viewer.setPaused(false));
     });
     card.addEventListener("click", (e) => {
-      // The "What's left" row opens the breakdown instead (its own handler).
+      // The "What's inside" row opens the breakdown instead (its own handler).
       if (e.target.closest("[data-whats-left]")) return;
       playClick();
       homeSeeCrate(key);
@@ -5483,7 +5520,7 @@ function renderCrateModal() {
   const listing = ctx.listingId ? market.getCrateListing(ctx.listingId) : null;
 
   crateBoxImage(document.getElementById("crateModalBox"), key);
-  document.getElementById("crateModalEyebrow").textContent = token ? "Your sealed crate" : listing ? "Sealed crate for sale" : "What's left";
+  document.getElementById("crateModalEyebrow").textContent = token ? "Your sealed crate" : listing ? "Sealed crate for sale" : "What's inside";
   document.getElementById("crateModalTitle").textContent = crateName(key);
   document.getElementById("crateModalSub").textContent = `Series ${st.series}${cat.poweredBy ? ` · Powered by ${cat.poweredBy}` : ""}`;
 
@@ -5539,7 +5576,7 @@ function renderCrateModal() {
   if (token) {
     actions.innerHTML = `
       ${token.listingId ? `<span class="crate-modal-note">Listed at $${(market.getCrateListing(token.listingId)?.price ?? 0).toLocaleString()}</span>` : ""}
-      <button class="modal-btn modal-btn-outline" data-crate-act="${token.listingId ? "unlist" : "list"}">${token.listingId ? "Unlist" : "List for sale"}</button>
+      ${keepsSealed(key) || token.listingId ? `<button class="modal-btn modal-btn-outline" data-crate-act="${token.listingId ? "unlist" : "list"}">${token.listingId ? "Unlist" : "List for sale"}</button>` : ""}
       <button class="modal-btn modal-btn-solid" data-crate-act="open">Open now</button>`;
   } else if (listing) {
     const rating = crateRating(listing.price, key);
@@ -5588,7 +5625,7 @@ document.getElementById("crateModalActions").addEventListener("click", async (e)
   }
 });
 
-// The "What's left" link on a crate card. Delegated: cards re-render their
+// The "What's inside" row on a crate card. Delegated: cards re-render their
 // supply block in place as the counts move.
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-whats-left]");
@@ -5602,7 +5639,7 @@ document.addEventListener("click", (e) => {
 
 async function listSealedCrate(tokenId) {
   const token = player.getCrate(tokenId);
-  if (!token) return;
+  if (!token || !keepsSealed(token.crateKey)) return;
   const cat = CATEGORIES[token.crateKey];
   const st = supply.status(token.crateKey);
   const suggested = Math.round(Math.max(cat.price, st.ev));
@@ -5669,9 +5706,6 @@ function soldOutAction(key) {
 
 // ---- Account: sealed crates --------------------------------------------------
 
-const sealedGrid = document.getElementById("sealedGrid");
-const crateCount = document.getElementById("crateCount");
-
 function sealedCrateCardHTML(token) {
   const key = token.crateKey;
   const st = supply.status(key);
@@ -5686,29 +5720,17 @@ function sealedCrateCardHTML(token) {
         </div>
         <span class="market-item-name">${crateName(key)}</span>
         <span class="sealed-sub">Series ${token.series} · paid $${token.paid.toLocaleString()}</span>
-        <span class="whats-left whats-left-mini">${whatsLeftInner(key, 4)}</span>
+        <span class="whats-left whats-left-mini">${whatsLeftInner(key)}</span>
         <div class="item-actions">
           <button class="item-action-btn" data-sealed-act="open">Open</button>
-          <button class="item-action-btn" data-sealed-act="${listing ? "unlist" : "list"}">${listing ? "Unlist" : "List"}</button>
+          ${keepsSealed(key) || listing ? `<button class="item-action-btn" data-sealed-act="${listing ? "unlist" : "list"}">${listing ? "Unlist" : "List"}</button>` : ""}
         </div>
       </div>
     </div>`;
 }
 
-function renderSealedCrates() {
-  const tokens = player.getCrates();
-  crateCount.textContent = tokens.length;
-  // On the Holdings tab too, so held boxes are visible from My Items.
-  const tabCount = document.getElementById("crateTabCount");
-  tabCount.textContent = tokens.length;
-  tabCount.hidden = tokens.length === 0;
-  sealedGrid.innerHTML = tokens.length
-    ? tokens.map(sealedCrateCardHTML).join("")
-    : `<div class="market-empty">Buy a crate and choose Keep it sealed to hold it here. Open it any time, or list it on the market.</div>`;
-  sealedGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
-}
-
-sealedGrid.addEventListener("click", async (e) => {
+// Sealed crates sit at the front of My Items (renderAccount draws them).
+inventoryGrid.addEventListener("click", async (e) => {
   const card = e.target.closest("[data-token]");
   if (!card) return;
   const tokenId = card.dataset.token;
@@ -5736,7 +5758,7 @@ function crateListingCardHTML(listing) {
           ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
         </div>
         <span class="market-item-name">${crateName(key)}</span>
-        <span class="whats-left whats-left-mini">${whatsLeftInner(key, 4)}</span>
+        <span class="whats-left whats-left-mini">${whatsLeftInner(key)}</span>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
           <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
@@ -5757,6 +5779,7 @@ function botListedCount(key) {
 }
 
 function listBotCrate(key) {
+  if (!keepsSealed(key)) return;
   const cat = CATEGORIES[key];
   const st = supply.status(key);
   // Before sell-out nobody pays much over the drop price (it's still on
@@ -5794,7 +5817,7 @@ function crowdStep() {
       if (Math.random() < 0.78) {
         const prize = supply.crowdBuyAndOpen(key);
         if (prize) return crowdPull(prize, key);
-      } else if (supply.crowdBuyAndHold(key)) {
+      } else if (keepsSealed(key) && supply.crowdBuyAndHold(key)) {
         if (Math.random() < 0.35) listBotCrate(key);
         return null;
       }

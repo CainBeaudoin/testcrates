@@ -486,6 +486,11 @@ body {
 }
 .avatar-btn:hover { transform: scale(1.06); box-shadow: 0 0 0 2px var(--line-strong); }
 .avatar-btn .avatar-circle { width: 32px; height: 32px; }
+/* The avatar is Account's door on desktop: it shows when you're there. */
+.avatar-btn.active { box-shadow: 0 0 0 2px var(--text); }
+@media (min-width: 641px) {
+  .nav-tab-account { display: none; }
+}
 
 .avatar-circle {
   display: inline-flex;
@@ -7537,6 +7542,7 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .prize-row.is-gone img { filter: grayscale(1); }
 
 /* --- Buy dialog: open now, or keep it sealed --------------------------- */
+.pay-mode[hidden] { display: none; }
 .pay-mode {
   display: flex;
   gap: 4px;
@@ -7673,9 +7679,10 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .crate-modal-note { display: inline-flex; align-items: center; gap: 8px; margin-right: auto; font-size: 0.78rem; color: var(--text-dim); }
 
 /* --- Sealed crate cards (Account and the market) ---------------------------- */
-.sealed-media { display: grid; place-items: center; background: var(--crate-tint, #efe3d4); }
-:root:not([data-theme="light"]) .sealed-media { background: rgba(255, 255, 255, 0.06); }
-.sealed-media img { width: 82%; height: 82%; object-fit: contain; }
+/* On the same white tile as every other product, so a sealed box sits in
+   a grid of items (My Items, the market) as one of them. The box fills
+   more of its tile than a photo would: it's a cut-out with no margin. */
+.market-item .sealed-media img { padding: 2px; background: #fff; border-radius: var(--r-sm); }
 .sealed-sub { display: block; font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* The market narrowed to one crate's sealed boxes, and the way back out. */
@@ -7732,9 +7739,6 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   font-weight: 800;
 }
 .toggle-count[hidden] { display: none; }
-/* The box render is a cut-out already: no white photo well behind it. */
-.sealed-media img,
-.market-item .sealed-media img { background: none; padding: 0; border-radius: 0; }
 @media (max-width: 640px) {
   /* A list to browse, not a small confirm dialog: the phone width cap for
      pop-ups would squeeze three prizes a row into ~75px tiles. */
@@ -7742,18 +7746,22 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   #crateModal { padding: 16px 12px; }
 }
 
-/* --- What's left: the live row of pieces still inside a crate ------------
-   Small white tiles of the best of what's left, a rarity dot under each,
-   and +N for the rest. A button where it opens the breakdown; a plain row
-   inside cards that already open it. */
+/* --- What's inside: the pieces still in a crate, stacked by tier --------
+   One small fanned stack per tier (Grail, Epic, Rare — or the best three
+   tiers still in stock), each piece on a white tile edged in its tier's
+   colour, the best piece on top. The fan opens a little on hover. A button
+   where it opens the breakdown; a plain row inside cards that already
+   open it. */
 .whats-left {
+  --wl-size: 32px;
+  --wl-step: 9px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   margin-top: 12px;
-  padding: 8px 10px;
+  padding: 9px 12px 8px;
   border: none;
   border-radius: var(--r-md);
   background: var(--control-fill);
@@ -7768,54 +7776,95 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   flex: 0 0 auto;
   font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--text-dim);
 }
-.whats-left-thumbs { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.wl-thumb {
+.whats-left-thumbs { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.wl-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+/* Room for the fan: the top tile plus one step per tile behind it. */
+.wl-fan {
   position: relative;
+  width: calc(var(--wl-size) + (var(--n) - 1) * var(--wl-step));
+  height: calc(var(--wl-size) + 4px);
+}
+.wl-thumb {
+  position: absolute;
+  left: 0;
+  top: 2px;
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: var(--wl-size);
+  height: var(--wl-size);
   padding: 3px;
+  border: 1.5px solid var(--rarity-color);
   border-radius: var(--r-xs);
   background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 2px 8px -2px color-mix(in srgb, var(--rarity-color) 55%, transparent);
+  /* --i 0 is the top tile; the ones behind sit to its right, tipped and
+     a touch smaller, like cards fanned in a hand. */
+  transform: translateX(calc(var(--i) * var(--wl-step))) rotate(calc(var(--i) * 7deg)) scale(calc(1 - var(--i) * 0.06));
+  transform-origin: 50% 110%;
+  z-index: calc(10 - var(--i));
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .wl-thumb img { width: 100%; height: 100%; object-fit: contain; }
-/* Rarity as a dot, not a ring: says which tier at a glance, adds no frame. */
-.wl-thumb::after {
+button.whats-left:hover .wl-thumb,
+.market-item:hover .whats-left-mini .wl-thumb {
+  transform: translateX(calc(var(--i) * var(--wl-step) * 1.35)) rotate(calc(var(--i) * 11deg)) scale(calc(1 - var(--i) * 0.06));
+}
+/* The Grail tile gets a slow sheen across it: the one tier worth a shine. */
+.wl-legendary .wl-thumb[style*="--i:0"]::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--rarity-color);
-  transform: translateX(-50%);
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.85) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 130% 0;
+  animation: wl-sheen 3.6s ease-in-out infinite;
+  pointer-events: none;
 }
-.wl-more {
-  flex: 0 0 auto;
-  padding: 0 4px;
-  font-size: 0.68rem;
+@keyframes wl-sheen {
+  0%, 55% { background-position: 130% 0; }
+  85%, 100% { background-position: -30% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-legendary .wl-thumb::after { animation: none; display: none; }
+  .wl-thumb { transition: none; }
+}
+.wl-tier {
+  font-size: 0.6rem;
   font-weight: 800;
-  color: var(--text-dim);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--rarity-color) 78%, #000);
+  line-height: 1;
 }
+:root:not([data-theme="light"]) .wl-tier { color: var(--rarity-color); }
 /* Home: sits in the crate panel where "Could contain" was. */
-.whats-left-home { margin-top: 0; background: rgba(255, 255, 255, 0.55); }
+.whats-left-home { --wl-size: 42px; --wl-step: 12px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
+.whats-left-home .whats-left-thumbs { width: 100%; justify-content: space-between; padding: 0 4px; }
 :root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
-/* Inside sealed cards: no ground of its own, smaller tiles. */
-.whats-left-mini { margin-top: 6px; padding: 0; background: none; cursor: inherit; }
-.whats-left-mini .wl-thumb { width: 24px; height: 24px; }
-.whats-left-mini .whats-left-label { display: none; }
+/* Inside sealed cards: no ground of its own, smaller stacks, no labels. */
+.whats-left-mini { --wl-size: 27px; --wl-step: 8px; margin-top: 6px; padding: 0; background: none; cursor: inherit; }
+.whats-left-mini .whats-left-label,
+.whats-left-mini .wl-tier { display: none; }
+.whats-left-mini .whats-left-thumbs { gap: 8px; }
+
+/* The label sits above the stacks rather than beside them: Drops' cards
+   run five across and narrow, and three fans need the card's full width. */
+.whats-left:not(.whats-left-mini) { flex-direction: column; align-items: flex-start; gap: 8px; padding: 9px 11px 10px; }
+.whats-left-thumbs { max-width: 100%; }
+/* Phones: cards run two across, so the fans close up to fit. */
 @media (max-width: 640px) {
-  .wl-thumb { width: 24px; height: 24px; }
-  .whats-left { padding: 6px 8px; }
+  .whats-left:not(.whats-left-mini),
+  .whats-left-home { --wl-size: 24px; --wl-step: 6px; padding: 8px; }
+  .whats-left:not(.whats-left-mini) .whats-left-thumbs { gap: 6px; padding: 0; }
 }
-/* Drops' cards run five across and narrow: the label sits above the row
-   rather than beside it, and the row never runs past the card. */
-.category-card .whats-left { flex-direction: column; align-items: flex-start; gap: 7px; padding: 8px 10px 11px; }
-.whats-left-thumbs { max-width: 100%; overflow: hidden; padding-bottom: 6px; margin-bottom: -6px; }

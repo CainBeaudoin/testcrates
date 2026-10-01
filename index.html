@@ -57,7 +57,9 @@ try {
          destinations an icon is a picture of a word you can simply write,
          and the left rail it used to live in cost 76px of every screen for
          them. The icons stay in the markup for the mobile tab bar, where a
-         bottom row is icon-led. -->
+         bottom row is icon-led. Account is a tab only in that bottom row:
+         on desktop the avatar at the top right is the way in, as on most
+         sites, and a second door to the same page was just a word. -->
     <nav id="mainNav" class="rail">
       <div class="rail-nav">
         <button class="nav-tab" data-nav="screen-category">
@@ -68,7 +70,7 @@ try {
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
           Market
         </button>
-        <button class="nav-tab" data-nav="screen-account">
+        <button class="nav-tab nav-tab-account" data-nav="screen-account">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
           Account
         </button>
@@ -450,22 +452,14 @@ try {
                display:none there), which keeps stacking everything as
                before. -->
           <div class="account-toggle toggle-group-active" data-toggle-group="holdings">
-            <button type="button" class="account-toggle-label" data-toggle-target="crates">Crates <span class="toggle-count" id="crateTabCount" hidden></span></button>
             <button type="button" class="account-toggle-label active" data-toggle-target="vault">My Items</button>
             <button type="button" class="account-toggle-label" data-toggle-target="portfolio">Portfolio</button>
-          </div>
-          <div class="account-section active toggle-hidden" data-section="crates" data-toggle-key="crates">
-            <div class="account-section-header">
-              <h3>Sealed Crates <span class="count-badge" id="crateCount">0</span></h3>
-              <span class="account-block-note">Opened from what&rsquo;s left when you open them</span>
-            </div>
-            <div id="sealedGrid" class="market-grid sealed-grid"></div>
           </div>
 
           <div class="account-section active" data-section="vault" data-toggle-key="vault">
             <div class="account-section-header">
               <h3>My Items <span class="count-badge" id="vaultCount">0</span></h3>
-              <span class="account-block-note">Vault · archives at 365 days</span>
+              <span class="account-block-note">Sealed crates first · vault archives at 365 days</span>
             </div>
             <div id="inventoryGrid" class="market-grid" data-reveal="stagger"></div>
           </div>
