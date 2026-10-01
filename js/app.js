@@ -1645,8 +1645,8 @@ function prizeBrowserHTML(key, pool) {
   const tabs = tiers
     .map((r) => {
       const meta = RARITY_META[r];
-      const out = !pool.some((p) => p.rarity === r && p.left > 0);
-      return `<button class="prize-tab${r === tab ? " active" : ""}${out ? " is-out" : ""}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}</button>`;
+      const left = pool.reduce((n, p) => n + (p.rarity === r ? p.left : 0), 0);
+      return `<button class="prize-tab${r === tab ? " active" : ""}${left ? "" : " is-out"}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}<span class="prize-tab-n">${left}</span></button>`;
     })
     .join("");
   const tiles = pool
@@ -1962,9 +1962,7 @@ function renderCategories() {
       if (!tab || !wrap.classList.contains("drop-detail-active")) return;
       playClick();
       prizeTabByKey[key] = tab.dataset.prizeTab;
-      const browser = prizePanel.querySelector(".prize-browser");
-      browser.innerHTML = prizeBrowserHTML(key, supply.livePool(key));
-      browser.scrollTop = 0;
+      prizePanel.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.livePool(key));
     });
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
       playClick();
@@ -5935,9 +5933,9 @@ function refreshSupplyViews() {
       const list = wrap.querySelector(".prize-list");
       if (odds) odds.innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
       if (list) {
-        const top = list.scrollTop;
+        const top = list.querySelector(".prize-tiles")?.scrollTop ?? 0;
         list.innerHTML = prizeBrowserHTML(wrap.dataset.tier, pool);
-        list.scrollTop = top;
+        list.querySelector(".prize-tiles").scrollTop = top;
       }
     });
   }

@@ -1098,6 +1098,7 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .prize-tab.is-out:not(.active) { opacity: 0.5; }
 .prize-tiles {
   display: grid;
+  align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
   gap: 10px;
 }
@@ -1138,18 +1139,39 @@ body.drop-detail-open .category-wrap:not(.drop-detail-active) { display: none; }
 .drop-detail-active .odds-bucket[data-prize-tab]:hover { background: var(--control-fill-hover); }
 /* The card's own What's inside row would repeat the panel beside it. */
 .drop-detail-active .category-card .whats-left { display: none; }
-/* The page grows with the tier you're looking at instead of scrolling a
-   box inside itself: the crate card stays in view beside it (desktop),
-   and the tabs stay pinned under the header while the tiles go by. The
-   panel clips rather than hides its overflow, so the tabs can stick to
-   the page. */
-.drop-detail-active .prize-dropdown { overflow: clip; }
-.drop-detail-active .prize-list.prize-browser { max-height: none; overflow: visible; }
-.drop-detail-active .prize-tabs { top: var(--topbar-h, 64px); }
-@media (min-width: 641px) {
-  .drop-detail-active { height: auto; min-height: 0; align-items: flex-start; }
-  .drop-detail-active .category-card { position: sticky; top: calc(var(--topbar-h, 64px) + 16px); }
+/* The crate's page holds still and the prizes scroll: on desktop the two
+   columns fit the screen (the crate card doesn't move), and only the
+   tiles under the tabs scroll, inside their own panel. The page itself
+   scrolls on past them to the crate's recent pulls. */
+.drop-detail-active .prize-list.prize-browser {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  padding-bottom: 0;
 }
+.drop-detail-active .prize-tabs { position: static; flex: 0 0 auto; }
+.drop-detail-active .prize-tiles {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+@media (max-width: 640px) {
+  .drop-detail-active .prize-tiles { max-height: 70vh; padding-bottom: 12px; }
+}
+@media (min-width: 641px) {
+  .drop-detail-active { height: calc(100vh - var(--topbar-h, 60px) - 120px); min-height: 560px; }
+  /* Odds on one line, so the prizes get the height. */
+  .drop-detail-active .odds-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .drop-detail-active .odds-grid > .odds-bucket:last-child:nth-child(2n + 1) { grid-column: auto; }
+}
+/* How many are left in the tier, beside its name: the lower tiers hold
+   far more. */
+.prize-tab-n { margin-left: 5px; font-weight: 600; opacity: 0.65; }
 
 /* --- Recent pulls: a live ticker of pulls across the platform (yours +
    a simulated cast, same pattern as the marketplace/leaderboard) --- */
