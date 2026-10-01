@@ -7750,11 +7750,13 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
    One stack per tier (Grail, Epic, Rare — or the best three tiers still
    in stock), each piece on a white tile edged in its tier's colour, the
    best piece in front and the next ones peeking out square behind it.
-   The stacks sit close in one run. A button where it opens the breakdown;
-   a plain row inside cards that already open it. */
+   The stacks share the row's width between them and each fills its share
+   edge to edge — tiles as big as the row allows (up to --wl-max), the
+   pieces behind spread to the share's far edge — so there's no dead space
+   at the end of the row. A button where it opens the crate's page; a plain
+   row inside cards that already open something. */
 .whats-left {
-  --wl-size: 36px;
-  --wl-step: 8px;
+  --wl-max: 52px;
   --wl-gap: 6px;
   display: flex;
   flex-direction: column;
@@ -7782,14 +7784,24 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   color: var(--text-dim);
   line-height: 1;
 }
-.whats-left-thumbs { display: flex; align-items: center; gap: var(--wl-gap); max-width: 100%; }
-.wl-stack { display: flex; flex: 0 0 auto; }
-/* Room for the stack: the front tile plus one step per tile behind it. */
-.wl-fan {
-  position: relative;
-  width: calc(var(--wl-size) + (var(--n) - 1) * var(--wl-step));
-  height: var(--wl-size);
+/* 100cqi is the row's own inner width (it's the container), so each
+   stack's share and the tile size follow the card, whatever its width. */
+.whats-left-thumbs {
+  --wl-share: calc((100cqi - (var(--k, 3) - 1) * var(--wl-gap)) / var(--k, 3));
+  --wl-size: min(var(--wl-max), calc(var(--wl-share) / 1.4));
+  display: flex;
+  align-items: center;
+  gap: var(--wl-gap);
+  width: 100%;
 }
+.wl-stack {
+  /* The step that lands the last tile's right edge on the share's edge. */
+  --wl-step: calc((var(--wl-share) - var(--wl-size)) / max(var(--n) - 1, 1));
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.wl-fan { position: relative; width: 100%; height: var(--wl-size); }
 .wl-thumb {
   position: absolute;
   left: 0;
@@ -7833,22 +7845,11 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 }
 /* Home: sits in the crate panel where "Could contain" was, with room for
    bigger tiles. */
-.whats-left-home { --wl-size: 46px; --wl-step: 10px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
+.whats-left-home { --wl-max: 60px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
 :root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
 /* Inside sealed cards: no ground of its own, smaller stacks, no label. */
-.whats-left-mini { --wl-size: 27px; --wl-step: 6px; --wl-gap: 5px; margin-top: 6px; padding: 0; background: none; cursor: inherit; container: none; }
+.whats-left-mini { --wl-max: 30px; --wl-gap: 5px; margin-top: 6px; padding: 0; background: none; cursor: inherit; }
 .whats-left-mini .whats-left-label { display: none; }
-/* Narrow rows (phones, and Home squeezed between breakpoints) size the
-   tiles off the row's own width, so three stacks always fit. */
-@container wl (max-width: 190px) {
-  .whats-left-thumbs { --wl-size: 30px; --wl-step: 6px; --wl-gap: 5px; }
-}
-@container wl (max-width: 140px) {
-  .whats-left-thumbs { --wl-size: 24px; --wl-step: 5px; --wl-gap: 4px; }
-}
-@container wl (max-width: 110px) {
-  .whats-left-thumbs { --wl-size: 20px; --wl-step: 4px; --wl-gap: 3px; }
-}
 @media (max-width: 640px) {
   .whats-left:not(.whats-left-mini) { padding: 8px; }
 }

@@ -1709,7 +1709,7 @@ function buildOddsPanelHTML(pool) {
 // The full breakdown is one click away (openCrateModal). data-supply lets
 // refreshSupplyViews redraw it in place as the crowd opens.
 function buildSupplyHTML(tierKey) {
-  return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate">${whatsLeftInner(tierKey)}</button>`;
+  return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate: odds and prizes">${whatsLeftInner(tierKey)}</button>`;
 }
 const WL_STACKS = 3; // tiers shown
 const WL_DEPTH = 3; // pieces per stack
@@ -1724,7 +1724,7 @@ function whatsLeftInner(tierKey) {
     .filter((t) => t.items.length)
     .slice(0, WL_STACKS);
   return `<span class="whats-left-label">What&rsquo;s inside</span>
-    <span class="whats-left-thumbs">${stacks
+    <span class="whats-left-thumbs" style="--k:${stacks.length}">${stacks
       .map(({ rarity, items }) => {
         const meta = RARITY_META[rarity];
         // Dealt back to front so the best piece lands on top.
@@ -5173,7 +5173,7 @@ function renderHomeCrates() {
       card.addEventListener("mouseleave", () => viewer.setPaused(false));
     });
     card.addEventListener("click", (e) => {
-      // The "What's inside" row opens the breakdown instead (its own handler).
+      // The "What's inside" row has its own handler (same page, same place).
       if (e.target.closest("[data-whats-left]")) return;
       playClick();
       homeSeeCrate(key);
@@ -5625,14 +5625,25 @@ document.getElementById("crateModalActions").addEventListener("click", async (e)
   }
 });
 
-// The "What's inside" row on a crate card. Delegated: cards re-render their
-// supply block in place as the counts move.
+// The "What's inside" row on a crate card opens that crate's own page on
+// Drops — its live odds, every prize with how many are left, its pulls and
+// Open — rather than a pop-up of its own: one place for a crate, not two.
+// Delegated: cards re-render their supply block in place as counts move.
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-whats-left]");
   if (!btn) return;
   e.stopPropagation();
   playClick();
-  openCrateModal({ key: btn.dataset.whatsLeft });
+  // On Drops the card is already on screen: promote it in place, keeping
+  // its live 3D box, the way a click on the card itself does.
+  const wrap = btn.closest(".category-wrap");
+  if (wrap) {
+    if (!wrap.classList.contains("drop-detail-active")) openTierDetail(wrap);
+    else wrap.querySelector(".prize-dropdown")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return;
+  }
+  openCratePage(btn.dataset.whatsLeft);
+  window.scrollTo({ top: 0 });
 });
 
 // ---- Holding: list, unlist, buy ---------------------------------------------
@@ -5889,6 +5900,21 @@ function refreshSupplyViews() {
   document.querySelectorAll("[data-supply-btn]").forEach((el) => {
     el.textContent = supply.status(el.dataset.supplyBtn).soldOut ? "Sold out · Market" : "Open";
   });
+  // A crate's page keeps its odds and prize list live too, holding the
+  // list where you'd scrolled it.
+  if (screenCategoryEl.classList.contains("active")) {
+    categoryList.querySelectorAll(".category-wrap").forEach((wrap) => {
+      const pool = supply.livePool(wrap.dataset.tier);
+      const odds = wrap.querySelector(".odds-panel");
+      const list = wrap.querySelector(".prize-list");
+      if (odds) odds.innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
+      if (list) {
+        const top = list.scrollTop;
+        list.innerHTML = buildPrizeListHTML(pool);
+        list.scrollTop = top;
+      }
+    });
+  }
   if (crateModalCtx) renderCrateModal();
 }
 
