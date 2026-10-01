@@ -5451,7 +5451,9 @@ function grailTileHTML(g) {
 // cheapest drop, which is where it leads. The detail (every crate's charge,
 // the other pieces) lives on the drops themselves.
 const homeMysteryEl = document.getElementById("homeMystery");
-const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
+// Left to right: the Sneakers piece (the most valuable) takes the middle,
+// the tallest arch, with the other two tucked in behind it either side.
+const HOME_MYSTERY_LINES = ["streetwear", "sneakers", "collectibles"];
 
 // The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
@@ -5477,15 +5479,14 @@ function homeMysteryCardHTML(line) {
     .map((x, i) => `<circle class="hm-mote" cx="${x}" cy="226" r="${i % 3 ? 1.4 : 2}" style="--d:${(i * 0.73) % 4}s;--t:${3.2 + (i % 3) * 0.9}s"/>`)
     .join("");
   return `
-    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
+    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-pos="${["left", "center", "right"][HOME_MYSTERY_LINES.indexOf(line)]}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
       <span class="hm-arch">
+        <span class="hm-glass" aria-hidden="true"></span>
         <svg class="hm-arch-svg" viewBox="0 0 200 240" aria-hidden="true">
           <defs>
             <linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient>
-            <radialGradient id="hmGlow-${line}" cx="0.5" cy="0.32" r="0.75"><stop offset="0" class="hm-glow-a"/><stop offset="1" class="hm-glow-b"/></radialGradient>
             <clipPath id="hmClip-${line}"><path d="${HM_ARCH_SHUT}"/></clipPath>
           </defs>
-          <path class="hm-arch-glow" d="${HM_ARCH_SHUT}" fill="url(#hmGlow-${line})"/>
           <g clip-path="url(#hmClip-${line})">${motes}</g>
           <path class="hm-ring-track" d="${HM_ARCH_OPEN}"/>
           <path class="hm-ring-fill" d="${HM_ARCH_OPEN}" pathLength="100" stroke="url(#hmStroke-${line})"/>
