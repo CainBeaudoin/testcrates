@@ -5460,9 +5460,12 @@ function grailTileHTML(g) {
 // (locked with the % while it charges, open once it's unlocked).
 const homeMysteryEl = document.getElementById("homeMystery");
 const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
-// The dial: a circle (centre 100,100, radius 88) cut flat at y 168. The
-// charge runs from the left end of the cut, over the top, to the right end.
-const HM_DIAL_ARC = "M 44.1 168 A 88 88 0 1 1 155.9 168";
+// The dial: a rounded square (14..186 by 12..176, corners of 32) — the
+// same soft-cornered shape as the site's buttons and cards. The charge runs
+// all the way round it from the middle of the bottom edge, leaving a gap
+// there where the lock plate sits.
+const HM_DIAL_ARC =
+  "M 76 176 L 46 176 A 32 32 0 0 1 14 144 L 14 44 A 32 32 0 0 1 46 12 L 154 12 A 32 32 0 0 1 186 44 L 186 144 A 32 32 0 0 1 154 176 L 124 176";
 
 // The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
@@ -5488,7 +5491,6 @@ function homeMysteryCardHTML(line) {
           <defs><linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
           <path class="hm-ring-track" d="${HM_DIAL_ARC}"/>
           <path class="hm-ring-fill" d="${HM_DIAL_ARC}" pathLength="100" stroke="url(#hmStroke-${line})"/>
-          <path class="hm-dial-base" d="M 30 168 L 170 168"/>
         </svg>
         <span class="hm-disc"><img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt=""></span>
         <span class="hm-badge">${hmBadgeHTML(!!ready, pct)}</span>
