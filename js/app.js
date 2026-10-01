@@ -5530,7 +5530,7 @@ function cutOutHomeMystery(root = homeMysteryEl) {
 // The demo, start to finish (it loops):
 //   1. Open is tapped; each box fills the bar.          "Every box opened fills the bar"
 //   2. Full: the bar turns to Unlocked.                    "Full bar, mystery unlocked"
-//   3. The box opens, the ? drops in, the box shuts.
+//   3. The ? sinks into the shut box and fades away.
 //   4. The taps carry on — every box now has a shot.     "Now every box has a shot at it"
 //   5. One hits: the box opens and the piece rises out; the bar reads
 //      Claimed, then drains back to empty.               "Hit. It's theirs, and the bar resets"
@@ -5568,7 +5568,20 @@ function runMysteryDemo() {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = () => run === hmDemoRun && el.isConnected;
   const onScreen = () => !document.hidden && document.getElementById("screen-home").classList.contains("active");
-  const say = (text) => (caption.textContent ? swapText(caption, text) : (caption.textContent = text));
+  // The caption carries a highlighted phrase (<em>), so it's swapped as
+  // markup: a quick fade out, the new line, a fade back in — on timers,
+  // not animation events, so it can't stick in a backgrounded tab.
+  const say = (html) => {
+    if (!caption.innerHTML) {
+      caption.innerHTML = html;
+      return;
+    }
+    caption.classList.add("is-swapping");
+    setTimeout(() => {
+      caption.innerHTML = html;
+      caption.classList.remove("is-swapping");
+    }, 180);
+  };
   const setBar = (p, label = `${Math.round(p)}%`) => {
     fill.style.width = `${p}%`;
     pctEl.textContent = label;
@@ -5612,7 +5625,7 @@ function runMysteryDemo() {
       row.innerHTML = "";
       barState("");
       setBar(0);
-      say("Every box opened fills the bar");
+      say("Every box opened <em>fills the bar</em>");
       await wait(500);
       for (let i = 1; i <= 5 && alive(); i++) {
         tap();
@@ -5624,16 +5637,14 @@ function runMysteryDemo() {
       el.dataset.phase = "full";
       barState("unlocked");
       setBar(100, "Unlocked");
-      say("Full bar, mystery unlocked");
+      say("Full bar. <em>Mystery unlocked</em>");
       await wait(700);
-      // 3. Into the box.
-      await open();
+      // 3. Into the box: the ? sinks into the shut lid and fades away.
       el.dataset.phase = "drop";
-      await wait(900);
-      await close(700);
+      await wait(1000);
       // 4. Every box has a shot now.
       el.dataset.phase = "chance";
-      say("Now every box has a shot at it");
+      say("Now every box has <em>a shot at it</em>");
       for (let j = 0; j < 3 && alive(); j++) {
         await wait(650);
         tap();
@@ -5645,7 +5656,7 @@ function runMysteryDemo() {
       el.dataset.phase = "reveal";
       barState("claimed");
       setBar(100, "Claimed");
-      say("A hit. Claimed, and the bar starts over");
+      say("A hit. <em>Claimed</em>, and the bar resets");
       await wait(1900);
       barState("");
       el.classList.add("is-draining");

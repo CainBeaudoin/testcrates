@@ -8554,7 +8554,7 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 /* --- The demo: Open is tapped, boxes pile up, the bar charges, a mystery
    piece drops into the crate, it shakes and reveals it. Driven by
    runMysteryDemo setting data-phase; it all loops. */
-.hm-demo { display: flex; flex-direction: column; gap: 16px; }
+.hm-demo { display: flex; flex-direction: column; gap: 12px; }
 .hm-demo-top { position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .hm-demo-open {
   position: relative;
@@ -8608,7 +8608,7 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 .hm-demo[data-phase="drop"] .hm-demo-bar-track { box-shadow: 0 0 14px rgba(182, 120, 242, 0.7); }
 .hm-demo-bar-pct { min-width: 38px; text-align: right; font-size: 0.8rem; font-weight: 900; color: var(--text); }
 /* The crate, the piece falling into it, and the reveal. */
-.hm-demo-box { position: relative; height: 230px; display: grid; place-items: end center; }
+.hm-demo-box { position: relative; height: 205px; display: grid; place-items: end center; }
 /* The snapshot frames the box with room to spin, so it's drawn large and
    pulled in at the bottom. */
 .hm-demo-crate { position: relative; z-index: 2; width: 300px; height: 210px; margin-bottom: -38px; object-fit: contain; }
@@ -8642,12 +8642,13 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   color: transparent;
 }
 .hm-demo[data-phase="full"] .hm-demo-drop { opacity: 1; animation: hmHover 0.5s ease both; }
-.hm-demo[data-phase="drop"] .hm-demo-drop { animation: hmDrop 0.9s cubic-bezier(0.5, 0, 0.9, 0.6) both; }
+.hm-demo[data-phase="drop"] .hm-demo-drop { animation: hmDrop 1s cubic-bezier(0.45, 0, 0.75, 0.6) both; }
 @keyframes hmHover { from { opacity: 0; translate: 0 -10px; scale: 0.6; } to { opacity: 1; translate: 0 0; scale: 1; } }
+/* Sinks onto the shut lid, shrinking, and fades into it. */
 @keyframes hmDrop {
-  0% { opacity: 1; translate: 0 0; scale: 1; }
-  80% { opacity: 1; translate: 0 92px; scale: 0.55; }
-  100% { opacity: 0; translate: 0 104px; scale: 0.4; }
+  0% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
+  55% { opacity: 1; translate: 0 62px; scale: 0.6; filter: blur(0); }
+  100% { opacity: 0; translate: 0 84px; scale: 0.35; filter: blur(3px); }
 }
 .hm-demo-prize {
   position: absolute;
@@ -8679,14 +8680,29 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   transition: opacity 0.5s ease, scale 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .hm-demo[data-phase="reveal"] .hm-demo-glow { opacity: 1; scale: 1; }
+/* Set like the section's own titles, tight under the box, the phrase that
+   matters in the mystery gradient. */
 .hm-demo-caption {
-  margin: 0;
-  min-height: 1.4em;
+  margin: -14px 0 0;
+  min-height: 1.2em;
   text-align: center;
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
   color: var(--text);
+  transition: opacity 0.18s ease, translate 0.18s ease;
 }
+.hm-demo-caption em {
+  font-style: normal;
+  background: linear-gradient(90deg, #e3a531, #c56fd0, #8e52d6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hm-demo-caption.is-swapping { opacity: 0; translate: 0 4px; }
 @media (prefers-reduced-motion: reduce) {
   .hm-card.is-ready .hm-ring-fill, .hm-demo * { animation: none !important; }
 }
@@ -8699,7 +8715,8 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   .hm-badge svg { width: 9px; height: 9px; }
   .hm-value { font-size: 0.95rem; }
   .hm-line { font-size: 0.56rem; }
-  .hm-demo-box { height: 190px; }
+  .hm-demo-box { height: 175px; }
+  .hm-demo-caption { font-size: 1.2rem; margin-top: -10px; }
   .hm-demo-crate { width: 250px; height: 175px; margin-bottom: -30px; }
 }
 /* --- Home: scroll-linked motion ------------------------------------------------
