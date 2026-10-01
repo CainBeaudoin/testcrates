@@ -5476,7 +5476,7 @@ function homeMysteryCardHTML(line) {
         </svg>
         <span class="hm-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="hm-stage"><img class="hm-item" src="${item.image}" alt=""></span>
-        <span class="hm-badge">${ready ? `Unlocked · ${MYSTERY_CHANCE_LABEL}` : `${pct}%`}</span>
+        <span class="hm-badge">${ready ? `Unlocked <span class="hm-arrow" aria-hidden="true">&rarr;</span>` : `${pct}%`}</span>
       </span>
       <span class="hm-line">${CATEGORIES[key].badge}</span>
       <b class="hm-value">$${item.price.toLocaleString()}</b>

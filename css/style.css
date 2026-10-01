@@ -8608,3 +8608,6 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @keyframes saRing { from { stroke-dashoffset: 100; } to { stroke-dashoffset: calc(100 - var(--p)); } }
 @keyframes saHeroOut { to { opacity: 0; translate: 0 -80px; } }
 @keyframes saHeroOutSlow { to { opacity: 0.2; translate: 0 -30px; scale: 0.94; } }
+/* Unlocked: just the word and a way to it. */
+.hm-arrow { display: inline-block; margin-left: 2px; transition: transform 0.2s ease; }
+.hm-card:hover .hm-arrow { transform: translateX(3px); }
