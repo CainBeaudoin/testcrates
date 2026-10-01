@@ -41,7 +41,7 @@ function upperBand(pool, minPrice) {
 // most valuable in the catalogue, $7k to $11k. They have no odds. Each
 // crate's mystery charge fills with every box opened, and the opening that
 // fills it releases one (see supply.js). They're held out of every odds
-// table, including the $1,000 Sneakers crate they came from, so no listed
+// table, including the $1,200 Sneakers crate they came from, so no listed
 // percentage ever covers them.
 const MYSTERY_ITEMS = [...SNEAKER_1000_POOL]
   .sort((a, b) => b.price - a.price)
@@ -52,6 +52,10 @@ const MYSTERY_NAMES = new Set(MYSTERY_ITEMS.map((p) => p.name));
 // items' average value. Shown only as a share of full, never as money.
 const MYSTERY_TARGET = Math.round(MYSTERY_ITEMS.reduce((sum, p) => sum + p.price, 0) / MYSTERY_ITEMS.length);
 
+// Drop prices sit about 20% above where they started, so the bottom of
+// each crate (Commons from ~$110 in the Sneakers crate) is a clear step
+// below what a box costs. The crate keys keep their original numbers
+// (sneakers1000 is the $1,200 crate): they're identifiers, not prices.
 const CATEGORIES = {
   stocks: {
     label: "$25",
@@ -64,23 +68,23 @@ const CATEGORIES = {
     openOnBuy: true, // a Stocks box opens when it's bought: no sealed holding or resale
   },
   sneakers: {
-    label: "$125",
+    label: "$150",
     badge: "Sneakers",
-    price: 125,
+    price: 150,
     pool: SNEAKER_POOL,
     poweredBy: "ODTO",
   },
   streetwear: {
-    label: "$100",
+    label: "$120",
     badge: "Streetwear",
-    price: 100,
+    price: 120,
     pool: STREETWEAR_POOL,
     poweredBy: "ODTO",
   },
   collectibles: {
-    label: "$150",
+    label: "$180",
     badge: "Collectibles",
-    price: 150,
+    price: 180,
     pool: COLLECTIBLES_POOL,
     poweredBy: "ODTO",
   },
@@ -88,50 +92,50 @@ const CATEGORIES = {
   // base crate (the Drops filter, and Home's one-card-per-line row); a
   // crate without one is its own line.
   sneakers250: {
-    label: "$250",
+    label: "$300",
     badge: "Sneakers",
     line: "sneakers",
-    price: 250,
+    price: 300,
     pool: SNEAKER_250_POOL,
     poweredBy: "ODTO",
   },
   sneakers1000: {
-    label: "$1,000",
+    label: "$1,200",
     badge: "Sneakers",
     line: "sneakers",
-    price: 1000,
+    price: 1200,
     pool: SNEAKER_1000_POOL.filter((p) => !MYSTERY_NAMES.has(p.name)),
     poweredBy: "ODTO",
   },
   streetwear250: {
-    label: "$250",
+    label: "$300",
     badge: "Streetwear",
     line: "streetwear",
-    price: 250,
+    price: 300,
     pool: upperBand(STREETWEAR_POOL, 176),
     poweredBy: "ODTO",
   },
   streetwear500: {
-    label: "$500",
+    label: "$600",
     badge: "Streetwear",
     line: "streetwear",
-    price: 500,
+    price: 600,
     pool: upperBand(STREETWEAR_POOL, 330),
     poweredBy: "ODTO",
   },
   collectibles250: {
-    label: "$250",
+    label: "$300",
     badge: "Collectibles",
     line: "collectibles",
-    price: 250,
+    price: 300,
     pool: upperBand(COLLECTIBLES_POOL, 206),
     poweredBy: "ODTO",
   },
   collectibles500: {
-    label: "$500",
+    label: "$600",
     badge: "Collectibles",
     line: "collectibles",
-    price: 500,
+    price: 600,
     pool: upperBand(COLLECTIBLES_POOL, 367),
     poweredBy: "ODTO",
   },
@@ -1813,8 +1817,18 @@ function whatsLeftInner(tierKey) {
     .map((rarity) => ({ rarity, items: live.filter((p) => p.rarity === rarity) }))
     .filter((t) => t.items.length)
     .slice(0, WL_STACKS);
+  // The crate's mystery item sits at the end of the row as one more tile:
+  // a sparkle in a ring that fills with the crate's mystery charge, rather
+  // than a bar of its own under the row. Hover names it; a click opens the
+  // crate's page on its Mystery tab.
+  const pct = Math.floor(supply.charge(tierKey) * 100);
+  const mysteryHTML = supply.hasMystery(tierKey)
+    ? `<span class="wl-mystery${pct >= 90 ? " is-hot" : ""}" style="--charge:${pct}" data-tip="Mystery item · ${pct}% charged" aria-label="Mystery item, ${pct}% charged">
+        <span class="wl-mystery-tile">${ICONS.mystery}<b>${pct}%</b></span>
+      </span>`
+    : "";
   return `<span class="whats-left-label">What&rsquo;s inside</span>
-    <span class="whats-left-thumbs" style="--k:${stacks.length}">${stacks
+    <span class="whats-left-thumbs" style="--k:${stacks.length};--m:${mysteryHTML ? 1 : 0}">${stacks
       .map(({ rarity, items }) => {
         const meta = RARITY_META[rarity];
         // Dealt back to front so the best piece lands on top.
@@ -1825,7 +1839,7 @@ function whatsLeftInner(tierKey) {
             .join("")}</span>
         </span>`;
       })
-      .join("")}</span>`;
+      .join("")}${mysteryHTML}</span>`;
 }
 
 let categoryBoxViewers = [];
@@ -1883,7 +1897,7 @@ dropDetailBackBtn.addEventListener("click", () => {
 
 // ---- Drops: filter by line ------------------------------------------------
 // "All", then one chip per product line. A line's crates sit together,
-// cheapest first, so Sneakers reads $125 / $250 / $1,000.
+// cheapest first, so Sneakers reads $150 / $300 / $1,200.
 let dropLine = "all";
 const dropLinesEl = document.getElementById("dropLines");
 
@@ -4837,7 +4851,7 @@ document.getElementById("shipDoneBtn").addEventListener("click", () => {
 // advertise something the app doesn't actually have.
 
 const HOME_HERO_SLIDES = [
-  // The $1,000 crate leads: its grail is the most valuable thing on the site.
+  // The $1,200 crate leads: its grail is the most valuable thing on the site.
   { tier: "sneakers1000", pick: "Nike SB Dunk Low Supreme Black Cement", tint: "#ecebe8", accent: "#1c1813", accent2: "#a07a2c" },
   { tier: "sneakers", pick: "Nike SB Dunk Low Supreme Stars Hyper Royal", tint: "#e6eafa", accent: "#2f45c8", accent2: "#8a5cf0" },
   { tier: "streetwear", pick: "Supreme The North Face Statue Of Liberty Mountain Jacket Red", tint: "#f8e4df", accent: "#c8321f", accent2: "#e27a2a" },
@@ -5256,7 +5270,6 @@ function homeCrateCardHTML(key, cat) {
           <span class="crate-brand" title="Powered by ${cat.poweredBy ?? "Chosen"}">${brandMarkHTML(cat.poweredBy ?? "Chosen")}</span>
           <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
           <button class="whats-left whats-left-home" data-supply="${key}" data-whats-left="${key}" aria-label="See what's inside this crate">${whatsLeftInner(key)}</button>
-          ${mysteryBarHTML(key, { compact: true })}
         </div>
         <div class="crate-body">
           <div class="crate-title">
@@ -5764,6 +5777,8 @@ document.addEventListener("click", (e) => {
   if (!btn) return;
   e.stopPropagation();
   playClick();
+  // The mystery tile opens the page on its Mystery tab.
+  if (e.target.closest(".wl-mystery")) prizeTabByKey[btn.dataset.whatsLeft] = "mystery";
   // On Drops the card is already on screen: promote it in place, keeping
   // its live 3D box, the way a click on the card itself does.
   const wrap = btn.closest(".category-wrap");

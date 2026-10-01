@@ -7875,8 +7875,11 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 /* 100cqi is the row's own inner width (it's the container), so each
    stack's share and the tile size follow the card, whatever its width. */
 .whats-left-thumbs {
-  --wl-share: calc((100cqi - (var(--k, 3) - 1) * var(--wl-gap)) / var(--k, 3));
-  --wl-size: min(var(--wl-max), calc(var(--wl-share) / 1.4));
+  /* --k tier stacks (each about 1.4 tiles wide) and --m mystery tiles (one
+     tile wide) share the row. The tile size comes first; then each stack
+     takes an even share of what the mystery tile leaves. */
+  --wl-size: min(var(--wl-max), calc((100cqi - (var(--k, 3) + var(--m, 0) - 1) * var(--wl-gap)) / (var(--k, 3) * 1.4 + var(--m, 0))));
+  --wl-share: calc((100cqi - (var(--k, 3) + var(--m, 0) - 1) * var(--wl-gap) - var(--m, 0) * var(--wl-size)) / var(--k, 3));
   display: flex;
   align-items: center;
   gap: var(--wl-gap);
@@ -8285,3 +8288,52 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 /* Stocks has no mystery bar: keep every card's quantity and Open on the
    same line as its neighbours'. */
 .category-list .category-card .category-qty { margin-top: auto; padding-top: 12px; }
+
+/* The mystery tile at the end of What's inside: a sparkle on a dark tile,
+   ringed by the crate's mystery charge (a conic sweep, gold to violet, as
+   far round as it's charged). Hover names it. */
+.wl-mystery { position: relative; flex: 0 0 var(--wl-size); width: var(--wl-size); height: var(--wl-size); }
+.wl-mystery-tile {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  border: 2px solid transparent;
+  border-radius: var(--r-xs);
+  background:
+    linear-gradient(145deg, #2a2140, #17131f) padding-box,
+    conic-gradient(#f2b84b, #b678f2 calc(var(--charge) * 1%), color-mix(in srgb, var(--text) 14%, transparent) 0) border-box;
+  color: #f2b84b;
+}
+.wl-mystery-tile svg { width: 42%; height: 42%; }
+.wl-mystery-tile b { font-size: 0.56rem; font-weight: 800; color: #fff; line-height: 1; }
+.wl-mystery.is-hot .wl-mystery-tile { box-shadow: 0 0 12px -2px color-mix(in srgb, #b678f2 80%, transparent); }
+.wl-mystery::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--text-inverse);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.wl-mystery:hover::after { opacity: 1; transform: none; }
+/* Small tiles: the sparkle alone. */
+@container wl (max-width: 170px) {
+  .wl-mystery-tile b { display: none; }
+  .wl-mystery-tile svg { width: 55%; height: 55%; }
+}
+/* On the Drops grid the tile is the mystery bar; the full bar is for the
+   crate's own page. */
+.category-wrap:not(.drop-detail-active) .category-card .mystery-bar { display: none; }
