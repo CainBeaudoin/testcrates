@@ -8012,3 +8012,25 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   font-weight: 700;
 }
 .account-prefs .account-pref:hover { color: var(--text); background: var(--control-fill-hover); }
+
+/* --- My Items: wider, shorter cards --------------------------------------
+   Three across rather than five or six: each card gets a wide picture
+   (4:3, so it's bigger without the card getting taller) and its actions on
+   one line along the bottom, lined up from card to card. Phones keep
+   their two-up grid and two-by-two buttons. */
+@media (min-width: 641px) {
+  #inventoryGrid { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+  #inventoryGrid .market-item { display: flex; flex-direction: column; }
+  #inventoryGrid .market-item-media { aspect-ratio: 4 / 3; }
+  #inventoryGrid .market-item-media img { padding: 10px 14px; }
+  #inventoryGrid .market-item-body { display: flex; flex-direction: column; flex: 1 1 auto; }
+  #inventoryGrid .item-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: auto;
+  }
+  #inventoryGrid .item-action-btn { flex: 1 1 0; min-width: 0; padding: 9px 4px; font-size: 0.62rem; white-space: nowrap; }
+  #inventoryGrid .item-action-btn.item-action-icon { flex: 0 0 34px; }
+  /* Sealed crates: the same bottom-aligned row, two buttons. */
+  #inventoryGrid .sealed-item .sealed-sub { margin-bottom: 10px; }
+}
