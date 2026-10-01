@@ -16,6 +16,7 @@ import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
 import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
+import * as supply from "./supply.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -176,6 +177,24 @@ Object.entries(CATEGORIES).forEach(([key, cat]) => {
   registerTierStickers(key, () => Promise.all(picks.map((p) => cutoutImage(p.image))));
 });
 
+// Every crate sells in series of supply.SERIES_SIZE boxes, each series a
+// fixed list of prizes (see supply.js). A first visit finds them part-way
+// through: two already sold out, so the market has sealed boxes trading
+// above their drop price from the start; the rest somewhere in their run.
+const SEED_SUPPLY = {
+  sneakers1000: { sold: 1, opened: 0.62 },
+  collectibles500: { sold: 1, opened: 0.74 },
+};
+supply.registerCrates(CATEGORIES, (key) => SEED_SUPPLY[key] ?? null);
+// The player's sealed crates count against their series; anything else
+// held belongs to the crowd. A token left over from a series that has
+// since been replaced opens against the current one.
+Object.keys(CATEGORIES).forEach((key) => {
+  const mine = player.getCrates().filter((t) => t.crateKey === key);
+  mine.forEach((t) => (t.series = supply.status(key).series));
+  supply.reconcile(key, mine.length);
+});
+
 const MAX_BATCH_QTY = 8;
 
 const RARITY_RANK_ASC = ["common", "uncommon", "rare", "epic", "legendary"];
@@ -296,6 +315,11 @@ let roundCurrency = null; // "credits" | "cash"
 let batchTotal = 1; // how many crates this purchase covers
 let batchIndex = 1; // which one is currently playing
 let batchRemaining = 0; // still to auto-chain after this one
+// The sealed crates this run of openings uses up, in order: one per round,
+// spent when its box is picked (not when the round starts, so a reload
+// mid-round leaves it sealed in Account rather than lost).
+let roundTokenQueue = [];
+let currentTokenId = null;
 let boxPrizes = [];
 let selectedIndex = null;
 let roundLocked = false;
@@ -1065,30 +1089,26 @@ function updatePayingWithBadge() {
 const SIMULATED_PULLS_CAP = 40;
 let simulatedPulls = [];
 
-function generateSimulatedPull(ts) {
-  const tierKeys = Object.keys(CATEGORIES);
-  const tierKey = tierKeys[Math.floor(Math.random() * tierKeys.length)];
-  const cat = CATEGORIES[tierKey];
-  const prize = weightedPick(cat.pool);
-  return {
-    name: prize.name,
-    rarity: prize.rarity,
-    price: prize.price,
-    image: prize.image,
-    tierKey,
-    username: market.FAKE_USERNAMES[Math.floor(Math.random() * market.FAKE_USERNAMES.length)],
-    isPlayer: false,
-    ts,
-  };
-}
-
+// The feed's history on load: what the crowd has been pulling lately,
+// shown from what's in the series (peeked, not taken — those opens are
+// already counted in each series' opened total).
 function seedSimulatedPulls() {
   const now = Date.now();
-  simulatedPulls = Array.from({ length: 14 }, () => generateSimulatedPull(now - Math.floor(Math.random() * 90 * 60 * 1000)));
+  const keys = Object.keys(CATEGORIES);
+  simulatedPulls = Array.from({ length: 14 }, () => {
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    const prize = supply.peek(key);
+    return prize ? { ...crowdPull(prize, key), ts: now - Math.floor(Math.random() * 90 * 60 * 1000) } : null;
+  }).filter(Boolean);
 }
 
 function tickSimulatedPulls() {
-  const pull = generateSimulatedPull(Date.now());
+  // One simulated player does one thing; only an opening makes a pull.
+  const pull = crowdStep();
+  crowdMarketStep();
+  supply.markTick();
+  refreshSupplyViews();
+  if (!pull) return;
   simulatedPulls.unshift(pull);
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
   renderRecentPulls(); // the dock is on every screen, not just Drops
@@ -1597,14 +1617,15 @@ function buildPrizeListHTML(pool) {
   return sorted
     .map((p) => {
       const meta = RARITY_META[p.rarity];
+      const leftHTML = p.left == null ? "" : p.left > 0 ? `<span class="prize-row-left">${p.left} left</span>` : `<span class="prize-row-left is-gone">Gone</span>`;
       return `
-        <div class="prize-row">
+        <div class="prize-row${p.left === 0 ? " is-gone" : ""}">
           <img src="${p.image}" alt="" loading="lazy">
           <div class="prize-row-info">
             <span class="prize-row-name">${p.name}</span>
             <span class="prize-row-rarity" style="color:${meta.color}">${meta.label}</span>
           </div>
-          <span class="prize-row-price">$${p.price.toLocaleString()}</span>
+          <span class="prize-row-price">$${p.price.toLocaleString()}${leftHTML}</span>
         </div>`;
     })
     .join("");
@@ -1660,14 +1681,26 @@ function buildOddsPanelHTML(pool) {
   `;
 }
 
-function buildPityHTML(tierKey) {
-  const pity = player.getPity(tierKey);
-  const pct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
+// A crate's supply on its card: how many of the drop are left to buy,
+// how many Grails are still in the series, and the way into the full list.
+// The data-supply attribute lets refreshSupplyViews update it in place as
+// the crowd buys and opens.
+function buildSupplyHTML(tierKey) {
+  return `<div class="supply-block" data-supply="${tierKey}">${supplyBlockInner(tierKey)}</div>`;
+}
+function supplyBlockInner(tierKey) {
+  const st = supply.status(tierKey);
+  const pct = Math.round((st.sold / st.total) * 100);
+  const head = st.soldOut
+    ? `<b>Sold out</b> · ${st.unopened} sealed out there`
+    : `<b>${st.unsold}</b> of ${st.total} left`;
   return `
-    <div class="pity-bar">
-      <span class="pity-bar-label">${pity.rareRoundsLeft} rounds to guaranteed Rare+</span>
-      <div class="pity-bar-track"><div class="pity-bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
+    <div class="supply-line">
+      <span class="supply-count">${head}</span>
+      <span class="supply-grails">${st.grailsLeft} ${st.grailsLeft === 1 ? "Grail" : "Grails"}</span>
+    </div>
+    <div class="supply-track"><i style="width:${pct}%"></i></div>
+    <button class="supply-whats-left" data-whats-left="${tierKey}">What&rsquo;s left</button>`;
 }
 
 let categoryBoxViewers = [];
@@ -1810,14 +1843,14 @@ function renderCategories() {
         <span class="category-tier-price">${cat.label}</span>
       </div>
       ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : `<span class="category-powered-by-spacer"></span>`}
-      ${buildPityHTML(key)}
+      ${buildSupplyHTML(key)}
       <div class="category-qty">
         <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
         <span class="qty-value">${batchQuantities[key]}</span>
         <button class="qty-btn" data-qty-action="plus" aria-label="More">+</button>
         <button class="qty-max-btn" data-qty-action="max">Max</button>
       </div>
-      <button class="category-open-btn">Open</button>
+      <button class="category-open-btn">${supply.status(key).soldOut ? "Sold out · Market" : "Open"}</button>
     `;
     card.addEventListener("mouseenter", playHover);
 
@@ -1843,20 +1876,23 @@ function renderCategories() {
       batchQuantities[key] = Math.max(1, batchQuantities[key] - 1);
       refreshQty();
     });
+    // Never more than the drop has left.
+    const maxQty = () => Math.max(1, Math.min(MAX_BATCH_QTY, supply.status(key).unsold));
     card.querySelector('[data-qty-action="plus"]').addEventListener("click", () => {
       playClick();
-      batchQuantities[key] = Math.min(MAX_BATCH_QTY, batchQuantities[key] + 1);
+      batchQuantities[key] = Math.min(maxQty(), batchQuantities[key] + 1);
       refreshQty();
     });
     maxBtn.addEventListener("click", () => {
       playClick();
-      batchQuantities[key] = MAX_BATCH_QTY;
+      batchQuantities[key] = maxQty();
       refreshQty();
     });
     card.querySelector(".category-open-btn").addEventListener("click", () => {
       playClick();
       openPaymentPicker(key, batchQuantities[key]);
     });
+
 
     const prizePanel = document.createElement("div");
     prizePanel.className = "prize-dropdown";
@@ -1865,9 +1901,9 @@ function renderCategories() {
         <span>Pulls</span>
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
-      <div class="odds-panel hidden">${buildOddsPanelHTML(cat.pool)}</div>
+      <div class="odds-panel hidden">${buildOddsPanelHTML(supply.livePool(key).filter((p) => p.left > 0))}</div>
       <label for="prizeListToggleAll" class="prize-list-toggle-label">View all prizes</label>
-      <div class="prize-list">${buildPrizeListHTML(cat.pool)}</div>
+      <div class="prize-list">${buildPrizeListHTML(supply.livePool(key))}</div>
     `;
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
       playClick();
@@ -1902,10 +1938,40 @@ function renderCategories() {
 
 let pendingQuantity = 1;
 
+// After buying: "open" plays the boxes now, "keep" puts them in Account
+// sealed. Resets to Open each time the picker opens.
+let payMode = "open";
+const payModeEl = document.getElementById("payMode");
+const paySupplyEl = document.getElementById("paySupply");
+function setPayMode(mode) {
+  payMode = mode;
+  payModeEl.querySelectorAll(".pay-mode-btn").forEach((b) => {
+    const on = b.dataset.mode === mode;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-checked", String(on));
+  });
+}
+payModeEl.querySelectorAll(".pay-mode-btn").forEach((b) =>
+  b.addEventListener("click", () => {
+    playClick();
+    setPayMode(b.dataset.mode);
+  })
+);
+
 function openPaymentPicker(key, quantity = 1) {
+  const cat = CATEGORIES[key];
+  // A sold-out drop has nothing left to sell; its boxes trade on the
+  // market from here (see soldOutAction).
+  const s = supply.status(key);
+  if (s.soldOut) {
+    soldOutAction(key);
+    return;
+  }
+  quantity = Math.min(quantity, s.unsold);
   pendingCategoryKey = key;
   pendingQuantity = quantity;
-  const cat = CATEGORIES[key];
+  setPayMode("open");
+  paySupplyEl.textContent = `${s.unsold.toLocaleString()} of ${s.total} left in Series ${s.series} · ${s.grailsLeft} ${s.grailsLeft === 1 ? "Grail" : "Grails"} still in it`;
 
   // Stocks settle in Cash only (real USDC, not a Credits reward balance), so
   // the picker shows the one option it has. It used to be skipped, which
@@ -1940,6 +2006,14 @@ function tryPurchase(currency) {
   const qty = pendingQuantity;
   const cat = CATEGORIES[key];
   const totalCost = cat.price * qty;
+  // The drop may have sold down while the picker was open.
+  if (!supply.canBuy(key, qty)) {
+    closePaymentPicker();
+    const left = supply.status(key).unsold;
+    showToast(left ? `Only ${left} left in this drop` : "This drop just sold out", ICONS.bell);
+    refreshSupplyViews();
+    return false;
+  }
   const result = player.purchaseCrate(totalCost, currency);
   if (!result) {
     const label = qty > 1 ? `${qty}× ${cat.label}` : cat.label;
@@ -1961,11 +2035,38 @@ function tryPurchase(currency) {
   renderWallet({ pulse: currency });
   showWalletToast(result.rebate, "credits");
   closePaymentPicker();
+
+  // Bought off the drop: the boxes are the player's, sealed, until opened.
+  supply.buy(key, qty);
+  const tokens = player.addCrates(key, supply.status(key).series, qty, cat.price, currency);
+  refreshSupplyViews();
+
+  if (payMode === "keep") {
+    showToast(qty > 1 ? `${qty} sealed ${cat.badge} crates are in your account` : `Sealed ${cat.badge} crate added to your account`, ICONS.bell);
+    return true;
+  }
+  roundTokenQueue = tokens.map((t) => t.id);
   batchTotal = qty;
   batchIndex = 1;
   batchRemaining = qty - 1;
   startRound(key, currency);
   return true;
+}
+
+// Opens one sealed crate from Account. Spent on the pick, like any other.
+function openSealedCrate(tokenId) {
+  const token = player.getCrate(tokenId);
+  if (!token) return;
+  // A box can't be on the market and opened at once.
+  if (token.listingId) {
+    market.removeCrateListing(token.listingId);
+    player.setCrateListing(token.id, null);
+  }
+  roundTokenQueue = [token.id];
+  batchTotal = 1;
+  batchIndex = 1;
+  batchRemaining = 0;
+  startRound(token.crateKey, token.currency);
 }
 payWithCredits.addEventListener("click", () => {
   playClick();
@@ -2129,12 +2230,17 @@ async function startRound(key, currency) {
   // outside the iOS companion app (see liveActivity.js).
   liveActivity.startOpening({ crate: `${cat.badge} Crate` });
 
-  boxPrizes = [weightedPick(cat.pool), weightedPick(cat.pool), weightedPick(cat.pool)];
-  boxPrizes = player.applyPity(key, boxPrizes, cat.pool);
-  // Duplicate-guard runs here, for all three, rather than only on whichever
-  // box gets picked — final contents have to be locked in before the
-  // fairness commitment below, or the hash couldn't be trusted.
-  boxPrizes = boxPrizes.map((p) => player.rerollIfDuplicate(key, p, cat.pool));
+  currentTokenId = roundTokenQueue.shift() ?? null;
+  // Three draws from what's left in this crate's series. The picked box
+  // keeps its prize; the other two go back when the round settles. No
+  // guaranteed-Rare top-up and no duplicate re-roll: with a fixed list,
+  // either would change what's left for every other holder behind their
+  // back. The odds are the list.
+  boxPrizes = supply.drawRound(key);
+  if (!boxPrizes) {
+    showToast("This crate's series has nothing left to draw", ICONS.bell);
+    return;
+  }
   // Fetch the three photos now, while the reel is still spinning, so each
   // is ready the moment its lid opens.
   boxPrizes.forEach((prize) => (new Image().src = prize.image));
@@ -2186,7 +2292,13 @@ function onPick(index) {
     if (viewers[i]) viewers[i].setPaused(true);
   });
 
-  const finalPrize = boxPrizes[index]; // duplicate-guard already resolved at round start, see startRound
+  const finalPrize = boxPrizes[index];
+  // The box is open: its sealed crate is spent, its prize leaves the
+  // series for good, and the two unpicked go back for whoever's next.
+  supply.settleRound(currentCategoryKey, index);
+  if (currentTokenId) player.removeCrate(currentTokenId);
+  currentTokenId = null;
+  refreshSupplyViews();
 
   const { streak, multiplier } = player.recordPick(finalPrize, currentCategoryKey, CATEGORIES[currentCategoryKey].price);
   renderRecentPulls(); // your own pull should land in the dock immediately
@@ -2617,7 +2729,7 @@ navTabs.forEach((tab) => {
 // across two tabs meant the same item's story was in two places.
 const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
-  holdings: ["vault", "portfolio"],
+  holdings: ["crates", "vault", "portfolio"],
   activity: ["activity"],
   rewards: ["rewards"],
   clips: ["clips"],
@@ -2900,13 +3012,15 @@ function renderMarketplace() {
     });
 
     const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", stocks: "Stocks" };
-    const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
+    const cats = ["all", "crates", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
     marketCategoryFilter.innerHTML = cats
-      .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
+      .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : c === "crates" ? "Sealed crates" : CATEGORY_LABELS[c] ?? c}</option>`)
       .join("");
+    marketCategoryFilter.value = marketCategoryValue;
     marketCategoryFilter.addEventListener("change", () => {
       playClick();
       marketCategoryValue = marketCategoryFilter.value;
+      marketCrateFocus = null;
       renderMarketGrid();
     });
 
@@ -2955,8 +3069,15 @@ function renderMarketplace() {
 }
 
 function renderMarketGrid() {
-  let listings = market.getListings();
-  marketCount.textContent = listings.length;
+  let listings = marketCategoryValue === "crates" ? [] : market.getListings();
+  // Sealed boxes show under All and under Sealed crates; any item-only
+  // filter (brand, size, the vault's offer-only rows) is about items.
+  const itemOnlyFilter = marketBrandValue !== "all" || marketSizeValue !== "all";
+  let crates =
+    (marketCategoryValue === "all" || marketCategoryValue === "crates") && !itemOnlyFilter ? market.getCrateListings() : [];
+  if (marketCrateFocus) crates = crates.filter((l) => l.crateKey === marketCrateFocus);
+  if (marketFmvValue !== "all") crates = crates.filter((l) => crateRating(l.price, l.crateKey)?.key === marketFmvValue);
+  marketCount.textContent = market.getListings().length + market.getCrateListings().length;
 
   if (marketBrandValue !== "all") listings = listings.filter((l) => market.extractBrand(l.name) === marketBrandValue);
   if (marketCategoryValue !== "all") listings = listings.filter((l) => l.category === marketCategoryValue);
@@ -2969,19 +3090,43 @@ function renderMarketGrid() {
   if (min) listings = listings.filter((l) => (l.price ?? l.catalogPrice) >= min);
   if (max) listings = listings.filter((l) => (l.price ?? l.catalogPrice) <= max);
 
+  if (min) crates = crates.filter((l) => l.price >= min);
+  if (max) crates = crates.filter((l) => l.price <= max);
+
+  // One run, sealed boxes and items together, under whichever sort.
   const sort = marketSort.value;
-  listings = [...listings].sort((a, b) => {
-    if (sort === "price-asc") return (a.price ?? a.catalogPrice) - (b.price ?? b.catalogPrice);
-    if (sort === "price-desc") return (b.price ?? b.catalogPrice) - (a.price ?? a.catalogPrice);
-    return b.ts - a.ts;
+  const priceOf = (l) => l.price ?? l.catalogPrice;
+  const rows = [...crates.map((l) => ({ l, crate: true })), ...listings.map((l) => ({ l, crate: false }))].sort((a, b) => {
+    if (sort === "price-asc") return priceOf(a.l) - priceOf(b.l);
+    if (sort === "price-desc") return priceOf(b.l) - priceOf(a.l);
+    return b.l.ts - a.l.ts;
+  });
+  listings = rows.filter((r) => !r.crate).map((r) => r.l);
+
+  const focusChip = marketCrateFocus
+    ? `<div class="market-focus"><span>Sealed ${crateName(marketCrateFocus)}s</span><button class="market-focus-clear" aria-label="Show all listings">×</button></div>`
+    : "";
+  marketGrid.innerHTML = rows.length
+    ? focusChip + rows.map((r) => (r.crate ? crateListingCardHTML(r.l) : marketItemCardHTML(r.l))).join("")
+    : `${focusChip}<div class="market-empty">No listings match these filters.</div>`;
+  marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+  marketGrid.querySelectorAll("[data-crate-listing]").forEach((el) => {
+    el.addEventListener("click", () => {
+      playClick();
+      const listing = market.getCrateListing(el.dataset.crateListing);
+      if (listing) openCrateModal({ key: listing.crateKey, listingId: listing.id });
+    });
+  });
+  marketGrid.querySelector(".market-focus-clear")?.addEventListener("click", () => {
+    playClick();
+    marketCrateFocus = null;
+    marketCategoryValue = "all";
+    marketCategoryFilter.value = "all";
+    renderMarketGrid();
   });
 
-  marketGrid.innerHTML = listings.length
-    ? listings.map(marketItemCardHTML).join("")
-    : `<div class="market-empty">No listings match these filters.</div>`;
-
   const marketGridIds = listings.map((l) => l.id);
-  marketGrid.querySelectorAll(".market-item").forEach((el) => {
+  marketGrid.querySelectorAll(".market-item[data-listing]").forEach((el) => {
     el.addEventListener("click", () => openListingModal(el.dataset.listing, marketGridIds));
   });
 }
@@ -3759,6 +3904,7 @@ function renderAccount() {
     });
   });
 
+  renderSealedCrates();
   renderPortfolio();
 
   renderActivity();
@@ -4941,8 +5087,7 @@ function releaseHomeViewers() {
 // fills toward.
 function homeCrateCardHTML(key, cat) {
   const top = [...cat.pool].sort(byPriceDesc);
-  const pity = player.getPity(key);
-  const pityPct = Math.round(((player.RARE_PITY_ROUNDS - pity.rareRoundsLeft) / player.RARE_PITY_ROUNDS) * 100);
+  const st = supply.status(key);
   return `
       <div class="home-crate" data-tier="${key}" data-line="${lineOf(key)}">
         <div class="crate-panel">
@@ -4961,14 +5106,18 @@ function homeCrateCardHTML(key, cat) {
             <span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span>
             <span class="crate-price">$${cat.price.toLocaleString()}</span>
           </div>
-          <div class="crate-facts">
-            <span><i>Top prize</i><b>$${top[0].price.toLocaleString()}</b></span>
-            <span><i>Rare+ in</i><b>${pity.rareRoundsLeft} ${pity.rareRoundsLeft === 1 ? "open" : "opens"}</b></span>
-          </div>
-          <div class="crate-supply" title="Rounds toward your guaranteed Rare+"><i style="width:${pityPct}%"></i></div>
-          <button class="home-btn home-btn-solid home-crate-open">Open</button>
+          <div class="crate-facts" data-supply-facts="${key}">${homeCrateFactsInner(key)}</div>
+          <div class="crate-supply" data-supply-bar="${key}" title="How much of this drop has sold"><i style="width:${Math.round((st.sold / st.total) * 100)}%"></i></div>
+          <button class="home-btn home-btn-solid home-crate-open" data-supply-btn="${key}">${st.soldOut ? "Sold out · Market" : "Open"}</button>
         </div>
       </div>`;
+}
+
+function homeCrateFactsInner(key) {
+  const st = supply.status(key);
+  return `
+            <span><i>Grails left</i><b>${st.grailsLeft}</b></span>
+            <span><i>${st.soldOut ? "Sealed" : "Left"}</i><b>${st.soldOut ? st.unopened : st.unsold}/${st.total}</b></span>`;
 }
 
 function renderHomeCrates() {
@@ -5268,6 +5417,473 @@ function renderHome() {
   renderHomeMarket();
 }
 
+// ---- Sealed crates: what's left, holding, and trading -----------------------
+// A crate bought and kept is a ticket for whatever is left in its series
+// (supply.js). Everything below is about seeing that clearly — what's left
+// in a series, how many boxes are still sealed, what a box is worth right
+// now — and about holding, listing and buying those boxes.
+
+const RARITY_TOP_DOWN = ["legendary", "epic", "rare", "uncommon", "common"];
+const crateModal = document.getElementById("crateModal");
+let crateModalCtx = null; // { key, tokenId?, listingId? } of what's showing
+
+function crateName(key) {
+  const cat = CATEGORIES[key];
+  return `${cat.badge} ${cat.label} crate`;
+}
+
+function plural(n, one, many = `${one}s`) {
+  return `${n.toLocaleString()} ${n === 1 ? one : many}`;
+}
+
+function pct(part, whole) {
+  if (!whole) return "0%";
+  const v = (part / whole) * 100;
+  return `${v >= 10 ? Math.round(v) : v >= 1 ? v.toFixed(1) : v.toFixed(2)}%`;
+}
+
+// A sealed box's asking price against what one is worth right now: the
+// average value of what's left in its series. Same three verdicts, and the
+// same badges, as an item listing against its market value.
+function crateRating(price, key) {
+  const ev = supply.status(key).ev;
+  if (!ev) return null;
+  const ratio = price / ev;
+  if (ratio <= 0.9) return { key: "good-deal", label: "Very Good" };
+  if (ratio <= 1.1) return { key: "fair", label: "Good" };
+  return { key: "over", label: "Not Good" };
+}
+
+function crateBoxImage(imgEl, key) {
+  const cat = CATEGORIES[key];
+  getBoxSnapshot(key, crateBoxKind(cat)).then((url) => {
+    if (imgEl.isConnected) imgEl.src = url;
+  });
+}
+
+// ---- What's left -----------------------------------------------------------
+
+function openCrateModal(ctx) {
+  crateModalCtx = ctx;
+  renderCrateModal();
+  crateModal.classList.remove("hidden");
+  requestAnimationFrame(() => crateModal.classList.add("visible"));
+}
+
+function closeCrateModal() {
+  crateModalCtx = null;
+  crateModal.classList.remove("visible");
+  setTimeout(() => crateModal.classList.add("hidden"), 250);
+}
+document.getElementById("crateModalClose").addEventListener("click", () => {
+  playClick();
+  closeCrateModal();
+});
+crateModal.addEventListener("click", (e) => {
+  if (e.target === crateModal) closeCrateModal();
+});
+
+function renderCrateModal() {
+  const ctx = crateModalCtx;
+  if (!ctx) return;
+  const { key } = ctx;
+  const cat = CATEGORIES[key];
+  const st = supply.status(key);
+  const token = ctx.tokenId ? player.getCrate(ctx.tokenId) : null;
+  const listing = ctx.listingId ? market.getCrateListing(ctx.listingId) : null;
+
+  crateBoxImage(document.getElementById("crateModalBox"), key);
+  document.getElementById("crateModalEyebrow").textContent = token ? "Your sealed crate" : listing ? "Sealed crate for sale" : "What's left";
+  document.getElementById("crateModalTitle").textContent = crateName(key);
+  document.getElementById("crateModalSub").textContent = `Series ${st.series}${cat.poweredBy ? ` · Powered by ${cat.poweredBy}` : ""}`;
+
+  document.getElementById("crateModalStats").innerHTML = [
+    [`${st.unopened}<small>/${st.total}</small>`, "boxes still sealed"],
+    [st.soldOut ? "Sold out" : `${st.unsold}`, st.soldOut ? `the ${cat.label} drop` : `left at ${cat.label}`],
+    [`${st.grailsLeft}`, st.grailsLeft === 1 ? "Grail left" : "Grails left"],
+    [`$${Math.round(st.ev).toLocaleString()}`, "average box value now"],
+  ]
+    .map(([big, small]) => `<div class="crate-stat"><b>${big}</b><span>${small}</span></div>`)
+    .join("");
+
+  document.getElementById("crateModalOdds").innerHTML = RARITY_TOP_DOWN.map((r) => {
+    const meta = RARITY_META[r];
+    const n = st.byRarity[r];
+    return `<div class="crate-odds-cell${n ? "" : " is-gone"}" style="--rarity-color:${meta.color}">
+        <span class="crate-odds-label">${meta.label}</span>
+        <b>${pct(n, st.units)}</b>
+        <span class="crate-odds-left">${n} left</span>
+      </div>`;
+  }).join("");
+
+  // Every prize in the series, grouped Grail down, with how many are left —
+  // gone ones stay listed, faded, so you can see what's been pulled.
+  const live = supply.livePool(key);
+  const list = document.getElementById("crateModalList");
+  const scrollTop = list.scrollTop;
+  list.innerHTML = RARITY_TOP_DOWN.map((r) => {
+    const items = live.filter((p) => p.rarity === r).sort((a, b) => b.left - a.left || b.price - a.price);
+    if (!items.length) return "";
+    const meta = RARITY_META[r];
+    return `
+      <div class="crate-tier">
+        <div class="crate-tier-head" style="--rarity-color:${meta.color}">
+          <span>${meta.label}</span>
+          <span>${plural(st.byRarity[r], "left", "left")}</span>
+        </div>
+        <div class="crate-tier-items">${items
+          .map(
+            (p) => `
+          <div class="crate-prize${p.left ? "" : " is-gone"}" title="${p.name}">
+            <span class="crate-prize-media"><img src="${p.image}" alt="" loading="lazy"></span>
+            <span class="crate-prize-name">${p.name}</span>
+            <span class="crate-prize-foot"><b>$${p.price.toLocaleString()}</b><span>${p.left ? `×${p.left}` : "Gone"}</span></span>
+          </div>`
+          )
+          .join("")}</div>
+      </div>`;
+  }).join("");
+  list.scrollTop = scrollTop;
+
+  const actions = document.getElementById("crateModalActions");
+  if (token) {
+    actions.innerHTML = `
+      ${token.listingId ? `<span class="crate-modal-note">Listed at $${(market.getCrateListing(token.listingId)?.price ?? 0).toLocaleString()}</span>` : ""}
+      <button class="modal-btn modal-btn-outline" data-crate-act="${token.listingId ? "unlist" : "list"}">${token.listingId ? "Unlist" : "List for sale"}</button>
+      <button class="modal-btn modal-btn-solid" data-crate-act="open">Open now</button>`;
+  } else if (listing) {
+    const rating = crateRating(listing.price, key);
+    actions.innerHTML = listing.isPlayer
+      ? `<span class="crate-modal-note">Your listing · $${listing.price.toLocaleString()}</span>
+         <button class="modal-btn modal-btn-outline" data-crate-act="unlist-listing">Unlist</button>`
+      : `<span class="crate-modal-note">${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}Sold by ${listing.seller} · drop price ${cat.label}</span>
+         <button class="modal-btn modal-btn-solid" data-crate-act="buy">Buy for $${listing.price.toLocaleString()}</button>`;
+  } else {
+    actions.innerHTML = st.soldOut
+      ? `<span class="crate-modal-note">The drop is sold out. Sealed boxes trade on the market.</span>
+         <button class="modal-btn modal-btn-solid" data-crate-act="market">Sealed boxes on the market</button>`
+      : `<span class="crate-modal-note">${st.unsold} left at ${cat.label}</span>
+         <button class="modal-btn modal-btn-solid" data-crate-act="buy-drop">Buy for ${cat.label}</button>`;
+  }
+}
+
+document.getElementById("crateModalActions").addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-crate-act]");
+  if (!btn || !crateModalCtx) return;
+  playClick();
+  const { key, tokenId, listingId } = crateModalCtx;
+  const act = btn.dataset.crateAct;
+  if (act === "open") {
+    closeCrateModal();
+    openSealedCrate(tokenId);
+  } else if (act === "list") {
+    closeCrateModal();
+    await listSealedCrate(tokenId);
+  } else if (act === "unlist") {
+    unlistSealedCrate(tokenId);
+    renderCrateModal();
+  } else if (act === "unlist-listing") {
+    const listing = market.getCrateListing(listingId);
+    if (listing?.tokenId) unlistSealedCrate(listing.tokenId);
+    closeCrateModal();
+    renderMarketGrid();
+  } else if (act === "buy") {
+    buyCrateListing(listingId);
+  } else if (act === "buy-drop") {
+    closeCrateModal();
+    openPaymentPicker(key, 1);
+  } else if (act === "market") {
+    closeCrateModal();
+    soldOutAction(key);
+  }
+});
+
+// The "What's left" link on a crate card. Delegated: cards re-render their
+// supply block in place as the counts move.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-whats-left]");
+  if (!btn) return;
+  e.stopPropagation();
+  playClick();
+  openCrateModal({ key: btn.dataset.whatsLeft });
+});
+
+// ---- Holding: list, unlist, buy ---------------------------------------------
+
+async function listSealedCrate(tokenId) {
+  const token = player.getCrate(tokenId);
+  if (!token) return;
+  const cat = CATEGORIES[token.crateKey];
+  const st = supply.status(token.crateKey);
+  const suggested = Math.round(Math.max(cat.price, st.ev));
+  const price = await promptAmount(
+    `List ${crateName(token.crateKey)}`,
+    `A box is worth about $${Math.round(st.ev).toLocaleString()} on average right now (${plural(st.grailsLeft, "Grail")} in ${plural(st.unopened, "sealed box", "sealed boxes")}). Drop price ${cat.label}.`,
+    suggested
+  );
+  if (!price) return;
+  const listing = market.createCrateListing({
+    crateKey: token.crateKey,
+    series: token.series,
+    price,
+    seller: player.getUsername(),
+    isPlayer: true,
+    tokenId: token.id,
+  });
+  player.setCrateListing(token.id, listing.id);
+  showToast(`Listed for $${price.toLocaleString()}`, ICONS.bell);
+  renderAccount();
+}
+
+function unlistSealedCrate(tokenId) {
+  const token = player.getCrate(tokenId);
+  if (!token?.listingId) return;
+  market.removeCrateListing(token.listingId);
+  player.setCrateListing(token.id, null);
+  renderAccount();
+}
+
+function buyCrateListing(listingId) {
+  const listing = market.getCrateListing(listingId);
+  if (!listing || listing.isPlayer) return;
+  if (!player.spendCash(listing.price)) {
+    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
+    openAddFundsModal();
+    return;
+  }
+  market.removeCrateListing(listing.id);
+  supply.crowdSoldToPlayer(listing.crateKey);
+  player.addCrates(listing.crateKey, listing.series, 1, listing.price, "cash");
+  renderWallet({ pulse: "cash" });
+  closeCrateModal();
+  showToast(`Sealed ${CATEGORIES[listing.crateKey].badge} crate bought. It's in your account`, ICONS.bell);
+  renderMarketGrid();
+  refreshSupplyViews();
+}
+
+// A sold-out drop's button: the sealed boxes on the market, or (if none
+// are listed right now) the series itself.
+let marketCrateFocus = null; // crate key the market is narrowed to, or null
+function soldOutAction(key) {
+  const listed = market.getCrateListings().some((l) => l.crateKey === key && !l.isPlayer);
+  if (!listed) {
+    showToast("Sold out, and no sealed boxes are listed right now", ICONS.bell);
+    openCrateModal({ key });
+    return;
+  }
+  marketCrateFocus = key;
+  marketCategoryValue = "crates";
+  if (marketCategoryFilter.options.length) marketCategoryFilter.value = "crates";
+  document.querySelector('.nav-tab[data-nav="screen-marketplace"]').click();
+}
+
+// ---- Account: sealed crates --------------------------------------------------
+
+const sealedGrid = document.getElementById("sealedGrid");
+const crateCount = document.getElementById("crateCount");
+
+function sealedCrateCardHTML(token) {
+  const key = token.crateKey;
+  const st = supply.status(key);
+  const listing = token.listingId ? market.getCrateListing(token.listingId) : null;
+  return `
+    <div class="market-item sealed-item" data-token="${token.id}">
+      <div class="market-item-media sealed-media"><img class="sealed-box" data-box="${key}" alt=""></div>
+      <div class="market-item-body">
+        <div class="market-item-tags">
+          <span class="market-item-size">Sealed</span>
+          ${listing ? `<span class="market-item-size">Listed $${listing.price.toLocaleString()}</span>` : ""}
+        </div>
+        <span class="market-item-name">${crateName(key)}</span>
+        <span class="sealed-sub">Series ${token.series} · paid $${token.paid.toLocaleString()}</span>
+        <span class="sealed-sub">${plural(st.grailsLeft, "Grail")} left · ${st.unopened} sealed</span>
+        <div class="item-actions">
+          <button class="item-action-btn" data-sealed-act="open">Open</button>
+          <button class="item-action-btn" data-sealed-act="${listing ? "unlist" : "list"}">${listing ? "Unlist" : "List"}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSealedCrates() {
+  const tokens = player.getCrates();
+  crateCount.textContent = tokens.length;
+  // On the Holdings tab too, so held boxes are visible from My Items.
+  const tabCount = document.getElementById("crateTabCount");
+  tabCount.textContent = tokens.length;
+  tabCount.hidden = tokens.length === 0;
+  sealedGrid.innerHTML = tokens.length
+    ? tokens.map(sealedCrateCardHTML).join("")
+    : `<div class="market-empty">Buy a crate and choose Keep it sealed to hold it here. Open it any time, or list it on the market.</div>`;
+  sealedGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+}
+
+sealedGrid.addEventListener("click", async (e) => {
+  const card = e.target.closest("[data-token]");
+  if (!card) return;
+  const tokenId = card.dataset.token;
+  const act = e.target.closest("[data-sealed-act]")?.dataset.sealedAct;
+  playClick();
+  if (act === "open") openSealedCrate(tokenId);
+  else if (act === "list") await listSealedCrate(tokenId);
+  else if (act === "unlist") unlistSealedCrate(tokenId);
+  else openCrateModal({ key: player.getCrate(tokenId).crateKey, tokenId });
+});
+
+// ---- Market: sealed crate listings ----------------------------------------------
+
+function crateListingCardHTML(listing) {
+  const key = listing.crateKey;
+  const st = supply.status(key);
+  const rating = listing.isPlayer ? null : crateRating(listing.price, key);
+  return `
+    <div class="market-item sealed-item" data-crate-listing="${listing.id}">
+      <div class="market-item-media sealed-media"><img class="sealed-box" data-box="${key}" alt=""></div>
+      <div class="market-item-body">
+        <div class="market-item-tags">
+          ${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}
+          <span class="market-item-size">Sealed</span>
+          ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
+        </div>
+        <span class="market-item-name">${crateName(key)}</span>
+        <span class="sealed-sub">${plural(st.grailsLeft, "Grail")} left · ${st.unopened} sealed</span>
+        <div class="market-item-divider"></div>
+        <div class="market-item-foot">
+          <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
+          <span class="market-item-seller ${listing.isPlayer ? "you" : ""}">${listing.isPlayer ? "You" : listing.seller}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ---- The crowd ---------------------------------------------------------------------
+// One simulated player doing one thing: buying a box off a drop and
+// opening it (a live pull), buying one to hold (sometimes listing it),
+// or — once a drop has sold out — opening one of the boxes they held.
+// Draws from the same series as everyone else, so the counts move.
+
+function botListedCount(key) {
+  return market.getCrateListings().filter((l) => l.crateKey === key && !l.isPlayer).length;
+}
+
+function listBotCrate(key) {
+  const cat = CATEGORIES[key];
+  const st = supply.status(key);
+  // Before sell-out nobody pays much over the drop price (it's still on
+  // sale); after, the price follows what's left in the series.
+  const base = st.soldOut ? Math.max(cat.price, st.ev) : cat.price;
+  const factor = st.soldOut ? 0.95 + Math.random() * 0.35 : 0.96 + Math.random() * 0.14;
+  market.createCrateListing({
+    crateKey: key,
+    series: st.series,
+    price: Math.max(1, Math.round(base * factor)),
+    seller: market.randomUsername(),
+    ts: Date.now() - Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000),
+  });
+}
+
+function crowdPull(prize, key) {
+  return {
+    name: prize.name,
+    rarity: prize.rarity,
+    price: prize.price,
+    image: prize.image,
+    tierKey: key,
+    username: market.randomUsername(),
+    isPlayer: false,
+    ts: Date.now(),
+  };
+}
+
+function crowdStep() {
+  const keys = Object.keys(CATEGORIES);
+  for (let tries = 0; tries < 8; tries++) {
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    const st = supply.status(key);
+    if (!st.soldOut) {
+      if (Math.random() < 0.78) {
+        const prize = supply.crowdBuyAndOpen(key);
+        if (prize) return crowdPull(prize, key);
+      } else if (supply.crowdBuyAndHold(key)) {
+        if (Math.random() < 0.35) listBotCrate(key);
+        return null;
+      }
+    } else if (supply.botHeld(key) > botListedCount(key)) {
+      // Unlisted boxes get opened; listed ones wait for a buyer.
+      const prize = supply.crowdOpenHeld(key);
+      if (prize) return crowdPull(prize, key);
+    }
+  }
+  return null;
+}
+
+// Market life for sealed boxes: sold-out crates keep a few listed, and a
+// player's listing priced at or under what a box is worth finds a buyer.
+function crowdMarketStep() {
+  Object.keys(CATEGORIES).forEach((key) => {
+    const st = supply.status(key);
+    if (st.soldOut && supply.botHeld(key) > botListedCount(key) && botListedCount(key) < 3 && Math.random() < 0.08) listBotCrate(key);
+  });
+  market
+    .getCrateListings()
+    .filter((l) => l.isPlayer)
+    .forEach((l) => {
+      const st = supply.status(l.crateKey);
+      const ceiling = st.ev * (st.soldOut ? 1.15 : 1.05);
+      if (l.price > ceiling || Math.random() > 0.1) return;
+      const token = player.getCrate(l.tokenId);
+      market.removeCrateListing(l.id);
+      if (token) player.removeCrate(token.id);
+      supply.playerSoldToCrowd(l.crateKey);
+      player.addCash(l.price);
+      renderWallet({ pulse: "cash" });
+      showToast(`Your sealed ${CATEGORIES[l.crateKey].badge} crate sold for $${l.price.toLocaleString()}`, ICONS.bell);
+      if (document.getElementById("screen-account").classList.contains("active")) renderAccount();
+    });
+}
+
+// First run: a few sealed boxes already listed, from the crowd's holdings.
+function seedCrateListings() {
+  if (localStorage.getItem("gotcha_crate_market_seeded")) return;
+  Object.keys(CATEGORIES).forEach((key) => {
+    const st = supply.status(key);
+    const want = st.soldOut ? 3 : Math.random() < 0.5 ? 1 : 0;
+    for (let i = 0; i < Math.min(want, supply.botHeld(key)); i++) listBotCrate(key);
+  });
+  try {
+    localStorage.setItem("gotcha_crate_market_seeded", "1");
+  } catch {
+    // seeds again next time; harmless
+  }
+}
+
+// The crowd kept going while the page was closed: one step per half
+// minute away, capped, run silently before the feed starts.
+function catchUpCrowd() {
+  const steps = supply.stepsSinceLastVisit(30000, 150);
+  for (let i = 0; i < steps; i++) crowdStep();
+  supply.markTick();
+}
+
+// ---- Keeping supply on screen current ----------------------------------------------
+
+function refreshSupplyViews() {
+  document.querySelectorAll("[data-supply]").forEach((el) => {
+    el.innerHTML = supplyBlockInner(el.dataset.supply);
+    const btn = el.closest(".category-card")?.querySelector(".category-open-btn");
+    if (btn) btn.textContent = supply.status(el.dataset.supply).soldOut ? "Sold out · Market" : "Open";
+  });
+  document.querySelectorAll("[data-supply-facts]").forEach((el) => (el.innerHTML = homeCrateFactsInner(el.dataset.supplyFacts)));
+  document.querySelectorAll("[data-supply-bar]").forEach((el) => {
+    const st = supply.status(el.dataset.supplyBar);
+    el.firstElementChild.style.width = `${Math.round((st.sold / st.total) * 100)}%`;
+  });
+  document.querySelectorAll("[data-supply-btn]").forEach((el) => {
+    el.textContent = supply.status(el.dataset.supplyBtn).soldOut ? "Sold out · Market" : "Open";
+  });
+  if (crateModalCtx) renderCrateModal();
+}
+
 // ---- Footer: quick links navigate for real; social/support are labeled
 // placeholders (no real destinations exist for a demo) that surface an
 // honest "coming soon" rather than a dead link with no feedback. ---------
@@ -5320,6 +5936,8 @@ if (profileParam) {
   document.querySelectorAll(".account-toggle").forEach((row) => liquidTabs(row, ".account-toggle-label.active"));
   liquidTabs(document.querySelector(".add-funds-tabs"), ".add-funds-tab.active");
   renderIdentity();
+  catchUpCrowd();
+  seedCrateListings();
   seedSimulatedPulls();
   // Saved stock items keep the name and card image from when they were
   // saved; bring them up to the current ones. Names used to read

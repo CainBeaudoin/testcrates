@@ -63,6 +63,10 @@ function defaultState() {
     seeded: false,
     listings: [], // {id, name, rarity, image, catalogPrice, price, seller, isPlayer, itemId, ts}
     offers: [], // {id, listingId, amount, fromUsername, fromIsPlayer, toUsername, toIsPlayer, status, counterAmount, ts}
+    // Sealed boxes for sale, apart from item listings: a box has no photo,
+    // size, brand or price history of its own, and everything that reads
+    // `listings` (filters, offers, charts) is built around an item.
+    crateListings: [], // {id, crateKey, series, price, seller, isPlayer, tokenId, ts}
   };
 }
 
@@ -172,6 +176,43 @@ export function ensureSeeded(catalog) {
 
   state.seeded = true;
   save();
+}
+
+// ---- Sealed crate listings ------------------------------------------------
+// Always priced (Buy Now); no offers. What a box is worth depends on what's
+// left in its series, so the reference value is read from supply.js at
+// render time rather than stored here.
+
+export function getCrateListings() {
+  return state.crateListings;
+}
+
+export function getCrateListing(id) {
+  return state.crateListings.find((l) => l.id === id) || null;
+}
+
+export function createCrateListing({ crateKey, series, price, seller, isPlayer = false, tokenId = null, ts = Date.now() }) {
+  const listing = { id: uid(), crateKey, series, price, seller, isPlayer, tokenId, ts };
+  state.crateListings.push(listing);
+  save();
+  return listing;
+}
+
+export function updateCrateListing(id, patch) {
+  const listing = getCrateListing(id);
+  if (!listing) return null;
+  Object.assign(listing, patch);
+  save();
+  return listing;
+}
+
+export function removeCrateListing(id) {
+  state.crateListings = state.crateListings.filter((l) => l.id !== id);
+  save();
+}
+
+export function randomUsername() {
+  return FAKE_USERNAMES[Math.floor(Math.random() * FAKE_USERNAMES.length)];
 }
 
 export function getListings() {

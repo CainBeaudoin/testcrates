@@ -450,9 +450,18 @@ try {
                display:none there), which keeps stacking everything as
                before. -->
           <div class="account-toggle toggle-group-active" data-toggle-group="holdings">
+            <button type="button" class="account-toggle-label" data-toggle-target="crates">Crates <span class="toggle-count" id="crateTabCount" hidden></span></button>
             <button type="button" class="account-toggle-label active" data-toggle-target="vault">My Items</button>
             <button type="button" class="account-toggle-label" data-toggle-target="portfolio">Portfolio</button>
           </div>
+          <div class="account-section active toggle-hidden" data-section="crates" data-toggle-key="crates">
+            <div class="account-section-header">
+              <h3>Sealed Crates <span class="count-badge" id="crateCount">0</span></h3>
+              <span class="account-block-note">Opened from what&rsquo;s left when you open them</span>
+            </div>
+            <div id="sealedGrid" class="market-grid sealed-grid"></div>
+          </div>
+
           <div class="account-section active" data-section="vault" data-toggle-key="vault">
             <div class="account-section-header">
               <h3>My Items <span class="count-badge" id="vaultCount">0</span></h3>
@@ -661,7 +670,15 @@ try {
 <!-- Payment method picker (shown before a round starts) -->
 <div id="paymentModal" class="prize-modal hidden">
   <div class="prize-modal-card payment-modal-card">
-    <h3 class="payment-modal-title">Open <span id="paymentTierLabel"></span> with…</h3>
+    <h3 class="payment-modal-title">Buy <span id="paymentTierLabel"></span> with…</h3>
+    <!-- Open it straight away, or keep it sealed: a kept crate waits in
+         Account, can be opened any time, and can be listed on the market.
+         Either way the prize is drawn from what's left when it's opened. -->
+    <div class="pay-mode" id="payMode" role="radiogroup" aria-label="After buying">
+      <button type="button" class="pay-mode-btn active" data-mode="open" role="radio" aria-checked="true">Open now</button>
+      <button type="button" class="pay-mode-btn" data-mode="keep" role="radio" aria-checked="false">Keep it sealed</button>
+    </div>
+    <p class="pay-supply" id="paySupply"></p>
     <div class="payment-modal-options">
       <button id="payWithCredits" class="payment-option">
         <svg class="payment-option-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -676,6 +693,30 @@ try {
     </div>
     <p class="payment-modal-hint">Whichever you choose, a Cash Out pays back into that same balance.</p>
     <button id="paymentCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
+  </div>
+</div>
+
+<!-- What's left in a crate: its series' remaining prizes, how many boxes
+     are still unopened, the odds right now. Opened from a crate card, a
+     sealed crate in Account, or a sealed crate listing on the market; the
+     actions at the bottom are whichever fit where it was opened from. -->
+<div id="crateModal" class="prize-modal hidden">
+  <div class="prize-modal-card crate-modal-card" role="dialog" aria-modal="true" aria-labelledby="crateModalTitle">
+    <button class="modal-close-x" id="crateModalClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+    <div class="crate-modal-head">
+      <img class="crate-modal-box" id="crateModalBox" alt="">
+      <div>
+        <span class="crate-modal-eyebrow" id="crateModalEyebrow"></span>
+        <h3 class="crate-modal-title" id="crateModalTitle"></h3>
+        <span class="crate-modal-sub" id="crateModalSub"></span>
+      </div>
+    </div>
+    <div class="crate-modal-stats" id="crateModalStats"></div>
+    <div class="crate-modal-odds" id="crateModalOdds"></div>
+    <div class="crate-modal-list" id="crateModalList"></div>
+    <div class="crate-modal-actions" id="crateModalActions"></div>
   </div>
 </div>
 

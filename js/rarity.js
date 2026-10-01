@@ -20,8 +20,11 @@ export const RARITY_META = {
     "label": "Epic",
     "color": "#B678F2"
   },
+  // Shown as "Grail" everywhere: the top tier is what the site calls a
+  // grail, and one name beats two. The key stays "legendary" so saved
+  // history, pools and styling keep working.
   "legendary": {
-    "label": "Legendary",
+    "label": "Grail",
     "color": "#F2B84B"
   }
 };

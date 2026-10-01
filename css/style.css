@@ -7496,3 +7496,248 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   .home-hero-stage { inset: 0 -4% -8%; }
   .home-hero-box { width: 64%; }
 }
+
+/* ==========================================================================
+   Crate supply and sealed crates
+   ========================================================================== */
+
+/* --- On a crate card: what's left of the drop --------------------------- */
+.supply-block { margin-top: 14px; text-align: left; }
+.supply-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+.supply-count b { color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
+.supply-grails { color: var(--gold); font-weight: 700; white-space: nowrap; }
+.supply-track { height: 4px; border-radius: var(--r-pill); background: var(--track, var(--control-fill)); overflow: hidden; }
+.supply-track i { display: block; height: 100%; border-radius: inherit; background: var(--text); transition: width 0.4s ease; }
+.supply-whats-left {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.supply-whats-left:hover { color: var(--text); }
+
+/* Prize rows on a crate's page: how many of each are left, gone ones faded. */
+.prize-row-left { display: block; font-size: 0.62rem; font-weight: 600; color: var(--text-faint); text-align: right; }
+.prize-row.is-gone { opacity: 0.4; }
+.prize-row.is-gone img { filter: grayscale(1); }
+
+/* --- Buy dialog: open now, or keep it sealed --------------------------- */
+.pay-mode {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 8px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--control-fill);
+}
+.pay-mode-btn {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pay-mode-btn.active { background: var(--surface-1); color: var(--text); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+:root[data-theme="light"] .pay-mode-btn.active { background: #fff; }
+.pay-supply { margin: 0 0 14px; font-size: 0.72rem; color: var(--text-dim); }
+
+/* --- What's left ------------------------------------------------------------ */
+.crate-modal-card {
+  max-width: 760px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  text-align: left;
+}
+.modal-close-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--control-fill);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.modal-close-x:hover { background: var(--control-fill-hover); color: var(--text); }
+.crate-modal-head { display: flex; align-items: center; gap: 16px; padding-right: 40px; }
+.crate-modal-box { width: 88px; height: 88px; object-fit: contain; flex: 0 0 auto; }
+.crate-modal-eyebrow {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.crate-modal-title {
+  margin: 2px 0;
+  font-family: Anton, "Arial Narrow", Impact, sans-serif;
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.crate-modal-sub { font-size: 0.78rem; color: var(--text-dim); }
+
+.crate-modal-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.crate-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.crate-stat b { font-size: 1.15rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.crate-stat b small { font-size: 0.72rem; font-weight: 600; color: var(--text-faint); }
+.crate-stat span { font-size: 0.68rem; color: var(--text-dim); }
+
+/* The live odds: one cell per tier, what's left of it over what's left. */
+.crate-modal-odds { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.crate-odds-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--rarity-color) 12%, transparent);
+}
+.crate-odds-cell.is-gone { opacity: 0.45; }
+.crate-odds-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--rarity-color); }
+:root[data-theme="light"] .crate-odds-label { filter: brightness(0.65) saturate(1.4); }
+.crate-odds-cell b { font-size: 0.95rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.crate-odds-left { font-size: 0.62rem; color: var(--text-dim); }
+
+.crate-modal-list { overflow-y: auto; min-height: 0; padding-right: 4px; margin-right: -4px; }
+.crate-tier + .crate-tier { margin-top: 16px; }
+.crate-tier-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.crate-tier-head span:first-child { color: var(--rarity-color); letter-spacing: 0.5px; text-transform: uppercase; }
+:root[data-theme="light"] .crate-tier-head span:first-child { filter: brightness(0.65) saturate(1.4); }
+.crate-tier-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.crate-prize { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.crate-prize-media {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  background: #fff;
+}
+.crate-prize-media img { width: 100%; height: 100%; object-fit: contain; }
+.crate-prize-name { font-size: 0.72rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crate-prize-foot { display: flex; justify-content: space-between; gap: 6px; font-size: 0.72rem; }
+.crate-prize-foot b { color: var(--text); font-variant-numeric: tabular-nums; }
+.crate-prize-foot span { color: var(--text-dim); font-weight: 700; }
+.crate-prize.is-gone { opacity: 0.38; }
+.crate-prize.is-gone img { filter: grayscale(1); }
+
+.crate-modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.crate-modal-actions .modal-btn { width: auto; padding-left: 22px; padding-right: 22px; margin: 0; }
+.crate-modal-note { display: inline-flex; align-items: center; gap: 8px; margin-right: auto; font-size: 0.78rem; color: var(--text-dim); }
+
+/* --- Sealed crate cards (Account and the market) ---------------------------- */
+.sealed-media { display: grid; place-items: center; background: var(--crate-tint, #efe3d4); }
+:root:not([data-theme="light"]) .sealed-media { background: rgba(255, 255, 255, 0.06); }
+.sealed-media img { width: 82%; height: 82%; object-fit: contain; }
+.sealed-sub { display: block; font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The market narrowed to one crate's sealed boxes, and the way back out. */
+.market-focus {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--r-pill);
+  background: var(--control-fill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.market-focus-clear {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .crate-modal-card { padding: 18px; gap: 12px; }
+  .crate-modal-box { width: 64px; height: 64px; }
+  .crate-modal-title { font-size: 1.3rem; }
+  .crate-modal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crate-modal-odds { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .crate-odds-cell { padding: 6px; }
+  .crate-odds-cell b { font-size: 0.78rem; }
+  .crate-tier-items { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .crate-modal-actions .modal-btn { flex: 1; }
+}
+
+/* How many sealed crates you hold, on the Holdings "Crates" tab. */
+.toggle-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--positive);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+.toggle-count[hidden] { display: none; }
+/* The box render is a cut-out already: no white photo well behind it. */
+.sealed-media img,
+.market-item .sealed-media img { background: none; padding: 0; border-radius: 0; }
+@media (max-width: 640px) {
+  /* A list to browse, not a small confirm dialog: the phone width cap for
+     pop-ups would squeeze three prizes a row into ~75px tiles. */
+  .prize-modal-card.crate-modal-card { width: 100%; max-width: none; max-height: calc(100vh - 32px); }
+  #crateModal { padding: 16px 12px; }
+}

@@ -73,6 +73,7 @@ function defaultState() {
     // clearly local/simulated, not a real deposit (see addDemoFunds).
     wallet: { credits: 0, cash: 500 },
     inventory: [], // {id, name, rarity, price, image, acquiredAt, listingId}
+    crates: [], // sealed boxes bought and not yet opened: {id, crateKey, series, paid, currency, boughtAt, listingId}
     shipped: [], // items claimed physically: {id, name, rarity, price, image, shippedAt}
     cashedOut: [], // liquidated items: {id, name, rarity, price, image, amount, currency, ts}
     transfers: [], // items sent to another account: {id, name, rarity, price, image, toUsername, ts}
@@ -528,6 +529,48 @@ export function addToInventory(prize) {
   state.inventory.unshift(item);
   save();
   return item;
+}
+
+// ---- Sealed crates ---------------------------------------------------------
+// A crate bought and kept rather than opened. It isn't a prize: it's a
+// ticket for whatever is left in its series when it's opened (supply.js).
+// `currency` is what it was paid in — a Cash Out from it pays back into the
+// same balance, as an opening straight after buying would.
+
+export function addCrates(crateKey, series, qty, paid, currency) {
+  const added = Array.from({ length: qty }, () => ({
+    id: uid(),
+    crateKey,
+    series,
+    paid,
+    currency,
+    boughtAt: Date.now(),
+    listingId: null,
+  }));
+  state.crates.unshift(...added);
+  save();
+  return added;
+}
+
+export function getCrates() {
+  return state.crates;
+}
+
+export function getCrate(id) {
+  return state.crates.find((c) => c.id === id) || null;
+}
+
+export function removeCrate(id) {
+  state.crates = state.crates.filter((c) => c.id !== id);
+  save();
+}
+
+export function setCrateListing(id, listingId) {
+  const c = getCrate(id);
+  if (c) {
+    c.listingId = listingId;
+    save();
+  }
 }
 
 export function getInventory() {
