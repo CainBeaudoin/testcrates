@@ -6979,10 +6979,11 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     100% { opacity: 0; background-position: -20% 0, 0 0; }
   }
 
-  /* Minimized: a pill in the corner that brings it back. */
+  /* Minimized: a pill in the corner that brings it back — the right-hand
+     corner, under where the minimize button was. */
   body.live-bar-min .live-bar-pill {
     position: fixed;
-    left: 16px;
+    right: 16px;
     bottom: 16px;
     z-index: 45;
     display: inline-flex;
@@ -7936,3 +7937,78 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 @media (max-width: 640px) {
   .whats-left { padding: 8px; }
 }
+
+/* --- Market: a sealed box's own page ---------------------------------------
+   The crate page's layout (it reuses .drop-detail-active), with the box
+   for sale on the left: price, seller, value, Buy and Make an offer. */
+#screen-marketplace.is-crate-view > .market-title-row,
+#screen-marketplace.is-crate-view > .market-shell { display: none; }
+.market-crate-view { max-width: 1000px; margin: 0 auto; }
+.market-crate-view .drop-detail-back { display: inline-flex; }
+.mcv-card { align-items: center; justify-content: center; gap: 6px; cursor: default; }
+.mcv-box { display: block; width: min(100%, 240px); aspect-ratio: 1; object-fit: contain; margin: -8px auto 0; }
+.mcv-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.mcv-name { margin: 6px 0 0; font-size: 1.2rem; font-weight: 800; color: var(--text); }
+.mcv-seller { font-size: 0.74rem; color: var(--text-dim); }
+.mcv-seller b { color: var(--text); }
+.mcv-price { margin-top: 10px; font-size: 2rem; font-weight: 900; line-height: 1; color: var(--text); }
+.mcv-ev { font-size: 0.72rem; color: var(--text-faint); }
+.mcv-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 16px; }
+.mcv-actions .mcv-buy { margin-top: 0; width: 100%; }
+.mcv-btn {
+  width: 100%;
+  padding: 12px 0;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.mcv-btn:hover { border-color: var(--text); }
+.mcv-offers { width: 100%; margin-top: 14px; text-align: left; }
+.mcv-offers-label { display: block; margin-bottom: 6px; font-size: 0.62rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.mcv-offer { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--hairline); font-size: 0.76rem; }
+.mcv-offer b { color: var(--text); }
+.mcv-offer-status { margin-left: auto; color: var(--text-dim); }
+.mcv-offer-status.is-yes { color: var(--green, #2f9e5b); }
+.mcv-offer-status.is-no { color: var(--text-faint); }
+.mcv-offer-accept {
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mcv-more { margin-top: 40px; }
+.mcv-more-title { margin: 0 0 14px; font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); text-align: center; }
+@media (min-width: 641px) {
+  .market-crate-view .drop-detail-active .category-card { flex: 0 0 360px; }
+}
+
+/* --- Account: display and sound ------------------------------------------
+   The theme and sound switches, as labelled rows under the wallet in the
+   account column instead of floating over every page. The label names
+   what a click switches to (theme) or what's on now (sound). */
+.account-prefs { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.account-prefs .account-pref {
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--panel);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.account-prefs .account-pref:hover { color: var(--text); background: var(--control-fill-hover); }

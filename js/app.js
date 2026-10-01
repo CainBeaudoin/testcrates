@@ -2623,6 +2623,7 @@ backBtn.addEventListener("click", () => {
 
 function refreshMuteBtn() {
   muteBtn.classList.toggle("muted", isMuted());
+  document.getElementById("muteBtnLabel").textContent = isMuted() ? "Sound off" : "Sound on";
 }
 muteBtn.addEventListener("click", () => {
   toggleMuted();
@@ -2662,6 +2663,7 @@ function applyTheme(theme, { remember = true } = {}) {
   setTimeout(unlock, 200);
   themeBtn.setAttribute("aria-label", light ? "Switch to dark mode" : "Switch to light mode");
   themeBtn.setAttribute("title", light ? "Dark mode" : "Light mode");
+  document.getElementById("themeBtnLabel").textContent = light ? "Dark mode" : "Light mode";
   if (!remember) return;
   try {
     localStorage.setItem(THEME_KEY, light ? "light" : "dark");
@@ -2679,25 +2681,6 @@ themeBtn.addEventListener("click", () => {
 // saving it: only an actual click on the switch is a preference.
 applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark", { remember: false });
 
-// On mobile the bottom tab bar is Drops/Market/Account only — mute moves
-// into the footer's Social Media row instead (same button/click handler,
-// just reparented) so it's not competing with real navigation. Desktop
-// keeps it in the bottom-right corner stack. Re-parenting (not cloning) means the listener
-// above stays attached wherever the node ends up.
-// Theme goes with it, into its own Display & Sound row, so dark mode is
-// reachable on a phone at all.
-const railBottom = document.querySelector(".rail-bottom");
-const footerPrefs = document.querySelector(".app-footer-prefs");
-const mobileNavQuery = window.matchMedia("(max-width: 640px)");
-function placeMuteBtn(isMobile) {
-  const target = isMobile ? footerPrefs : railBottom;
-  if (!target) return;
-  [themeBtn, muteBtn].forEach((btn) => {
-    if (btn.parentElement !== target) target.appendChild(btn);
-  });
-}
-placeMuteBtn(mobileNavQuery.matches);
-mobileNavQuery.addEventListener("change", (e) => placeMuteBtn(e.matches));
 
 // ---- Pinned page headers -----------------------------------------------------
 // On desktop, Market's title and Account's tab bar stay put while the
@@ -3066,6 +3049,7 @@ let marketSizeValue = "all";
 let marketFmvValue = "all";
 
 function renderMarketplace() {
+  closeMarketCrate();
   market.ensureSeeded(ALL_CATALOG);
 
   if (marketBrandFilter.children.length === 0) {
@@ -3179,12 +3163,9 @@ function renderMarketGrid() {
     : `${focusChip}<div class="market-empty">No listings match these filters.</div>`;
   marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
   marketGrid.querySelectorAll("[data-crate-listing]").forEach((el) => {
-    el.addEventListener("click", (e) => {
-      // "View what's inside" goes to the crate's page (its own handler).
-      if (e.target.closest("[data-whats-left]")) return;
+    el.addEventListener("click", () => {
       playClick();
-      const listing = market.getCrateListing(el.dataset.crateListing);
-      if (listing) openCrateModal({ key: listing.crateKey, listingId: listing.id });
+      openMarketCrate(el.dataset.crateListing);
     });
   });
   marketGrid.querySelector(".market-focus-clear")?.addEventListener("click", () => {
@@ -5713,22 +5694,26 @@ function unlistSealedCrate(tokenId) {
   renderAccount();
 }
 
-function buyCrateListing(listingId) {
+// `amount` is the asking price, or an offer the seller took.
+function buyCrateListing(listingId, amount = null) {
   const listing = market.getCrateListing(listingId);
-  if (!listing || listing.isPlayer) return;
-  if (!player.spendCash(listing.price)) {
+  if (!listing || listing.isPlayer) return false;
+  const price = amount ?? listing.price;
+  if (!player.spendCash(price)) {
     showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
     openAddFundsModal();
-    return;
+    return false;
   }
   market.removeCrateListing(listing.id);
   supply.crowdSoldToPlayer(listing.crateKey);
-  player.addCrates(listing.crateKey, listing.series, 1, listing.price, "cash");
+  player.addCrates(listing.crateKey, listing.series, 1, price, "cash");
   renderWallet({ pulse: "cash" });
   closeCrateModal();
+  if (marketCrateListingId === listing.id) closeMarketCrate();
   showToast(`Sealed ${CATEGORIES[listing.crateKey].badge} crate bought. It's in your account`, ICONS.bell);
   renderMarketGrid();
   refreshSupplyViews();
+  return true;
 }
 
 // A sold-out drop's button: the sealed boxes on the market, or (if none
@@ -5784,6 +5769,167 @@ inventoryGrid.addEventListener("click", async (e) => {
   else openCrateModal({ key: player.getCrate(tokenId).crateKey, tokenId });
 });
 
+// ---- Market: a sealed box's own page ------------------------------------------
+// Clicking a sealed listing opens it as a page in Market, laid out like a
+// crate's page on Drops: the box with its price, seller and value on the
+// left (Buy, or Make an offer), the crate's live odds and what's inside on
+// the right, and more of the same crate listed below.
+
+const screenMarketEl = document.getElementById("screen-marketplace");
+const marketCrateView = document.getElementById("marketCrateView");
+let marketCrateListingId = null;
+// Your offers on sealed listings, by listing: { amount, status, counterAmount }.
+const crateOffers = {};
+
+function marketCrateViewHTML(listing) {
+  const key = listing.crateKey;
+  const cat = CATEGORIES[key];
+  const st = supply.status(key);
+  const pool = supply.livePool(key);
+  const rating = listing.isPlayer ? null : crateRating(listing.price, key);
+  const offers = crateOffers[listing.id] ?? [];
+  const offerRows = offers
+    .map((o) => {
+      const status =
+        o.status === "pending"
+          ? `<span class="mcv-offer-status">Waiting…</span>`
+          : o.status === "accepted"
+            ? `<span class="mcv-offer-status is-yes">Accepted</span>`
+            : o.status === "countered"
+              ? `<span class="mcv-offer-status">Countered $${o.counterAmount.toLocaleString()}</span><button class="mcv-offer-accept" data-mcv="accept-counter" data-amount="${o.counterAmount}">Accept</button>`
+              : `<span class="mcv-offer-status is-no">Declined</span>`;
+      return `<div class="mcv-offer"><b>$${o.amount.toLocaleString()}</b>${status}</div>`;
+    })
+    .join("");
+  const actions = listing.isPlayer
+    ? `<button class="mcv-btn mcv-btn-outline" data-mcv="unlist">Unlist</button>`
+    : `<button class="category-open-btn mcv-buy" data-mcv="buy">Buy for $${listing.price.toLocaleString()}</button>
+       <button class="mcv-btn mcv-btn-outline" data-mcv="offer">Make an offer</button>`;
+  const more = market
+    .getCrateListings()
+    .filter((l) => l.crateKey === key && l.id !== listing.id)
+    .sort((a, b) => a.price - b.price);
+  return `
+    <button class="drop-detail-back mcv-back" data-mcv="back">&larr; Market</button>
+    <div class="category-wrap drop-detail-active mcv" data-tier="${key}">
+      <div class="category-card mcv-card">
+        <img class="mcv-box sealed-box" data-box="${key}" alt="">
+        <div class="mcv-tags">
+          ${rating ? `<span class="market-item-fmv fmv-${rating.key}">${rating.label}</span>` : ""}
+          <span class="market-item-size">Sealed</span>
+          <span class="market-item-size">Series ${listing.series}</span>
+          ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
+        </div>
+        <h3 class="mcv-name">${crateName(key)}</h3>
+        <span class="mcv-seller">${listing.isPlayer ? "Your listing" : `Sold by <b>${listing.seller}</b>`} · drop price ${cat.label}</span>
+        <div class="mcv-price">$${listing.price.toLocaleString()}</div>
+        <span class="mcv-ev">A box averages $${Math.round(st.ev).toLocaleString()} right now</span>
+        <div class="mcv-actions">${actions}</div>
+        ${offerRows ? `<div class="mcv-offers"><span class="mcv-offers-label">Your offers</span>${offerRows}</div>` : ""}
+      </div>
+      <div class="prize-dropdown">
+        <div class="odds-panel">${buildOddsPanelHTML(pool.filter((p) => p.left > 0))}</div>
+        <div class="prize-dropdown-header"><span>What&rsquo;s inside</span></div>
+        <div class="prize-list prize-browser">${prizeBrowserHTML(key, pool)}</div>
+      </div>
+    </div>
+    ${
+      more.length
+        ? `<div class="mcv-more"><h3 class="mcv-more-title">More sealed ${crateName(key)}s</h3><div class="market-grid">${more.map(crateListingCardHTML).join("")}</div></div>`
+        : ""
+    }`;
+}
+
+function renderMarketCrate() {
+  const listing = market.getCrateListing(marketCrateListingId);
+  if (!listing) return closeMarketCrate();
+  const top = marketCrateView.querySelector(".prize-tiles")?.scrollTop ?? 0;
+  marketCrateView.innerHTML = marketCrateViewHTML(listing);
+  marketCrateView.querySelector(".prize-tiles").scrollTop = top;
+  marketCrateView.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+}
+
+function openMarketCrate(listingId) {
+  if (!market.getCrateListing(listingId)) return;
+  marketCrateListingId = listingId;
+  screenMarketEl.classList.add("is-crate-view");
+  marketCrateView.hidden = false;
+  marketCrateView.innerHTML = "";
+  renderMarketCrate();
+  window.scrollTo({ top: 0 });
+}
+
+function closeMarketCrate() {
+  if (marketCrateListingId === null) return;
+  marketCrateListingId = null;
+  screenMarketEl.classList.remove("is-crate-view");
+  marketCrateView.hidden = true;
+  marketCrateView.innerHTML = "";
+}
+
+async function offerOnCrate(listing) {
+  const st = supply.status(listing.crateKey);
+  const amount = await promptAmount(
+    "Make an offer",
+    `${crateName(listing.crateKey)}, asking $${listing.price.toLocaleString()}. A box averages $${Math.round(st.ev).toLocaleString()} right now.`,
+    Math.round(listing.price * 0.9)
+  );
+  if (!amount) return;
+  if (player.getWallet().cash < amount) {
+    showToast("Not enough Cash to back that offer. Add funds to continue", ICONS.bell);
+    openAddFundsModal();
+    return;
+  }
+  const offer = { amount, status: "pending" };
+  (crateOffers[listing.id] ??= []).unshift(offer);
+  renderMarketCrate();
+  // The seller answers after a beat, like offers on items.
+  setTimeout(() => {
+    if (!market.getCrateListing(listing.id)) return;
+    Object.assign(offer, market.botDecision(amount, listing.price));
+    if (offer.status === "accepted") {
+      if (buyCrateListing(listing.id, amount)) showToast(`Offer accepted. Sealed crate bought for $${amount.toLocaleString()}`, ICONS.bell);
+      else offer.status = "declined";
+    }
+    if (marketCrateListingId === listing.id) renderMarketCrate();
+  }, 1100);
+}
+
+marketCrateView.addEventListener("click", async (e) => {
+  const other = e.target.closest("[data-crate-listing]");
+  if (other) {
+    playClick();
+    openMarketCrate(other.dataset.crateListing);
+    return;
+  }
+  const act = e.target.closest("[data-mcv]")?.dataset.mcv;
+  if (!act) {
+    // Tabs and the odds boxes switch the tier on show.
+    const tab = e.target.closest("[data-prize-tab]");
+    if (!tab) return;
+    playClick();
+    const listing = market.getCrateListing(marketCrateListingId);
+    prizeTabByKey[listing.crateKey] = tab.dataset.prizeTab;
+    marketCrateView.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(listing.crateKey, supply.livePool(listing.crateKey));
+    return;
+  }
+  playClick();
+  const listing = market.getCrateListing(marketCrateListingId);
+  if (act === "back" || !listing) return closeMarketCrate();
+  if (act === "buy") buyCrateListing(listing.id);
+  else if (act === "offer") await offerOnCrate(listing);
+  else if (act === "accept-counter") {
+    const amount = Number(e.target.closest("[data-amount]").dataset.amount);
+    if (buyCrateListing(listing.id, amount)) showToast(`Sealed crate bought for $${amount.toLocaleString()}`, ICONS.bell);
+  } else if (act === "unlist") {
+    const token = player.getCrates().find((t) => t.listingId === listing.id);
+    if (token) unlistSealedCrate(token.id);
+    else market.removeCrateListing(listing.id);
+    closeMarketCrate();
+    renderMarketGrid();
+  }
+});
+
 // ---- Market: sealed crate listings ----------------------------------------------
 
 function crateListingCardHTML(listing) {
@@ -5800,7 +5946,7 @@ function crateListingCardHTML(listing) {
           ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
         </div>
         <span class="market-item-name">${crateName(key)}</span>
-        <button class="view-inside" data-whats-left="${key}">View what&rsquo;s inside</button>
+        <span class="view-inside">View what&rsquo;s inside</span>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
           <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
@@ -5946,6 +6092,7 @@ function refreshSupplyViews() {
       }
     });
   }
+  if (marketCrateListingId !== null && screenMarketEl.classList.contains("active")) renderMarketCrate();
   if (crateModalCtx) renderCrateModal();
 }
 
