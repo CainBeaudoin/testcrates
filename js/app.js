@@ -5446,122 +5446,73 @@ function grailTileHTML(g) {
 }
 
 // ---- Home: Mystery --------------------------------------------------------
-// One card per line: a ring that fills with the line's mystery charge (the
-// line's crate closest to unlocking), the line's mystery pieces turning
-// over inside it, and every crate in the line underneath with its own
-// charge. A crate that has unlocked is flagged across the top of the card
-// and on its chip; only when every crate in the line is unlocked does the
-// ring show full, with the unlocked piece holding the middle.
+// One ring per line, no card around it: the line's top mystery piece in the
+// middle, and the ring filling with the mystery charge of the line's
+// cheapest drop, which is where it leads. The detail (every crate's charge,
+// the other pieces) lives on the drops themselves.
 const homeMysteryEl = document.getElementById("homeMystery");
-let homeMysteryTimer = null;
+const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
 
+// The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
-  const keys = Object.keys(CATEGORIES).filter((k) => lineOf(k) === line && supply.hasMystery(k));
-  const charging = keys.filter((k) => !supply.readyItem(k)).sort((a, b) => supply.charge(b) - supply.charge(a));
-  return charging[0] ?? keys[0];
+  return Object.keys(CATEGORIES)
+    .filter((k) => lineOf(k) === line && supply.hasMystery(k))
+    .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
 }
 
 function homeMysteryCardHTML(line) {
-  const keys = Object.keys(CATEGORIES).filter((k) => lineOf(k) === line && supply.hasMystery(k));
-  const lead = mysteryLead(line);
-  const ready = supply.readyItem(lead);
-  const items = ready ? [ready] : MYSTERY_BY_LINE[line];
-  const pct = Math.floor(supply.charge(lead) * 100);
-  const top = Math.max(...MYSTERY_BY_LINE[line].map((p) => p.price));
-  const unlocked = keys.filter((k) => supply.readyItem(k));
+  const key = mysteryLead(line);
+  const ready = supply.readyItem(key);
+  const top = [...MYSTERY_BY_LINE[line]].sort((a, b) => b.price - a.price)[0];
+  const item = ready ?? top;
+  const pct = Math.floor(supply.charge(key) * 100);
   return `
-    <div class="hm-card${ready ? " is-ready" : ""}" data-line="${line}" data-unlocked="${unlocked.join(",")}" style="--p:${pct}">
-      ${
-        unlocked.length && !ready
-          ? `<button class="hm-flag" data-mystery-go="${unlocked[0]}">${ICONS.mystery}Unlocked in the ${CATEGORIES[unlocked[0]].label} crate · ${MYSTERY_CHANCE_LABEL} per box</button>`
-          : ""
-      }
-      <div class="hm-ring-wrap">
+    <button class="hm-card${ready ? " is-ready" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
+      <span class="hm-ring-wrap">
         <svg class="hm-ring" viewBox="0 0 120 120" aria-hidden="true">
-          <defs><linearGradient id="hmGrad-${line}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6d27a"/><stop offset="1" stop-color="#b678f2"/></linearGradient></defs>
+          <defs><linearGradient id="hmGrad-${line}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="1" stop-color="#b678f2"/></linearGradient></defs>
           <circle class="hm-ring-track" cx="60" cy="60" r="54"/>
           <circle class="hm-ring-fill" cx="60" cy="60" r="54" pathLength="100" stroke="url(#hmGrad-${line})"/>
         </svg>
         <span class="hm-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
-        <div class="hm-stage">${items.map((p, i) => `<img class="hm-item${i === 0 ? " is-on" : ""}" src="${p.image}" alt="" data-name="${p.name.replace(/"/g, "&quot;")}" data-price="${p.price}">`).join("")}</div>
-        <span class="hm-badge" data-lead="${lead}">${ready ? `Unlocked · ${MYSTERY_CHANCE_LABEL} per box` : `${CATEGORIES[lead].label} crate · ${pct}%`}</span>
-      </div>
-      <div class="hm-info">
-        <span class="hm-line">${CATEGORIES[line].badge} mystery</span>
-        <b class="hm-name">${items[0].name}</b>
-        <span class="hm-value">$${items[0].price.toLocaleString()}${ready ? "" : ` <small>· up to $${top.toLocaleString()}</small>`}</span>
-      </div>
-      <div class="hm-crates">${keys
-        .map((k) => {
-          const r = supply.readyItem(k);
-          const c = Math.floor(supply.charge(k) * 100);
-          return `<button class="hm-chip${r ? " is-ready" : ""}" data-mystery-go="${k}" style="--c:${c}"><span>${CATEGORIES[k].label}</span><b>${r ? "Unlocked" : `${c}%`}</b><i></i></button>`;
-        })
-        .join("")}</div>
-    </div>`;
+        <span class="hm-stage"><img class="hm-item" src="${item.image}" alt=""></span>
+        <span class="hm-badge">${ready ? `Unlocked · ${MYSTERY_CHANCE_LABEL}` : `${pct}%`}</span>
+      </span>
+      <span class="hm-line">${CATEGORIES[key].badge}</span>
+      <b class="hm-value">$${item.price.toLocaleString()}</b>
+    </button>`;
 }
 
 function renderHomeMystery() {
   if (!homeMysteryEl) return;
-  homeMysteryEl.innerHTML = ["sneakers", "streetwear", "collectibles"].map(homeMysteryCardHTML).join("");
-  document.getElementById("homeMysterySub").textContent = `The ultimate grails. No odds until a crate's bar fills, then one unlocks and every box has a ${MYSTERY_CHANCE_LABEL} shot at it.`;
-  // The pieces turn over in each ring, a beat apart.
-  clearInterval(homeMysteryTimer);
-  homeMysteryTimer = setInterval(() => {
-    if (!homeMysteryEl.isConnected || !document.getElementById("screen-home").classList.contains("active")) return;
-    homeMysteryEl.querySelectorAll(".hm-card:not(.is-ready)").forEach((card, n) => {
-      setTimeout(() => {
-        const imgs = [...card.querySelectorAll(".hm-item")];
-        const i = imgs.findIndex((img) => img.classList.contains("is-on"));
-        const next = imgs[(i + 1) % imgs.length];
-        imgs[i]?.classList.remove("is-on");
-        next.classList.add("is-on");
-        swapText(card.querySelector(".hm-name"), next.dataset.name);
-        const top = Math.max(...imgs.map((img) => Number(img.dataset.price)));
-        card.querySelector(".hm-value").innerHTML = `$${Number(next.dataset.price).toLocaleString()} <small>· up to $${top.toLocaleString()}</small>`;
-      }, n * 350);
-    });
-  }, 3200);
+  homeMysteryEl.innerHTML = HOME_MYSTERY_LINES.map(homeMysteryCardHTML).join("");
+  document.getElementById("homeMysterySub").textContent = `The ultimate grails. No odds until a drop's bar fills, then one unlocks and every box has a ${MYSTERY_CHANCE_LABEL} shot at it.`;
 }
 
-// Live: rings and chips follow the charge; a card whose lead crate has
-// unlocked (or been hit) is drawn again.
+// Live: each ring follows its drop's charge, and is drawn again when the
+// drop unlocks (or its unlocked piece is pulled).
 function refreshHomeMystery() {
   if (!homeMysteryEl?.isConnected || !document.getElementById("screen-home").classList.contains("active")) return;
   homeMysteryEl.querySelectorAll(".hm-card").forEach((card) => {
-    const line = card.dataset.line;
-    const lead = mysteryLead(line);
-    const ready = !!supply.readyItem(lead);
-    const unlocked = Object.keys(CATEGORIES)
-      .filter((k) => lineOf(k) === line && supply.readyItem(k))
-      .join(",");
-    // Which crate leads, or which have unlocked, changed: draw it again.
-    if (ready !== card.classList.contains("is-ready") || unlocked !== card.dataset.unlocked || card.querySelector(".hm-badge").dataset.lead !== lead) {
-      card.outerHTML = homeMysteryCardHTML(line);
+    const key = card.dataset.key;
+    const ready = !!supply.readyItem(key);
+    if (ready !== card.classList.contains("is-ready")) {
+      card.outerHTML = homeMysteryCardHTML(card.dataset.line);
       return;
     }
-    const pct = Math.floor(supply.charge(lead) * 100);
+    if (ready) return;
+    const pct = Math.floor(supply.charge(key) * 100);
     card.style.setProperty("--p", pct);
-    if (!ready) card.querySelector(".hm-badge").textContent = `${CATEGORIES[lead].label} crate · ${pct}%`;
-    card.querySelectorAll(".hm-chip").forEach((chip) => {
-      const k = chip.dataset.mysteryGo;
-      const r = !!supply.readyItem(k);
-      const c = Math.floor(supply.charge(k) * 100);
-      chip.style.setProperty("--c", c);
-      chip.classList.toggle("is-ready", r);
-      chip.querySelector("b").textContent = r ? "Unlocked" : `${c}%`;
-    });
+    card.querySelector(".hm-badge").textContent = `${pct}%`;
   });
 }
 
 homeMysteryEl?.addEventListener("click", (e) => {
-  const chip = e.target.closest("[data-mystery-go]");
   const card = e.target.closest(".hm-card");
-  if (!chip && !card) return;
+  if (!card) return;
   playClick();
-  const key = chip ? chip.dataset.mysteryGo : mysteryLead(card.dataset.line);
-  prizeTabByKey[key] = "mystery";
-  homeSeeCrate(key);
+  prizeTabByKey[card.dataset.key] = "mystery";
+  homeSeeCrate(card.dataset.key);
 });
 
 function renderHomeGrails() {
