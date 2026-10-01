@@ -8889,3 +8889,78 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @media (max-width: 640px) {
   .home-mystery-block { padding: 24px 16px 26px; border-radius: var(--r-xl, 24px); }
 }
+
+/* --- Mystery, rearranged ------------------------------------------------------
+   The dark band runs the full width of the window (its content stays on
+   the page's column); the lock plate is a rounded rectangle filling the
+   gap at the bottom of each dial, so the charge line runs into it; and in
+   the demo the bar sits beside Open, the opened boxes line up under it,
+   and the freed height goes to a bigger prize. */
+.home-mystery-block {
+  border-radius: 0;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+  padding: 56px 0 60px;
+}
+.home-mystery-block::before { left: 50%; right: auto; width: 100vw; translate: -50% 0; }
+/* The band itself, behind the stars. */
+.home-mystery-block::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: -2;
+  width: 100vw;
+  translate: -50% 0;
+  background:
+    radial-gradient(45% 70% at 80% 0%, rgba(182, 120, 242, 0.32), transparent 70%),
+    radial-gradient(40% 65% at 15% 100%, rgba(242, 184, 75, 0.16), transparent 70%),
+    linear-gradient(180deg, #17111f, #100c16);
+  pointer-events: none;
+}
+/* The band is wider than the page column: clip it at the window's edge —
+   on the full-width shell, not the screen (which is only the column wide)
+   — with clip, not hidden, so nothing becomes a scroll container. */
+.shell-main { overflow-x: clip; }
+.home-mystery-block + .home-block { margin-top: 56px; }
+
+/* Lock plate: fills the gap 58..142 of the dial's 200, less a breath
+   each side; corners to match the dial. */
+.hm-badge {
+  left: 31%;
+  width: 38%;
+  translate: 0 -50%;
+  justify-content: center;
+  padding: 5px 4px;
+  border-radius: 9px;
+}
+
+/* Demo: bar beside Open, boxes under it, more room for the prize. */
+.hm-demo-top { gap: 14px; }
+.hm-demo-top .hm-demo-bar { flex: 1; min-width: 0; }
+.hm-demo-row { display: flex; min-height: 30px; margin-top: -4px; padding-left: 4px; }
+.hm-demo-box { height: 270px; }
+.hm-demo-prize { width: 240px; height: 180px; margin-left: -120px; bottom: 96px; }
+.hm-demo-glow { width: 320px; height: 280px; margin-left: -160px; bottom: 50px; }
+@keyframes hmReveal { from { opacity: 0; scale: 0.3; translate: 0 50px; } to { opacity: 1; scale: 1; translate: 0 -40px; } }
+.hm-demo[data-phase="out"] .hm-demo-prize { translate: 0 -40px; }
+@media (max-width: 640px) {
+  .home-mystery-block { padding: 40px 0 44px; }
+  .hm-badge { left: 27%; width: 46%; padding: 3px 2px; border-radius: 7px; }
+  .hm-demo-top .hm-demo-bar-label { display: none; }
+  .hm-demo-box { height: 230px; }
+  .hm-demo-prize { width: 200px; height: 150px; margin-left: -100px; bottom: 80px; }
+}
+
+/* Square, not squashed: the dial is drawn on a 200 x 200 square and the
+   tile inside it is square too (30..170 each way). */
+.hm-dial { aspect-ratio: 1; }
+.hm-disc { left: 15%; top: 15%; width: 70%; height: 70%; }
+.hm-badge { top: 93%; }
+@media (max-width: 640px) {
+  /* "Unlocked ->" needs the plate's whole width on a phone. */
+  .hm-card.is-ready .hm-badge svg { display: none; }
+  .hm-card.is-ready .hm-badge { gap: 2px; font-size: 0.54rem; }
+}

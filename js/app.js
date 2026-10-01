@@ -5460,12 +5460,12 @@ function grailTileHTML(g) {
 // (locked with the % while it charges, open once it's unlocked).
 const homeMysteryEl = document.getElementById("homeMystery");
 const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
-// The dial: a rounded square (14..186 by 12..176, corners of 32) — the
+// The dial: a rounded square (14..186 each way, corners of 32) — the
 // same soft-cornered shape as the site's buttons and cards. The charge runs
-// all the way round it from the middle of the bottom edge, leaving a gap
-// there where the lock plate sits.
+// all the way round it from the bottom edge, leaving a gap there (58..142)
+// that the lock plate fills, so the line runs into it.
 const HM_DIAL_ARC =
-  "M 76 176 L 46 176 A 32 32 0 0 1 14 144 L 14 44 A 32 32 0 0 1 46 12 L 154 12 A 32 32 0 0 1 186 44 L 186 144 A 32 32 0 0 1 154 176 L 124 176";
+  "M 58 186 L 46 186 A 32 32 0 0 1 14 154 L 14 46 A 32 32 0 0 1 46 14 L 154 14 A 32 32 0 0 1 186 46 L 186 154 A 32 32 0 0 1 154 186 L 142 186";
 
 // The line's cheapest crate with a mystery bar.
 function mysteryLead(line) {
@@ -5487,7 +5487,7 @@ function homeMysteryCardHTML(line) {
   return `
     <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
       <span class="hm-dial">
-        <svg class="hm-dial-svg" viewBox="0 0 200 190" aria-hidden="true">
+        <svg class="hm-dial-svg" viewBox="0 0 200 200" aria-hidden="true">
           <defs><linearGradient id="hmStroke-${line}" x1="0" y1="1" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
           <path class="hm-ring-track" d="${HM_DIAL_ARC}"/>
           <path class="hm-ring-fill" d="${HM_DIAL_ARC}" pathLength="100" stroke="url(#hmStroke-${line})"/>
@@ -5506,9 +5506,9 @@ function homeMysteryDemoHTML() {
       <div class="hm-demo-top">
         <span class="hm-demo-open">Open<i class="hm-demo-plus">+1</i></span>
         <span class="hm-demo-cursor"></span>
-        <span class="hm-demo-row"></span>
+        <div class="hm-demo-bar"><span class="hm-demo-bar-label">${ICONS.mystery}Mystery</span><span class="hm-demo-bar-track"><i></i></span><b class="hm-demo-bar-pct">0%</b></div>
       </div>
-      <div class="hm-demo-bar"><span class="hm-demo-bar-label">${ICONS.mystery}Mystery</span><span class="hm-demo-bar-track"><i></i></span><b class="hm-demo-bar-pct">0%</b></div>
+      <span class="hm-demo-row"></span>
       <div class="hm-demo-box">
         <span class="hm-demo-glow"></span>
         <span class="hm-demo-drop"><i>?</i></span>
