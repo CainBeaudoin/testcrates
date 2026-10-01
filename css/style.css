@@ -8830,3 +8830,65 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 @media (max-width: 640px) {
   .hm-demo-canvas { width: 250px; height: 210px; bottom: -24px; }
 }
+
+/* --- Home: Mystery in its own night sky -------------------------------------
+   The whole section sits on a dark panel — deep violet-black, a scatter of
+   stars, a glow rising from below — so it breaks away from the rest of the
+   page. Inside it the page's own colour tokens are swapped for light-on-
+   dark ones, so the heading, dials, bar and caption all follow without
+   rules of their own. */
+.home-mystery-block {
+  --text: #f6f1fb;
+  --text-dim: rgba(246, 241, 251, 0.62);
+  --hairline: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.3);
+  --surface-1: #251c35;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 34px 40px 40px;
+  border-radius: var(--r-2xl, 28px);
+  background:
+    radial-gradient(70% 60% at 78% 0%, rgba(182, 120, 242, 0.32), transparent 70%),
+    radial-gradient(60% 55% at 12% 100%, rgba(242, 184, 75, 0.16), transparent 70%),
+    linear-gradient(180deg, #17111f, #100c16);
+  color: var(--text);
+  box-shadow: 0 30px 60px -30px rgba(40, 20, 70, 0.55);
+}
+/* Stars. */
+.home-mystery-block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    radial-gradient(1.2px 1.2px at 8% 18%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 22% 62%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 35% 12%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 47% 82%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1.2px 1.2px at 58% 30%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 69% 70%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1.6px 1.6px at 81% 16%, rgba(246, 210, 122, 0.7), transparent),
+    radial-gradient(1px 1px at 90% 54%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1.3px 1.3px at 96% 88%, rgba(201, 156, 247, 0.65), transparent),
+    radial-gradient(1px 1px at 4% 90%, rgba(255, 255, 255, 0.4), transparent);
+  animation: hmTwinkle 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes hmTwinkle { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .home-mystery-block::before { animation: none; } }
+.home-mystery-block .home-block-head { margin-bottom: 18px; }
+/* Brighter golds and violets for text on the dark. */
+.home-mystery-block .hm-value { background-image: linear-gradient(90deg, #f6d27a, #d3a6ff); }
+.home-mystery-block .hm-demo-caption em { background-image: linear-gradient(90deg, #f6d27a, #e7a3e8, #c69bff); }
+.home-mystery-block .hm-demo-bar-label { color: #d3a6ff; }
+.home-mystery-block .hm-demo-cursor { background: #fff; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.home-mystery-block .hm-ring-track { stroke: rgba(255, 255, 255, 0.12); }
+.home-mystery-block .hm-dial-base { stroke: rgba(255, 255, 255, 0.22); }
+.home-mystery-block .hm-demo-bar-track { background: rgba(255, 255, 255, 0.1); }
+.home-mystery-block .hm-disc { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px -14px rgba(182, 120, 242, 0.55); }
+.home-mystery-block .hm-demo-crate,
+.home-mystery-block .hm-demo-mini { filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)); }
+@media (max-width: 640px) {
+  .home-mystery-block { padding: 24px 16px 26px; border-radius: var(--r-xl, 24px); }
+}
