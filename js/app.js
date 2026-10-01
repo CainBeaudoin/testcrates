@@ -37,6 +37,21 @@ function upperBand(pool, minPrice) {
   });
 }
 
+// Mystery items: pieces far above any crate's normal range — the three
+// most valuable in the catalogue, $7k to $11k. They have no odds. Each
+// crate's mystery charge fills with every box opened, and the opening that
+// fills it releases one (see supply.js). They're held out of every odds
+// table, including the $1,000 Sneakers crate they came from, so no listed
+// percentage ever covers them.
+const MYSTERY_ITEMS = [...SNEAKER_1000_POOL]
+  .sort((a, b) => b.price - a.price)
+  .slice(0, 3)
+  .map((p) => ({ ...p, rarity: "legendary" }));
+const MYSTERY_NAMES = new Set(MYSTERY_ITEMS.map((p) => p.name));
+// The charge to fill, in money opened through the crate: the mystery
+// items' average value. Shown only as a share of full, never as money.
+const MYSTERY_TARGET = Math.round(MYSTERY_ITEMS.reduce((sum, p) => sum + p.price, 0) / MYSTERY_ITEMS.length);
+
 const CATEGORIES = {
   stocks: {
     label: "$25",
@@ -85,7 +100,7 @@ const CATEGORIES = {
     badge: "Sneakers",
     line: "sneakers",
     price: 1000,
-    pool: SNEAKER_1000_POOL,
+    pool: SNEAKER_1000_POOL.filter((p) => !MYSTERY_NAMES.has(p.name)),
     poweredBy: "ODTO",
   },
   streetwear250: {
@@ -183,15 +198,24 @@ Object.entries(CATEGORIES).forEach(([key, cat]) => {
   registerTierStickers(key, () => Promise.all(picks.map((p) => cutoutImage(p.image))));
 });
 
-// Every crate sells in series of supply.SERIES_SIZE boxes, each series a
-// fixed list of prizes (see supply.js). A first visit finds them part-way
-// through: two already sold out, so the market has sealed boxes trading
-// above their drop price from the start; the rest somewhere in their run.
+// Every crate sells in series of supply.SERIES_SIZE boxes, each opening at
+// the crate's published odds (see supply.js). A first visit finds them
+// part-way through: two already sold out, so the market has sealed boxes
+// trading from the start; the rest somewhere in their run. Every ODTO
+// crate has the mystery charge; Stocks doesn't.
 const SEED_SUPPLY = {
   sneakers1000: { sold: 1, opened: 0.62 },
   collectibles500: { sold: 1, opened: 0.74 },
 };
-supply.registerCrates(CATEGORIES, (key) => SEED_SUPPLY[key] ?? null);
+supply.registerCrates(
+  CATEGORIES,
+  (key) => SEED_SUPPLY[key] ?? null,
+  Object.fromEntries(
+    Object.entries(CATEGORIES)
+      .filter(([, cat]) => !cat.openOnBuy)
+      .map(([key]) => [key, { items: MYSTERY_ITEMS, target: MYSTERY_TARGET }])
+  )
+);
 // The player's sealed crates count against their series; anything else
 // held belongs to the crowd. A token left over from a series that has
 // since been replaced opens against the current one.
@@ -337,6 +361,7 @@ let batchRemaining = 0; // still to auto-chain after this one
 let roundTokenQueue = [];
 let currentTokenId = null;
 let boxPrizes = [];
+let mysteryRound = false; // this round filled the mystery bar: every box holds the mystery item
 let selectedIndex = null;
 let roundLocked = false;
 // True from the moment a crate is paid for until a box is picked. The Back
@@ -1128,6 +1153,8 @@ function tickSimulatedPulls() {
   if (!pull) return;
   simulatedPulls.unshift(pull);
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
+  // Someone else filled a mystery bar: worth saying, wherever you are.
+  if (pull.mystery) showToast(`${pull.username} filled the ${crateName(pull.tierKey)} mystery bar and pulled ${pull.name} ($${pull.price.toLocaleString()})`, ICONS.mystery);
   renderRecentPulls(); // the dock is on every screen, not just Drops
   // A good pull chimes as it shakes in (Rare and up). Not in a hidden tab,
   // and not over your own opening, where the reveal has the stage.
@@ -1644,43 +1671,79 @@ pullDetailCloseBtn.addEventListener("click", () => {
 // ---- Category screen -------------------------------------------------
 
 // A crate page's "What's inside": one tab per tier, best first, and that
-// tier's prizes as tiles — picture, name, price and how many are left — so
-// you look through a tier at a time rather than scrolling one long list.
-// The open tab is remembered per crate, so live refreshes and coming back
-// keep your place; it starts on the best tier that still has stock.
+// tier's prizes as tiles — picture, name, price and each one's own odds —
+// so you look through a tier at a time rather than scrolling one long
+// list. A Mystery tab comes first: the pieces with no odds, released when
+// the crate's mystery bar fills. The open tab is remembered per crate.
 const prizeTabByKey = {};
 
 function prizeTabOf(key, pool) {
   const tiers = DISPLAY_RARITY_ORDER.filter((r) => pool.some((p) => p.rarity === r));
-  if (tiers.includes(prizeTabByKey[key])) return prizeTabByKey[key];
-  return tiers.find((r) => pool.some((p) => p.rarity === r && p.left > 0)) ?? tiers[0];
+  const all = supply.hasMystery(key) ? ["mystery", ...tiers] : tiers;
+  return all.includes(prizeTabByKey[key]) ? prizeTabByKey[key] : tiers[0];
 }
 
 function prizeBrowserHTML(key, pool) {
   const tab = prizeTabOf(key, pool);
   const tiers = DISPLAY_RARITY_ORDER.filter((r) => pool.some((p) => p.rarity === r));
-  const tabs = tiers
-    .map((r) => {
+  const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+  const tabs = [
+    supply.hasMystery(key)
+      ? `<button class="prize-tab is-mystery${tab === "mystery" ? " active" : ""}" data-prize-tab="mystery" role="tab" aria-selected="${tab === "mystery"}">${ICONS.mystery}Mystery</button>`
+      : "",
+    ...tiers.map((r) => {
       const meta = RARITY_META[r];
-      const left = pool.reduce((n, p) => n + (p.rarity === r ? p.left : 0), 0);
-      return `<button class="prize-tab${r === tab ? " active" : ""}${left ? "" : " is-out"}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}<span class="prize-tab-n">${left}</span></button>`;
-    })
-    .join("");
-  // One tile per copy: what's still in the crate first, then the copies
-  // already pulled this series, faded, so the tab's count and its tiles
-  // agree and you can see how far the tier has been dug into.
-  const copies = supply.seriesCopies(key);
-  const items = pool.filter((p) => p.rarity === tab).sort((a, b) => b.price - a.price);
-  const tile = (p, gone) => `
-        <div class="prize-tile${gone ? " is-gone" : ""}" style="--rarity-color:${RARITY_META[p.rarity].color}">
+      return `<button class="prize-tab${r === tab ? " active" : ""}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}</button>`;
+    }),
+  ].join("");
+  if (tab === "mystery") {
+    const tiles = supply
+      .mysteryItems(key)
+      .map(
+        (p) => `
+        <div class="prize-tile is-mystery">
           <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
           <span class="prize-tile-name">${p.name}</span>
-          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b>${gone ? "<span>Gone</span>" : ""}</span>
-        </div>`;
-  const tiles =
-    items.flatMap((p) => Array.from({ length: p.left }, () => tile(p, false))).join("") +
-    items.flatMap((p) => Array.from({ length: Math.max(0, (copies[p.name] ?? 0) - p.left) }, () => tile(p, true))).join("");
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>No odds</span></span>
+        </div>`
+      )
+      .join("");
+    return `<div class="prize-tabs" role="tablist">${tabs}</div>
+      <div class="prize-tiles">
+        <p class="mystery-note">These don&rsquo;t have odds. One is released each time this crate&rsquo;s mystery bar fills, to whoever opens the box that fills it.</p>
+        ${tiles}
+      </div>`;
+  }
+  const tiles = pool
+    .filter((p) => p.rarity === tab)
+    .sort((a, b) => b.price - a.price)
+    .map(
+      (p) => `
+        <div class="prize-tile" style="--rarity-color:${RARITY_META[p.rarity].color}">
+          <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
+          <span class="prize-tile-name">${p.name}</span>
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>${formatOdds((p.weight / totalWeight) * 100)}</span></span>
+        </div>`
+    )
+    .join("");
   return `<div class="prize-tabs" role="tablist">${tabs}</div><div class="prize-tiles">${tiles}</div>`;
+}
+
+function formatOdds(pct) {
+  return `${pct >= 10 ? Math.round(pct) : pct >= 1 ? Math.round(pct * 10) / 10 : Math.round(pct * 100) / 100}%`;
+}
+
+// A crate's mystery bar: how full its charge is, as a share only. On the
+// crate cards, the crate's page and in Account; data-mystery lets
+// refreshSupplyViews move it as boxes open.
+function mysteryBarHTML(key, { compact = false } = {}) {
+  if (!supply.hasMystery(key)) return "";
+  const pct = Math.floor(supply.charge(key) * 100);
+  return `
+    <div class="mystery-bar${compact ? " is-compact" : ""}${pct >= 90 ? " is-hot" : ""}" data-mystery="${key}" title="Fills with every box opened. A mystery item releases when it's full">
+      <div class="mystery-bar-head"><span class="mystery-bar-label">${ICONS.mystery}Mystery</span><b class="mystery-bar-pct">${pct}%</b></div>
+      <div class="mystery-bar-track"><i class="mystery-bar-fill" style="width:${pct}%"></i></div>
+    </div>`;
 }
 
 // Expected value + odds-by-rarity for one tier's pool. Price ranges are
@@ -1728,31 +1791,23 @@ function buildOddsPanelHTML(pool) {
     .join("");
 
   return `
-    <div class="odds-live-header">Live Odds</div>
+    <div class="odds-live-header">Odds</div>
     <div class="odds-grid">${bucketsHTML}</div>
   `;
 }
 
-// What's inside a crate, on its card: the pieces still in it, dealt into
-// small stacks by tier — the Grails in one, the Epics in the next, then the
-// Rares — each piece edged in its tier's colour, which names the tier on its
-// own (the tooltip spells it out). No counts and no single
-// tier singled out: an Epic or a Rare is a win too, and a fan of the real
-// remaining pieces says what a box can still give without anyone reading
-// numbers. A tier that's run dry drops out and the next one down steps in,
-// so there are always three stacks while the crate has three tiers left.
-// The full breakdown is one click away (openCrateModal). data-supply lets
-// refreshSupplyViews redraw it in place as the crowd opens.
+// What's inside a crate, on its card: its best pieces dealt into small
+// stacks by tier — the Grails in one, the Epics in the next, then the
+// Rares — each piece edged in its tier's colour, which names the tier on
+// its own (the tooltip spells it out). Clicking it opens the crate's page,
+// with the odds and every prize (see the delegated handler below).
 function buildSupplyHTML(tierKey) {
   return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate: odds and prizes">${whatsLeftInner(tierKey)}</button>`;
 }
 const WL_STACKS = 3; // tiers shown
 const WL_DEPTH = 3; // pieces per stack
 function whatsLeftInner(tierKey) {
-  const live = supply
-    .livePool(tierKey)
-    .filter((p) => p.left > 0)
-    .sort((a, b) => b.price - a.price);
+  const live = [...supply.pool(tierKey)].sort((a, b) => b.price - a.price);
   const stacks = Object.keys(RARITY_META)
     .sort((a, b) => rankOf(b) - rankOf(a))
     .map((rarity) => ({ rarity, items: live.filter((p) => p.rarity === rarity) }))
@@ -1790,8 +1845,8 @@ function openTierDetail(wrap) {
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
   // Its odds and prizes as of now (only the open page is kept live).
-  const pool = supply.livePool(wrap.dataset.tier);
-  wrap.querySelector(".odds-panel").innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
+  const pool = supply.pool(wrap.dataset.tier);
+  wrap.querySelector(".odds-panel").innerHTML = buildOddsPanelHTML(pool);
   wrap.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(wrap.dataset.tier, pool);
   // The corner dock narrows to this tier's pulls while its page is open.
   recentPullsTierKey = wrap.dataset.tier;
@@ -1918,6 +1973,7 @@ function renderCategories() {
       </div>
       ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : `<span class="category-powered-by-spacer"></span>`}
       ${buildSupplyHTML(key)}
+      ${mysteryBarHTML(key, { compact: true })}
       <div class="category-qty">
         <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
         <span class="qty-value">${batchQuantities[key]}</span>
@@ -1975,7 +2031,7 @@ function renderCategories() {
         <span>What&rsquo;s inside</span>
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
-      <div class="odds-panel hidden">${buildOddsPanelHTML(supply.livePool(key).filter((p) => p.left > 0))}</div>
+      <div class="odds-panel hidden">${buildOddsPanelHTML(supply.pool(key))}</div>
       <label for="prizeListToggleAll" class="prize-list-toggle-label">View all prizes</label>
       <div class="prize-list prize-browser"></div>
     `;
@@ -1985,7 +2041,7 @@ function renderCategories() {
       if (!tab || !wrap.classList.contains("drop-detail-active")) return;
       playClick();
       prizeTabByKey[key] = tab.dataset.prizeTab;
-      prizePanel.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.livePool(key));
+      prizePanel.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.pool(key));
     });
     prizePanel.querySelector(".odds-toggle-btn").addEventListener("click", () => {
       playClick();
@@ -2314,16 +2370,12 @@ async function startRound(key, currency) {
   liveActivity.startOpening({ crate: `${cat.badge} Crate` });
 
   currentTokenId = roundTokenQueue.shift() ?? null;
-  // Three draws from what's left in this crate's series. The picked box
-  // keeps its prize; the other two go back when the round settles. No
-  // guaranteed-Rare top-up and no duplicate re-roll: with a fixed list,
-  // either would change what's left for every other holder behind their
-  // back. The odds are the list.
-  boxPrizes = supply.drawRound(key);
-  if (!boxPrizes) {
-    showToast("This crate's series has nothing left to draw", ICONS.bell);
-    return;
-  }
+  // Three draws at the crate's published odds; the picked box is the
+  // prize. If this opening fills the crate's mystery bar, it's a mystery
+  // round instead: every box holds the released mystery item.
+  const round = supply.drawRound(key);
+  boxPrizes = round.prizes;
+  mysteryRound = round.mystery;
   // Fetch the three photos now, while the reel is still spinning, so each
   // is ready the moment its lid opens.
   boxPrizes.forEach((prize) => (new Image().src = prize.image));
@@ -2358,7 +2410,9 @@ async function startRound(key, currency) {
   reel.classList.add("hidden");
   boxRow.classList.remove("hidden");
   helperText.classList.remove("hidden");
-  helperText.textContent = `Tap a ${boxNounFor(currentCategoryKey).toLowerCase()} to open it`;
+  helperText.textContent = mysteryRound
+    ? "The mystery bar is full. Every box holds a mystery item: pick any"
+    : `Tap a ${boxNounFor(currentCategoryKey).toLowerCase()} to open it`;
 
   await mountViewers();
 }
@@ -2376,9 +2430,8 @@ function onPick(index) {
   });
 
   const finalPrize = boxPrizes[index];
-  // The box is open: its sealed crate is spent, its prize leaves the
-  // series for good, and the two unpicked go back for whoever's next.
-  supply.settleRound(currentCategoryKey, index);
+  // The box is open: its sealed crate is spent.
+  supply.settleRound(currentCategoryKey);
   if (currentTokenId) player.removeCrate(currentTokenId);
   currentTokenId = null;
   refreshSupplyViews();
@@ -3655,10 +3708,6 @@ function renderHeaderStats() {
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you
 // could have won) — Account/Marketplace deliberately leave it off.
 function inventoryItemHTML(item) {
-  const archived = player.isArchived(item);
-  const daysLeft = player.daysUntilArchival(item);
-  const archivalClass = archived ? "archived" : daysLeft <= 30 ? "soon" : "";
-  const archivalText = archived ? "Archived: cash out only" : `${daysLeft}d to archival`;
   const cashOutToday = player.cashOutValue(item);
   const listing = item.listingId ? market.getListing(item.listingId) : null;
   const isListed = listing && listing.price != null;
@@ -3685,14 +3734,13 @@ function inventoryItemHTML(item) {
       <div class="market-item-body">
         ${sizeHTML ? `<div class="market-item-tags">${sizeHTML}</div>` : ""}
         <span class="market-item-name">${item.name}</span>
-        <span class="item-archival ${archivalClass}">${archivalText}</span>
         <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
         <div class="market-item-divider"></div>
         <div class="item-actions">
           <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
-          <button class="item-action-btn" data-item-action="ship" data-item="${item.id}" ${archived ? "disabled" : ""}>Ship</button>
-          <button class="item-action-btn" data-item-action="list" data-item="${item.id}" ${archived ? "disabled" : ""}>${isListed ? "Reprice" : "List"}</button>
-          <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" ${archived ? "disabled" : ""} title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
+          <button class="item-action-btn" data-item-action="ship" data-item="${item.id}">Ship</button>
+          <button class="item-action-btn" data-item-action="list" data-item="${item.id}">${isListed ? "Reprice" : "List"}</button>
+          <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
         </div>
       </div>
     </div>`;
@@ -5208,6 +5256,7 @@ function homeCrateCardHTML(key, cat) {
           <span class="crate-brand" title="Powered by ${cat.poweredBy ?? "Chosen"}">${brandMarkHTML(cat.poweredBy ?? "Chosen")}</span>
           <div class="home-crate-stage"><canvas class="home-crate-box"></canvas></div>
           <button class="whats-left whats-left-home" data-supply="${key}" data-whats-left="${key}" aria-label="See what's inside this crate">${whatsLeftInner(key)}</button>
+          ${mysteryBarHTML(key, { compact: true })}
         </div>
         <div class="crate-body">
           <div class="crate-title">
@@ -5601,49 +5650,56 @@ function renderCrateModal() {
   document.getElementById("crateModalStats").innerHTML = [
     [`${st.unopened}<small>/${st.total}</small>`, "boxes still sealed"],
     [st.soldOut ? "Sold out" : `${st.unsold}`, st.soldOut ? `the ${cat.label} drop` : `left at ${cat.label}`],
-    [`${st.byRarity.legendary + st.byRarity.epic + st.byRarity.rare}`, "Rare or better left"],
-    [`$${Math.round(st.ev).toLocaleString()}`, "average box value now"],
+    [`$${Math.round(st.ev).toLocaleString()}`, "average box value"],
+    supply.hasMystery(key) ? [`${Math.floor(supply.charge(key) * 100)}%`, "mystery bar"] : null,
   ]
+    .filter(Boolean)
     .map(([big, small]) => `<div class="crate-stat"><b>${big}</b><span>${small}</span></div>`)
     .join("");
 
-  document.getElementById("crateModalOdds").innerHTML = RARITY_TOP_DOWN.map((r) => {
+  // The published odds, per tier. They don't move as boxes open.
+  const pool = supply.pool(key);
+  const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+  const tierWeight = (r) => pool.reduce((sum, p) => sum + (p.rarity === r ? p.weight : 0), 0);
+  document.getElementById("crateModalOdds").innerHTML = RARITY_TOP_DOWN.filter((r) => tierWeight(r)).map((r) => {
     const meta = RARITY_META[r];
-    const n = st.byRarity[r];
-    return `<div class="crate-odds-cell${n ? "" : " is-gone"}" style="--rarity-color:${meta.color}">
+    return `<div class="crate-odds-cell" style="--rarity-color:${meta.color}">
         <span class="crate-odds-label">${meta.label}</span>
-        <b>${pct(n, st.units)}</b>
-        <span class="crate-odds-left">${n} left</span>
+        <b>${formatOdds((tierWeight(r) / totalWeight) * 100)}</b>
       </div>`;
   }).join("");
 
-  // Every prize in the series, grouped Grail down, with how many are left —
-  // gone ones stay listed, faded, so you can see what's been pulled.
-  const live = supply.livePool(key);
+  // Every prize, grouped Grail down, each with its own odds; the mystery
+  // items first, with none.
   const list = document.getElementById("crateModalList");
   const scrollTop = list.scrollTop;
-  list.innerHTML = RARITY_TOP_DOWN.map((r) => {
-    const items = live.filter((p) => p.rarity === r).sort((a, b) => b.left - a.left || b.price - a.price);
-    if (!items.length) return "";
-    const meta = RARITY_META[r];
-    return `
+  const prizeCell = (p, foot) => `
+          <div class="crate-prize" title="${p.name}">
+            <span class="crate-prize-media"><img src="${p.image}" alt="" loading="lazy"></span>
+            <span class="crate-prize-name">${p.name}</span>
+            <span class="crate-prize-foot"><b>$${p.price.toLocaleString()}</b><span>${foot}</span></span>
+          </div>`;
+  const mysteryHTML = supply.hasMystery(key)
+    ? `<div class="crate-tier">
+        <div class="crate-tier-head is-mystery"><span>Mystery</span><span>No odds · released when the bar fills</span></div>
+        <div class="crate-tier-items">${supply.mysteryItems(key).map((p) => prizeCell(p, "No odds")).join("")}</div>
+      </div>`
+    : "";
+  list.innerHTML =
+    mysteryHTML +
+    RARITY_TOP_DOWN.map((r) => {
+      const items = pool.filter((p) => p.rarity === r).sort((a, b) => b.price - a.price);
+      if (!items.length) return "";
+      const meta = RARITY_META[r];
+      return `
       <div class="crate-tier">
         <div class="crate-tier-head" style="--rarity-color:${meta.color}">
           <span>${meta.label}</span>
-          <span>${plural(st.byRarity[r], "left", "left")}</span>
+          <span>${formatOdds((tierWeight(r) / totalWeight) * 100)}</span>
         </div>
-        <div class="crate-tier-items">${items
-          .map(
-            (p) => `
-          <div class="crate-prize${p.left ? "" : " is-gone"}" title="${p.name}">
-            <span class="crate-prize-media"><img src="${p.image}" alt="" loading="lazy"></span>
-            <span class="crate-prize-name">${p.name}</span>
-            <span class="crate-prize-foot"><b>$${p.price.toLocaleString()}</b><span>${p.left ? `×${p.left}` : "Gone"}</span></span>
-          </div>`
-          )
-          .join("")}</div>
+        <div class="crate-tier-items">${items.map((p) => prizeCell(p, formatOdds((p.weight / totalWeight) * 100))).join("")}</div>
       </div>`;
-  }).join("");
+    }).join("");
   list.scrollTop = scrollTop;
 
   const actions = document.getElementById("crateModalActions");
@@ -5730,7 +5786,7 @@ async function listSealedCrate(tokenId) {
   const suggested = Math.round(Math.max(cat.price, st.ev));
   const price = await promptAmount(
     `List ${crateName(token.crateKey)}`,
-    `A box is worth about $${Math.round(st.ev).toLocaleString()} on average right now, across ${plural(st.unopened, "sealed box", "sealed boxes")}. Drop price ${cat.label}.`,
+    `A box averages $${Math.round(st.ev).toLocaleString()} at the published odds. Drop price ${cat.label}.`,
     suggested
   );
   if (!price) return;
@@ -5885,7 +5941,7 @@ function crateGroupCardHTML(key, listings) {
 function marketCrateViewHTML(key) {
   const cat = CATEGORIES[key];
   const st = supply.status(key);
-  const pool = supply.livePool(key);
+  const pool = supply.pool(key);
   const all = crateListingsFor(key);
   const buyable = all.filter((l) => !l.isPlayer);
   // Drop ticks on boxes that have sold or come down since.
@@ -5956,7 +6012,8 @@ function marketCrateViewHTML(key) {
         <h3 class="mcv-name">${crateName(key)}</h3>
         <span class="mcv-seller">${plural(all.length, "box", "boxes")} listed · drop price ${cat.label}</span>
         ${low ? `<div class="mcv-price"><span class="crate-group-from">from</span> $${low.price.toLocaleString()}</div>` : ""}
-        <span class="mcv-ev">A box averages $${Math.round(st.ev).toLocaleString()} right now</span>
+        <span class="mcv-ev">A box averages $${Math.round(st.ev).toLocaleString()} at the odds</span>
+        ${mysteryBarHTML(key)}
         <div class="mcv-actions">${buyHTML}</div>
         ${offerRows ? `<div class="mcv-offers"><span class="mcv-offers-label">Your offers</span>${offerRows}</div>` : ""}
       </div>
@@ -5969,7 +6026,7 @@ function marketCrateViewHTML(key) {
         ${
           marketCrateTab === "listings"
             ? `<div class="mcv-listings">${listingRows || `<div class="market-empty">Nothing listed right now.</div>`}</div>`
-            : `<div class="odds-panel">${buildOddsPanelHTML(pool.filter((p) => p.left > 0))}</div>
+            : `<div class="odds-panel">${buildOddsPanelHTML(pool)}</div>
                <div class="prize-list prize-browser">${prizeBrowserHTML(key, pool)}</div>`
         }
       </div>
@@ -6040,7 +6097,7 @@ async function offerOnCrates(key, qty) {
   const st = supply.status(key);
   const amount = await promptAmount(
     qty > 1 ? `Offer on ${qty} boxes` : "Make an offer",
-    `Your price per box goes to all ${plural(sellers.length, "seller", "sellers")} of the ${crateName(key)}. Cheapest is $${sellers[0].price.toLocaleString()}; a box averages $${Math.round(st.ev).toLocaleString()} right now.`,
+    `Your price per box goes to all ${plural(sellers.length, "seller", "sellers")} of the ${crateName(key)}. Cheapest is $${sellers[0].price.toLocaleString()}; a box averages $${Math.round(st.ev).toLocaleString()} at the odds.`,
     Math.round(sellers[0].price * 0.9)
   );
   if (!amount) return;
@@ -6087,7 +6144,7 @@ marketCrateView.addEventListener("click", async (e) => {
     if (!tab) return;
     playClick();
     prizeTabByKey[key] = tab.dataset.prizeTab;
-    marketCrateView.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.livePool(key));
+    marketCrateView.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(key, supply.pool(key));
     return;
   }
   if (btn.disabled) return;
@@ -6165,6 +6222,7 @@ function crowdPull(prize, key) {
     tierKey: key,
     username: market.randomUsername(),
     isPlayer: false,
+    mystery: !!prize.mystery,
     ts: Date.now(),
   };
 }
@@ -6250,21 +6308,13 @@ function refreshSupplyViews() {
   document.querySelectorAll("[data-supply-btn]").forEach((el) => {
     el.textContent = supply.status(el.dataset.supplyBtn).soldOut ? "Sold out · Market" : "Open";
   });
-  // A crate's page keeps its odds and prize list live too, holding the
-  // list where you'd scrolled it.
-  if (screenCategoryEl.classList.contains("active")) {
-    categoryList.querySelectorAll(".category-wrap.drop-detail-active").forEach((wrap) => {
-      const pool = supply.livePool(wrap.dataset.tier);
-      const odds = wrap.querySelector(".odds-panel");
-      const list = wrap.querySelector(".prize-list");
-      if (odds) odds.innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
-      if (list) {
-        const top = list.querySelector(".prize-tiles")?.scrollTop ?? 0;
-        list.innerHTML = prizeBrowserHTML(wrap.dataset.tier, pool);
-        list.querySelector(".prize-tiles").scrollTop = top;
-      }
-    });
-  }
+  // The odds don't move; the mystery bars do.
+  document.querySelectorAll("[data-mystery]").forEach((el) => {
+    const pct = Math.floor(supply.charge(el.dataset.mystery) * 100);
+    el.querySelector(".mystery-bar-fill").style.width = `${pct}%`;
+    el.querySelector(".mystery-bar-pct").textContent = `${pct}%`;
+    el.classList.toggle("is-hot", pct >= 90);
+  });
   if (marketCrateKey !== null && screenMarketEl.classList.contains("active")) renderMarketCrate();
   if (crateModalCtx) renderCrateModal();
 }

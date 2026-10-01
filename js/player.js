@@ -1,6 +1,6 @@
 // Player state, persisted to localStorage: wallet (Credits + Cash), pity
 // counters, streak, opening history (+ pinned big multipliers), inventory
-// (kept items, with the 365-day archival clock and a simulated fluctuating
+// (kept items, held with no time limit, and a simulated fluctuating
 // market value), shipped log, XP, lifetime volume (drives the referral
 // tier), username. Pure state + pure helpers — no DOM here.
 //
@@ -16,7 +16,6 @@ export const RARE_PITY_ROUNDS = 8;
 export const EPIC_PITY_ROUNDS = 20;
 
 export const CASHOUT_HAIRCUT = 0.8; // "75% or 80%, still open" in the scope — picked 80%
-export const ARCHIVAL_DAYS = 365;
 export const BIG_PULL_MULTIPLIER = 5; // pinned permanently in opening history at/above this
 export const OPENING_HISTORY_ROLLING = 10; // non-pinned entries kept
 
@@ -511,9 +510,9 @@ export function seedDemoStreak(days) {
 }
 
 // ---- Inventory: items you chose to Keep -----------------------------
-// Every kept item is subject to the 365-day archival clock (starts at
-// acquiredAt) and has a simulated fluctuating "market value" so a running
-// cash-out figure has something to move against.
+// Kept items stay in the vault for as long as you like (no hold limit) and
+// have a simulated fluctuating "market value" so a running cash-out figure
+// has something to move against.
 
 export function addToInventory(prize) {
   const item = {
@@ -602,18 +601,8 @@ export function markUnlisted(id) {
   }
 }
 
-// ---- Archival clock -----------------------------------------------------
-
 export function daysHeld(item) {
   return Math.floor((Date.now() - item.acquiredAt) / (24 * 60 * 60 * 1000));
-}
-
-export function isArchived(item) {
-  return daysHeld(item) >= ARCHIVAL_DAYS;
-}
-
-export function daysUntilArchival(item) {
-  return Math.max(0, ARCHIVAL_DAYS - daysHeld(item));
 }
 
 // ---- Simulated live market value -----------------------------------------
@@ -637,11 +626,8 @@ function valueOnDate(item, date) {
   return Math.max(1, Math.round(item.price * (1 + wobble)));
 }
 
-// Past the archival clock, the price freezes at exactly what it was on
-// day 365 — recomputed from that fixed date rather than today's, so no
-// extra state needs to be stored to "remember" the frozen number.
-function marketValueAsOfDate(item) {
-  return isArchived(item) ? new Date(item.acquiredAt + ARCHIVAL_DAYS * 24 * 60 * 60 * 1000) : new Date();
+function marketValueAsOfDate() {
+  return new Date();
 }
 
 export function currentMarketValue(item) {
@@ -649,7 +635,7 @@ export function currentMarketValue(item) {
 }
 
 // A simulated daily price series ending on the same date currentMarketValue
-// resolves to (today, or the archival freeze date) — so the chart's last
+// resolves to (today) — so the chart's last
 // point always matches the number shown everywhere else for this item.
 export function priceHistory(item, days = 30) {
   const asOf = marketValueAsOfDate(item);

@@ -8222,3 +8222,66 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 }
 .mcv-selall:hover { color: var(--text); }
 .mcv-buy:disabled { opacity: 0.45; cursor: default; transform: none; }
+
+/* --- Mystery: the pieces with no odds, and the bar that releases them -----
+   A crate's mystery charge fills with every box opened; the opening that
+   fills it releases a mystery item. Shown only as a share of full, in a
+   gold-to-violet that's its own, not a tier's. Close to full it glows. */
+.mystery-bar {
+  --mystery-a: #f2b84b;
+  --mystery-b: #b678f2;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 11px 10px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--mystery-b) 8%, var(--panel));
+  text-align: left;
+}
+.mystery-bar.is-compact { margin-top: 8px; padding: 7px 10px 8px; }
+.mystery-bar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.mystery-bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--mystery-a), var(--mystery-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.mystery-bar-label svg { color: var(--mystery-a); width: 12px; height: 12px; }
+.mystery-bar-pct { font-size: 0.72rem; font-weight: 800; color: var(--text); }
+.mystery-bar-track { position: relative; height: 6px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 10%, transparent); overflow: hidden; }
+.mystery-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mystery-a), var(--mystery-b));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mystery-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent) no-repeat;
+  background-size: 40% 100%;
+  animation: mysteryRun 2.4s linear infinite;
+}
+@keyframes mysteryRun { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+.mystery-bar.is-hot { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--mystery-b) 55%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--mystery-b) 60%, transparent); }
+@media (prefers-reduced-motion: reduce) { .mystery-bar-fill::after { animation: none; display: none; } }
+.home-crate .mystery-bar { margin-top: 8px; }
+
+/* Mystery tab and tiles on a crate's page: no odds, a gold-violet edge. */
+.prize-tab.is-mystery { display: inline-flex; align-items: center; gap: 5px; }
+.prize-tab.is-mystery svg { width: 12px; height: 12px; color: #f2b84b; }
+.prize-tab.is-mystery.active { border-color: #b678f2; background: color-mix(in srgb, #b678f2 14%, var(--panel)); color: color-mix(in srgb, #b678f2 70%, var(--text)); }
+.prize-tile.is-mystery .prize-tile-img { border: 2px solid transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #f2b84b, #b678f2) border-box; }
+.mystery-note { grid-column: 1 / -1; margin: 0 0 4px; font-size: 0.74rem; line-height: 1.45; color: var(--text-dim); }
+.crate-tier-head.is-mystery span:first-child { background: linear-gradient(90deg, #f2b84b, #b678f2); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+/* Stocks has no mystery bar: keep every card's quantity and Open on the
+   same line as its neighbours'. */
+.category-list .category-card .category-qty { margin-top: auto; padding-top: 12px; }
