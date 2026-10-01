@@ -7915,8 +7915,24 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 .whats-left-home { --wl-max: 60px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
 :root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
 /* Inside sealed cards: no ground of its own, smaller stacks, no label. */
-.whats-left-mini { --wl-max: 30px; --wl-gap: 5px; margin-top: 6px; padding: 0; background: none; cursor: inherit; }
-.whats-left-mini .whats-left-label { display: none; }
+/* A sealed box on the market links to its crate's page in words: the
+   card's own picture is the box, and stacks at that size were noise. */
+.view-inside {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--line-strong);
+  cursor: pointer;
+}
+.view-inside:hover { color: var(--text); text-decoration-color: currentColor; }
 @media (max-width: 640px) {
-  .whats-left:not(.whats-left-mini) { padding: 8px; }
+  .whats-left { padding: 8px; }
 }

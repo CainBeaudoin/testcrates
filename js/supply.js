@@ -192,6 +192,15 @@ export function livePool(key) {
   return pools.get(key).map((p) => ({ ...p, left: c.left[p.name] ?? 0, weight: c.left[p.name] ?? 0 }));
 }
 
+/**
+ * How many copies of each prize a full series of this crate holds — the
+ * list every series starts from (the same for every series: it comes
+ * from the published odds). Copies gone = this minus what's left.
+ */
+export function seriesCopies(key) {
+  return buildManifest(pools.get(key));
+}
+
 // ---- The player's boxes -------------------------------------------------------
 
 export function canBuy(key, qty = 1) {

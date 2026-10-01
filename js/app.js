@@ -1649,18 +1649,20 @@ function prizeBrowserHTML(key, pool) {
       return `<button class="prize-tab${r === tab ? " active" : ""}${left ? "" : " is-out"}" data-prize-tab="${r}" role="tab" aria-selected="${r === tab}" style="--rarity-color:${meta.color}">${meta.label}<span class="prize-tab-n">${left}</span></button>`;
     })
     .join("");
-  const tiles = pool
-    .filter((p) => p.rarity === tab)
-    .sort((a, b) => (b.left > 0) - (a.left > 0) || b.price - a.price)
-    .map(
-      (p) => `
-        <div class="prize-tile${p.left === 0 ? " is-gone" : ""}" style="--rarity-color:${RARITY_META[p.rarity].color}">
+  // One tile per copy: what's still in the crate first, then the copies
+  // already pulled this series, faded, so the tab's count and its tiles
+  // agree and you can see how far the tier has been dug into.
+  const copies = supply.seriesCopies(key);
+  const items = pool.filter((p) => p.rarity === tab).sort((a, b) => b.price - a.price);
+  const tile = (p, gone) => `
+        <div class="prize-tile${gone ? " is-gone" : ""}" style="--rarity-color:${RARITY_META[p.rarity].color}">
           <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
           <span class="prize-tile-name">${p.name}</span>
-          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b><span>${p.left > 0 ? `${p.left} left` : "Gone"}</span></span>
-        </div>`
-    )
-    .join("");
+          <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b>${gone ? "<span>Gone</span>" : ""}</span>
+        </div>`;
+  const tiles =
+    items.flatMap((p) => Array.from({ length: p.left }, () => tile(p, false))).join("") +
+    items.flatMap((p) => Array.from({ length: Math.max(0, (copies[p.name] ?? 0) - p.left) }, () => tile(p, true))).join("");
   return `<div class="prize-tabs" role="tablist">${tabs}</div><div class="prize-tiles">${tiles}</div>`;
 }
 
@@ -1770,6 +1772,10 @@ function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
+  // Its odds and prizes as of now (only the open page is kept live).
+  const pool = supply.livePool(wrap.dataset.tier);
+  wrap.querySelector(".odds-panel").innerHTML = buildOddsPanelHTML(pool.filter((p) => p.left > 0));
+  wrap.querySelector(".prize-browser").innerHTML = prizeBrowserHTML(wrap.dataset.tier, pool);
   // The corner dock narrows to this tier's pulls while its page is open.
   recentPullsTierKey = wrap.dataset.tier;
   renderRecentPulls();
@@ -1954,7 +1960,7 @@ function renderCategories() {
       </div>
       <div class="odds-panel hidden">${buildOddsPanelHTML(supply.livePool(key).filter((p) => p.left > 0))}</div>
       <label for="prizeListToggleAll" class="prize-list-toggle-label">View all prizes</label>
-      <div class="prize-list prize-browser">${prizeBrowserHTML(key, supply.livePool(key))}</div>
+      <div class="prize-list prize-browser"></div>
     `;
     // Tabs, and the odds boxes, switch the tier on show.
     prizePanel.addEventListener("click", (e) => {
@@ -3173,7 +3179,9 @@ function renderMarketGrid() {
     : `${focusChip}<div class="market-empty">No listings match these filters.</div>`;
   marketGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
   marketGrid.querySelectorAll("[data-crate-listing]").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
+      // "View what's inside" goes to the crate's page (its own handler).
+      if (e.target.closest("[data-whats-left]")) return;
       playClick();
       const listing = market.getCrateListing(el.dataset.crateListing);
       if (listing) openCrateModal({ key: listing.crateKey, listingId: listing.id });
@@ -5755,7 +5763,6 @@ function sealedCrateCardHTML(token) {
         </div>
         <span class="market-item-name">${crateName(key)}</span>
         <span class="sealed-sub">Series ${token.series} · paid $${token.paid.toLocaleString()}</span>
-        <span class="whats-left whats-left-mini">${whatsLeftInner(key)}</span>
         <div class="item-actions">
           <button class="item-action-btn" data-sealed-act="open">Open</button>
           ${keepsSealed(key) || listing ? `<button class="item-action-btn" data-sealed-act="${listing ? "unlist" : "list"}">${listing ? "Unlist" : "List"}</button>` : ""}
@@ -5793,7 +5800,7 @@ function crateListingCardHTML(listing) {
           ${st.soldOut ? `<span class="market-item-size">Sold out</span>` : ""}
         </div>
         <span class="market-item-name">${crateName(key)}</span>
-        <span class="whats-left whats-left-mini">${whatsLeftInner(key)}</span>
+        <button class="view-inside" data-whats-left="${key}">View what&rsquo;s inside</button>
         <div class="market-item-divider"></div>
         <div class="market-item-foot">
           <span class="market-item-price">${ICONS.cash}${listing.price.toLocaleString()}</span>
@@ -5927,7 +5934,7 @@ function refreshSupplyViews() {
   // A crate's page keeps its odds and prize list live too, holding the
   // list where you'd scrolled it.
   if (screenCategoryEl.classList.contains("active")) {
-    categoryList.querySelectorAll(".category-wrap").forEach((wrap) => {
+    categoryList.querySelectorAll(".category-wrap.drop-detail-active").forEach((wrap) => {
       const pool = supply.livePool(wrap.dataset.tier);
       const odds = wrap.querySelector(".odds-panel");
       const list = wrap.querySelector(".prize-list");
