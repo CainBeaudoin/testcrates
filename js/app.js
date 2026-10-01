@@ -51,6 +51,9 @@ const MYSTERY_NAMES = new Set(MYSTERY_ITEMS.map((p) => p.name));
 // The charge to fill, in money opened through the crate: the mystery
 // items' average value. Shown only as a share of full, never as money.
 const MYSTERY_TARGET = Math.round(MYSTERY_ITEMS.reduce((sum, p) => sum + p.price, 0) / MYSTERY_ITEMS.length);
+// Once unlocked, every box's chance at the mystery item.
+const MYSTERY_CHANCE = 0.03;
+const MYSTERY_CHANCE_LABEL = `${Math.round(MYSTERY_CHANCE * 100)}%`;
 
 // Drop prices sit about 20% above where they started, so the bottom of
 // each crate (Commons from ~$110 in the Sneakers crate) is a clear step
@@ -217,7 +220,7 @@ supply.registerCrates(
   Object.fromEntries(
     Object.entries(CATEGORIES)
       .filter(([, cat]) => !cat.openOnBuy)
-      .map(([key]) => [key, { items: MYSTERY_ITEMS, target: MYSTERY_TARGET }])
+      .map(([key]) => [key, { items: MYSTERY_ITEMS, target: MYSTERY_TARGET, chance: MYSTERY_CHANCE }])
   )
 );
 // The player's sealed crates count against their series; anything else
@@ -365,7 +368,8 @@ let batchRemaining = 0; // still to auto-chain after this one
 let roundTokenQueue = [];
 let currentTokenId = null;
 let boxPrizes = [];
-let mysteryRound = false; // this round filled the mystery bar: every box holds the mystery item
+let mysteryRound = false; // this opening hit the unlocked mystery item: every box holds it
+let roundRevealed = null; // the mystery item this round's box unlocked by filling the bar
 let selectedIndex = null;
 let roundLocked = false;
 // True from the moment a crate is paid for until a box is picked. The Back
@@ -1150,7 +1154,12 @@ function seedSimulatedPulls() {
 
 function tickSimulatedPulls() {
   // One simulated player does one thing; only an opening makes a pull.
+  const readyBefore = Object.keys(CATEGORIES).filter((k) => supply.readyItem(k));
   const pull = crowdStep();
+  Object.keys(CATEGORIES).forEach((k) => {
+    const item = supply.readyItem(k);
+    if (item && !readyBefore.includes(k)) showToast(`Mystery unlocked in the ${crateName(k)}: ${item.name}. Every box now has a ${MYSTERY_CHANCE_LABEL} chance at it`, ICONS.mystery);
+  });
   crowdMarketStep();
   supply.markTick();
   refreshSupplyViews();
@@ -1158,7 +1167,7 @@ function tickSimulatedPulls() {
   simulatedPulls.unshift(pull);
   simulatedPulls = simulatedPulls.slice(0, SIMULATED_PULLS_CAP);
   // Someone else filled a mystery bar: worth saying, wherever you are.
-  if (pull.mystery) showToast(`${pull.username} filled the ${crateName(pull.tierKey)} mystery bar and pulled ${pull.name} ($${pull.price.toLocaleString()})`, ICONS.mystery);
+  if (pull.mystery) showToast(`${pull.username} claimed the ${crateName(pull.tierKey)} mystery item: ${pull.name} ($${pull.price.toLocaleString()})`, ICONS.mystery);
   renderRecentPulls(); // the dock is on every screen, not just Drops
   // A good pull chimes as it shakes in (Rare and up). Not in a hidden tab,
   // and not over your own opening, where the reveal has the stage.
@@ -1701,11 +1710,13 @@ function prizeBrowserHTML(key, pool) {
     }),
   ].join("");
   if (tab === "mystery") {
+    const ready = supply.readyItem(key);
     const tiles = supply
       .mysteryItems(key)
       .map(
         (p) => `
-        <div class="prize-tile is-mystery">
+        <div class="prize-tile is-mystery${ready?.name === p.name ? " is-revealed" : ""}">
+          ${ready?.name === p.name ? `<span class="prize-tile-flag">Unlocked · ${MYSTERY_CHANCE_LABEL}</span>` : ""}
           <div class="prize-tile-img"><img src="${p.image}" alt="" loading="lazy"></div>
           <span class="prize-tile-name">${p.name}</span>
           <span class="prize-tile-foot"><b>$${p.price.toLocaleString()}</b></span>
@@ -1714,7 +1725,11 @@ function prizeBrowserHTML(key, pool) {
       .join("");
     return `<div class="prize-tabs" role="tablist">${tabs}</div>
       <div class="prize-tiles">
-        <p class="mystery-note">These don&rsquo;t have odds. One is released each time this crate&rsquo;s mystery bar fills, to whoever opens the box that fills it.</p>
+        <p class="mystery-note">${
+          ready
+            ? `The bar is full and the ${ready.name} is unlocked: every box opened from this crate has a ${MYSTERY_CHANCE_LABEL} chance at it until someone pulls it.`
+            : `These have no odds until this crate&rsquo;s mystery bar fills. Then one unlocks, and every box has a ${MYSTERY_CHANCE_LABEL} chance at it until it&rsquo;s pulled.`
+        }</p>
         ${tiles}
       </div>`;
   }
@@ -1742,6 +1757,18 @@ function formatOdds(pct) {
 // refreshSupplyViews move it as boxes open.
 function mysteryBarHTML(key, { compact = false } = {}) {
   if (!supply.hasMystery(key)) return "";
+  const ready = supply.readyItem(key);
+  if (ready) {
+    return `
+    <div class="mystery-bar is-ready${compact ? " is-compact" : ""}" data-mystery="${key}">
+      <div class="mystery-bar-head"><span class="mystery-bar-label">${ICONS.mystery}Mystery unlocked</span><b class="mystery-bar-pct">100%</b></div>
+      <div class="mystery-bar-track"><i class="mystery-bar-fill" style="width:100%"></i></div>
+      <div class="mystery-bar-reveal">
+        <span class="mystery-bar-reveal-img"><img src="${ready.image}" alt=""></span>
+        <span><b>${ready.name}</b><small>$${ready.price.toLocaleString()} · ${MYSTERY_CHANCE_LABEL} chance in every box until it&rsquo;s pulled</small></span>
+      </div>
+    </div>`;
+  }
   const pct = Math.floor(supply.charge(key) * 100);
   return `
     <div class="mystery-bar${compact ? " is-compact" : ""}${pct >= 90 ? " is-hot" : ""}" data-mystery="${key}" title="Fills with every box opened. A mystery item releases when it's full">
@@ -1817,16 +1844,12 @@ function whatsLeftInner(tierKey) {
     .map((rarity) => ({ rarity, items: live.filter((p) => p.rarity === rarity) }))
     .filter((t) => t.items.length)
     .slice(0, WL_STACKS);
-  // The crate's mystery item sits at the end of the row as one more tile:
-  // a sparkle in a ring that fills with the crate's mystery charge, rather
-  // than a bar of its own under the row. Hover names it; a click opens the
-  // crate's page on its Mystery tab.
-  const pct = Math.floor(supply.charge(tierKey) * 100);
-  const mysteryHTML = supply.hasMystery(tierKey)
-    ? `<span class="wl-mystery${pct >= 90 ? " is-hot" : ""}" style="--charge:${pct}" data-tip="Mystery item · ${pct}% charged" aria-label="Mystery item, ${pct}% charged">
-        <span class="wl-mystery-tile">${ICONS.mystery}<b>${pct}%</b></span>
-      </span>`
-    : "";
+  // The crate's mystery item sits at the end of the row as one more tile,
+  // ringed by the crate's mystery charge, rather than a bar of its own
+  // under the row: a sneaker silhouette with a question mark while it
+  // charges, and the item itself once the bar is full and it's revealed.
+  // Hover names it; a click opens the crate's page on its Mystery tab.
+  const mysteryHTML = mysteryTileHTML(tierKey);
   return `<span class="whats-left-label">What&rsquo;s inside</span>
     <span class="whats-left-thumbs" style="--k:${stacks.length};--m:${mysteryHTML ? 1 : 0}">${stacks
       .map(({ rarity, items }) => {
@@ -1840,6 +1863,23 @@ function whatsLeftInner(tierKey) {
         </span>`;
       })
       .join("")}${mysteryHTML}</span>`;
+}
+
+// A plain sneaker side-on, for the mystery tile's silhouette.
+const SNEAKER_SILHOUETTE = `<svg class="wl-mystery-sil" viewBox="0 0 64 32" aria-hidden="true"><path d="M3 24.5c0-2.3 1.4-4 3.6-4.4l9.4-1.6 6.8-9.2c1-1.4 3-1.7 4.3-.6l3.3 2.6 4.9 3.6c1 .7 2.2 1.2 3.4 1.4l11.8 2.2c5 .9 8.6 3.7 9.4 7.3.3 1.5-.8 2.9-2.4 2.9H6.6C4.6 28.7 3 27.1 3 25.1z"/><rect x="3" y="27" width="58" height="3.2" rx="1.6"/></svg>`;
+
+function mysteryTileHTML(key) {
+  if (!supply.hasMystery(key)) return "";
+  const ready = supply.readyItem(key);
+  if (ready) {
+    return `<span class="wl-mystery is-ready" style="--charge:100" data-tip="Unlocked: ${ready.name.replace(/"/g, "&quot;")} · ${MYSTERY_CHANCE_LABEL} chance per box" aria-label="Mystery item unlocked: ${ready.name.replace(/"/g, "&quot;")}">
+        <span class="wl-mystery-tile"><img src="${ready.image}" alt=""></span>
+      </span>`;
+  }
+  const pct = Math.floor(supply.charge(key) * 100);
+  return `<span class="wl-mystery${pct >= 90 ? " is-hot" : ""}" style="--charge:${pct}" data-tip="Mystery item · ${pct}% charged" aria-label="Mystery item, ${pct}% charged">
+      <span class="wl-mystery-tile">${SNEAKER_SILHOUETTE}<i class="wl-mystery-q">?</i><b>${pct}%</b></span>
+    </span>`;
 }
 
 let categoryBoxViewers = [];
@@ -2385,11 +2425,14 @@ async function startRound(key, currency) {
 
   currentTokenId = roundTokenQueue.shift() ?? null;
   // Three draws at the crate's published odds; the picked box is the
-  // prize. If this opening fills the crate's mystery bar, it's a mystery
-  // round instead: every box holds the released mystery item.
+  // prize. If the crate's mystery item is unlocked and this opening hits
+  // its chance, it's a mystery round instead: every box holds it.
+  const wasUnlocked = !!supply.readyItem(key);
   const round = supply.drawRound(key);
   boxPrizes = round.prizes;
   mysteryRound = round.mystery;
+  // This box was the one that filled the bar: say so once it's opened.
+  roundRevealed = !round.mystery && !wasUnlocked ? supply.readyItem(key) : null;
   // Fetch the three photos now, while the reel is still spinning, so each
   // is ready the moment its lid opens.
   boxPrizes.forEach((prize) => (new Image().src = prize.image));
@@ -2425,7 +2468,7 @@ async function startRound(key, currency) {
   boxRow.classList.remove("hidden");
   helperText.classList.remove("hidden");
   helperText.textContent = mysteryRound
-    ? "The mystery bar is full. Every box holds a mystery item: pick any"
+    ? "You hit the mystery item. Every box holds it: pick any"
     : `Tap a ${boxNounFor(currentCategoryKey).toLowerCase()} to open it`;
 
   await mountViewers();
@@ -2446,6 +2489,11 @@ function onPick(index) {
   const finalPrize = boxPrizes[index];
   // The box is open: its sealed crate is spent.
   supply.settleRound(currentCategoryKey);
+  if (roundRevealed) {
+    const item = roundRevealed;
+    roundRevealed = null;
+    setTimeout(() => showToast(`Your box filled the mystery bar and unlocked the ${item.name}. Every box now has a ${MYSTERY_CHANCE_LABEL} chance at it`, ICONS.mystery), 2200);
+  }
   if (currentTokenId) player.removeCrate(currentTokenId);
   currentTokenId = null;
   refreshSupplyViews();
@@ -5694,7 +5742,7 @@ function renderCrateModal() {
           </div>`;
   const mysteryHTML = supply.hasMystery(key)
     ? `<div class="crate-tier">
-        <div class="crate-tier-head is-mystery"><span>Mystery</span><span>No odds · released when the bar fills</span></div>
+        <div class="crate-tier-head is-mystery"><span>Mystery</span><span>${supply.readyItem(key) ? `Unlocked · ${MYSTERY_CHANCE_LABEL} per box` : "No odds until the bar fills"}</span></div>
         <div class="crate-tier-items">${supply.mysteryItems(key).map((p) => prizeCell(p)).join("")}</div>
       </div>`
     : "";
@@ -6325,7 +6373,14 @@ function refreshSupplyViews() {
   });
   // The odds don't move; the mystery bars do.
   document.querySelectorAll("[data-mystery]").forEach((el) => {
-    const pct = Math.floor(supply.charge(el.dataset.mystery) * 100);
+    const key = el.dataset.mystery;
+    const ready = !!supply.readyItem(key);
+    if (ready !== el.classList.contains("is-ready")) {
+      el.outerHTML = mysteryBarHTML(key, { compact: el.classList.contains("is-compact") });
+      return;
+    }
+    if (ready) return;
+    const pct = Math.floor(supply.charge(key) * 100);
     el.querySelector(".mystery-bar-fill").style.width = `${pct}%`;
     el.querySelector(".mystery-bar-pct").textContent = `${pct}%`;
     el.classList.toggle("is-hot", pct >= 90);

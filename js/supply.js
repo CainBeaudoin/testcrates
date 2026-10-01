@@ -8,9 +8,12 @@
 // On top of the odds, a crate can hold mystery items: pieces far above
 // its normal range that have no odds at all. Each crate has a mystery
 // charge that fills with every box opened (by anyone) — the money that has
-// gone through the crate, though it's only ever shown as a share of full —
-// and the opening that fills it releases a mystery item instead of a
-// draw. Then the charge starts again.
+// gone through the crate, though it's only ever shown as a share of full.
+// When it fills, a mystery item is unlocked: the bar holds at 100% showing
+// it, and from then on every box opened, by anyone, has a small chance at
+// it (`chance`, e.g. 3%) until one hits. Then the charge starts again.
+// Not "the next box gets it": that would have everyone waiting at 99% for
+// someone else to fill it, then racing for the one box after.
 //
 // Counts, per crate:
 //   sold    boxes bought from the drop (primary sale) — at most `total`
@@ -18,6 +21,7 @@
 //   botHeld boxes the simulated crowd bought and is sitting on (some of
 //           them listed on the market)
 //   charge  money opened since the last mystery release
+//   ready   the unlocked mystery item's name, until a box hits it
 // Every box is in exactly one place: unsold, opened, held by the crowd, or
 // held by the player (player.js keeps those as sealed-crate tokens).
 //
@@ -86,7 +90,7 @@ function drawAtOdds(key) {
  * starts part-way through its first series (some sold, some opened, a few
  * held) so the platform looks like it's been trading; `seedShape(key)` can
  * pin a crate's starting point ({ sold, opened } as shares of the series).
- * `mystery` is { [key]: { items, target } }.
+ * `mystery` is { [key]: { items, target, chance } }.
  */
 export function registerCrates(categories, seedShape = () => null, mystery = {}) {
   Object.entries(categories).forEach(([key, cat]) => {
@@ -110,6 +114,18 @@ export function registerCrates(categories, seedShape = () => null, mystery = {})
     // A crate's charge starts somewhere along the way, so the bars aren't
     // all sitting empty on a first visit.
     if (c.charge == null) c.charge = mysteries.has(key) ? mysteries.get(key).target * (0.4 + Math.random() * 0.5) : 0;
+    if (c.ready && !mysteryByName(key, c.ready)) c.ready = null;
+  }
+  // Once: a couple of crates start full, their mystery item revealed, so
+  // there's one to see.
+  if (!state.mysteryExamples) {
+    ["sneakers", "collectibles250"].forEach((key) => {
+      const m = mysteries.get(key);
+      if (!m || !crate(key)) return;
+      crate(key).charge = m.target;
+      crate(key).ready = m.items[Math.floor(Math.random() * m.items.length)].name;
+    });
+    state.mysteryExamples = true;
   }
   delete state.reserved;
   // A mystery round that never finished (the page closed before a box was
@@ -118,7 +134,10 @@ export function registerCrates(categories, seedShape = () => null, mystery = {})
   if (state.pendingMystery) {
     const c = crate(state.pendingMystery.key);
     const m = mysteries.get(state.pendingMystery.key);
-    if (c && m) c.charge = m.target;
+    if (c && m) {
+      c.charge = m.target;
+      c.ready = state.pendingMystery.name ?? m.items[0].name;
+    }
     state.pendingMystery = null;
   }
   save();
@@ -167,23 +186,50 @@ export function mysteryItems(key) {
   return mysteries.get(key)?.items ?? [];
 }
 
-/** How full the crate's mystery charge is, 0..1. */
+function mysteryByName(key, name) {
+  return mysteries.get(key)?.items.find((p) => p.name === name) ?? null;
+}
+
+/** How full the crate's mystery charge is, 0..1 — 1 only once revealed. */
 export function charge(key) {
   const m = mysteries.get(key);
   if (!m) return 0;
-  return Math.min(1, crate(key).charge / m.target);
+  const c = crate(key);
+  return c.ready ? 1 : Math.min(0.99, c.charge / m.target);
 }
 
-// Adds one opened box to the charge. Full: empties it and returns the
-// mystery item that releases (random among the crate's), else null.
+/** The unlocked mystery item, or null. */
+export function readyItem(key) {
+  const c = crate(key);
+  return c?.ready ? mysteryByName(key, c.ready) : null;
+}
+
+/** A box's chance at the unlocked mystery item, 0..1. */
+export function unlockedChance(key) {
+  return mysteries.get(key)?.chance ?? 0;
+}
+
+// One box opened. With a mystery item unlocked, this box has its chance at
+// it (a hit takes it, and the charge starts over); otherwise the box adds
+// to the charge, and filling it unlocks the next mystery item. Returns the
+// item this box gets, or null.
 function chargeOne(key) {
   const m = mysteries.get(key);
   if (!m) return null;
   const c = crate(key);
+  if (c.ready) {
+    if (Math.random() >= m.chance) return null;
+    const item = mysteryByName(key, c.ready);
+    c.ready = null;
+    c.charge = 0;
+    return item;
+  }
   c.charge += prices.get(key);
-  if (c.charge < m.target) return null;
-  c.charge = 0;
-  return m.items[Math.floor(Math.random() * m.items.length)];
+  if (c.charge >= m.target) {
+    c.charge = m.target;
+    c.ready = m.items[Math.floor(Math.random() * m.items.length)].name;
+  }
+  return null;
 }
 
 // ---- The player's boxes -------------------------------------------------------
@@ -203,14 +249,14 @@ export function buy(key, qty = 1) {
 
 /**
  * One opening's three boxes, drawn at the odds; the one you pick is your
- * prize. If this opening fills the mystery charge, it's a mystery round
- * instead: every box holds the released mystery item, so it's yours
+ * prize. If the crate's mystery item is unlocked and this opening hits its
+ * chance, it's a mystery round instead: every box holds it, so it's yours
  * whichever you pick. Returns { prizes, mystery }.
  */
 export function drawRound(key) {
   const released = chargeOne(key);
   if (released) {
-    state.pendingMystery = { key };
+    state.pendingMystery = { key, name: released.name };
     save();
     const prize = { ...released, mystery: true };
     return { prizes: [prize, prize, prize], mystery: true };
