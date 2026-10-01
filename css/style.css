@@ -7747,21 +7747,22 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 }
 
 /* --- What's inside: the pieces still in a crate, stacked by tier --------
-   One small fanned stack per tier (Grail, Epic, Rare — or the best three
-   tiers still in stock), each piece on a white tile edged in its tier's
-   colour, the best piece on top. The fan opens a little on hover. A button
-   where it opens the breakdown; a plain row inside cards that already
-   open it. */
+   One stack per tier (Grail, Epic, Rare — or the best three tiers still
+   in stock), each piece on a white tile edged in its tier's colour, the
+   best piece in front and the next ones peeking out square behind it.
+   The stacks sit close in one run. A button where it opens the breakdown;
+   a plain row inside cards that already open it. */
 .whats-left {
-  --wl-size: 32px;
-  --wl-step: 9px;
+  --wl-size: 36px;
+  --wl-step: 8px;
+  --wl-gap: 6px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
   width: 100%;
   margin-top: 12px;
-  padding: 9px 12px 8px;
+  padding: 9px 10px 10px;
   border: none;
   border-radius: var(--r-md);
   background: var(--control-fill);
@@ -7770,28 +7771,29 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
   text-align: left;
   cursor: pointer;
   transition: background 0.15s ease;
+  container: wl / inline-size;
 }
 button.whats-left:hover { background: var(--control-fill-hover); }
 .whats-left-label {
-  flex: 0 0 auto;
   font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--text-dim);
+  line-height: 1;
 }
-.whats-left-thumbs { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.whats-left-thumbs { display: flex; align-items: center; gap: var(--wl-gap); max-width: 100%; }
 .wl-stack { display: flex; flex: 0 0 auto; }
-/* Room for the fan: the top tile plus one step per tile behind it. */
+/* Room for the stack: the front tile plus one step per tile behind it. */
 .wl-fan {
   position: relative;
   width: calc(var(--wl-size) + (var(--n) - 1) * var(--wl-step));
-  height: calc(var(--wl-size) + 4px);
+  height: var(--wl-size);
 }
 .wl-thumb {
   position: absolute;
   left: 0;
-  top: 2px;
+  top: 0;
   display: grid;
   place-items: center;
   width: var(--wl-size);
@@ -7800,20 +7802,16 @@ button.whats-left:hover { background: var(--control-fill-hover); }
   border: 1.5px solid var(--rarity-color);
   border-radius: var(--r-xs);
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 2px 8px -2px color-mix(in srgb, var(--rarity-color) 55%, transparent);
-  /* --i 0 is the top tile; the ones behind sit to its right, tipped and
-     a touch smaller, like cards fanned in a hand. */
-  transform: translateX(calc(var(--i) * var(--wl-step))) rotate(calc(var(--i) * 7deg)) scale(calc(1 - var(--i) * 0.06));
-  transform-origin: 50% 110%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* --i 0 is the front tile; each one behind sits a step to the right and
+     a little smaller, its right edge showing like the next card in a deck. */
+  transform: translateX(calc(var(--i) * var(--wl-step))) scale(calc(1 - var(--i) * 0.1));
+  transform-origin: 100% 50%;
   z-index: calc(10 - var(--i));
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .wl-thumb img { width: 100%; height: 100%; object-fit: contain; }
-button.whats-left:hover .wl-thumb,
-.market-item:hover .whats-left-mini .wl-thumb {
-  transform: translateX(calc(var(--i) * var(--wl-step) * 1.35)) rotate(calc(var(--i) * 11deg)) scale(calc(1 - var(--i) * 0.06));
-}
-/* The Grail tile gets a slow sheen across it: the one tier worth a shine. */
+/* The Grail in front gets a slow sheen across it: the one tier worth a shine. */
 .wl-legendary .wl-thumb[style*="--i:0"]::after {
   content: "";
   position: absolute;
@@ -7833,28 +7831,24 @@ button.whats-left:hover .wl-thumb,
   .wl-legendary .wl-thumb::after { animation: none; display: none; }
   .wl-thumb { transition: none; }
 }
-/* Home: sits in the crate panel where "Could contain" was. */
-.whats-left-home { --wl-size: 42px; --wl-step: 12px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
-.whats-left-home .whats-left-thumbs { width: 100%; justify-content: space-between; padding: 0 4px; }
+/* Home: sits in the crate panel where "Could contain" was, with room for
+   bigger tiles. */
+.whats-left-home { --wl-size: 46px; --wl-step: 10px; margin-top: 0; background: rgba(255, 255, 255, 0.55); }
 :root:not([data-theme="light"]) .whats-left-home { background: rgba(255, 255, 255, 0.06); }
-/* Inside sealed cards: no ground of its own, smaller stacks, no labels. */
-.whats-left-mini { --wl-size: 27px; --wl-step: 8px; margin-top: 6px; padding: 0; background: none; cursor: inherit; }
+/* Inside sealed cards: no ground of its own, smaller stacks, no label. */
+.whats-left-mini { --wl-size: 27px; --wl-step: 6px; --wl-gap: 5px; margin-top: 6px; padding: 0; background: none; cursor: inherit; container: none; }
 .whats-left-mini .whats-left-label { display: none; }
-.whats-left-mini .whats-left-thumbs { gap: 8px; }
-
-/* The label sits above the stacks rather than beside them: Drops' cards
-   run five across and narrow, and three fans need the card's full width. */
-.whats-left:not(.whats-left-mini) { flex-direction: column; align-items: flex-start; gap: 8px; padding: 9px 11px 10px; }
-.whats-left-thumbs { max-width: 100%; }
-/* Very narrow cards (Home's row squeezed between breakpoints): the fans
-   close up further, sized off the row's own width rather than the screen. */
-.whats-left:not(.whats-left-mini) { container: wl / inline-size; }
-@container wl (max-width: 128px) {
-  .whats-left-thumbs { --wl-size: 20px; --wl-step: 4px; gap: 4px !important; padding: 0 !important; }
+/* Narrow rows (phones, and Home squeezed between breakpoints) size the
+   tiles off the row's own width, so three stacks always fit. */
+@container wl (max-width: 190px) {
+  .whats-left-thumbs { --wl-size: 30px; --wl-step: 6px; --wl-gap: 5px; }
 }
-/* Phones: cards run two across, so the fans close up to fit. */
+@container wl (max-width: 140px) {
+  .whats-left-thumbs { --wl-size: 24px; --wl-step: 5px; --wl-gap: 4px; }
+}
+@container wl (max-width: 110px) {
+  .whats-left-thumbs { --wl-size: 20px; --wl-step: 4px; --wl-gap: 3px; }
+}
 @media (max-width: 640px) {
-  .whats-left:not(.whats-left-mini),
-  .whats-left-home { --wl-size: 24px; --wl-step: 6px; padding: 8px; }
-  .whats-left:not(.whats-left-mini) .whats-left-thumbs { gap: 6px; padding: 0; }
+  .whats-left:not(.whats-left-mini) { padding: 8px; }
 }
