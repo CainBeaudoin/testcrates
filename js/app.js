@@ -1396,6 +1396,7 @@ function renderLiveBar() {
       const ts = String(p.ts);
       if (liveBarTiles.has(ts)) return;
       const tile = makeLiveBarTile(p);
+      tile.dataset.rarity = p.rarity;
       liveBarTrack.prepend(tile);
       liveBarTiles.set(ts, tile);
       arrivals.push(tile);
@@ -1403,6 +1404,24 @@ function renderLiveBar() {
 
   // Times drift even when nothing new arrives.
   liveBarTrack.querySelectorAll(".lb-time").forEach((el) => (el.textContent = relativeTime(Number(el.dataset.ts))));
+
+  // Minimized, the pill shows it instead: a Grail, Epic or Rare pulled
+  // anywhere sweeps the pill in that tier's colour, the way the tile would
+  // glare in the open bar, so a big pull is noticed without opening it.
+  if (!firstRender && arrivals.length && document.body.classList.contains("live-bar-min")) {
+    const best = arrivals
+      .map((el) => el.dataset.rarity)
+      .filter((r) => SPECIAL_PULL_RARITIES.has(r))
+      .sort((a, b) => rankOf(b) - rankOf(a))[0];
+    if (best) {
+      liveBarPill.style.setProperty("--rarity-color", RARITY_META[best].color);
+      liveBarPill.classList.remove("is-glaring");
+      void liveBarPill.offsetWidth; // restart the sweep if one is running
+      liveBarPill.classList.add("is-glaring");
+      clearTimeout(liveBarPill._glareTimer);
+      liveBarPill._glareTimer = setTimeout(() => liveBarPill.classList.remove("is-glaring"), 1800);
+    }
+  }
 
   if (firstRender || !arrivals.length || !liveBarTrack.offsetParent) return;
 

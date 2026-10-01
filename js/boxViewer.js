@@ -308,7 +308,14 @@ function idleHoldClip(clip) {
 // the reel-to-slot handoff read as the same box rather than a swap. Works
 // for any single loaded model (box or printer) since it only reasons about
 // the model's own bounding box.
-function buildRig(root) {
+// Both props are fitted to the same footprint, but the printer is a solid
+// block where the box is a shallower carton, so at the same fit it covered
+// about 1.75x the box's area on screen and read as much the bigger thing.
+// Scaled so the two carry the same visual weight side by side (measured off
+// their snapshots: equal silhouette area).
+const KIND_SCALE = { printer: 0.76 };
+
+function buildRig(root, kind = "") {
   const lid = root.getObjectByName(LID_NODE_NAME);
 
   // Frame by the body when the model has one: the od box's flaps stand
@@ -327,7 +334,7 @@ function buildRig(root) {
   // rectangular object rotated to its diagonal projects wider than either
   // side alone, which is what was clipping the corners mid-spin.
   const horizontalDiagonal = Math.hypot(size.x, size.z);
-  const scale = 1.7 / Math.max(horizontalDiagonal, size.y);
+  const scale = (1.7 / Math.max(horizontalDiagonal, size.y)) * (KIND_SCALE[kind] ?? 1);
 
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
@@ -649,7 +656,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
         // Snapshot always represents the closed/idle state (same as the
         // box's lid never being open in it) — the paper sheet doesn't need
         // to exist in this scene at all.
-        const { scene, camera } = buildRig(root);
+        const { scene, camera } = buildRig(root, kind);
         applyStudioEnvironment(scene, renderer);
         camera.aspect = 1;
         camera.updateProjectionMatrix();
@@ -694,7 +701,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
   if (kind === "od") settleOdMaterials(root, await stickerTextureFor(tierKey, baseModel));
   const openOutline = kind === "od" && fitOpen ? measureOpenOutline(root, baseModel.userData.clips) : null;
-  const { scene, camera, group, lid, bounds } = buildRig(root);
+  const { scene, camera, group, lid, bounds } = buildRig(root, kind);
   const zoom = openOutline ? fitForOpen(root, group, openOutline, bounds) : 1;
   if (syncSpin) group.rotation.y = sharedIdleAngle();
   // While idling, the angle is read off the shared clock plus this offset,

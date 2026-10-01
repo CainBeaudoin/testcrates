@@ -7001,6 +7001,26 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
     cursor: pointer;
   }
   :root[data-theme="light"] body.live-bar-min .live-bar-pill { background: #fff; }
+  /* A Grail, Epic or Rare pulled while minimized: the pill takes the same
+     colour sweep a tile glares with in the open bar, with a ring and glow
+     in the tier's colour so it reads from the corner of your eye. */
+  body.live-bar-min .live-bar-pill { isolation: isolate; overflow: hidden; transition: box-shadow 0.4s ease; }
+  body.live-bar-min .live-bar-pill.is-glaring {
+    box-shadow: 0 0 0 2px var(--rarity-color), 0 8px 26px color-mix(in srgb, var(--rarity-color) 45%, transparent);
+  }
+  body.live-bar-min .live-bar-pill.is-glaring::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--rarity-color) 60%, transparent) 50%, transparent 70%) no-repeat,
+      color-mix(in srgb, var(--rarity-color) 22%, transparent);
+    background-size: 260% 100%, 100% 100%;
+    animation: lbGlare 1.6s cubic-bezier(0.3, 0.6, 0.3, 1) both;
+  }
 
   /* The corner dock was desktop's live feed; the bar is now. It stays the
      phone's (see the mobile query). */
