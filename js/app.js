@@ -3550,27 +3550,16 @@ function resolveBotOnMyOffer(offerId) {
 
 const DEFAULT_AVATAR_URL = "assets/avatars/default.png";
 
-// Profile pictures for the simulated cast: each username gets its own
-// picture, drawn here rather than fetched — a soft blend of a few colours
-// from one of a handful of palettes, placed by a hash of the name, so the
-// same person always looks the same everywhere they appear. The player
-// gets the real default avatar image instead.
-const AVATAR_PALETTES = [
-  ["#ff6b6b", "#feca57", "#48dbfb", "#1dd1a1"],
-  ["#5f27cd", "#ff9ff3", "#54a0ff", "#00d2d3"],
-  ["#f8b195", "#f67280", "#c06c84", "#6c5b7b"],
-  ["#2d3436", "#00b894", "#fdcb6e", "#e17055"],
-  ["#0984e3", "#74b9ff", "#a29bfe", "#fd79a8"],
-  ["#264653", "#2a9d8f", "#e9c46a", "#f4a261"],
-  ["#22223b", "#4a4e69", "#9a8c98", "#f2e9e4"],
-  ["#ff9f1c", "#ffbf69", "#cbf3f0", "#2ec4b6"],
-];
+// Profile pictures for the simulated cast: a set of illustrated portraits
+// (assets/avatars/cast), each username given one by a hash of the name, so
+// the same person always looks the same everywhere they appear. The player
+// gets their own avatar instead.
+const CAST_AVATARS = Array.from({ length: 17 }, (_, i) => `assets/avatars/cast/pfp-${String(i + 1).padStart(2, "0")}.jpg`);
 function nameHash(name) {
   let h = 2166136261;
   for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619) >>> 0;
-  // Final mix, so every bit depends on every letter: without it the low
-  // bits (which pick the palette) clustered, and most names came out in
-  // the same two colourways.
+  // Final mix, so every bit depends on every letter: without it similar
+  // names clustered onto the same few pictures.
   h ^= h >>> 16;
   h = Math.imul(h, 0x85ebca6b) >>> 0;
   h ^= h >>> 13;
@@ -3578,26 +3567,21 @@ function nameHash(name) {
   h ^= h >>> 16;
   return h >>> 0;
 }
-function avatarSVG(username) {
-  const h = nameHash(username);
-  const pal = AVATAR_PALETTES[h % AVATAR_PALETTES.length];
-  const pick = (n) => pal[(h >>> n) % pal.length];
-  const bg = pick(3);
-  const a = pick(7) === bg ? pal[(pal.indexOf(bg) + 1) % pal.length] : pick(7);
-  const b = pick(11) === a || pick(11) === bg ? pal[(pal.indexOf(bg) + 2) % pal.length] : pick(11);
-  const v = (n, lo, hi) => lo + ((h >>> n) % (hi - lo + 1));
-  const id = `av${h.toString(36)}`;
-  return `<svg viewBox="0 0 80 80" aria-hidden="true"><defs><filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${v(2, 6, 9)}"/></filter></defs><rect width="80" height="80" fill="${bg}"/><g filter="url(#${id})"><circle cx="${v(5, 10, 40)}" cy="${v(9, 50, 75)}" r="${v(13, 26, 36)}" fill="${a}"/><ellipse cx="${v(17, 45, 72)}" cy="${v(21, 8, 34)}" rx="${v(4, 18, 28)}" ry="${v(8, 14, 24)}" fill="${b}" transform="rotate(${v(12, 0, 90)} 40 40)"/></g></svg>`;
+// The known cast gets the portraits in order, so no two of the first 17
+// share a face; any other name falls back to its hash.
+function avatarUrl(username) {
+  if (username === player.getUsername()) return DEFAULT_AVATAR_URL;
+  const i = market.FAKE_USERNAMES.indexOf(username);
+  return CAST_AVATARS[(i >= 0 ? i : nameHash(username)) % CAST_AVATARS.length];
 }
 // A username's picture as markup, for rows built from strings.
 function avatarHTML(username, cls = "") {
-  const inner = username === player.getUsername() ? `<img src="${DEFAULT_AVATAR_URL}" alt="">` : avatarSVG(username);
-  return `<span class="avatar-circle avatar-gen ${cls}">${inner}</span>`;
+  return `<span class="avatar-circle avatar-gen ${cls}"><img src="${avatarUrl(username)}" alt="" loading="lazy"></span>`;
 }
 
 function renderAvatarInto(el, username) {
   el.style.background = "none";
-  el.innerHTML = username === player.getUsername() ? `<img src="${DEFAULT_AVATAR_URL}" alt="${username}">` : avatarSVG(username);
+  el.innerHTML = `<img src="${avatarUrl(username)}" alt="${username}">`;
 }
 
 function renderIdentity() {
