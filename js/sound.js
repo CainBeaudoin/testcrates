@@ -173,3 +173,108 @@ export function playFeedChime(rarity) {
     }
   }
 }
+
+// ---- Lulu burn ---------------------------------------------------------------
+// The burn page's own sounds: a soft tick as Lulus are picked, a whoomph
+// and crackle as each one catches, a low roar under the whole burn, and a
+// run of bright coin notes when the Credits land.
+
+let noiseBuf = null;
+function noiseBuffer(ctx) {
+  if (!noiseBuf) {
+    const len = ctx.sampleRate * 2;
+    noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+
+// Filtered noise with its own gain envelope: [[time, level], ...] from `start`.
+function noise(ctx, { start, duration, type = "lowpass", freq = 1000, freqTo, q = 0.7, env }) {
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer(ctx);
+  src.loop = true;
+  const f = ctx.createBiquadFilter();
+  f.type = type;
+  f.Q.value = q;
+  f.frequency.setValueAtTime(freq, start);
+  if (freqTo) freqTo.forEach(([t, v]) => f.frequency.exponentialRampToValueAtTime(v, start + t));
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, start);
+  env.forEach(([t, v]) => g.gain.exponentialRampToValueAtTime(Math.max(v, 0.0001), start + t));
+  src.connect(f).connect(g).connect(masterGain);
+  src.start(start, Math.random());
+  src.stop(start + duration + 0.05);
+}
+
+/** A Lulu picked (or dropped). Rises through each set of three; the third
+ *  of a set rings brighter, since that's where the bonus lands. */
+export function playLuluTick(up, count) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime + 0.005;
+  if (!up) {
+    tone(ctx, { freq: 520, start: now, duration: 0.06, type: "sine", gain: 0.03, freqEnd: 420 });
+    return;
+  }
+  const step = ((count - 1) % 3) + 1;
+  const freq = [660, 784, 988][step - 1];
+  tone(ctx, { freq, start: now, duration: 0.07, type: "triangle", gain: 0.035 });
+  if (step === 3) tone(ctx, { freq: 1480, start: now + 0.05, duration: 0.22, type: "sine", gain: 0.04 });
+}
+
+/** One Lulu catching: a soft whoomph, a low thump, then crackle. */
+export function playLuluIgnite() {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const t = ctx.currentTime + 0.01;
+  noise(ctx, {
+    start: t,
+    duration: 0.9,
+    freq: 220,
+    freqTo: [[0.22, 2400], [0.9, 500]],
+    env: [[0.07, 0.16], [0.35, 0.08], [0.9, 0.0001]],
+  });
+  tone(ctx, { freq: 120, start: t, duration: 0.32, type: "sine", gain: 0.14, freqEnd: 48 });
+  const pops = 10 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < pops; i++) {
+    const at = t + 0.08 + Math.random() * 1.0;
+    const len = 0.008 + Math.random() * 0.025;
+    noise(ctx, {
+      start: at,
+      duration: len,
+      type: "highpass",
+      freq: 1800 + Math.random() * 3500,
+      env: [[0.002, 0.04 + Math.random() * 0.08], [len, 0.0001]],
+    });
+  }
+}
+
+/** The fire under the whole burn: a low rumble that swells and settles. */
+export function playBurnRoar(seconds) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const t = ctx.currentTime + 0.01;
+  noise(ctx, {
+    start: t,
+    duration: seconds + 0.6,
+    freq: 160,
+    freqTo: [[seconds * 0.4, 520], [seconds + 0.6, 140]],
+    q: 1.2,
+    env: [[0.25, 0.12], [seconds * 0.7, 0.1], [seconds + 0.6, 0.0001]],
+  });
+}
+
+/** The Credits landing: a quick climb of coin-bright notes. */
+export function playCreditsAdded() {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const now = ctx.currentTime + 0.01;
+  [1046.5, 1318.5, 1568, 2093, 2637].forEach((f, i) => {
+    const at = now + i * 0.065;
+    tone(ctx, { freq: f, start: at, duration: 0.5, type: "sine", gain: 0.07 });
+    tone(ctx, { freq: f * 2.76, start: at, duration: 0.12, type: "sine", gain: 0.015 });
+  });
+  tone(ctx, { freq: 2093, start: now + 0.36, duration: 0.9, type: "triangle", gain: 0.03 });
+}

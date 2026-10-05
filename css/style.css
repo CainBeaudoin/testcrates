@@ -9351,3 +9351,75 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   .lulu-rate { min-width: 0; flex: 1; }
   .lulu-panel { padding: 16px; }
 }
+
+/* Get Lulu: both collections on OpenSea, from the top of the page. */
+.lulu-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.lulu-get { position: relative; flex: 0 0 auto; }
+.lulu-get-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px 0 13px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.lulu-get-btn:hover { transform: translateY(-1px); }
+.lulu-get-chev { opacity: 0.6; transition: transform 0.2s ease; }
+.lulu-get.open .lulu-get-chev { transform: rotate(180deg); }
+.lulu-get-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 280px;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  box-shadow: 0 18px 50px var(--shadow-toast), 0 0 0 1px var(--hairline);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top right;
+  transition: opacity 0.15s ease, transform 0.2s var(--spring);
+}
+.lulu-get.open .lulu-get-menu { opacity: 1; pointer-events: auto; transform: none; }
+.lulu-get-label {
+  padding: 4px 8px 2px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.lulu-get-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r-md);
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.lulu-get-opt:hover { background: var(--control-fill); }
+.lulu-get-opt img { width: 44px; height: 44px; border-radius: var(--r-sm); object-fit: cover; }
+.lulu-get-text { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.lulu-get-text b { font-size: 0.86rem; font-weight: 800; }
+.lulu-get-text small { font-size: 0.7rem; color: var(--text-dim); }
+.lulu-get-opt > svg { color: var(--text-faint); }
+.lulu-get-opt:hover > svg { color: var(--text); }
+@media (max-width: 640px) {
+  .lulu-get-btn { height: 34px; padding: 0 12px; font-size: 0.74rem; }
+  .lulu-get-menu { width: min(280px, calc(100vw - 32px)); }
+}

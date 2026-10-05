@@ -863,13 +863,13 @@ function renderWallet({ pulse } = {}) {
   renderHeaderStats();
 }
 
-function showToast(text, iconSvg, ms = 1800) {
+function showToast(text, iconSvg, ms = 1800, { silent = false } = {}) {
   clearTimeout(toastTimer);
   creditToastIcon.innerHTML = iconSvg;
   creditToastText.textContent = text;
   creditToast.classList.remove("hidden");
   requestAnimationFrame(() => creditToast.classList.add("show"));
-  playDing();
+  if (!silent) playDing();
   toastTimer = setTimeout(() => {
     creditToast.classList.remove("show");
     setTimeout(() => creditToast.classList.add("hidden"), 300);

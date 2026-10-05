@@ -15,6 +15,7 @@
 
 import * as player from "./player.js";
 import { ICONS } from "./icons.js";
+import { playLuluTick, playLuluIgnite, playBurnRoar, playCreditsAdded } from "./sound.js";
 
 const STORAGE_KEY = "gotcha_lulu_v1";
 
@@ -36,6 +37,22 @@ const WALLET_KINDS = [
 ];
 
 const luluImage = (id) => `assets/lulu/${id}.jpg`;
+
+// Where to get one: both collections on OpenSea.
+const GET_LINKS = [
+  {
+    name: "Lulu",
+    note: "Burns for Credits",
+    url: "https://opensea.io/collection/odlulu",
+    image: luluImage(58),
+  },
+  {
+    name: "Mercurius",
+    note: "Reveal it, then burn the Lulu",
+    url: "https://opensea.io/collection/odlabslulu",
+    image: "assets/lulu/mercurius.jpg",
+  },
+];
 
 /** What a number of Lulus burns for. */
 export function creditsFor(count) {
@@ -128,6 +145,32 @@ export function initLulu(el, appDeps) {
   deps = appDeps;
   root.addEventListener("click", onClick);
   root.addEventListener("input", onInput);
+  // Settle on release; "change" doesn't always follow a drag, so the
+  // pointer letting go settles it too.
+  root.addEventListener("change", (e) => {
+    if (e.target.id === "luluRange") settleRange(e.target);
+  });
+  window.addEventListener("pointerup", () => {
+    const r = root.querySelector("#luluRange");
+    if (r && Number(r.value) !== Math.round(Number(r.value))) settleRange(r);
+  });
+  // Arrow keys move one Lulu at a time (a free-running bar would otherwise
+  // step by a sliver).
+  root.addEventListener("keydown", (e) => {
+    if (e.target.id !== "luluRange" || burning) return;
+    const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const r = e.target;
+    r.value = Math.max(0, Math.min(Number(r.max), Math.round(Number(r.value)) + d));
+    r.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".lulu-get")) closeGetMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeGetMenu();
+  });
   root.addEventListener("pointerdown", onPointerDown);
   root.addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === " ") && e.target.matches('[role="button"]')) {
@@ -165,10 +208,30 @@ export function renderLulu() {
 }
 
 function headHTML() {
+  const external = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>`;
   return `
     <div class="lulu-head">
-      <h2 class="screen-title">Lulu</h2>
-      <p class="lulu-lede">Burn your Lulus for Credits. <b>${CREDITS_PER_LULU}</b> for each, <b>${creditsFor(SET_SIZE).total}</b> for every ${SET_SIZE}.</p>
+      <div>
+        <h2 class="screen-title">Lulu</h2>
+        <p class="lulu-lede">Burn your Lulus for Credits. <b>${CREDITS_PER_LULU}</b> for each, <b>${creditsFor(SET_SIZE).total}</b> for every ${SET_SIZE}.</p>
+      </div>
+      <div class="lulu-get">
+        <button class="lulu-get-btn" data-lulu="get" aria-expanded="false" aria-haspopup="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>
+          Get Lulu
+          <svg class="lulu-get-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="lulu-get-menu" role="menu">
+          <span class="lulu-get-label">On OpenSea</span>
+          ${GET_LINKS.map(
+            (l) => `<a class="lulu-get-opt" role="menuitem" href="${l.url}" target="_blank" rel="noopener noreferrer">
+              <img src="${l.image}" alt="">
+              <span class="lulu-get-text"><b>${l.name}</b><small>${l.note}</small></span>
+              ${external}
+            </a>`
+          ).join("")}
+        </div>
+      </div>
     </div>`;
 }
 
@@ -244,7 +307,7 @@ function pageHTML() {
           </div>
           <div class="lulu-range">
             <div class="lulu-range-track" aria-hidden="true"><i class="lulu-range-fill"></i>${ticks}</div>
-            <input type="range" id="luluRange" min="0" max="${n}" step="1" value="0" aria-label="Drag to select Lulus">
+            <input type="range" id="luluRange" min="0" max="${n}" step="any" value="0" aria-label="Drag to select Lulus">
           </div>
         </div>
         <div class="lulu-grid" id="luluGrid">${grid}</div>
@@ -292,7 +355,7 @@ function walletIcon() {
 }
 
 // Everything that follows the selection: the tiles, the slider, the panel.
-function updateSummary() {
+function updateSummary({ keepRange = false } = {}) {
   if (!root || !state.wallets.length) return;
   const list = visibleLulus();
   root.querySelectorAll(".lulu-tile").forEach((t) => {
@@ -303,7 +366,9 @@ function updateSummary() {
 
   const visibleSelected = list.filter((l) => selected.has(l.id)).length;
   const range = root.querySelector("#luluRange");
-  if (range) {
+  if (range && !keepRange) {
+    cancelAnimationFrame(glideRaf);
+    clearTimeout(glideTimer);
     range.value = visibleSelected;
     range.parentElement.style.setProperty("--p", list.length ? visibleSelected / list.length : 0);
   }
@@ -371,6 +436,7 @@ function onPointerDown(e) {
   const id = Number(tile.dataset.luluId);
   paint = selected.has(id) ? "off" : "on";
   setSelected(id, paint === "on");
+  playLuluTick(paint === "on", selected.size);
   suppressClick = true;
   updateSummary();
   e.preventDefault();
@@ -380,18 +446,54 @@ document.addEventListener("pointerover", (e) => {
   if (!paint) return;
   const tile = e.target.closest?.(".lulu-tile");
   if (!tile || !root?.contains(tile)) return;
-  setSelected(Number(tile.dataset.luluId), paint === "on");
+  const id = Number(tile.dataset.luluId);
+  if (selected.has(id) === (paint === "on")) return;
+  setSelected(id, paint === "on");
+  playLuluTick(paint === "on", selected.size);
   updateSummary();
 });
 
+// The bar runs freely under your finger: no notches to push through, and
+// each Lulu is picked the moment the thumb passes the middle of its share
+// of the bar. Let go and the thumb settles on the count you have.
+let glideRaf = 0;
+let glideTimer = 0;
+
 function onInput(e) {
   if (e.target.id !== "luluRange" || burning) return;
-  // The bar selects from the start of the list: drag to 5 and the first
-  // five on show are picked (anything outside the current filter stays as
-  // it was).
-  const n = Number(e.target.value);
+  cancelAnimationFrame(glideRaf);
+  clearTimeout(glideTimer);
+  const range = e.target;
+  const v = Number(range.value);
+  const n = Math.round(v);
+  const before = selected.size;
   visibleLulus().forEach((l, i) => setSelected(l.id, i < n));
-  updateSummary();
+  range.parentElement.style.setProperty("--p", Number(range.max) ? v / Number(range.max) : 0);
+  if (selected.size !== before) playLuluTick(selected.size > before, selected.size);
+  updateSummary({ keepRange: true });
+}
+
+function settleRange(range) {
+  const from = Number(range.value);
+  const to = Math.round(from);
+  const max = Number(range.max) || 1;
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / 180);
+    const v = from + (to - from) * (1 - (1 - k) ** 3);
+    range.value = v;
+    range.parentElement.style.setProperty("--p", v / max);
+    if (k < 1) glideRaf = requestAnimationFrame(step);
+  };
+  glideRaf = requestAnimationFrame(step);
+  // Frames can be throttled (a background tab); make sure it lands.
+  clearTimeout(glideTimer);
+  glideTimer = setTimeout(() => {
+    if (Number(range.value) === to) return;
+    cancelAnimationFrame(glideRaf);
+    range.value = to;
+    range.parentElement.style.setProperty("--p", to / max);
+  }, 240);
 }
 
 function onClick(e) {
@@ -404,12 +506,20 @@ function onClick(e) {
     }
     const id = Number(tile.dataset.luluId);
     setSelected(id, !selected.has(id));
+    playLuluTick(selected.has(id), selected.size);
     updateSummary();
     return;
   }
   const act = e.target.closest("[data-lulu]");
   if (!act) return;
   switch (act.dataset.lulu) {
+    case "get": {
+      const wrap = act.closest(".lulu-get");
+      const open = !wrap.classList.contains("open");
+      wrap.classList.toggle("open", open);
+      act.setAttribute("aria-expanded", open);
+      break;
+    }
     case "connect":
       openConnect();
       break;
@@ -440,6 +550,13 @@ function onClick(e) {
       root.querySelector("#luluPanel").scrollIntoView({ behavior: "smooth", block: "end" });
       break;
   }
+}
+
+function closeGetMenu() {
+  root?.querySelectorAll(".lulu-get.open").forEach((w) => {
+    w.classList.remove("open");
+    w.querySelector(".lulu-get-btn").setAttribute("aria-expanded", "false");
+  });
 }
 
 // ---- Connecting a wallet ---------------------------------------------------
@@ -519,6 +636,13 @@ async function startBurn() {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const tiles = ids.map((id) => root.querySelector(`.lulu-tile[data-lulu-id="${id}"]`)).filter(Boolean);
   const step = Math.min(150, 1500 / Math.max(1, tiles.length));
+  playBurnRoar(1.3 + (tiles.length - 1) * step / 1000);
+  // A whoomph per Lulu as it catches, thinned out for big burns so they
+  // don't pile into noise.
+  const every = Math.max(1, Math.ceil(tiles.length / 8));
+  tiles.forEach((_, i) => {
+    if (i % every === 0) setTimeout(playLuluIgnite, reduce ? 0 : i * step);
+  });
   await Promise.all(tiles.map((t, i) => (reduce ? fadeTile(t) : pixelBurn(t, i * step))));
 
   const c = creditsFor(ids.length);
@@ -530,7 +654,8 @@ async function startBurn() {
   root.classList.remove("is-burning");
   renderLulu();
   deps.renderWallet({ pulse: "credits" });
-  deps.showToast(`${c.total.toLocaleString()} Credits were just added to your account`, ICONS.flame, 3600);
+  playCreditsAdded();
+  deps.showToast(`${c.total.toLocaleString()} Credits were just added to your account`, ICONS.flame, 3600, { silent: true });
 }
 
 function fadeTile(tile) {
