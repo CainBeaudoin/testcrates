@@ -17,6 +17,7 @@ import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
 import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
+import { initLulu, renderLulu } from "./lulu.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -862,7 +863,7 @@ function renderWallet({ pulse } = {}) {
   renderHeaderStats();
 }
 
-function showToast(text, iconSvg) {
+function showToast(text, iconSvg, ms = 1800) {
   clearTimeout(toastTimer);
   creditToastIcon.innerHTML = iconSvg;
   creditToastText.textContent = text;
@@ -872,7 +873,7 @@ function showToast(text, iconSvg) {
   toastTimer = setTimeout(() => {
     creditToast.classList.remove("show");
     setTimeout(() => creditToast.classList.add("hidden"), 300);
-  }, 1800);
+  }, ms);
 }
 
 function showWalletToast(amount, currency) {
@@ -2902,6 +2903,7 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-marketplace") renderMarketplace();
     if (tab.dataset.nav === "screen-account") renderAccount();
     if (tab.dataset.nav === "screen-category") renderCategories();
+    if (tab.dataset.nav === "screen-lulu") renderLulu();
     // Two rail tabs land on the Account screen — Rewards opens straight into
     // its group, plain Account falls back to the first one.
     if (tab.dataset.nav === "screen-account") {
@@ -6744,6 +6746,7 @@ if (profileParam) {
   renderCategories();
   renderHome();
   renderRecentPulls();
+  initLulu(document.getElementById("luluRoot"), { renderWallet, showToast });
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.

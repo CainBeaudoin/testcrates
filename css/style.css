@@ -8856,3 +8856,498 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   .hm-demo-canvas { width: 300px; height: 255px; bottom: -50px; }
 }
 .hm-demo { overflow: hidden; }
+
+/* ===== Lulu: burn Lulus for Credits ===================================== */
+
+.lulu-head { margin-bottom: 18px; }
+.lulu-head .screen-title { margin-bottom: 4px; }
+.lulu-lede { margin: 0; font-size: 0.86rem; color: var(--text-dim); }
+.lulu-lede b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Nothing connected yet: the art, the two rates, one button. */
+.lulu-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 44px 24px 40px;
+  border-radius: var(--r-2xl);
+  background: var(--panel);
+}
+.lulu-empty-fan { display: flex; margin-bottom: 22px; }
+.lulu-empty-fan img {
+  width: 108px;
+  height: 108px;
+  border-radius: var(--r-lg);
+  object-fit: cover;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  border: 3px solid var(--panel);
+}
+.lulu-empty-fan img:nth-child(1) { transform: rotate(-8deg) translate(18px, 6px); }
+.lulu-empty-fan img:nth-child(2) { position: relative; z-index: 1; transform: translateY(-4px); }
+.lulu-empty-fan img:nth-child(3) { transform: rotate(8deg) translate(-18px, 6px); }
+.lulu-empty-title { margin: 0 0 16px; font-size: 1.15rem; font-weight: 800; color: var(--text); }
+.lulu-rates { display: flex; gap: 8px; margin-bottom: 22px; }
+.lulu-rate {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 132px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  background: var(--control-fill);
+}
+.lulu-rate-n { font-size: 0.72rem; font-weight: 700; color: var(--text-dim); }
+.lulu-rate b { font-size: 1rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.lulu-rate-bonus {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--open-green);
+  color: var(--open-ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+.lulu-connect-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px; }
+.lulu-empty-note { margin: 12px 0 0; font-size: 0.74rem; color: var(--text-faint); }
+
+/* The page: Lulus on the left, the burn on the right. */
+.lulu-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+.lulu-main { min-width: 0; }
+
+.lulu-wallets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.lulu-wallet-chip,
+.lulu-wallet-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--control-fill);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lulu-wallet-chip:hover,
+.lulu-wallet-add:hover { background: var(--control-fill-hover); color: var(--text); }
+.lulu-wallet-chip.active { background: var(--text); color: var(--text-inverse); }
+.lulu-chip-n { opacity: 0.6; }
+.lulu-chip-x {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: -6px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.lulu-chip-x:hover { opacity: 1; background: var(--inverse-tint); }
+.lulu-wallet-add { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--text); }
+.lulu-wallet-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+
+/* Picking: count, select all / clear, and the bar you drag. */
+.lulu-selectbar {
+  padding: 12px 16px 10px;
+  margin-bottom: 12px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+}
+.lulu-selectbar-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.lulu-sel-count { font-size: 0.8rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.lulu-sel-count b { color: var(--text); font-size: 0.95rem; }
+.lulu-sel-actions { display: flex; gap: 4px; }
+.lulu-text-btn {
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lulu-text-btn:hover { background: var(--control-fill); color: var(--text); }
+
+/* The track is drawn under a bare range input, so it can be cut into sets
+   of three: each notch is where another bonus lands. The thumb's centre
+   runs from 11px in to 11px from the end, so the track does too. */
+.lulu-range { --p: 0; position: relative; height: 30px; }
+.lulu-range-track {
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  top: 50%;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: var(--r-pill);
+  background: var(--track);
+}
+.lulu-range-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--p) * 100%);
+  border-radius: inherit;
+  background: var(--text);
+}
+.lulu-range-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--panel);
+}
+.lulu-range input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: grab;
+}
+.lulu-range input:active { cursor: grabbing; }
+.lulu-range input::-webkit-slider-runnable-track { height: 30px; background: transparent; }
+.lulu-range input::-moz-range-track { height: 30px; background: transparent; }
+.lulu-range input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2.5px solid var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+.lulu-range input::-moz-range-thumb {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2.5px solid var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.lulu-range input:active::-webkit-slider-thumb { transform: scale(1.12); }
+.lulu-range input:focus-visible { outline: none; }
+.lulu-range input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--accent-dim); }
+
+/* The Lulus. */
+.lulu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  user-select: none;
+}
+.lulu-grid-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 36px 16px;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--text-dim);
+}
+.lulu-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 7px 7px 10px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px transparent;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, opacity 0.3s ease;
+}
+.lulu-tile:hover { transform: translateY(-2px); }
+.lulu-tile.selected { box-shadow: inset 0 0 0 2px var(--text); }
+.lulu-tile-media { position: relative; display: block; aspect-ratio: 1; }
+.lulu-tile-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  transition: transform 0.2s ease;
+}
+.lulu-tile.selected .lulu-tile-media img { transform: scale(0.94); }
+.lulu-tile-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 4px; }
+.lulu-tile-name { font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lulu-tile-meta .lulu-wallet-dot { width: 9px; height: 9px; }
+.lulu-tile-check {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.85);
+  color: transparent;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.2s var(--spring);
+}
+.lulu-tile.selected .lulu-tile-check { background: var(--text); box-shadow: none; color: var(--text-inverse); transform: scale(1.08); }
+
+/* Burning: the picture goes over to a canvas that burns it away in
+   pixels (js/lulu.js), with room above for the sparks. */
+.lulu-burn-canvas { position: absolute; left: 0; width: 100%; z-index: 2; pointer-events: none; }
+.lulu-tile.is-burning { box-shadow: inset 0 0 0 2px rgba(255, 130, 40, 0.9), 0 0 28px -4px rgba(255, 110, 30, 0.55); transform: none; }
+.lulu-tile.is-burning .lulu-tile-check { opacity: 0; }
+.lulu-tile.is-burnt { opacity: 0; transform: scale(0.92); }
+.lulu.is-burning .lulu-main,
+.lulu.is-burning .lulu-panel { pointer-events: none; }
+
+/* The burn: what's picked, what it comes to, and the button. */
+.lulu-panel {
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: var(--r-xl);
+  background: var(--panel);
+}
+.lulu-panel-title { margin: 0 0 12px; font-size: 1rem; font-weight: 800; color: var(--text); }
+.lulu-picked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 6px;
+  margin-bottom: 14px;
+  border-radius: var(--r-sm);
+  background: var(--control-fill);
+}
+.lulu-picked img {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-xs);
+  object-fit: cover;
+  animation: lulu-pop 0.25s var(--spring);
+}
+@keyframes lulu-pop { from { transform: scale(0.6); opacity: 0; } }
+.lulu-picked-more { padding: 0 6px; font-size: 0.74rem; font-weight: 800; color: var(--text-dim); }
+.lulu-picked-empty { padding: 0 6px; font-size: 0.74rem; color: var(--text-faint); }
+
+.lulu-rows { display: flex; flex-direction: column; }
+.lulu-row {
+  display: grid;
+  grid-template-columns: 1fr auto 64px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums;
+}
+.lulu-row-label { display: flex; flex-direction: column; font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.lulu-row-label small { font-size: 0.7rem; font-weight: 600; color: var(--text-faint); }
+.lulu-row-calc { font-size: 0.78rem; color: var(--text-dim); }
+.lulu-row-val { text-align: right; font-size: 0.9rem; color: var(--text); }
+.lulu-set-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.lulu-set-meter b { color: var(--text); }
+.lulu-pips { display: inline-flex; gap: 3px; }
+.lulu-pips i { width: 14px; height: 6px; border-radius: var(--r-pill); background: var(--track); transition: background 0.2s ease; }
+.lulu-pips i.on { background: var(--open-green); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+.lulu-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin-top: 2px;
+  border-radius: var(--r-md);
+  background: var(--control-fill);
+}
+.lulu-total > span { font-size: 0.82rem; font-weight: 700; color: var(--text-dim); }
+.lulu-total b { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text); font-variant-numeric: tabular-nums; }
+.lulu-total small { font-size: 0.78rem; font-weight: 700; letter-spacing: 0; color: var(--text-dim); }
+
+.lulu-warn {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 12px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.lulu-warn svg { flex: 0 0 auto; margin-top: 2px; color: #f06a1c; }
+.lulu-burn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 14px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.lulu-burn-btn:not(:disabled):hover { transform: translateY(-2px); }
+.lulu-burn-btn:disabled { cursor: default; }
+
+/* The Mercurius rule: one small line, the reason under the (i). */
+.lulu-fine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  font-size: 0.66rem;
+  color: var(--text-faint);
+}
+.lulu-tip { position: relative; display: inline-grid; place-items: center; cursor: help; color: var(--text-dim); }
+.lulu-tip-text {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 5;
+  width: 220px;
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
+  background: var(--text);
+  color: var(--text-inverse);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 8px 24px var(--shadow-toast);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.lulu-tip:hover .lulu-tip-text,
+.lulu-tip:focus .lulu-tip-text { opacity: 1; transform: translate(-50%, 0); }
+
+/* Connect a wallet. */
+.lulu-connect-card { max-width: 360px; text-align: left; padding: 26px; }
+.lulu-connect-card .payment-modal-title { text-align: center; font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; }
+.lulu-connect-sub { margin: 0 0 16px; text-align: center; font-size: 0.8rem; color: var(--text-dim); }
+.lulu-connect-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.lulu-connect-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--control-fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lulu-connect-opt:hover { background: var(--control-fill-hover); }
+.lulu-connect-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-sm); background: var(--panel); }
+.lulu-connect-name { flex: 1; }
+.lulu-connect-state { font-size: 0.72rem; font-weight: 600; color: var(--text-dim); }
+.lulu-connect-opt.is-busy .lulu-connect-state::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 2px solid var(--line);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: lulu-spin 0.7s linear infinite;
+}
+@keyframes lulu-spin { to { transform: rotate(360deg); } }
+.lulu-connect-modal.connecting .lulu-connect-opt:not(.is-busy) { opacity: 0.4; }
+.lulu-connect-note { margin: 0 0 14px; text-align: center; font-size: 0.68rem; color: var(--text-faint); }
+
+.lulu-dock { display: none; }
+
+@media (max-width: 900px) {
+  .lulu-layout { grid-template-columns: 1fr; }
+  .lulu-panel { position: static; }
+  .lulu-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .lulu-tile { padding: 5px 5px 8px; border-radius: var(--r-md); }
+  .lulu-tile-media img { border-radius: var(--r-sm); }
+  .lulu-tile-check { top: 10px; right: 10px; width: 20px; height: 20px; }
+  .lulu-tile-name { font-size: 0.72rem; }
+  /* The running total rides along at the bottom while you pick. */
+  .lulu-dock:not([hidden]) {
+    position: sticky;
+    bottom: calc(var(--bottom-nav-h, 0px) + 12px);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: -8px;
+    padding: 10px 10px 10px 16px;
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--text);
+    color: var(--text-inverse);
+    font: inherit;
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 10px 30px var(--shadow-toast);
+    cursor: pointer;
+  }
+  .lulu-dock-total { flex: 1; font-weight: 800; }
+  .lulu-dock-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border-radius: var(--r-pill);
+    background: var(--open-green);
+    color: var(--open-ink);
+    font-weight: 800;
+  }
+}
+@media (max-width: 640px) {
+  .lulu-empty { padding: 32px 16px; }
+  .lulu-empty-fan img { width: 84px; height: 84px; }
+  .lulu-rate { min-width: 0; flex: 1; }
+  .lulu-panel { padding: 16px; }
+}
