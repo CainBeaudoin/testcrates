@@ -471,18 +471,14 @@ try {
             <button id="accountWithdrawBtn" class="modal-btn modal-btn-solid">Withdraw</button>
           </div>
 
-          <!-- Theme and sound: settings, so they live with the account
-               rather than floating over every page. -->
+          <!-- Theme: a setting, so it lives with the account rather than
+               floating over every page. (Sound has no switch: the only
+               sound people wanted off, the live pulls chime, is gone.) -->
           <div class="account-prefs">
             <button id="themeBtn" class="mute-btn theme-btn account-pref" aria-label="Toggle light mode" title="Toggle light mode">
               <svg class="icon icon-theme-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               <svg class="icon icon-theme-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/></svg>
               <span class="account-pref-label" id="themeBtnLabel">Dark mode</span>
-            </button>
-            <button id="muteBtn" class="mute-btn account-pref" aria-label="Toggle sound" title="Toggle sound">
-              <svg class="icon icon-volume" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-              <svg class="icon icon-volume-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-              <span class="account-pref-label" id="muteBtnLabel">Sound on</span>
             </button>
           </div>
         </aside>

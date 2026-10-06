@@ -10,7 +10,7 @@ import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
-import { playClick, playHover, playPop, playDing, playFeedChime, toggleMuted, isMuted } from "./sound.js";
+import { playClick, playHover, playPop, playDing } from "./sound.js";
 import { ICONS, brandMarkHTML } from "./icons.js";
 import * as stockx from "./stockx.js";
 import { buildShareCard, downloadShareCard, shareCard } from "./exportCard.js";
@@ -418,7 +418,6 @@ const prizeModalMeta = document.getElementById("prizeModalMeta");
 const cashOutBtn = document.getElementById("cashOutBtn");
 const cashOutSub = document.getElementById("cashOutSub");
 const vaultKeepBtn = document.getElementById("vaultKeepBtn");
-const muteBtn = document.getElementById("muteBtn");
 const pullFaceScreen = document.getElementById("pullFaceScreen");
 const recentPulls = document.getElementById("recentPulls");
 const recentPullsList = document.getElementById("recentPullsList");
@@ -1183,15 +1182,8 @@ function tickSimulatedPulls() {
   // Someone else filled a mystery bar: worth saying, wherever you are.
   if (pull.mystery) showToast(`${pull.username} claimed the ${crateName(pull.tierKey)} mystery item: ${pull.name} ($${pull.price.toLocaleString()})`, ICONS.mystery);
   renderRecentPulls(); // the dock is on every screen, not just Drops
-  // A good pull chimes as it shakes in (Rare and up). Not in a hidden tab,
-  // and not over your own opening, where the reveal has the stage.
-  if (
-    SPECIAL_PULL_RARITIES.has(pull.rarity) &&
-    !document.hidden &&
-    !document.getElementById("screen-game").classList.contains("active")
-  ) {
-    setTimeout(() => playFeedChime(pull.rarity), 450); // with the shake, after the swipe
-  }
+  // Live pulls are silent: other people's wins chiming in all the time was
+  // the one sound that wore on you. The shake and glow carry it.
 }
 
 // Set while a tier page is open, so the carousel under it shows that
@@ -2766,16 +2758,6 @@ backBtn.addEventListener("click", () => {
   showScreen(screenCategory);
   renderCategories();
 });
-
-function refreshMuteBtn() {
-  muteBtn.classList.toggle("muted", isMuted());
-  document.getElementById("muteBtnLabel").textContent = isMuted() ? "Sound off" : "Sound on";
-}
-muteBtn.addEventListener("click", () => {
-  toggleMuted();
-  refreshMuteBtn();
-});
-refreshMuteBtn();
 
 // ---- Theme -------------------------------------------------------------
 // Light is the default (see index.html's head script); dark is opt-in.

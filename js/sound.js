@@ -1,13 +1,19 @@
-// Central audio module: master mute switch, low-level synth helpers, the
+// Central audio module: low-level synth helpers, the
 // per-rarity "hype" sound, and small UI micro-sounds. Everything here is
 // procedurally synthesized (oscillators + filtered noise) — no external
 // audio files, so there's nothing to license.
 
-const MUTE_KEY = "gotcha_muted_v1";
+// There's no sound switch any more (the live pulls chime, the only sound
+// people wanted off, is gone), so a "muted" saved by an earlier build is
+// cleared rather than left silencing everything with no way back.
+try {
+  localStorage.removeItem("gotcha_muted_v1");
+} catch {
+  // storage unavailable — nothing saved to clear
+}
 
 let audioCtx = null;
 let masterGain = null;
-let muted = localStorage.getItem(MUTE_KEY) === "1";
 
 function getCtx() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -15,26 +21,10 @@ function getCtx() {
   if (!audioCtx) {
     audioCtx = new Ctx();
     masterGain = audioCtx.createGain();
-    masterGain.gain.value = muted ? 0 : 1;
     masterGain.connect(audioCtx.destination);
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
-}
-
-export function isMuted() {
-  return muted;
-}
-
-export function setMuted(v) {
-  muted = v;
-  localStorage.setItem(MUTE_KEY, v ? "1" : "0");
-  if (masterGain) masterGain.gain.setTargetAtTime(v ? 0 : 1, audioCtx.currentTime, 0.05);
-}
-
-export function toggleMuted() {
-  setMuted(!muted);
-  return muted;
 }
 
 function tone(ctx, { freq, start, duration, type = "sine", gain = 0.2, freqEnd }) {
@@ -144,34 +134,6 @@ export function playPop() {
   const ctx = getCtx();
   if (!ctx) return;
   tone(ctx, { freq: 260, start: ctx.currentTime, duration: 0.1, type: "sine", gain: 0.08, freqEnd: 460 });
-}
-
-// A soft chime for a good pull landing in the live feed (the dock/strip
-// glow and shake). Bell-like: a sine partial plus a quieter octave-and-a-
-// fifth overtone per note, so it rings rather than beeps. Grows with
-// rarity: rare two notes, epic three, legendary four and a high shimmer.
-// Kept well under the reveal's own sounds: it's someone else's win.
-const FEED_CHIME = {
-  rare: [1046.5, 1318.5],
-  epic: [987.8, 1318.5, 1568],
-  legendary: [1046.5, 1318.5, 1568, 2093],
-};
-export function playFeedChime(rarity) {
-  const notes = FEED_CHIME[rarity];
-  const ctx = notes && getCtx();
-  if (!ctx) return;
-  const now = ctx.currentTime + 0.01;
-  const level = rarity === "legendary" ? 0.09 : rarity === "epic" ? 0.075 : 0.06;
-  notes.forEach((f, i) => {
-    const at = now + i * 0.09;
-    tone(ctx, { freq: f, start: at, duration: 0.9, type: "sine", gain: level });
-    tone(ctx, { freq: f * 3, start: at, duration: 0.35, type: "sine", gain: level * 0.18 });
-  });
-  if (rarity === "legendary") {
-    for (let i = 0; i < 5; i++) {
-      tone(ctx, { freq: 3136 + i * 260, start: now + 0.4 + i * 0.05, duration: 0.25, type: "sine", gain: 0.02 });
-    }
-  }
 }
 
 // ---- Lulu burn ---------------------------------------------------------------
