@@ -207,14 +207,11 @@ export function renderLulu() {
   updateSummary();
 }
 
-function headHTML() {
+// Get Lulu: a menu of both collections on OpenSea. First in the wallets
+// row, so getting one sits beside the wallets you'd hold it in.
+function getMenuHTML() {
   const external = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>`;
   return `
-    <div class="lulu-head">
-      <div>
-        <h2 class="screen-title">Lulu</h2>
-        <p class="lulu-lede">Burn your Lulus for Credits. <b>${CREDITS_PER_LULU}</b> for each, <b>${creditsFor(SET_SIZE).total}</b> for every ${SET_SIZE}.</p>
-      </div>
       <div class="lulu-get">
         <button class="lulu-get-btn deposit-btn" data-lulu="get" aria-expanded="false" aria-haspopup="true">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.5 3.5 6v13.5A2 2 0 0 0 5.5 21.5h13a2 2 0 0 0 2-2V6L18 2.5z"/><line x1="3.5" y1="6" x2="20.5" y2="6"/><path d="M15.5 10a3.5 3.5 0 0 1-7 0"/></svg>
@@ -231,7 +228,14 @@ function headHTML() {
             </a>`
           ).join("")}
         </div>
-      </div>
+      </div>`;
+}
+
+function headHTML() {
+  return `
+    <div class="lulu-head">
+      <h2 class="screen-title">Lulu</h2>
+      <p class="lulu-lede">Burn your Lulus for Credits. <b>${CREDITS_PER_LULU}</b> for each, <b>${creditsFor(SET_SIZE).total}</b> for every ${SET_SIZE}.</p>
     </div>`;
 }
 
@@ -246,7 +250,10 @@ function emptyHTML() {
         <div class="lulu-rate"><span class="lulu-rate-n">1 Lulu</span><b>${CREDITS_PER_LULU} Credits</b></div>
         <div class="lulu-rate is-set"><span class="lulu-rate-n">${SET_SIZE} Lulus</span><b>${creditsFor(SET_SIZE).total} Credits</b><span class="lulu-rate-bonus">+${SET_BONUS} bonus</span></div>
       </div>
-      <button class="modal-btn modal-btn-solid lulu-connect-btn" data-lulu="connect">${walletIcon()} Connect wallet</button>
+      <div class="lulu-empty-actions">
+        ${getMenuHTML()}
+        <button class="modal-btn modal-btn-solid lulu-connect-btn" data-lulu="connect">${walletIcon()} Connect wallet</button>
+      </div>
       <p class="lulu-empty-note">Lulus in more than one wallet? Connect them all.</p>
     </div>`;
 }
@@ -296,7 +303,7 @@ function pageHTML() {
     ${headHTML()}
     <div class="lulu-layout">
       <div class="lulu-main">
-        <div class="lulu-wallets">${chips}</div>
+        <div class="lulu-wallets">${getMenuHTML()}<i class="lulu-wallets-sep" aria-hidden="true"></i>${chips}</div>
         <div class="lulu-selectbar" ${n ? "" : "hidden"}>
           <div class="lulu-selectbar-top">
             <span class="lulu-sel-count"><b id="luluSelCount">0</b> of ${n} selected</span>
