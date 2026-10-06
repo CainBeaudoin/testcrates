@@ -138,6 +138,7 @@ let root = null;
 let selected = new Set();
 let walletFilter = "all";
 let burning = false;
+let pickedKeys = new Set(); // thumbnails already on show, so only new ones animate
 
 /** One-time setup: where the page renders, and the app hooks it needs. */
 export function initLulu(el, appDeps) {
@@ -404,13 +405,32 @@ function updateSummary({ keepRange = false } = {}) {
   else line = `Not enough left for another set`;
   meter.innerHTML = `<span class="lulu-pips">${pips}</span><span>${line}</span>`;
 
-  // The picked Lulus, as a row of thumbnails.
+  // The picked Lulus, as thumbnails: every full set of three collapses
+  // into a stack (the two behind just showing past the front one's edge),
+  // so the sets that earn the bonus read at a glance; the ones toward the
+  // next set sit loose beside them. Only what's new animates in.
   const picked = allHeldIds().filter((id) => selected.has(id));
-  const shown = picked.slice(0, 10);
+  const groups = [];
+  for (let i = 0; i < picked.length; i += SET_SIZE) groups.push(picked.slice(i, i + SET_SIZE));
+  const items = groups.flatMap((g) => (g.length === SET_SIZE ? [g] : g.map((id) => [id])));
+  const MAX_ITEMS = 7;
+  const shown = items.slice(0, MAX_ITEMS);
+  const hiddenCount = items.slice(MAX_ITEMS).reduce((n, it) => n + it.length, 0);
+  const keys = new Set();
+  const thumb = (id, cls = "") => `<img class="${cls}" src="${luluImage(id)}" alt="Lulu #${id}" title="Lulu #${id}" draggable="false">`;
   root.querySelector("#luluPicked").innerHTML = picked.length
-    ? shown.map((id) => `<img src="${luluImage(id)}" alt="Lulu #${id}" title="Lulu #${id}">`).join("") +
-      (picked.length > shown.length ? `<span class="lulu-picked-more">+${picked.length - shown.length}</span>` : "")
+    ? shown
+        .map((it) => {
+          const key = it.join("-");
+          keys.add(key);
+          const isNew = !pickedKeys.has(key) ? " is-new" : "";
+          if (it.length === 1) return thumb(it[0], `lulu-picked-one${isNew}`);
+          const [front, mid, back] = it;
+          return `<span class="lulu-stack${isNew}" title="Set of ${SET_SIZE} · +${SET_BONUS}">${thumb(back, "s2")}${thumb(mid, "s1")}${thumb(front, "s0")}</span>`;
+        })
+        .join("") + (hiddenCount ? `<span class="lulu-picked-more">+${hiddenCount}</span>` : "")
     : `<span class="lulu-picked-empty">Pick Lulus on the left, or drag the bar</span>`;
+  pickedKeys = keys;
 
   const dock = root.querySelector("#luluDock");
   dock.hidden = !c.count || burning;

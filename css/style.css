@@ -9145,22 +9145,40 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 .lulu-picked {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px;
-  padding: 6px;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px 10px;
   margin-bottom: 14px;
   border-radius: var(--r-sm);
   background: var(--control-fill);
 }
 .lulu-picked img {
-  width: 34px;
-  height: 34px;
+  display: block;
+  width: 38px;
+  height: 38px;
   border-radius: var(--r-xs);
   object-fit: cover;
-  animation: lulu-pop 0.25s var(--spring);
 }
+.lulu-picked-one.is-new { animation: lulu-pop 0.25s var(--spring); }
 @keyframes lulu-pop { from { transform: scale(0.6); opacity: 0; } }
+
+/* A set of three: one card in front, the other two straight behind it,
+   each nudged up and right so their edges show, like a squared-up deck. */
+.lulu-stack { position: relative; width: 46px; height: 46px; flex: 0 0 auto; }
+.lulu-stack img {
+  position: absolute;
+  box-shadow: 0 0 0 1.5px var(--panel), 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+.lulu-stack .s0 { left: 0; bottom: 0; z-index: 3; }
+.lulu-stack .s1 { left: 4px; bottom: 4px; z-index: 2; filter: brightness(0.82); }
+.lulu-stack .s2 { left: 8px; bottom: 8px; z-index: 1; filter: brightness(0.66); }
+/* Forming: the two behind slide out from under the front card. */
+.lulu-stack.is-new .s0 { animation: lulu-pop 0.25s var(--spring); }
+.lulu-stack.is-new .s1 { animation: lulu-stack-1 0.32s 0.05s var(--spring) backwards; }
+.lulu-stack.is-new .s2 { animation: lulu-stack-2 0.36s 0.1s var(--spring) backwards; }
+@keyframes lulu-stack-1 { from { transform: translate(-4px, 4px); } }
+@keyframes lulu-stack-2 { from { transform: translate(-8px, 8px); } }
 .lulu-picked-more { padding: 0 6px; font-size: 0.74rem; font-weight: 800; color: var(--text-dim); }
 .lulu-picked-empty { padding: 0 6px; font-size: 0.74rem; color: var(--text-faint); }
 
