@@ -1545,9 +1545,9 @@ document.getElementById("liveBarAll").addEventListener("click", () => {
   setTimeout(() => document.getElementById("recentPulls")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
 });
 
-// Minimize to a pill, for this visit. Every visit starts with the bar
-// showing: minimizing is a choice made each time, not a setting that
-// quietly hides the live feed from then on.
+// Minimize to a pill. Every visit starts minimized, as the pill at the
+// bottom right (it still glows on a Rare, Epic or Grail); opening the bar
+// is for this visit only.
 function setLiveBarMinimized(min) {
   document.body.classList.toggle("live-bar-min", min);
   liveBarPinned = false;
@@ -1561,6 +1561,7 @@ liveBarPill.addEventListener("click", () => {
   playClick();
   setLiveBarMinimized(false);
 });
+document.body.classList.add("live-bar-min");
 // Earlier builds remembered "minimized" across visits; clear it.
 try {
   localStorage.removeItem(LIVE_BAR_KEY);
@@ -1639,8 +1640,11 @@ addEventListener("resize", () => {
 
 try {
   const saved = JSON.parse(localStorage.getItem(PULL_DOCK_KEY) || "{}");
-  if (saved.collapsed) pullDock.classList.add("collapsed");
-  pullDockMin.setAttribute("aria-expanded", String(!saved.collapsed));
+  // Like the desktop bar, the phone dock starts every visit collapsed;
+  // only where it was dragged to is remembered.
+  pullDock.classList.add("collapsed");
+  pullDockMin.setAttribute("aria-expanded", "false");
+  pullDockMin.setAttribute("aria-label", "Expand recent pulls");
   if (typeof saved.x === "number" && typeof saved.b === "number") placePullDock(saved.x, saved.b);
 } catch {
   // Fall back to the corner the CSS anchors it to.
