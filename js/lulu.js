@@ -138,7 +138,7 @@ let root = null;
 let selected = new Set();
 let walletFilter = "all";
 let burning = false;
-let pickedKeys = new Set(); // thumbnails already on show, so only new ones animate
+let pickedPos = new Map(); // id -> its place in its stack last time, so only changes animate
 
 /** One-time setup: where the page renders, and the app hooks it needs. */
 export function initLulu(el, appDeps) {
@@ -405,32 +405,40 @@ function updateSummary({ keepRange = false } = {}) {
   else line = `Not enough left for another set`;
   meter.innerHTML = `<span class="lulu-pips">${pips}</span><span>${line}</span>`;
 
-  // The picked Lulus, as thumbnails: every full set of three collapses
-  // into a stack (the two behind just showing past the front one's edge),
-  // so the sets that earn the bonus read at a glance; the ones toward the
-  // next set sit loose beside them. Only what's new animates in.
+  // The picked Lulus, by set: each set of three is one stack, the newest
+  // card in front and the earlier ones squared up behind it. The set in
+  // progress is a stack being filled, with dashed outlines where its
+  // missing cards go. One slot per set means the strip only ever gains
+  // slots as you pick (it never shuffles back when a set completes), and
+  // every row is one stack high, so the panel grows a row at a time.
+  // Only what's changed animates: a new card pops in, the ones it lands
+  // in front of step back.
   const picked = allHeldIds().filter((id) => selected.has(id));
-  const groups = [];
-  for (let i = 0; i < picked.length; i += SET_SIZE) groups.push(picked.slice(i, i + SET_SIZE));
-  const items = groups.flatMap((g) => (g.length === SET_SIZE ? [g] : g.map((id) => [id])));
-  const MAX_ITEMS = 7;
-  const shown = items.slice(0, MAX_ITEMS);
-  const hiddenCount = items.slice(MAX_ITEMS).reduce((n, it) => n + it.length, 0);
-  const keys = new Set();
-  const thumb = (id, cls = "") => `<img class="${cls}" src="${luluImage(id)}" alt="Lulu #${id}" title="Lulu #${id}" draggable="false">`;
+  const sets = [];
+  for (let i = 0; i < picked.length; i += SET_SIZE) sets.push(picked.slice(i, i + SET_SIZE));
+  const MAX_SETS = 9;
+  const shownSets = sets.slice(0, MAX_SETS);
+  const hiddenCount = picked.length - shownSets.flat().length;
+  const nextPos = new Map();
+  const thumb = (id, cls) => `<img class="${cls}" src="${luluImage(id)}" alt="Lulu #${id}" title="Lulu #${id}" draggable="false">`;
   root.querySelector("#luluPicked").innerHTML = picked.length
-    ? shown
-        .map((it) => {
-          const key = it.join("-");
-          keys.add(key);
-          const isNew = !pickedKeys.has(key) ? " is-new" : "";
-          if (it.length === 1) return thumb(it[0], `lulu-picked-one${isNew}`);
-          const [front, mid, back] = it;
-          return `<span class="lulu-stack${isNew}" title="Set of ${SET_SIZE} · +${SET_BONUS}">${thumb(back, "s2")}${thumb(mid, "s1")}${thumb(front, "s0")}</span>`;
+    ? shownSets
+        .map((set) => {
+          const front = [...set].reverse(); // newest first
+          const layers = Array.from({ length: SET_SIZE }, (_, pos) => {
+            const id = front[pos];
+            if (id == null) return `<i class="lulu-ghost s${pos}"></i>`;
+            const prev = pickedPos.get(id);
+            nextPos.set(id, pos);
+            const anim = prev == null ? " is-new" : prev < pos ? " is-shifted" : "";
+            return thumb(id, `s${pos}${anim}`);
+          });
+          const full = set.length === SET_SIZE;
+          return `<span class="lulu-stack${full ? " is-full" : ""}" title="${full ? `Set of ${SET_SIZE} · +${SET_BONUS}` : `${set.length} of ${SET_SIZE}`}">${layers.reverse().join("")}</span>`;
         })
         .join("") + (hiddenCount ? `<span class="lulu-picked-more">+${hiddenCount}</span>` : "")
     : `<span class="lulu-picked-empty">Pick Lulus on the left, or drag the bar</span>`;
-  pickedKeys = keys;
+  pickedPos = nextPos;
 
   const dock = root.querySelector("#luluDock");
   dock.hidden = !c.count || burning;
