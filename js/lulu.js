@@ -44,7 +44,7 @@ const GET_LINKS = [
     name: "Lulu",
     note: "Burns for Credits",
     url: "https://opensea.io/collection/odlulu",
-    image: luluImage(58),
+    image: "assets/lulu/get-lulu.jpg",
   },
   {
     name: "Mercurius",

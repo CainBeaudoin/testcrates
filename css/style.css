@@ -9406,6 +9406,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   padding: 8px;
   border-radius: var(--r-lg);
   background: var(--panel);
+  text-align: left;
   box-shadow: 0 18px 50px var(--shadow-toast), 0 0 0 1px var(--hairline);
   opacity: 0;
   pointer-events: none;
