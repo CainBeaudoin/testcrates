@@ -9361,16 +9361,15 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   gap: 7px;
   height: 38px;
   padding: 0 14px 0 13px;
-  border: none;
   border-radius: var(--r-pill);
-  background: var(--text);
-  color: var(--text-inverse);
   font: inherit;
   font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
+/* The green "the button you want" look (button.deposit-btn), in a pill. */
+button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .lulu-get-btn:hover { transform: translateY(-1px); }
 .lulu-get-chev { opacity: 0.6; transition: transform 0.2s ease; }
 .lulu-get.open .lulu-get-chev { transform: rotate(180deg); }

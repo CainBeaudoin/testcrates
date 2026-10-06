@@ -216,8 +216,8 @@ function headHTML() {
         <p class="lulu-lede">Burn your Lulus for Credits. <b>${CREDITS_PER_LULU}</b> for each, <b>${creditsFor(SET_SIZE).total}</b> for every ${SET_SIZE}.</p>
       </div>
       <div class="lulu-get">
-        <button class="lulu-get-btn" data-lulu="get" aria-expanded="false" aria-haspopup="true">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>
+        <button class="lulu-get-btn deposit-btn" data-lulu="get" aria-expanded="false" aria-haspopup="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.5 3.5 6v13.5A2 2 0 0 0 5.5 21.5h13a2 2 0 0 0 2-2V6L18 2.5z"/><line x1="3.5" y1="6" x2="20.5" y2="6"/><path d="M15.5 10a3.5 3.5 0 0 1-7 0"/></svg>
           Get Lulu
           <svg class="lulu-get-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
