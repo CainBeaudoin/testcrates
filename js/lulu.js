@@ -36,7 +36,7 @@ const WALLET_KINDS = [
   { key: "walletconnect", label: "WalletConnect" },
 ];
 
-const luluImage = (id) => `assets/lulu/${id}.jpg`;
+const luluImage = (id) => `assets/lulu/${id % 10000}.jpg`;
 
 // Where to get one: both collections on OpenSea.
 const GET_LINKS = [
@@ -100,20 +100,48 @@ function walletDot(address) {
   return `background: linear-gradient(135deg, hsl(${h1} 80% 60%), hsl(${h2} 75% 50%))`;
 }
 
-// Lulus nobody's wallet holds yet and that haven't been burnt.
-function unclaimedIds() {
+// A token's art. This is a demo with 33 pieces of real Lulu art, so a
+// wallet connected after many have been burned may hold a second copy of
+// a piece: that copy's id is the art id plus a multiple of ART_SPAN,
+// unique on screen, showing the same art and number.
+const ART_SPAN = 10000;
+const artId = (id) => id % ART_SPAN;
+
+function shuffled(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// `n` Lulus for a newly connected wallet. It's for showing the burn, so
+// there are always some: first art nobody holds and nobody has burned,
+// then art that was burned (a demo wallet can hold a Lulu someone else
+// burned), then fresh copies of whatever's left.
+function lulusForNewWallet(n) {
   const held = new Set(state.wallets.flatMap((w) => w.lulus));
-  const burned = new Set(state.burned);
-  return LULU_IDS.filter((id) => !held.has(id) && !burned.has(id));
+  const burned = new Set(state.burned.map(artId));
+  const heldArt = new Set([...held].map(artId));
+  const untouched = shuffled(LULU_IDS.filter((id) => !heldArt.has(id) && !burned.has(id)));
+  const reburn = shuffled(LULU_IDS.filter((id) => !heldArt.has(id) && burned.has(id)));
+  const out = [...untouched, ...reburn].slice(0, n);
+  for (let k = 1; out.length < n; k++) {
+    for (const art of shuffled(LULU_IDS)) {
+      const id = k * ART_SPAN + art;
+      if (out.length >= n) break;
+      if (!held.has(id) && !out.includes(id)) out.push(id);
+    }
+  }
+  return out.sort((a, b) => artId(a) - artId(b));
 }
 
 function connectWallet(kind) {
   // The first wallet holds seven (two sets and one over, so the bonus has
-  // something to show); later ones somewhere between two and six.
-  const free = unclaimedIds().sort(() => Math.random() - 0.5);
-  const n = state.wallets.length === 0 ? 7 : 2 + Math.floor(Math.random() * 5);
-  const lulus = free.slice(0, n).sort((a, b) => a - b);
-  const wallet = { id: `w${Date.now().toString(36)}`, kind, address: randomAddress(), lulus };
+  // something to show); later ones between three and seven.
+  const n = state.wallets.length === 0 ? 7 : 3 + Math.floor(Math.random() * 5);
+  const wallet = { id: `w${Date.now().toString(36)}`, kind, address: randomAddress(), lulus: lulusForNewWallet(n) };
   state.wallets.push(wallet);
   save();
   return wallet;
@@ -280,9 +308,9 @@ function pageHTML() {
         .map(
           ({ id, wallet }) => `
           <button class="lulu-tile" data-lulu-id="${id}" aria-pressed="false">
-            <span class="lulu-tile-media"><img src="${luluImage(id)}" alt="Lulu #${id}" draggable="false"></span>
+            <span class="lulu-tile-media"><img src="${luluImage(id)}" alt="Lulu #${artId(id)}" draggable="false"></span>
             <span class="lulu-tile-meta">
-              <span class="lulu-tile-name">Lulu #${id}</span>
+              <span class="lulu-tile-name">Lulu #${artId(id)}</span>
               ${state.wallets.length > 1 ? `<i class="lulu-wallet-dot" style="${walletDot(wallet.address)}" title="${shortAddress(wallet.address)}"></i>` : ""}
             </span>
             <span class="lulu-tile-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12.5 10 17 19 7.5"/></svg></span>
@@ -420,7 +448,7 @@ function updateSummary({ keepRange = false } = {}) {
   const shownSets = sets.slice(0, MAX_SETS);
   const hiddenCount = picked.length - shownSets.flat().length;
   const nextPos = new Map();
-  const thumb = (id, cls) => `<img class="${cls}" src="${luluImage(id)}" alt="Lulu #${id}" title="Lulu #${id}" draggable="false">`;
+  const thumb = (id, cls) => `<img class="${cls}" src="${luluImage(id)}" alt="Lulu #${artId(id)}" title="Lulu #${artId(id)}" draggable="false">`;
   root.querySelector("#luluPicked").innerHTML = picked.length
     ? shownSets
         .map((set) => {
