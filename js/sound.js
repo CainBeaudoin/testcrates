@@ -215,54 +215,78 @@ export function playLuluTick(up, count) {
   if (!ctx) return;
   const now = ctx.currentTime + 0.005;
   if (!up) {
-    tone(ctx, { freq: 520, start: now, duration: 0.06, type: "sine", gain: 0.03, freqEnd: 420 });
+    tone(ctx, { freq: 620, start: now, duration: 0.07, type: "triangle", gain: 0.06, freqEnd: 480 });
     return;
   }
   const step = ((count - 1) % 3) + 1;
-  const freq = [660, 784, 988][step - 1];
-  tone(ctx, { freq, start: now, duration: 0.07, type: "triangle", gain: 0.035 });
-  if (step === 3) tone(ctx, { freq: 1480, start: now + 0.05, duration: 0.22, type: "sine", gain: 0.04 });
+  const freq = [784, 988, 1175][step - 1];
+  tone(ctx, { freq, start: now, duration: 0.08, type: "triangle", gain: 0.08 });
+  if (step === 3) {
+    tone(ctx, { freq: 1568, start: now + 0.05, duration: 0.3, type: "sine", gain: 0.09 });
+    tone(ctx, { freq: 2349, start: now + 0.1, duration: 0.25, type: "sine", gain: 0.04 });
+  }
 }
 
-/** One Lulu catching: a soft whoomph, a low thump, then crackle. */
+// Fire, the way small speakers carry it: the energy sits between a few
+// hundred hertz and a few kilohertz (a laptop or phone plays almost
+// nothing under ~200Hz), and the crackle does most of the work.
+function crackle(ctx, from, to, { density = 1, level = 1 } = {}) {
+  let at = from;
+  while (at < to) {
+    const len = 0.004 + Math.random() * 0.018;
+    noise(ctx, {
+      start: at,
+      duration: len,
+      type: "bandpass",
+      freq: 1400 + Math.random() * 4200,
+      q: 1.4,
+      env: [[0.0015, (0.12 + Math.random() * 0.3) * level], [len, 0.0001]],
+    });
+    at += (0.018 + Math.random() * 0.07) / density;
+  }
+}
+
+/** One Lulu catching: a bright fwoosh, a body to it, and a burst of crackle. */
 export function playLuluIgnite() {
   const ctx = getCtx();
   if (!ctx) return;
   const t = ctx.currentTime + 0.01;
   noise(ctx, {
     start: t,
-    duration: 0.9,
-    freq: 220,
-    freqTo: [[0.22, 2400], [0.9, 500]],
-    env: [[0.07, 0.16], [0.35, 0.08], [0.9, 0.0001]],
+    duration: 1.0,
+    type: "bandpass",
+    freq: 450,
+    q: 0.8,
+    freqTo: [[0.22, 3200], [1.0, 800]],
+    env: [[0.05, 0.5], [0.3, 0.24], [1.0, 0.0001]],
   });
-  tone(ctx, { freq: 120, start: t, duration: 0.32, type: "sine", gain: 0.14, freqEnd: 48 });
-  const pops = 10 + Math.floor(Math.random() * 6);
-  for (let i = 0; i < pops; i++) {
-    const at = t + 0.08 + Math.random() * 1.0;
-    const len = 0.008 + Math.random() * 0.025;
-    noise(ctx, {
-      start: at,
-      duration: len,
-      type: "highpass",
-      freq: 1800 + Math.random() * 3500,
-      env: [[0.002, 0.04 + Math.random() * 0.08], [len, 0.0001]],
-    });
-  }
+  tone(ctx, { freq: 300, start: t, duration: 0.42, type: "triangle", gain: 0.2, freqEnd: 95 });
+  crackle(ctx, t + 0.06, t + 0.9, { density: 1.6, level: 1 });
 }
 
-/** The fire under the whole burn: a low rumble that swells and settles. */
+/** The fire under the whole burn: a crackling roar that swells and settles. */
 export function playBurnRoar(seconds) {
   const ctx = getCtx();
   if (!ctx) return;
   const t = ctx.currentTime + 0.01;
+  const end = seconds + 0.6;
   noise(ctx, {
     start: t,
-    duration: seconds + 0.6,
-    freq: 160,
-    freqTo: [[seconds * 0.4, 520], [seconds + 0.6, 140]],
-    q: 1.2,
-    env: [[0.25, 0.12], [seconds * 0.7, 0.1], [seconds + 0.6, 0.0001]],
+    duration: end,
+    type: "bandpass",
+    freq: 500,
+    q: 0.6,
+    freqTo: [[seconds * 0.45, 1500], [end, 600]],
+    env: [[0.2, 0.2], [seconds * 0.75, 0.16], [end, 0.0001]],
+  });
+  crackle(ctx, t + 0.1, t + seconds + 0.3, { density: 1, level: 0.75 });
+  // The last of it: a high sizzle as the embers go out.
+  noise(ctx, {
+    start: t + seconds - 0.2,
+    duration: 0.9,
+    type: "highpass",
+    freq: 3500,
+    env: [[0.1, 0.07], [0.9, 0.0001]],
   });
 }
 
@@ -272,9 +296,10 @@ export function playCreditsAdded() {
   if (!ctx) return;
   const now = ctx.currentTime + 0.01;
   [1046.5, 1318.5, 1568, 2093, 2637].forEach((f, i) => {
-    const at = now + i * 0.065;
-    tone(ctx, { freq: f, start: at, duration: 0.5, type: "sine", gain: 0.07 });
-    tone(ctx, { freq: f * 2.76, start: at, duration: 0.12, type: "sine", gain: 0.015 });
+    const at = now + i * 0.07;
+    tone(ctx, { freq: f, start: at, duration: 0.55, type: "sine", gain: 0.15 });
+    tone(ctx, { freq: f * 2.76, start: at, duration: 0.12, type: "sine", gain: 0.03 });
   });
-  tone(ctx, { freq: 2093, start: now + 0.36, duration: 0.9, type: "triangle", gain: 0.03 });
+  tone(ctx, { freq: 2093, start: now + 0.4, duration: 1.0, type: "triangle", gain: 0.07 });
+  tone(ctx, { freq: 3136, start: now + 0.48, duration: 0.8, type: "sine", gain: 0.04 });
 }
