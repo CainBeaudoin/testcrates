@@ -2041,18 +2041,19 @@ function renderHomeStore() {
   homeStoreIO = playWhileVisible(el);
 }
 
-// ---- Home, right: the drops' videos as a deck. The one in front plays
-// (muted); when it ends it's dealt off to the left and goes to the back,
-// and the next comes forward. The two behind it show past its top right
-// edge, like the stacks elsewhere on the site. A banner along each video's
-// foot says which drop it is. Click the front one to watch it properly;
-// or deal through them yourself: drag or swipe the front one aside (left
-// for the next, right for the one before), scroll sideways on a trackpad,
-// use the mouse wheel once the pointer's on it, or the arrow keys.
+// ---- Home, left: the drops' videos on a wheel that turns upward, beside
+// the store's (the main one, on the right, which stays put). The videos
+// sit round the wheel's rim, so the one in front is flat and full size and
+// the ones above and below it tilt away, smaller and darker; the column is
+// exactly the store's height. The one in front plays (muted); when it ends
+// the wheel rolls up and the next comes up from below. A banner along each
+// video's foot says which drop it is; arrows and dots sit at the side.
+// Click the front one to watch it properly, one above or below to bring it
+// round; or roll it yourself: drag or swipe it up and down, use the mouse
+// wheel once the pointer's on it, or the arrow keys.
 const dropReelEl = document.getElementById("homeReel");
 let dropReel = null;
-let reelIndex = 0; // the front card, kept across visits
-const DECK_SHOWN = 3; // cards visible: the front and two behind
+let reelIndex = 0; // the video in front, kept across visits
 
 function reelBannerHTML(key) {
   const cat = CATEGORIES[key];
@@ -2069,24 +2070,30 @@ function renderDropReel() {
   stopReel();
   if (!dropReelEl) return;
   const keys = orderedCrates().map(([k]) => k);
+  dropReelEl.style.setProperty("--n", keys.length);
   dropReelEl.innerHTML = `
-    <div class="deck-stage">
-      ${keys
-        .map(
-          (k, i) => `<div class="deck-card" data-reel-i="${i}" role="button" tabindex="-1" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: watch the video">
-            ${dropVideoFrameHTML(k)}
-            ${reelBannerHTML(k)}
-            <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
-          </div>`
-        )
-        .join("")}
+    <div class="drum-frame">
+      <div class="drum">
+        ${keys
+          .map(
+            (k, i) => `<div class="drum-face" style="--i:${i}" data-reel-i="${i}" role="button" tabindex="-1" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: watch the video">
+              ${dropVideoFrameHTML(k)}
+              ${reelBannerHTML(k)}
+              <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
+            </div>`
+          )
+          .join("")}
+      </div>
     </div>
-    <div class="deck-nav">
-      <button class="deck-arrow" data-deck="prev" aria-label="Previous drop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"/></svg></button>
-      <span class="deck-dots">${keys.map((k, i) => `<button class="deck-dot" data-deck-go="${i}" style="--tint:${LINE_TINT[lineOf(k)] ?? "#888"}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}"></button>`).join("")}</span>
-      <button class="deck-arrow" data-deck="next" aria-label="Next drop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
+    <div class="drum-nav">
+      <button class="drum-arrow" data-deck="prev" aria-label="Previous drop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg></button>
+      <span class="drum-dots">${keys.map((k, i) => `<button class="deck-dot" data-deck-go="${i}" style="--tint:${LINE_TINT[lineOf(k)] ?? "#888"}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}"></button>`).join("")}</span>
+      <button class="drum-arrow" data-deck="next" aria-label="Next drop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
     </div>`;
-  dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, io: null, drag: null, wheelAcc: 0, wheelLock: 0, hoverAt: 0, suppressClick: false };
+  dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, io: null, ro: null, pos: reelIndex, drag: null, wheelTimer: 0, hoverAt: 0, suppressClick: false };
+  sizeDrum();
+  dropReel.ro = new ResizeObserver(sizeDrum);
+  dropReel.ro.observe(dropReelEl);
   dropReel.io = new IntersectionObserver(([entry]) => {
     if (!dropReel) return;
     dropReel.offscreen = !entry.isIntersecting;
@@ -2094,62 +2101,67 @@ function renderDropReel() {
     else playReelFront();
   });
   dropReel.io.observe(dropReelEl);
-  layDeck({ instant: true });
-  playReelFront();
+  goToReel(reelIndex, { instant: true });
+}
+
+// The wheel's size from its column: the front video a bit over half the
+// column's height (so the ones above and below show), as wide as that
+// allows at 16:9; the rim just big enough for the videos to meet.
+function sizeDrum() {
+  const frame = dropReelEl.querySelector(".drum-frame");
+  if (!dropReel || !frame) return;
+  const w = frame.clientWidth;
+  const h = frame.clientHeight;
+  let ch = h * 0.58;
+  let cw = (ch * 16) / 9;
+  if (cw > w - 8) {
+    cw = w - 8;
+    ch = (cw * 9) / 16;
+  }
+  const r = (ch / 2 / Math.tan(Math.PI / dropReel.n)) * 1.04;
+  dropReelEl.style.setProperty("--cw", `${Math.round(cw)}px`);
+  dropReelEl.style.setProperty("--ch", `${Math.round(ch)}px`);
+  dropReelEl.style.setProperty("--r", `${Math.round(r)}px`);
+  dropReelEl.style.setProperty("--persp", `${Math.round(h * 3)}px`);
 }
 
 const reelFrontIndex = () => ((reelIndex % dropReel.n) + dropReel.n) % dropReel.n;
-const deckCards = () => [...dropReelEl.querySelectorAll(".deck-card")];
+const drumFaces = () => [...dropReelEl.querySelectorAll(".drum-face")];
 
-// Every card to its place: --d is how far back it sits (0 = front).
-function layDeck({ instant = false } = {}) {
-  const front = reelFrontIndex();
-  deckCards().forEach((c, j) => {
-    const d = (j - front + dropReel.n) % dropReel.n;
-    c.classList.toggle("no-anim", instant);
-    c.style.setProperty("--d", d);
-    c.classList.toggle("is-front", d === 0);
-    c.classList.toggle("is-deep", d >= DECK_SHOWN);
-    c.classList.remove("is-running");
-    c.tabIndex = d === 0 ? 0 : -1;
-    c.querySelector(".reel-banner-go").tabIndex = d === 0 ? 0 : -1;
-    const v = c.querySelector("video");
-    if (v && d !== 0) v.pause();
-  });
-  dropReelEl.querySelectorAll(".deck-dot").forEach((dot, j) => dot.classList.toggle("active", j === front));
-  if (instant) requestAnimationFrame(() => deckCards().forEach((c) => c.classList.remove("no-anim")));
+// The drum at `pos` (in videos; fractional while a hand's on it): straight
+// there while dragging, spun round when it settles.
+function setReelPos(pos, { animate = true } = {}) {
+  dropReel.pos = pos;
+  const drum = dropReelEl.querySelector(".drum");
+  drum.classList.toggle("no-anim", !animate);
+  drum.style.setProperty("--turn", `${(pos * 360) / dropReel.n}deg`);
 }
 
-// Deal forward (the front card flies off left and goes to the back) or
-// back (the last card flies in from the left to the front). `to` jumps
-// straight to a card.
-function goToReel(k, { dir = Math.sign(k - reelIndex) } = {}) {
-  if (!dropReel || k === reelIndex) return;
-  const cards = deckCards();
-  const leaving = cards[reelFrontIndex()];
+function goToReel(k, { instant = false } = {}) {
+  if (!dropReel) return;
   reelIndex = k;
-  const arriving = cards[reelFrontIndex()];
-  if (dir > 0) {
-    leaving.classList.remove("is-dragged");
-    leaving.style.removeProperty("--dx");
-    leaving.classList.add("is-leaving");
-    setTimeout(() => leaving.classList.remove("is-leaving"), 420);
-  } else {
-    // Placed off to the left first, then brought in.
-    arriving.classList.add("no-anim", "is-leaving");
-    void arriving.offsetWidth;
-    arriving.classList.remove("no-anim", "is-leaving");
-  }
-  layDeck();
+  const front = reelFrontIndex();
+  setReelPos(k, { animate: !instant });
+  if (instant) requestAnimationFrame(() => dropReelEl.querySelector(".drum")?.classList.remove("no-anim"));
+  drumFaces().forEach((f, j) => {
+    const on = j === front;
+    f.classList.toggle("is-front", on);
+    f.classList.remove("is-running");
+    f.tabIndex = on ? 0 : -1;
+    f.querySelector(".reel-banner-go").tabIndex = on ? 0 : -1;
+    const v = f.querySelector("video");
+    if (v && !on) v.pause();
+  });
+  dropReelEl.querySelectorAll(".deck-dot").forEach((dot, j) => dot.classList.toggle("active", j === front));
   playReelFront();
 }
 
 function haltReelFront() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
-  deckCards().forEach((c) => {
-    c.classList.remove("is-running");
-    c.querySelector("video")?.pause();
+  drumFaces().forEach((f) => {
+    f.classList.remove("is-running");
+    f.querySelector("video")?.pause();
   });
 }
 
@@ -2157,12 +2169,12 @@ function playReelFront() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
   if (dropReel.paused || dropReel.offscreen || document.hidden || dropReel.drag?.moved) return;
-  const card = deckCards()[reelFrontIndex()];
-  const bar = card.querySelector(".drop-reel-progress i");
-  const v = card.querySelector("video");
+  const face = drumFaces()[reelFrontIndex()];
+  const bar = face.querySelector(".drop-reel-progress i");
+  const v = face.querySelector("video");
   const next = () => goToReel(reelIndex + 1);
   if (v) {
-    // A real video sets the pace: the deck deals on when it ends.
+    // A real video sets the pace: the drum spins on when it ends.
     v.muted = true;
     v.currentTime = 0;
     v.ontimeupdate = () => bar.style.setProperty("--p", v.duration ? v.currentTime / v.duration : 0);
@@ -2170,9 +2182,9 @@ function playReelFront() {
     v.play().catch(() => (dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS)));
   } else {
     // A blank one holds the front for a few seconds, its bar filling.
-    card.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
-    void card.offsetWidth;
-    card.classList.add("is-running");
+    face.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
+    void face.offsetWidth;
+    face.classList.add("is-running");
     dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS);
   }
 }
@@ -2192,76 +2204,71 @@ function resumeReel() {
 function stopReel() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
+  clearTimeout(dropReel.wheelTimer);
   dropReel.io?.disconnect();
+  dropReel.ro?.disconnect();
   dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
   dropReel = null;
 }
 
-// Dragging the front card: it follows the pointer sideways, tilting as it
-// goes. Let go far enough (or flick it) and it's dealt: to the left for
-// the next, to the right for the one before. Otherwise it springs back.
-// Sideways only, so on a phone an up-and-down swipe still scrolls.
+// Rolling it by hand: the wheel turns with the pointer (a video's height
+// of drag is one video), and on letting go a flick carries it on a little
+// before it settles on the nearest.
 dropReelEl?.addEventListener("pointerdown", (e) => {
   if (!dropReel || (e.pointerType === "mouse" && e.button !== 0)) return;
-  const card = e.target.closest(".deck-card.is-front");
-  if (!card || e.target.closest("[data-reel-see]")) return;
-  dropReel.drag = { id: e.pointerId, card, x0: e.clientX, x: e.clientX, t: performance.now(), v: 0, moved: false };
+  if (e.target.closest("[data-reel-see], [data-deck], [data-deck-go]")) return;
+  dropReel.drag = { id: e.pointerId, y0: e.clientY, pos0: dropReel.pos, y: e.clientY, t: performance.now(), v: 0, moved: false };
 });
 dropReelEl?.addEventListener("pointermove", (e) => {
   if (!dropReel) return;
   dropReel.hoverAt = performance.now();
   const d = dropReel.drag;
   if (!d || d.id !== e.pointerId) return;
-  const dx = e.clientX - d.x0;
+  const dy = e.clientY - d.y0;
   if (!d.moved) {
-    if (Math.abs(dx) < 6) return;
+    if (Math.abs(dy) < 6) return;
     d.moved = true;
     haltReelFront();
     dropReelEl.setPointerCapture?.(e.pointerId);
-    d.card.classList.add("is-dragged");
+    dropReelEl.classList.add("is-dragging");
   }
   const now = performance.now();
-  d.v = (e.clientX - d.x) / Math.max(1, now - d.t);
-  d.x = e.clientX;
+  d.v = (e.clientY - d.y) / Math.max(1, now - d.t);
+  d.y = e.clientY;
   d.t = now;
-  d.card.style.setProperty("--dx", `${dx}px`);
+  setReelPos(d.pos0 - dy / drumStep(), { animate: false });
 });
+// One video's worth of drag: about the height of the one in front.
+const drumStep = () => parseFloat(dropReelEl.style.getPropertyValue("--ch")) || 200;
 function endReelDrag(e) {
   const d = dropReel?.drag;
   if (!d || d.id !== e.pointerId) return;
   dropReel.drag = null;
+  dropReelEl.classList.remove("is-dragging");
   if (!d.moved) return;
   dropReel.suppressClick = true;
   setTimeout(() => dropReel && (dropReel.suppressClick = false), 0);
-  const dx = e.clientX - d.x0;
-  const far = Math.abs(dx) > d.card.offsetWidth * 0.22 || Math.abs(d.v) > 0.6;
-  d.card.classList.remove("is-dragged");
-  d.card.style.removeProperty("--dx");
-  if (far && dx < 0) goToReel(reelIndex + 1);
-  else if (far && dx > 0) goToReel(reelIndex - 1);
-  else playReelFront();
+  const fling = Math.max(-2, Math.min(2, (-d.v * 300) / drumStep()));
+  goToReel(Math.round(dropReel.pos + fling));
 }
 dropReelEl?.addEventListener("pointerup", endReelDrag);
 dropReelEl?.addEventListener("pointercancel", endReelDrag);
 
-// Wheel and trackpad: one card per push. A sideways scroll always deals;
-// an up-and-down one only once the pointer has actually been moved onto
-// the deck, so scrolling down Home never catches on it as it passes
-// under a resting cursor.
+// Wheel and trackpad: only once the pointer has actually been moved onto
+// it. Otherwise, scrolling down Home, the page would catch on it the
+// moment it slid under a resting cursor.
 dropReelEl?.addEventListener(
   "wheel",
   (e) => {
     if (!dropReel) return;
-    const sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-    if (!sideways && performance.now() - dropReel.hoverAt > 1500) return;
+    if (performance.now() - dropReel.hoverAt > 1500) return;
     e.preventDefault();
-    const now = performance.now();
-    if (now < dropReel.wheelLock) return;
-    dropReel.wheelAcc += sideways ? e.deltaX : e.deltaY;
-    if (Math.abs(dropReel.wheelAcc) < 40) return;
-    goToReel(reelIndex + Math.sign(dropReel.wheelAcc));
-    dropReel.wheelAcc = 0;
-    dropReel.wheelLock = now + 380; // one card per push, not a blur
+    haltReelFront();
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 800 : 1;
+    setReelPos(dropReel.pos + (delta * unit) / (drumStep() * 1.1), { animate: false });
+    clearTimeout(dropReel.wheelTimer);
+    dropReel.wheelTimer = setTimeout(() => dropReel && goToReel(Math.round(dropReel.pos)), 140);
   },
   { passive: false }
 );
@@ -2287,23 +2294,24 @@ dropReelEl?.addEventListener("click", (e) => {
     if (d > dropReel.n / 2) d -= dropReel.n;
     return goToReel(reelIndex + d);
   }
-  const card = e.target.closest(".deck-card");
-  if (!card) return;
+  const face = e.target.closest(".drum-face");
+  if (!face) return;
   playClick();
-  if (card.classList.contains("is-front")) return openDropVideo(dropReel.keys[Number(card.dataset.reelI)], card);
-  // One of the cards behind: bring it forward.
-  const d = (Number(card.dataset.reelI) - reelFrontIndex() + dropReel.n) % dropReel.n;
+  if (face.classList.contains("is-front")) return openDropVideo(dropReel.keys[Number(face.dataset.reelI)], face);
+  // One above or below: roll it round, the short way.
+  let d = (Number(face.dataset.reelI) - reelFrontIndex() + dropReel.n) % dropReel.n;
+  if (d > dropReel.n / 2) d -= dropReel.n;
   goToReel(reelIndex + d);
 });
 dropReelEl?.addEventListener("keydown", (e) => {
   if (!dropReel) return;
-  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("deck-card")) {
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("drum-face")) {
     e.preventDefault();
     e.target.click();
-  } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+  } else if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"].includes(e.key)) {
     e.preventDefault();
-    goToReel(reelIndex + (e.key === "ArrowRight" ? 1 : -1));
-    dropReelEl.querySelector(".deck-card.is-front")?.focus();
+    goToReel(reelIndex + (e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : -1));
+    dropReelEl.querySelector(".drum-face.is-front")?.focus();
   }
 });
 

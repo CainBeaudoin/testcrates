@@ -8865,22 +8865,25 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 /* ===== Videos: the store and the drops' deck on Home, the packing video,
    and the pop-up player ================================================== */
 
-/* Side by side: the store on the left, the drops' deck on the right, the
-   same height. One above the other on a phone. */
+/* Side by side: the drops' wheel on the left, the store's video (the main
+   one, bigger) on the right. The store sets the row's height and the wheel
+   fills exactly that, so the two sides match. One above the other on a
+   phone, the store first. */
+@property --turn {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
 .home-videos {
-  --deck-x: 24px; /* how far each card behind sits to the right */
-  --deck-y: 20px; /* and up */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 .home-store-card,
-.deck-card {
+.drum-face {
   position: relative;
   display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
   padding: 0;
   border: none;
   border-radius: var(--r-xl);
@@ -8891,77 +8894,97 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   text-align: left;
   cursor: pointer;
 }
-/* The store is the same size as the deck's front card, and level with it. */
-.home-store { padding: calc(var(--deck-y) * 2) calc(var(--deck-x) * 2) 0 0; }
-.home-store-card { box-shadow: 0 22px 50px -24px rgba(0, 0, 0, 0.5); }
+.home-store-card { width: 100%; aspect-ratio: 16 / 9; box-shadow: 0 22px 50px -24px rgba(0, 0, 0, 0.5); }
 .home-store-card .drop-video,
-.deck-card .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.drum-face .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .home-store-mark { display: inline-flex; padding: 3px 7px; border-radius: 6px; background: #fff; color: #111; width: max-content; }
 .home-store-mark .brand-mark { height: 11px; width: auto; }
-.home-store-card .drop-video-ph,
-.deck-card .drop-video-ph { padding-bottom: 46px; }
+.home-store-card .drop-video-ph { padding-bottom: 46px; }
+.drum-face .drop-video-ph { padding-bottom: 34px; }
+.drum-face .drop-video-ph-play { width: 40px; height: 40px; font-size: 15px; margin-bottom: 2px; }
 
-/* The deck: the front card, and two straight behind it, each nudged up and
-   right and a little darker, like the stacks elsewhere. The rest wait
-   unseen behind those. */
-.drop-deck { min-width: 0; }
-.deck-stage {
-  position: relative;
-  padding: calc(var(--deck-y) * 2) calc(var(--deck-x) * 2) 0 0;
-  touch-action: pan-y; /* sideways drags deal; up and down still scrolls */
-  user-select: none;
-}
-.deck-card {
-  --d: 0;
+/* The wheel: videos round the rim of a wheel turning on its side axis,
+   seen face on, so the one in front is flat and the ones above and below
+   tilt away (darker the further round). The frame fades out top and
+   bottom. --turn is a registered angle so the faces' shading follows the
+   roll. */
+.drop-drum { position: relative; order: -1; min-width: 0; }
+.drum-frame {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  width: calc(100% - var(--deck-x) * 2);
-  z-index: calc(20 - var(--d));
-  transform: translate(calc(var(--d) * var(--deck-x)), calc(var(--d) * var(--deck-y) * -1)) scale(calc(1 - var(--d) * 0.02));
-  transform-origin: 0 100%;
-  filter: brightness(calc(1 - var(--d) * 0.22));
-  box-shadow: 0 22px 50px -24px rgba(0, 0, 0, 0.5);
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.5s ease, opacity 0.4s ease;
+  inset: 0 34px 0 0;
+  perspective: var(--persp, 1200px);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 13%, #000 87%, transparent);
+  touch-action: none; /* up-and-down drags roll the wheel */
+  user-select: none;
+  cursor: grab;
 }
-/* The front card holds the stage's height; the rest stack over it. (In
-   flow it's sized off the stage's content box, the others off its padding
-   box, so 100% here is the same width as theirs.) */
-.deck-card.is-front { position: relative; width: 100%; cursor: grab; }
-.deck-card.is-deep { opacity: 0; pointer-events: none; transform: translate(calc(var(--deck-x) * 3), calc(var(--deck-y) * -3)) scale(0.94); }
-.deck-card.no-anim { transition: none; }
-.deck-card img, .deck-card video { -webkit-user-drag: none; }
-.deck-card:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-/* Held: it follows the pointer, tilting as it goes. */
-.deck-card.is-dragged { transition: none; cursor: grabbing; transform: translateX(var(--dx, 0px)) rotate(calc(var(--dx, 0px) / 40px * 1deg)); }
-/* Dealt: off to the left, turning as it goes (it then waits at the back). */
-.deck-card.is-leaving { z-index: 30; opacity: 0; transform: translateX(-75%) rotate(-10deg) scale(0.95); transition: transform 0.42s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.42s ease; }
+.drop-drum.is-dragging .drum-frame { cursor: grabbing; }
+.drum {
+  --step: calc(360deg / var(--n, 9));
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--cw, 300px);
+  height: var(--ch, 170px);
+  margin: calc(var(--ch, 170px) / -2) 0 0 calc(var(--cw, 300px) / -2);
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--r, 300px) * -1)) rotateX(var(--turn));
+  transition: --turn 0.9s cubic-bezier(0.65, 0, 0.25, 1);
+}
+.drum.no-anim { transition: none; }
+.drum-face {
+  --a: calc(var(--i) * var(--step) - var(--turn)); /* round from the front */
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+  transform: rotateX(calc(var(--i) * var(--step) * -1)) translateZ(var(--r, 300px));
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  filter: brightness(calc(0.3 + 0.7 * (cos(var(--a)) + 1) / 2));
+}
+.drum-face.is-front { box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.55); }
+.drum-face img, .drum-face video { -webkit-user-drag: none; }
+.drum-face:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.drum-face .reel-banner { padding: 26px 12px 12px; }
+.drum-face .reel-banner-text b { font-size: 0.9rem; }
 
-.deck-nav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
-.deck-arrow {
+/* Up, the drops as dots, down: a column along the wheel's right side. */
+.drum-nav {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateY(-50%);
+}
+.drum-arrow {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: 50%;
   background: var(--control-fill);
   color: var(--text);
   cursor: pointer;
 }
-.deck-arrow:hover { background: var(--control-fill-hover); }
-.deck-dots { display: flex; gap: 6px; }
+.drum-arrow:hover { background: var(--control-fill-hover); }
+.drum-dots { display: flex; flex-direction: column; gap: 5px; }
 .deck-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   padding: 0;
   border: none;
   border-radius: var(--r-pill);
   background: var(--track);
   cursor: pointer;
-  transition: width 0.3s ease, background 0.3s ease;
+  transition: height 0.3s ease, background 0.3s ease;
 }
-.deck-dot.active { width: 22px; background: var(--tint); }
+.deck-dot.active { height: 20px; background: var(--tint); }
 
 /* The banner along each video's foot: which drop it is, and the way in. */
 .reel-banner {
@@ -9015,7 +9038,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
 }
-.deck-card.is-front .reel-banner-go,
+.drum-face.is-front .reel-banner-go,
 .reel-banner-go.is-shown { opacity: 1; transform: none; pointer-events: auto; }
 .reel-banner-go svg { width: 9px; height: 9px; margin-right: 4px; vertical-align: -1px; }
 .reel-banner-go:hover { background: var(--open-green); }
@@ -9034,7 +9057,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-.deck-card.is-front .drop-reel-progress { opacity: 1; }
+.drum-face.is-front .drop-reel-progress { opacity: 1; }
 .drop-reel-progress i {
   display: block;
   height: 100%;
@@ -9043,7 +9066,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transform-origin: left;
   transform: scaleX(var(--p, 0));
 }
-.deck-card.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
+.drum-face.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
 @keyframes reel-hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* No video yet: a blank frame in the drop's colour, waiting for one. */
@@ -9154,8 +9177,8 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 
 @media (max-width: 760px) {
-  .home-videos { grid-template-columns: 1fr; --deck-x: 16px; --deck-y: 14px; }
-  .home-store { padding: 0; }
+  .home-videos { grid-template-columns: 1fr; }
+  .drop-drum { order: 0; aspect-ratio: 4 / 3; }
 }
 @media (max-width: 640px) {
   .reel-banner { padding: 26px 10px 13px; }
@@ -9165,7 +9188,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .drop-video-modal { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .deck-card, .deck-card.is-leaving { transition: none; }
+  .drum { transition: none; }
 }
 
 /* How it works, 2: Cash back and Keep, under the fanned pieces. */

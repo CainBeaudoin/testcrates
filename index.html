@@ -148,9 +148,9 @@ try {
         <div class="home-crates" id="homeCrates" data-reveal="stagger"></div>
       </div>
 
-      <!-- Inside the drops: the store's own video on the left, always there;
-           on the right, every drop's video in a deck that shuffles through
-           them. Filled by renderHomeStore and renderDropReel in app.js. -->
+      <!-- Inside the drops: every drop's video on a wheel that rolls upward
+           (left), beside the store's own video, the main one, which stays
+           put (right). Filled by renderDropReel and renderHomeStore. -->
       <div class="home-block">
         <div class="home-block-head" data-reveal>
           <div>
@@ -161,7 +161,7 @@ try {
         </div>
         <div class="home-videos">
           <div class="home-store" id="homeStore"></div>
-          <section id="homeReel" class="drop-deck" aria-label="Drop videos"></section>
+          <section id="homeReel" class="drop-drum" aria-label="Drop videos"></section>
         </div>
       </div>
 
