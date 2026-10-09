@@ -630,6 +630,7 @@ function showScreen(el) {
   if (el.id !== "screen-category") {
     categoryBoxViewers.forEach((v) => v.dispose());
     categoryBoxViewers = [];
+    stopReel();
   }
   // Leaving Drops (or coming back to it, e.g. after an open) always lands
   // on the tier list rather than whichever tier page was last open.
@@ -1908,6 +1909,7 @@ function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
+  pauseReel();
   // Its odds and prizes as of now (only the open page is kept live).
   const pool = supply.pool(wrap.dataset.tier);
   wrap.querySelector(".odds-panel").innerHTML = buildOddsPanelHTML(pool);
@@ -1919,7 +1921,9 @@ function openTierDetail(wrap) {
 }
 
 function closeTierDetail() {
+  const wasOpen = document.body.classList.contains("drop-detail-open");
   document.body.classList.remove("drop-detail-open");
+  if (wasOpen) resumeReel();
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   if (recentPullsTierKey !== null) {
     recentPullsTierKey = null;
@@ -2093,6 +2097,7 @@ function renderCategories() {
     prizePanel.innerHTML = `
       <div class="prize-dropdown-header">
         <span>What&rsquo;s inside</span>
+        <button class="drop-watch-btn" data-watch="${key}" aria-label="Watch what's inside: video">${PLAY_SVG} Watch</button>
         <button class="odds-toggle-btn" aria-label="Odds breakdown" title="Odds breakdown">${ICONS.dice}</button>
       </div>
       <div class="odds-panel hidden">${buildOddsPanelHTML(supply.pool(key))}</div>
@@ -2132,9 +2137,314 @@ function renderCategories() {
     }
   });
 
+  renderDropReel();
   renderRecentPulls();
   renderWallet();
 }
+
+// ---- Drop videos -------------------------------------------------------------
+// Each drop can have a video of what's really in it: the real items, on
+// camera. To add one, put the file in assets/videos/ and its path here,
+// keyed by crate (the keys in CATEGORIES); a poster frame is optional. A
+// drop without one shows a blank "coming soon" frame in its place, so the
+// reel and the pop-up are whole either way.
+const DROP_VIDEOS = {
+  // sneakers: { src: "assets/videos/sneakers.mp4", poster: "assets/videos/sneakers.jpg" },
+};
+// How long a drop with no video yet stays at the front of the reel.
+const REEL_PLACEHOLDER_MS = 6000;
+const LINE_TINT = { stocks: "#2f9e5b", sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f" };
+const PLAY_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>`;
+
+const dropVideoOf = (key) => (DROP_VIDEOS[key]?.src ? DROP_VIDEOS[key] : null);
+
+// The frame itself: the video, or the blank where it will go.
+function dropVideoFrameHTML(key, { player = false } = {}) {
+  const v = dropVideoOf(key);
+  const cat = CATEGORIES[key];
+  if (v) {
+    return `<video class="drop-video" src="${v.src}"${v.poster ? ` poster="${v.poster}"` : ""} playsinline preload="metadata"${
+      player ? " controls autoplay" : " muted"
+    }></video>`;
+  }
+  return `<span class="drop-video-ph" style="--tint:${LINE_TINT[lineOf(key)] ?? "#888"}">
+      <span class="drop-video-ph-play">${PLAY_SVG}</span>
+      <span class="drop-video-ph-name">${cat.badge} <b>${cat.label}</b></span>
+      <span class="drop-video-ph-sub">Video coming soon</span>
+    </span>`;
+}
+
+// ---- The reel: every drop's video on a turning ring, at the top of Drops.
+// The one in front plays (muted); when it ends the ring turns on to the
+// next, the last one swinging away to the left and back. The drop's own 3D
+// box stands beside the video in front, so it's clear which drop it is.
+// Click the front video to watch it properly; click one further round to
+// bring it to the front. Only on All Drops, and never while a drop's own
+// page is open.
+const dropReelEl = document.getElementById("dropReel");
+let dropReel = null;
+let reelIndex = 0; // kept across re-renders, so Drops comes back where it was
+
+function renderDropReel() {
+  stopReel();
+  const show = dropLine === "all" && screenCategoryEl.classList.contains("active");
+  dropReelEl.hidden = !show;
+  if (!show) {
+    dropReelEl.innerHTML = "";
+    return;
+  }
+  const keys = orderedCrates().map(([k]) => k);
+  dropReelEl.style.setProperty("--n", keys.length);
+  dropReelEl.innerHTML = `
+    <div class="drop-reel-stage">
+      <div class="drop-reel-ring">
+        ${keys
+          .map(
+            (k, i) => `<button class="drop-reel-slide" style="--i:${i}" data-reel-i="${i}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: video">
+              ${dropVideoFrameHTML(k)}
+              <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
+            </button>`
+          )
+          .join("")}
+      </div>
+      <div class="drop-reel-box" aria-hidden="true"></div>
+    </div>
+    <div class="drop-reel-caption">
+      <span class="drop-reel-title" aria-live="polite"></span>
+      <span class="drop-reel-actions">
+        <button class="drop-reel-btn" data-reel-act="watch">${PLAY_SVG} Watch</button>
+        <button class="drop-reel-btn is-solid" data-reel-act="see">See drop</button>
+      </span>
+    </div>`;
+  dropReel = { keys, n: keys.length, timer: 0, viewer: null, viewerKey: null, token: 0, paused: false, ro: null };
+  sizeReel();
+  dropReel.ro = new ResizeObserver(sizeReel);
+  dropReel.ro.observe(dropReelEl);
+  goToReel(reelIndex, { instant: true });
+}
+
+// The ring's radius: just wide enough that neighbouring slides meet.
+function sizeReel() {
+  const slide = dropReelEl.querySelector(".drop-reel-slide");
+  if (!dropReel || !slide) return;
+  const w = slide.offsetWidth;
+  dropReelEl.style.setProperty("--r", `${Math.round((w / 2 / Math.tan(Math.PI / dropReel.n)) * 1.06)}px`);
+}
+
+const reelFrontIndex = () => ((reelIndex % dropReel.n) + dropReel.n) % dropReel.n;
+
+function goToReel(k, { instant = false } = {}) {
+  if (!dropReel) return;
+  reelIndex = k;
+  const i = reelFrontIndex();
+  const key = dropReel.keys[i];
+  const cat = CATEGORIES[key];
+  const ring = dropReelEl.querySelector(".drop-reel-ring");
+  ring.classList.toggle("no-anim", instant);
+  ring.style.setProperty("--turn", `${(k * 360) / dropReel.n}deg`);
+  if (instant) requestAnimationFrame(() => ring.classList.remove("no-anim"));
+  dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s, j) => {
+    s.classList.toggle("is-front", j === i);
+    s.classList.remove("is-running");
+    s.tabIndex = j === i ? 0 : -1;
+    const v = s.querySelector("video");
+    if (v && j !== i) v.pause();
+  });
+  dropReelEl.querySelector(".drop-reel-title").innerHTML = `<span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span> <b>${cat.label}</b>${
+    cat.poweredBy ? `<span class="drop-reel-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : ""
+  }`;
+  swapReelBox(key);
+  playReelFront();
+}
+
+function playReelFront() {
+  if (!dropReel) return;
+  clearTimeout(dropReel.timer);
+  if (dropReel.paused || document.hidden) return;
+  const slide = dropReelEl.querySelectorAll(".drop-reel-slide")[reelFrontIndex()];
+  const bar = slide.querySelector(".drop-reel-progress i");
+  const v = slide.querySelector("video");
+  if (v) {
+    // A real video sets the pace: the ring turns when it ends.
+    v.muted = true;
+    v.currentTime = 0;
+    v.ontimeupdate = () => bar.style.setProperty("--p", v.duration ? v.currentTime / v.duration : 0);
+    v.onended = () => goToReel(reelIndex + 1);
+    v.play().catch(() => (dropReel.timer = setTimeout(() => goToReel(reelIndex + 1), REEL_PLACEHOLDER_MS)));
+  } else {
+    // A blank one holds the front for a few seconds, its bar filling.
+    slide.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
+    void slide.offsetWidth;
+    slide.classList.add("is-running");
+    dropReel.timer = setTimeout(() => goToReel(reelIndex + 1), REEL_PLACEHOLDER_MS);
+  }
+}
+
+function pauseReel() {
+  if (!dropReel) return;
+  dropReel.paused = true;
+  clearTimeout(dropReel.timer);
+  dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s) => {
+    s.classList.remove("is-running");
+    s.querySelector("video")?.pause();
+  });
+}
+
+function resumeReel() {
+  if (!dropReel || !screenCategoryEl.classList.contains("active") || document.body.classList.contains("drop-detail-open")) return;
+  dropReel.paused = false;
+  playReelFront();
+}
+
+function stopReel() {
+  if (!dropReel) return;
+  clearTimeout(dropReel.timer);
+  dropReel.ro?.disconnect();
+  dropReel.token++;
+  dropReel.viewer?.dispose();
+  dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
+  dropReel = null;
+}
+
+// The box beside the video: the front drop's own, live. One viewer at a
+// time (a browser only allows so many), swapped with a quick fade as the
+// ring turns.
+function swapReelBox(key) {
+  if (!dropReel || dropReel.viewerKey === key) return;
+  dropReel.viewerKey = key;
+  const token = ++dropReel.token;
+  const holder = dropReelEl.querySelector(".drop-reel-box");
+  const old = holder.querySelector("canvas");
+  const oldViewer = dropReel.viewer;
+  dropReel.viewer = null;
+  old?.classList.add("is-out");
+  setTimeout(() => {
+    oldViewer?.dispose();
+    old?.remove();
+    if (!dropReel || token !== dropReel.token) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "is-out";
+    holder.appendChild(canvas);
+    createBoxViewer(canvas, key, crateBoxKind(CATEGORIES[key])).then((viewer) => {
+      if (!dropReel || token !== dropReel.token || !canvas.isConnected) return viewer.dispose();
+      dropReel.viewer = viewer;
+      requestAnimationFrame(() => canvas.classList.remove("is-out"));
+    });
+  }, old ? 220 : 0);
+}
+
+dropReelEl.addEventListener("click", (e) => {
+  if (!dropReel) return;
+  const slide = e.target.closest(".drop-reel-slide");
+  const act = e.target.closest("[data-reel-act]");
+  const key = dropReel.keys[reelFrontIndex()];
+  if (slide) {
+    playClick();
+    const i = Number(slide.dataset.reelI);
+    if (i === reelFrontIndex()) return openDropVideo(key, slide);
+    // Round the short way to the one clicked.
+    let d = (i - reelFrontIndex() + dropReel.n) % dropReel.n;
+    if (d > dropReel.n / 2) d -= dropReel.n;
+    goToReel(reelIndex + d);
+  } else if (act?.dataset.reelAct === "watch") {
+    playClick();
+    openDropVideo(key, dropReelEl.querySelector(".drop-reel-slide.is-front"));
+  } else if (act?.dataset.reelAct === "see") {
+    playClick();
+    const wrap = categoryList.querySelector(`.category-wrap[data-tier="${key}"]`);
+    if (wrap) openTierDetail(wrap);
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!dropReel) return;
+  if (document.hidden) {
+    clearTimeout(dropReel.timer);
+    dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
+  } else if (!dropReel.paused) playReelFront();
+});
+
+// ---- The pop-up: a drop's video, large, with sound and controls. It
+// grows out of whatever opened it (the reel slide, or Watch on the drop's
+// page) and shrinks back into it on close. Nothing plays until it's asked
+// for: a drop's page never starts a video by itself.
+const dropVideoModal = document.getElementById("dropVideoModal");
+const dropVideoCard = document.getElementById("dropVideoCard");
+let dropVideoOrigin = null;
+
+function flipFrom(el, from, { reverse = false } = {}) {
+  const to = el.getBoundingClientRect();
+  if (!from || !from.width || !to.width) return null;
+  const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+  const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+  const t = `translate(${dx}px, ${dy}px) scale(${from.width / to.width}, ${from.height / to.height})`;
+  const frames = [{ transform: t, opacity: 0.4 }, { transform: "none", opacity: 1 }];
+  return el.animate(reverse ? frames.reverse() : frames, { duration: reverse ? 300 : 420, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "both" });
+}
+
+function openDropVideo(key, originEl) {
+  pauseReel();
+  const cat = CATEGORIES[key];
+  const onItsPage = document.body.classList.contains("drop-detail-open");
+  dropVideoOrigin = originEl ?? null;
+  dropVideoCard.innerHTML = `
+    <div class="dvm-stage">${dropVideoFrameHTML(key, { player: true })}</div>
+    <div class="dvm-bar">
+      <img class="dvm-box" alt="">
+      <span class="dvm-title">
+        <span><span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span> <b>${cat.label}</b></span>
+        <small>What&rsquo;s inside, on camera</small>
+      </span>
+      ${onItsPage ? "" : `<button class="drop-reel-btn is-solid" data-dvm="see" data-key="${key}">See drop</button>`}
+      <button class="dvm-close" data-dvm="close" aria-label="Close video">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>`;
+  getBoxSnapshot(key, crateBoxKind(cat)).then((url) => {
+    const img = dropVideoCard.querySelector(".dvm-box");
+    if (img) img.src = url;
+  });
+  dropVideoModal.classList.remove("hidden");
+  requestAnimationFrame(() => dropVideoModal.classList.add("visible"));
+  flipFrom(dropVideoCard, dropVideoOrigin?.getBoundingClientRect());
+  dropVideoCard.querySelector("video")?.play().catch(() => {});
+}
+
+function closeDropVideo() {
+  if (dropVideoModal.classList.contains("hidden")) return;
+  dropVideoCard.querySelector("video")?.pause();
+  dropVideoModal.classList.remove("visible");
+  const origin = dropVideoOrigin?.isConnected ? dropVideoOrigin.getBoundingClientRect() : null;
+  const anim = origin && origin.width ? flipFrom(dropVideoCard, origin, { reverse: true }) : null;
+  setTimeout(() => {
+    dropVideoModal.classList.add("hidden");
+    anim?.cancel();
+    dropVideoCard.innerHTML = "";
+    resumeReel();
+  }, anim ? 300 : 250);
+}
+
+dropVideoModal.addEventListener("click", (e) => {
+  const act = e.target.closest("[data-dvm]");
+  if (e.target === dropVideoModal || act?.dataset.dvm === "close") return closeDropVideo();
+  if (act?.dataset.dvm === "see") {
+    const key = act.dataset.key;
+    dropVideoOrigin = null;
+    closeDropVideo();
+    openCratePage(key);
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && dropVideoModal.classList.contains("visible")) closeDropVideo();
+});
+// Watch, on a drop's own page.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-watch]");
+  if (!btn) return;
+  e.stopPropagation();
+  playClick();
+  openDropVideo(btn.dataset.watch, btn);
+});
 
 // ---- Payment method picker ---------------------------------------------
 

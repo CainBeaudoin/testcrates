@@ -264,6 +264,9 @@ try {
              that line's price points (e.g. Sneakers $150 / $300 / $1,200). -->
         <div class="drop-lines" id="dropLines" role="tablist" aria-label="Crate type"></div>
       </div>
+      <!-- Drop videos: a ring of each drop's video turning past, the drop's
+           own box beside the one in front. Built by renderDropReel in app.js. -->
+      <section id="dropReel" class="drop-reel" aria-label="Drop videos"></section>
       <!-- Mobile only: tapping a tier card turns that tier into its own
            page (see .drop-detail-open in the mobile media query); this is
            the way back out. Hidden at every other time. -->
@@ -1151,6 +1154,12 @@ try {
     </button>
   </div>
 </aside>
+
+<!-- A drop's video, opened from its reel slide or from Watch on its page.
+     It expands out of whatever was clicked; filled by openDropVideo. -->
+<div id="dropVideoModal" class="drop-video-modal hidden" role="dialog" aria-modal="true" aria-label="Drop video">
+  <div class="dvm-card" id="dropVideoCard"></div>
+</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

@@ -9453,3 +9453,262 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .lulu-get-btn { padding: 0 12px; font-size: 0.74rem; }
   .lulu-get-menu { width: min(280px, calc(100vw - 32px)); }
 }
+
+/* ===== Drop videos: the reel on Drops, and the pop-up player ============ */
+
+/* The ring: slides stood round a circle and seen from just outside it, so
+   the one in front faces you and the rest swing away left and right. The
+   ring is pushed back by its radius, so the front slide sits at its true
+   size; turning it (--turn) carries each slide off to the left and back. */
+.drop-reel {
+  --sw: clamp(240px, 34vw, 480px);          /* a slide's width */
+  --sh: calc(var(--sw) * 9 / 16);
+  --bw: calc(var(--sw) * 0.5);              /* the box beside it */
+  margin: 0 0 26px;
+}
+.drop-reel[hidden] { display: none; }
+body.drop-detail-open .drop-reel { display: none; }
+.drop-reel-stage {
+  position: relative;
+  height: calc(var(--sh) + 36px);
+  perspective: 1500px;
+  perspective-origin: 50% 40%;
+  overflow: hidden;
+  /* Fade the far edges out rather than cutting them. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.drop-reel-ring {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: var(--sw);
+  height: var(--sh);
+  margin-left: calc(var(--sw) / -2);
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--r, 600px) * -1)) rotateY(calc(var(--turn, 0deg) * -1));
+  transition: transform 1s cubic-bezier(0.65, 0, 0.25, 1);
+}
+.drop-reel-ring.no-anim { transition: none; }
+.drop-reel-slide {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #0d0d10;
+  cursor: pointer;
+  transform: rotateY(calc(var(--i) * 360deg / var(--n))) translateZ(var(--r, 600px));
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  filter: brightness(0.5) saturate(0.8);
+  transition: filter 0.6s ease, box-shadow 0.6s ease;
+}
+.drop-reel-slide.is-front { filter: none; box-shadow: 0 22px 50px -18px rgba(0, 0, 0, 0.55); }
+.drop-reel-slide:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.drop-reel-slide .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* How long the front one has left: a thin bar along its foot. */
+.drop-reel-progress {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.drop-reel-slide.is-front .drop-reel-progress { opacity: 1; }
+.drop-reel-progress i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #fff;
+  transform-origin: left;
+  transform: scaleX(var(--p, 0));
+}
+.drop-reel-slide.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
+@keyframes reel-hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* The front drop's box, standing just off the video's left foot. */
+.drop-reel-box {
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  left: calc(50% - var(--sw) / 2 - var(--bw) * 0.7);
+  width: var(--bw);
+  height: var(--bw);
+  pointer-events: none;
+}
+.drop-reel-box canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity 0.22s ease, transform 0.3s var(--spring);
+}
+.drop-reel-box canvas.is-out { opacity: 0; transform: scale(0.85) translateY(8px); }
+
+.drop-reel-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.drop-reel-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.drop-reel-title .category-tier-name { font-weight: 800; }
+.drop-reel-by { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 0.68rem; font-weight: 600; color: var(--text-dim); }
+.drop-reel-by .brand-mark { height: 9px; width: auto; }
+.drop-reel-actions { display: inline-flex; gap: 6px; }
+.drop-reel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--control-fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.drop-reel-btn:hover { background: var(--control-fill-hover); transform: translateY(-1px); }
+.drop-reel-btn.is-solid { background: var(--text); color: var(--text-inverse); }
+.drop-reel-btn svg { width: 12px; height: 12px; }
+
+/* No video yet: a blank frame in the drop's colour, waiting for one. */
+.drop-video-ph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  background:
+    radial-gradient(120% 90% at 50% 120%, color-mix(in srgb, var(--tint) 55%, transparent), transparent 60%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 14px, transparent 14px 28px),
+    #111114;
+  text-align: center;
+}
+.drop-video-ph-play {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+  font-size: 20px;
+  backdrop-filter: blur(6px);
+}
+.drop-video-ph-play svg { margin-left: 3px; }
+.drop-video-ph-name { font-size: 0.95rem; font-weight: 700; }
+.drop-video-ph-name b { font-weight: 800; }
+.drop-video-ph-sub {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Watch, on a drop's own page, in its What's inside header. */
+.prize-dropdown-header .drop-watch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  margin-right: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.prize-dropdown-header .drop-watch-btn:hover { transform: translateY(-1px); }
+.prize-dropdown-header .drop-watch-btn svg { width: 10px; height: 10px; }
+
+/* The pop-up player. */
+.drop-video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.drop-video-modal.hidden { display: none; }
+.drop-video-modal.visible { opacity: 1; }
+.dvm-card {
+  width: min(960px, 100%);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: 0 30px 80px var(--shadow-modal);
+  transform-origin: center;
+}
+.dvm-stage { position: relative; aspect-ratio: 16 / 9; background: #0d0d10; }
+.dvm-stage .drop-video { width: 100%; height: 100%; display: block; background: #000; }
+.dvm-stage .drop-video-ph-play { width: 72px; height: 72px; font-size: 26px; }
+.dvm-stage .drop-video-ph-name { font-size: 1.2rem; }
+.dvm-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; }
+.dvm-box { width: 46px; height: 46px; object-fit: contain; flex: 0 0 auto; }
+.dvm-box:not([src]) { visibility: hidden; }
+.dvm-title { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.dvm-title .category-tier-name { font-weight: 800; }
+.dvm-title small { font-size: 0.72rem; font-weight: 600; color: var(--text-dim); }
+.dvm-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--control-fill);
+  color: var(--text);
+  cursor: pointer;
+}
+.dvm-close:hover { background: var(--control-fill-hover); }
+
+@media (max-width: 640px) {
+  .drop-reel { --sw: min(72vw, 300px); --bw: calc(var(--sw) * 0.46); margin-bottom: 18px; }
+  .drop-reel-box { left: calc(50% - var(--sw) / 2 - var(--bw) * 0.45); }
+  .drop-reel-caption { gap: 10px; }
+  .drop-reel-by { display: none; }
+  .drop-video-modal { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-reel-ring { transition: none; }
+}
