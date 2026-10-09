@@ -148,17 +148,19 @@ try {
         <div class="home-crates" id="homeCrates" data-reveal="stagger"></div>
       </div>
 
-      <!-- Mystery: each line's ultimate grails, the pieces with no odds,
-           inside a ring that fills with that line's mystery charge.
-           Filled by renderHomeMystery in app.js. -->
-      <div class="home-block home-mystery-block">
+      <!-- Inside the drops: every drop's video, upright on a turning ring,
+           each with a banner naming its drop. Filled by renderDropReel. -->
+      <div class="home-block">
         <div class="home-block-head" data-reveal>
           <div>
-            <h2 class="home-block-title"><span class="home-mystery-spark" aria-hidden="true"></span>Mystery</h2>
+            <h2 class="home-block-title">Inside the drops</h2>
+            <p class="home-block-sub">The real items, on camera. Tap a video to watch it with sound.</p>
           </div>
+          <button class="home-more" data-home-go="drops">All drops</button>
         </div>
-        <div class="home-mystery" id="homeMystery" data-reveal="stagger"></div>
+        <section id="homeReel" class="drop-reel" aria-label="Drop videos"></section>
       </div>
+
       <div class="home-block">
         <div class="home-block-head" data-reveal>
           <div>
@@ -264,9 +266,6 @@ try {
              that line's price points (e.g. Sneakers $150 / $300 / $1,200). -->
         <div class="drop-lines" id="dropLines" role="tablist" aria-label="Crate type"></div>
       </div>
-      <!-- Drop videos: a ring of each drop's video turning past, the drop's
-           own box beside the one in front. Built by renderDropReel in app.js. -->
-      <section id="dropReel" class="drop-reel" aria-label="Drop videos"></section>
       <!-- Mobile only: tapping a tier card turns that tier into its own
            page (see .drop-detail-open in the mobile media query); this is
            the way back out. Hidden at every other time. -->

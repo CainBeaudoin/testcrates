@@ -8403,189 +8403,12 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 }
 .prize-tile.is-revealed .prize-tile-img { box-shadow: 0 0 18px -4px color-mix(in srgb, #b678f2 80%, transparent); }
 
-/* --- Home: Mystery -----------------------------------------------------------
-   Three dark cards, one per line: a gradient ring filling with the line's
-   mystery charge, sparkles orbiting it, the line's ultimate grails turning
-   over on a white disc in the middle, and the line's crates as chips with
-   their own charge. Unlocked, the ring is full and glows. */
-.home-mystery-spark {
-  display: inline-block;
-  width: 0.62em;
-  height: 0.62em;
-  margin-right: 10px;
-  vertical-align: 0.06em;
-  background: linear-gradient(135deg, #f6d27a, #b678f2);
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-}
-/* --- The demo: Open is tapped, boxes pile up, the bar charges, a mystery
-   piece drops into the crate, it shakes and reveals it. Driven by
-   runMysteryDemo setting data-phase; it all loops. */
-.hm-demo { display: flex; flex-direction: column; gap: 12px; }
-.hm-demo-top { position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; }
-.hm-demo-open {
-  position: relative;
-  flex: 0 0 auto;
-  padding: 9px 18px;
-  border-radius: var(--r-pill);
-  background: #9ff58c;
-  color: #111;
-  font-size: 0.8rem;
-  font-weight: 800;
-  box-shadow: inset 0 0 0 1.5px #111;
-}
-.hm-demo-plus {
-  position: absolute;
-  right: -4px;
-  top: -6px;
-  font-style: normal;
-  font-size: 0.68rem;
-  font-weight: 900;
-  color: #9b5ce0;
-  opacity: 0;
-}
-.hm-demo.is-tap .hm-demo-open { animation: hmTap 0.3s ease; }
-.hm-demo.is-tap .hm-demo-plus { animation: hmPlus 0.6s ease-out; }
-@keyframes hmTap { 40% { scale: 0.92; } }
-@keyframes hmPlus { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 6px -18px; } }
-/* A pointer resting on Open, dipping on each tap. */
-.hm-demo-cursor {
-  position: absolute;
-  left: 52px;
-  top: 22px;
-  width: 18px;
-  height: 18px;
-  background: #111;
-  clip-path: polygon(0 0, 0 78%, 24% 60%, 40% 100%, 55% 94%, 39% 55%, 72% 55%);
-  filter: drop-shadow(0 0 0.5px #fff) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
-  pointer-events: none;
-}
-.hm-demo.is-tap .hm-demo-cursor { animation: hmCursor 0.3s ease; }
-@keyframes hmCursor { 40% { translate: -2px 3px; scale: 0.9; } }
-:root:not([data-theme="light"]) .hm-demo-cursor { background: #fff; }
-.hm-demo-row { display: flex; align-items: center; gap: 2px; min-width: 0; overflow: hidden; }
-.hm-demo-mini { width: 34px; height: 34px; object-fit: contain; animation: hmMini 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-@keyframes hmMini { from { opacity: 0; scale: 0.3; translate: -12px 0; } }
-.hm-demo-bar { display: flex; align-items: center; gap: 10px; }
-.hm-demo-bar-label { display: inline-flex; align-items: center; gap: 5px; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #9b5ce0; }
-.hm-demo-bar-label svg { width: 12px; height: 12px; color: #f2b84b; }
-.hm-demo-bar-track { position: relative; flex: 1; height: 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 9%, transparent); overflow: hidden; }
-.hm-demo-bar-track i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #f2b84b, #e08ad0, #9b5ce0); transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
-.hm-demo[data-phase="full"] .hm-demo-bar-track,
-.hm-demo[data-phase="drop"] .hm-demo-bar-track { box-shadow: 0 0 14px rgba(182, 120, 242, 0.7); }
-.hm-demo-bar-pct { min-width: 38px; text-align: right; font-size: 0.8rem; font-weight: 900; color: var(--text); }
-/* The crate, the piece falling into it, and the reveal. */
-.hm-demo-box { position: relative; height: 205px; display: grid; place-items: end center; }
-/* The snapshot frames the box with room to spin, so it's drawn large and
-   pulled in at the bottom. */
-.hm-demo-crate { position: relative; z-index: 2; width: 300px; height: 210px; margin-bottom: -38px; object-fit: contain; }
-.hm-demo[data-phase="shake"] .hm-demo-crate { animation: hmShake 0.6s ease; }
-@keyframes hmShake {
-  15%, 55% { rotate: -4deg; translate: -3px 0; }
-  35%, 75% { rotate: 4deg; translate: 3px 0; }
-}
-.hm-demo-drop {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  margin-left: -24px;
-  border-radius: 12px;
-  background: linear-gradient(150deg, #3b2a5a, #1d1628);
-  box-shadow: 0 0 0 2px #b678f2, 0 0 18px rgba(182, 120, 242, 0.7);
-  opacity: 0;
-}
-.hm-demo-drop i {
-  font-style: normal;
-  font-weight: 900;
-  font-size: 1.5rem;
-  background: linear-gradient(180deg, #f6d27a, #c99cf7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.hm-demo[data-phase="full"] .hm-demo-drop { opacity: 1; animation: hmHover 0.5s ease both; }
-.hm-demo[data-phase="drop"] .hm-demo-drop { animation: hmDrop 1s cubic-bezier(0.45, 0, 0.75, 0.6) both; }
-@keyframes hmHover { from { opacity: 0; translate: 0 -10px; scale: 0.6; } to { opacity: 1; translate: 0 0; scale: 1; } }
-/* Sinks onto the shut lid, shrinking, and fades into it. */
-@keyframes hmDrop {
-  0% { opacity: 1; translate: 0 0; scale: 1; filter: blur(0); }
-  55% { opacity: 1; translate: 0 62px; scale: 0.6; filter: blur(0); }
-  100% { opacity: 0; translate: 0 84px; scale: 0.35; filter: blur(3px); }
-}
-.hm-demo-prize {
-  position: absolute;
-  left: 50%;
-  bottom: 70px;
-  z-index: 3;
-  width: 150px;
-  height: 110px;
-  margin-left: -75px;
-  object-fit: contain;
-  opacity: 0;
-  scale: 0.3;
-  filter: drop-shadow(0 12px 14px rgba(60, 30, 100, 0.35));
-}
-.hm-demo[data-phase="reveal"] .hm-demo-prize { animation: hmReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.hm-demo[data-phase="out"] .hm-demo-prize { opacity: 1; scale: 1; translate: 0 -46px; transition: opacity 0.5s ease; opacity: 0; }
-@keyframes hmReveal { from { opacity: 0; scale: 0.3; translate: 0 30px; } to { opacity: 1; scale: 1; translate: 0 -46px; } }
-.hm-demo-glow {
-  position: absolute;
-  left: 50%;
-  bottom: 40px;
-  width: 240px;
-  height: 200px;
-  margin-left: -120px;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(242, 184, 75, 0.55), rgba(182, 120, 242, 0.35) 55%, transparent);
-  opacity: 0;
-  scale: 0.4;
-  transition: opacity 0.5s ease, scale 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.hm-demo[data-phase="reveal"] .hm-demo-glow { opacity: 1; scale: 1; }
-/* Set like the section's own titles, tight under the box, the phrase that
-   matters in the mystery gradient. */
-.hm-demo-caption {
-  margin: -14px 0 0;
-  min-height: 1.2em;
-  text-align: center;
-  font-family: Anton, "Arial Narrow", Impact, sans-serif;
-  font-size: 1.45rem;
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-  color: var(--text);
-  transition: opacity 0.18s ease, translate 0.18s ease;
-}
-.hm-demo-caption em {
-  font-style: normal;
-  background: linear-gradient(90deg, #e3a531, #c56fd0, #8e52d6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.hm-demo-caption.is-swapping { opacity: 0; translate: 0 4px; }
-@media (prefers-reduced-motion: reduce) {
-  .hm-card.is-ready .hm-ring-fill, .hm-demo * { animation: none !important; }
-}
-@media (max-width: 900px) {
-  .home-mystery { grid-template-columns: 1fr; gap: 28px; }
-}
-@media (max-width: 640px) {
-  .hm-demo-box { height: 175px; }
-  .hm-demo-caption { font-size: 1.2rem; margin-top: -10px; }
-  .hm-demo-crate { width: 250px; height: 175px; margin-bottom: -30px; }
-}
 /* --- Home: scroll-linked motion ------------------------------------------------
    Where the browser can tie an animation to scroll position (view
    timelines), Home's sections move with the scroll instead of fading in
    once: headings rise into place, cards come up and settle in a stagger,
-   the grails tip forward out of a slight tilt, the mystery rings fill as
-   they cross the screen, and the hero drifts up and away as you leave it.
+   the grails tip forward out of a slight tilt, and the hero drifts up and
+   away as you leave it.
    Scrolling back plays it backwards. Elsewhere (and with reduced motion)
    the one-shot reveal stays. app.js sets .scroll-anim and takes Home's
    data-reveal markers off, so the two never stack. */
@@ -8598,16 +8421,15 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
       animation-range: entry 0% entry 90%;
     }
     .scroll-anim #screen-home .home-crate,
-    .scroll-anim #screen-home .hm-card,
     .scroll-anim #screen-home .how-step,
     .scroll-anim #screen-home .home-panel {
       animation: saCard linear both;
       animation-timeline: view();
       animation-range: entry 5% cover 32%;
     }
-    .scroll-anim #screen-home :is(.home-crate, .hm-card, .how-step, .home-panel):nth-child(2) { animation-range: entry 12% cover 36%; }
-    .scroll-anim #screen-home :is(.home-crate, .hm-card, .how-step, .home-panel):nth-child(3) { animation-range: entry 19% cover 40%; }
-    .scroll-anim #screen-home :is(.home-crate, .hm-card, .how-step, .home-panel):nth-child(4) { animation-range: entry 26% cover 44%; }
+    .scroll-anim #screen-home :is(.home-crate, .how-step, .home-panel):nth-child(2) { animation-range: entry 12% cover 36%; }
+    .scroll-anim #screen-home :is(.home-crate, .how-step, .home-panel):nth-child(3) { animation-range: entry 19% cover 40%; }
+    .scroll-anim #screen-home :is(.home-crate, .how-step, .home-panel):nth-child(4) { animation-range: entry 26% cover 44%; }
     .scroll-anim #screen-home .home-grail:not(.is-flipping) {
       animation: saTilt linear both;
       animation-timeline: view();
@@ -8617,11 +8439,6 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
       animation: saSlide linear both;
       animation-timeline: view();
       animation-range: entry 0% cover 40%;
-    }
-    .scroll-anim #screen-home .hm-ring-fill {
-      animation: saRing linear both;
-      animation-timeline: view();
-      animation-range: entry 30% cover 55%;
     }
     .scroll-anim #screen-home .home-hero-copy,
     .scroll-anim #screen-home .home-hero-media {
@@ -8643,195 +8460,8 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
   to { opacity: 1; transform: none; }
 }
 @keyframes saSlide { from { opacity: 0; translate: 120px 0; } to { opacity: 1; translate: none; } }
-@keyframes saRing { from { stroke-dashoffset: 100; } to { stroke-dashoffset: calc(100 - var(--p)); } }
 @keyframes saHeroOut { to { opacity: 0; translate: 0 -80px; } }
 @keyframes saHeroOutSlow { to { opacity: 0.2; translate: 0 -30px; scale: 0.94; } }
-
-/* The demo's live box sits where the still picture was, and replaces it
-   once it's ready. */
-.hm-demo-canvas {
-  position: absolute;
-  left: 50%;
-  bottom: -30px;
-  z-index: 2;
-  width: 300px;
-  height: 250px;
-  translate: -50% 0;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-.hm-demo.has-3d .hm-demo-canvas { opacity: 1; }
-.hm-demo.has-3d .hm-demo-crate { opacity: 0; }
-/* The ? falls into the open mouth of the box. */
-.hm-demo-drop { top: 6px; }
-.hm-demo-mini { width: 30px; height: 30px; }
-/* The bar's moments: Unlocked (it shimmers and the % becomes the word),
-   Claimed (a gold flash), then a slow drain back to empty. */
-.hm-demo-bar-pct { min-width: 0; padding: 3px 0; transition: color 0.3s ease, background 0.3s ease, padding 0.3s ease; border-radius: var(--r-pill); }
-.hm-demo-bar.is-unlocked .hm-demo-bar-pct,
-.hm-demo-bar.is-claimed .hm-demo-bar-pct { padding: 3px 10px; color: #fff; font-size: 0.7rem; }
-.hm-demo-bar.is-unlocked .hm-demo-bar-pct { background: linear-gradient(90deg, #f2b84b, #b678f2); }
-.hm-demo-bar.is-claimed .hm-demo-bar-pct { background: #2f9e5b; }
-.hm-demo-bar.is-unlocked .hm-demo-bar-track { box-shadow: 0 0 14px rgba(182, 120, 242, 0.7); }
-.hm-demo-bar.is-unlocked .hm-demo-bar-track i::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent) no-repeat;
-  background-size: 35% 100%;
-  animation: mysteryRun 1.4s linear infinite;
-}
-.hm-demo-bar.is-claimed .hm-demo-bar-track i { background: linear-gradient(90deg, #f6d27a, #f2b84b); box-shadow: 0 0 16px rgba(242, 184, 75, 0.8); }
-.hm-demo.is-draining .hm-demo-bar-track i { transition-duration: 0.9s; }
-.hm-demo-bar-track i { overflow: hidden; }
-/* While boxes keep coming after the unlock, the box gives a small hop on
-   each one: each is a try. */
-.hm-demo[data-phase="chance"].is-tap .hm-demo-canvas { animation: hmHop 0.4s ease; }
-@keyframes hmHop { 40% { translate: -50% -6px; } }
-@media (max-width: 640px) {
-  .hm-demo-canvas { width: 250px; height: 210px; bottom: -24px; }
-}
-
-/* Demo: bar beside Open, boxes under it, more room for the prize. */
-.hm-demo-top { gap: 14px; }
-.hm-demo-top .hm-demo-bar { flex: 1; min-width: 0; }
-.hm-demo-row { display: flex; min-height: 30px; margin-top: -4px; padding-left: 4px; }
-.hm-demo-box { height: 270px; }
-.hm-demo-prize { width: 240px; height: 180px; margin-left: -120px; bottom: 96px; }
-.hm-demo-glow { width: 320px; height: 280px; margin-left: -160px; bottom: 50px; }
-@keyframes hmReveal { from { opacity: 0; scale: 0.3; translate: 0 50px; } to { opacity: 1; scale: 1; translate: 0 -40px; } }
-.hm-demo[data-phase="out"] .hm-demo-prize { translate: 0 -40px; }
-@media (max-width: 640px) {
-  .hm-demo-top .hm-demo-bar-label { display: none; }
-  .hm-demo-box { height: 230px; }
-  .hm-demo-prize { width: 200px; height: 150px; margin-left: -100px; bottom: 80px; }
-}
-
-
-/* --- Home: Mystery (rebuilt to sit with the rest of Home) --------------------
-   Light, like every other block: the demo on a white card on the left, and
-   on the right the three live mysteries as compact cards stacked to the
-   same height, each tinted like its line's drop card. Thin lines; the
-   gold-to-violet is kept only for the charge itself. */
-.home-mystery {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: stretch;
-}
-.hm-demo {
-  padding: 20px 22px 18px;
-  border-radius: var(--r-lg);
-  background:
-    radial-gradient(90% 70% at 50% 100%, rgba(182, 120, 242, 0.12), transparent 70%),
-    var(--surface-1);
-  justify-content: space-between;
-}
-.hm-rings { display: flex; flex-direction: column; gap: 12px; }
-
-/* One live mystery: ring and piece, then what it is, then the lock. */
-.hm-card {
-  --p: 0;
-  --tint: #efe3d4;
-  flex: 1;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 16px 12px 12px;
-  border: none;
-  border-radius: var(--r-lg);
-  background: linear-gradient(100deg, var(--tint), var(--surface-1) 70%);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
-}
-.hm-card[data-line="sneakers"] { --tint: #f3ddcb; }
-.hm-card[data-line="streetwear"] { --tint: #dfe6f1; }
-.hm-card[data-line="collectibles"] { --tint: #f5e7c6; }
-:root:not([data-theme="light"]) .hm-card { --tint: rgba(255, 255, 255, 0.07); }
-.hm-card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px -16px rgba(60, 30, 100, 0.35); }
-.hm-dial { position: relative; flex: 0 0 auto; width: 96px; aspect-ratio: 1; }
-.hm-dial-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.hm-ring-track { fill: none; stroke: color-mix(in srgb, var(--text) 10%, transparent); stroke-width: 5; }
-.hm-ring-fill {
-  fill: none;
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 100;
-  stroke-dashoffset: calc(100 - var(--p));
-  transition: stroke-dashoffset 1.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.motion-armed .home-mystery:not(.in) .hm-ring-fill { stroke-dashoffset: 100; }
-.hm-card.is-empty .hm-ring-fill { opacity: 0; }
-.hm-card.is-ready .hm-ring-fill { filter: drop-shadow(0 0 4px rgba(182, 120, 242, 0.6)); }
-.hm-disc {
-  position: absolute;
-  inset: 14%;
-  border-radius: 14px;
-  background: #fff;
-  overflow: hidden;
-}
-.hm-item { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; transition: scale 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
-:root[data-theme="light"] .hm-item { mix-blend-mode: multiply; }
-.hm-card:hover .hm-item { scale: 1.06; }
-.hm-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.hm-line { font-size: 0.62rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
-.hm-name { overflow: hidden; font-size: 0.82rem; font-weight: 600; line-height: 1.3; color: var(--text); white-space: nowrap; text-overflow: ellipsis; }
-.hm-value { font-size: 1.15rem; font-weight: 900; color: var(--text); }
-.hm-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 12px;
-  border-radius: var(--r-pill);
-  background: var(--surface-1);
-  box-shadow: 0 0 0 1px var(--hairline);
-  font-size: 0.74rem;
-  font-weight: 800;
-  white-space: nowrap;
-  color: var(--text);
-}
-.hm-badge svg { width: 12px; height: 12px; }
-.hm-card.is-ready .hm-badge { background: linear-gradient(90deg, #f2b84b, #b678f2); color: #fff; box-shadow: none; }
-.hm-arrow { display: inline-block; transition: transform 0.2s ease; }
-.hm-card:hover .hm-arrow { transform: translateX(3px); }
-
-/* The demo, lighter: thinner bar, the caption at section-title weight but
-   smaller, so it reads as part of the card, not a banner. */
-.hm-demo-bar-track { height: 7px; }
-.hm-demo-caption { font-size: 1.15rem; margin-top: -10px; }
-.hm-demo-box { height: 230px; }
-.hm-demo-crate { width: 280px; height: 196px; }
-.hm-demo-canvas { width: 280px; height: 230px; }
-.hm-demo-prize { width: 220px; height: 165px; margin-left: -110px; bottom: 84px; }
-
-@media (max-width: 900px) {
-  .home-mystery { grid-template-columns: 1fr; }
-}
-@media (max-width: 640px) {
-  .hm-card { gap: 12px; padding: 10px 12px 10px 10px; }
-  .hm-dial { width: 76px; }
-  .hm-name { font-size: 0.76rem; }
-  .hm-value { font-size: 1rem; }
-  .hm-badge { padding: 6px 9px; font-size: 0.68rem; }
-  .hm-card.is-ready .hm-badge .hm-arrow { display: none; }
-  .hm-demo { padding: 16px 16px 14px; }
-}
-/* Names wrap to two lines rather than cutting off. */
-.hm-name { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; }
-/* The crate fills its card: the snapshot and the live box are framed with
-   room to spin, so they're drawn large and pulled down into the space. */
-.hm-demo-crate { width: 380px; height: 270px; margin-bottom: -62px; }
-.hm-demo-canvas { width: 380px; height: 320px; bottom: -64px; }
-.hm-demo-drop { top: 18px; }
-@media (max-width: 640px) {
-  .hm-demo-crate { width: 300px; height: 215px; margin-bottom: -48px; }
-  .hm-demo-canvas { width: 300px; height: 255px; bottom: -50px; }
-}
-.hm-demo { overflow: hidden; }
 
 /* ===== Lulu: burn Lulus for Credits ===================================== */
 
@@ -9430,67 +9060,133 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .lulu-get-menu { width: min(280px, calc(100vw - 32px)); }
 }
 
-/* ===== Drop videos: the reel on Drops, and the pop-up player ============ */
+/* ===== Drop videos: the reel on Home, and the pop-up player ============ */
 
-/* The ring: slides stood round a circle and seen from just outside it, so
-   the one in front faces you and the rest swing away left and right. The
-   ring is pushed back by its radius, so the front slide sits at its true
-   size; turning it (--turn) carries each slide off to the left and back. */
-.drop-reel {
-  --sw: clamp(240px, 34vw, 480px);          /* a slide's width */
-  --sh: calc(var(--sw) * 9 / 16);
-  --bw: calc(var(--sw) * 0.5);              /* the box beside it */
-  margin: 0 0 26px;
+/* The ring: upright videos stood round a circle, seen from a little above
+   (the perspective origin sits at the top), so the ones going round the
+   back rise behind the front one, smaller. Each slot is turned back by the
+   ring's own turn, so every video faces you wherever it is on the ring.
+   --turn is a registered angle so it animates, and every slot follows it
+   round the arc rather than cutting across. */
+@property --turn {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
 }
-.drop-reel[hidden] { display: none; }
-body.drop-detail-open .drop-reel { display: none; }
+.drop-reel {
+  --sw: clamp(150px, 16vw, 230px);          /* a video's width (9:16) */
+  --sh: calc(var(--sw) * 16 / 9);
+  --step: calc(360deg / var(--n, 9));
+  --oval: 1.7;                              /* the ring's width over its depth */
+}
 .drop-reel-stage {
   position: relative;
-  height: calc(var(--sh) + 36px);
+  height: calc(var(--sh) + 130px);
   perspective: 1500px;
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% -30%;
   overflow: hidden;
-  /* Fade the far edges out rather than cutting them. */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 .drop-reel-ring {
   position: absolute;
-  top: 14px;
+  bottom: 40px;
   left: 50%;
   width: var(--sw);
   height: var(--sh);
   margin-left: calc(var(--sw) / -2);
   transform-style: preserve-3d;
-  transform: translateZ(calc(var(--r, 600px) * -1)) rotateY(calc(var(--turn, 0deg) * -1));
-  transition: transform 1s cubic-bezier(0.65, 0, 0.25, 1);
+  /* Stretched sideways into an oval, so the ones at the sides stand clear
+     of the front one; each video is un-stretched again in its slot. */
+  transform: translateZ(calc(var(--r, 400px) * -1)) scaleX(var(--oval)) rotateY(calc(var(--turn) * -1));
+  transition: --turn 1.1s cubic-bezier(0.65, 0, 0.25, 1);
 }
 .drop-reel-ring.no-anim { transition: none; }
+.drop-reel-slot {
+  --a: calc(var(--i) * var(--step) - var(--turn)); /* where it is round the ring; 0 = front */
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateY(calc(var(--i) * var(--step))) translateZ(var(--r, 400px)) rotateY(calc(var(--turn) - var(--i) * var(--step)))
+    scaleX(calc(1 / var(--oval)));
+}
 .drop-reel-slide {
   position: absolute;
   inset: 0;
-  padding: 0;
-  border: none;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: #0d0d10;
   cursor: pointer;
-  transform: rotateY(calc(var(--i) * 360deg / var(--n))) translateZ(var(--r, 600px));
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  filter: brightness(0.5) saturate(0.8);
-  transition: filter 0.6s ease, box-shadow 0.6s ease;
+  /* Darker the further round the back it is. */
+  filter: brightness(calc(0.35 + 0.65 * (cos(var(--a)) + 1) / 2));
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.5);
 }
-.drop-reel-slide.is-front { filter: none; box-shadow: 0 22px 50px -18px rgba(0, 0, 0, 0.55); }
+.drop-reel-slide.is-front { box-shadow: 0 26px 60px -22px rgba(0, 0, 0, 0.6); }
 .drop-reel-slide:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .drop-reel-slide .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* How long the front one has left: a thin bar along its foot. */
+/* The banner along each video's foot: which drop it is, and the way in. */
+.reel-banner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 44px 12px 18px;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72) 55%);
+  color: #fff;
+  text-align: left;
+}
+.reel-banner-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.reel-banner-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+.reel-banner-line::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tint);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+.reel-banner-text b { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap; }
+.reel-banner-go {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+.drop-reel-slide.is-front .reel-banner-go { opacity: 1; transform: none; pointer-events: auto; }
+.reel-banner-go:hover { background: var(--open-green); }
+
+/* How long the front one has left: a thin bar along its very foot. */
 .drop-reel-progress {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  z-index: 2;
   height: 3px;
   border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.22);
@@ -9509,64 +9205,6 @@ body.drop-detail-open .drop-reel { display: none; }
 }
 .drop-reel-slide.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
 @keyframes reel-hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* The front drop's box, standing just off the video's left foot. */
-.drop-reel-box {
-  position: absolute;
-  z-index: 2;
-  bottom: 0;
-  left: calc(50% - var(--sw) / 2 - var(--bw) * 0.7);
-  width: var(--bw);
-  height: var(--bw);
-  pointer-events: none;
-}
-.drop-reel-box canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  transition: opacity 0.22s ease, transform 0.3s var(--spring);
-}
-.drop-reel-box canvas.is-out { opacity: 0; transform: scale(0.85) translateY(8px); }
-
-.drop-reel-caption {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.drop-reel-title {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--text);
-}
-.drop-reel-title .category-tier-name { font-weight: 800; }
-.drop-reel-by { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 0.68rem; font-weight: 600; color: var(--text-dim); }
-.drop-reel-by .brand-mark { height: 9px; width: auto; }
-.drop-reel-actions { display: inline-flex; gap: 6px; }
-.drop-reel-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  border: none;
-  border-radius: var(--r-pill);
-  background: var(--control-fill);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.76rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-.drop-reel-btn:hover { background: var(--control-fill-hover); transform: translateY(-1px); }
-.drop-reel-btn.is-solid { background: var(--text); color: var(--text-inverse); }
-.drop-reel-btn svg { width: 12px; height: 12px; }
 
 /* No video yet: a blank frame in the drop's colour, waiting for one. */
 .drop-video-ph {
@@ -9597,8 +9235,6 @@ body.drop-detail-open .drop-reel { display: none; }
   backdrop-filter: blur(6px);
 }
 .drop-video-ph-play svg { margin-left: 3px; }
-.drop-video-ph-name { font-size: 0.95rem; font-weight: 700; }
-.drop-video-ph-name b { font-weight: 800; }
 .drop-video-ph-sub {
   font-size: 0.66rem;
   font-weight: 700;
@@ -9647,18 +9283,18 @@ body.drop-detail-open .drop-reel { display: none; }
 }
 .drop-video-modal.hidden { display: none; }
 .drop-video-modal.visible { opacity: 1; }
+/* Upright, like the videos: as tall as the window allows. */
 .dvm-card {
-  width: min(960px, 100%);
+  width: min(440px, 100%, calc((100vh - 150px) * 9 / 16));
   border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--panel);
   box-shadow: 0 30px 80px var(--shadow-modal);
   transform-origin: center;
 }
-.dvm-stage { position: relative; aspect-ratio: 16 / 9; background: #0d0d10; }
+.dvm-stage { position: relative; aspect-ratio: 9 / 16; background: #0d0d10; }
 .dvm-stage .drop-video { width: 100%; height: 100%; display: block; background: #000; }
 .dvm-stage .drop-video-ph-play { width: 72px; height: 72px; font-size: 26px; }
-.dvm-stage .drop-video-ph-name { font-size: 1.2rem; }
 .dvm-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; }
 .dvm-box { width: 46px; height: 46px; object-fit: contain; flex: 0 0 auto; }
 .dvm-box:not([src]) { visibility: hidden; }
@@ -9677,14 +9313,30 @@ body.drop-detail-open .drop-reel { display: none; }
   cursor: pointer;
 }
 .dvm-close:hover { background: var(--control-fill-hover); }
+.dvm-bar .drop-reel-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
 
 @media (max-width: 640px) {
-  .drop-reel { --sw: min(72vw, 300px); --bw: calc(var(--sw) * 0.46); margin-bottom: 18px; }
-  .drop-reel-box { left: calc(50% - var(--sw) / 2 - var(--bw) * 0.45); }
-  .drop-reel-caption { gap: 10px; }
-  .drop-reel-by { display: none; }
+  .drop-reel { --sw: 40vw; --oval: 1.3; }
+  .drop-reel-stage { perspective: 900px; height: calc(var(--sh) + 80px); }
+  .reel-banner { flex-direction: column; align-items: flex-start; gap: 6px; padding: 36px 10px 16px; }
+  .reel-banner-text b { font-size: 0.9rem; }
+  .reel-banner-go { padding: 5px 10px; font-size: 0.66rem; }
   .drop-video-modal { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .drop-reel-ring { transition: none; }
 }
+/* In a reel slide the banner takes the foot, so the blank's play button
+   sits a little higher. */
+.drop-reel-slide .drop-video-ph { padding-bottom: 64px; }

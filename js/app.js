@@ -602,7 +602,6 @@ function showScreen(el) {
   if (el.id !== "screen-category") {
     categoryBoxViewers.forEach((v) => v.dispose());
     categoryBoxViewers = [];
-    stopReel();
   }
   // Leaving Drops (or coming back to it, e.g. after an open) always lands
   // on the tier list rather than whichever tier page was last open.
@@ -1862,7 +1861,6 @@ function openTierDetail(wrap) {
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   wrap.classList.add("drop-detail-active");
   document.body.classList.add("drop-detail-open");
-  pauseReel();
   // Its odds and prizes as of now (only the open page is kept live).
   const pool = supply.pool(wrap.dataset.tier);
   wrap.querySelector(".odds-panel").innerHTML = buildOddsPanelHTML(pool);
@@ -1874,9 +1872,7 @@ function openTierDetail(wrap) {
 }
 
 function closeTierDetail() {
-  const wasOpen = document.body.classList.contains("drop-detail-open");
   document.body.classList.remove("drop-detail-open");
-  if (wasOpen) resumeReel();
   categoryList.querySelectorAll(".drop-detail-active").forEach((w) => w.classList.remove("drop-detail-active"));
   if (recentPullsTierKey !== null) {
     recentPullsTierKey = null;
@@ -2088,7 +2084,6 @@ function renderCategories() {
     }
   });
 
-  renderDropReel();
   renderRecentPulls();
   renderWallet();
 }
@@ -2112,7 +2107,6 @@ const dropVideoOf = (key) => (DROP_VIDEOS[key]?.src ? DROP_VIDEOS[key] : null);
 // The frame itself: the video, or the blank where it will go.
 function dropVideoFrameHTML(key, { player = false } = {}) {
   const v = dropVideoOf(key);
-  const cat = CATEGORIES[key];
   if (v) {
     return `<video class="drop-video" src="${v.src}"${v.poster ? ` poster="${v.poster}"` : ""} playsinline preload="metadata"${
       player ? " controls autoplay" : " muted"
@@ -2120,30 +2114,35 @@ function dropVideoFrameHTML(key, { player = false } = {}) {
   }
   return `<span class="drop-video-ph" style="--tint:${LINE_TINT[lineOf(key)] ?? "#888"}">
       <span class="drop-video-ph-play">${PLAY_SVG}</span>
-      <span class="drop-video-ph-name">${cat.badge} <b>${cat.label}</b></span>
       <span class="drop-video-ph-sub">Video coming soon</span>
     </span>`;
 }
 
-// ---- The reel: every drop's video on a turning ring, at the top of Drops.
-// The one in front plays (muted); when it ends the ring turns on to the
-// next, the last one swinging away to the left and back. The drop's own 3D
-// box stands beside the video in front, so it's clear which drop it is.
-// Click the front video to watch it properly; click one further round to
-// bring it to the front. Only on All Drops, and never while a drop's own
-// page is open.
-const dropReelEl = document.getElementById("dropReel");
+// ---- The reel, on Home: every drop's video standing upright on a slowly
+// turning ring. The ring is seen from just above, so the ones going round
+// the back are still there behind the front one, smaller and darker; each
+// video always faces you. The one in front plays (muted), and when it ends
+// the ring turns on to the next. A banner across the foot of each video
+// says which drop it is. Click the front video to watch it properly, one
+// further round to bring it to the front.
+const dropReelEl = document.getElementById("homeReel");
 let dropReel = null;
-let reelIndex = 0; // kept across re-renders, so Drops comes back where it was
+let reelIndex = 0; // kept across visits, so Home comes back where it was
+
+function reelBannerHTML(key) {
+  const cat = CATEGORIES[key];
+  return `<span class="reel-banner" style="--tint:${LINE_TINT[lineOf(key)] ?? "#888"}">
+      <span class="reel-banner-text">
+        <span class="reel-banner-line">${cat.badge}</span>
+        <b>${cat.label} drop</b>
+      </span>
+      <button class="reel-banner-go" data-reel-see="${key}" tabindex="-1">Open <span aria-hidden="true">&rsaquo;</span></button>
+    </span>`;
+}
 
 function renderDropReel() {
   stopReel();
-  const show = dropLine === "all" && screenCategoryEl.classList.contains("active");
-  dropReelEl.hidden = !show;
-  if (!show) {
-    dropReelEl.innerHTML = "";
-    return;
-  }
+  if (!dropReelEl) return;
   const keys = orderedCrates().map(([k]) => k);
   dropReelEl.style.setProperty("--n", keys.length);
   dropReelEl.innerHTML = `
@@ -2151,35 +2150,45 @@ function renderDropReel() {
       <div class="drop-reel-ring">
         ${keys
           .map(
-            (k, i) => `<button class="drop-reel-slide" style="--i:${i}" data-reel-i="${i}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: video">
-              ${dropVideoFrameHTML(k)}
-              <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
-            </button>`
+            (k, i) => `<div class="drop-reel-slot" style="--i:${i}">
+              <div class="drop-reel-slide" role="button" tabindex="-1" data-reel-i="${i}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: watch the video">
+                ${dropVideoFrameHTML(k)}
+                ${reelBannerHTML(k)}
+                <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
+              </div>
+            </div>`
           )
           .join("")}
       </div>
-      <div class="drop-reel-box" aria-hidden="true"></div>
-    </div>
-    <div class="drop-reel-caption">
-      <span class="drop-reel-title" aria-live="polite"></span>
-      <span class="drop-reel-actions">
-        <button class="drop-reel-btn" data-reel-act="watch">${PLAY_SVG} Watch</button>
-        <button class="drop-reel-btn is-solid" data-reel-act="see">See drop</button>
-      </span>
     </div>`;
-  dropReel = { keys, n: keys.length, timer: 0, viewer: null, viewerKey: null, token: 0, paused: false, ro: null };
+  dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, ro: null, io: null };
   sizeReel();
   dropReel.ro = new ResizeObserver(sizeReel);
   dropReel.ro.observe(dropReelEl);
+  // Only turns while it can be seen.
+  dropReel.io = new IntersectionObserver(([entry]) => {
+    if (!dropReel) return;
+    dropReel.offscreen = !entry.isIntersecting;
+    if (dropReel.offscreen) haltReelFront();
+    else playReelFront();
+  });
+  dropReel.io.observe(dropReelEl);
   goToReel(reelIndex, { instant: true });
 }
 
-// The ring's radius: just wide enough that neighbouring slides meet.
+// The ring's size from the room it has: wide enough that the ones at the
+// sides clear the front one, never so tight that they pile up.
 function sizeReel() {
+  if (!dropReel) return;
+  const stage = dropReelEl.querySelector(".drop-reel-stage");
   const slide = dropReelEl.querySelector(".drop-reel-slide");
-  if (!dropReel || !slide) return;
-  const w = slide.offsetWidth;
-  dropReelEl.style.setProperty("--r", `${Math.round((w / 2 / Math.tan(Math.PI / dropReel.n)) * 1.06)}px`);
+  if (!stage || !slide) return;
+  const w = stage.clientWidth;
+  const sw = slide.offsetWidth;
+  const oval = parseFloat(getComputedStyle(dropReelEl).getPropertyValue("--oval")) || 1;
+  // The ones at the sides land just inside the edges (the oval stretches
+  // the radius sideways, so the depth is the width's share of it).
+  dropReelEl.style.setProperty("--r", `${Math.round(Math.max(w * 0.44, ((w - sw) / 2) * 0.92) / oval)}px`);
 }
 
 const reelFrontIndex = () => ((reelIndex % dropReel.n) + dropReel.n) % dropReel.n;
@@ -2188,52 +2197,24 @@ function goToReel(k, { instant = false } = {}) {
   if (!dropReel) return;
   reelIndex = k;
   const i = reelFrontIndex();
-  const key = dropReel.keys[i];
-  const cat = CATEGORIES[key];
   const ring = dropReelEl.querySelector(".drop-reel-ring");
   ring.classList.toggle("no-anim", instant);
   ring.style.setProperty("--turn", `${(k * 360) / dropReel.n}deg`);
   if (instant) requestAnimationFrame(() => ring.classList.remove("no-anim"));
   dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s, j) => {
-    s.classList.toggle("is-front", j === i);
+    const front = j === i;
+    s.classList.toggle("is-front", front);
     s.classList.remove("is-running");
-    s.tabIndex = j === i ? 0 : -1;
+    s.tabIndex = front ? 0 : -1;
+    s.querySelector(".reel-banner-go").tabIndex = front ? 0 : -1;
     const v = s.querySelector("video");
-    if (v && j !== i) v.pause();
+    if (v && !front) v.pause();
   });
-  dropReelEl.querySelector(".drop-reel-title").innerHTML = `<span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span> <b>${cat.label}</b>${
-    cat.poweredBy ? `<span class="drop-reel-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : ""
-  }`;
-  swapReelBox(key);
   playReelFront();
 }
 
-function playReelFront() {
+function haltReelFront() {
   if (!dropReel) return;
-  clearTimeout(dropReel.timer);
-  if (dropReel.paused || document.hidden) return;
-  const slide = dropReelEl.querySelectorAll(".drop-reel-slide")[reelFrontIndex()];
-  const bar = slide.querySelector(".drop-reel-progress i");
-  const v = slide.querySelector("video");
-  if (v) {
-    // A real video sets the pace: the ring turns when it ends.
-    v.muted = true;
-    v.currentTime = 0;
-    v.ontimeupdate = () => bar.style.setProperty("--p", v.duration ? v.currentTime / v.duration : 0);
-    v.onended = () => goToReel(reelIndex + 1);
-    v.play().catch(() => (dropReel.timer = setTimeout(() => goToReel(reelIndex + 1), REEL_PLACEHOLDER_MS)));
-  } else {
-    // A blank one holds the front for a few seconds, its bar filling.
-    slide.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
-    void slide.offsetWidth;
-    slide.classList.add("is-running");
-    dropReel.timer = setTimeout(() => goToReel(reelIndex + 1), REEL_PLACEHOLDER_MS);
-  }
-}
-
-function pauseReel() {
-  if (!dropReel) return;
-  dropReel.paused = true;
   clearTimeout(dropReel.timer);
   dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s) => {
     s.classList.remove("is-running");
@@ -2241,8 +2222,38 @@ function pauseReel() {
   });
 }
 
+function playReelFront() {
+  if (!dropReel) return;
+  clearTimeout(dropReel.timer);
+  if (dropReel.paused || dropReel.offscreen || document.hidden) return;
+  const slide = dropReelEl.querySelectorAll(".drop-reel-slide")[reelFrontIndex()];
+  const bar = slide.querySelector(".drop-reel-progress i");
+  const v = slide.querySelector("video");
+  const next = () => goToReel(reelIndex + 1);
+  if (v) {
+    // A real video sets the pace: the ring turns when it ends.
+    v.muted = true;
+    v.currentTime = 0;
+    v.ontimeupdate = () => bar.style.setProperty("--p", v.duration ? v.currentTime / v.duration : 0);
+    v.onended = next;
+    v.play().catch(() => (dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS)));
+  } else {
+    // A blank one holds the front for a few seconds, its bar filling.
+    slide.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
+    void slide.offsetWidth;
+    slide.classList.add("is-running");
+    dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS);
+  }
+}
+
+function pauseReel() {
+  if (!dropReel) return;
+  dropReel.paused = true;
+  haltReelFront();
+}
+
 function resumeReel() {
-  if (!dropReel || !screenCategoryEl.classList.contains("active") || document.body.classList.contains("drop-detail-open")) return;
+  if (!dropReel) return;
   dropReel.paused = false;
   playReelFront();
 }
@@ -2251,68 +2262,41 @@ function stopReel() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
   dropReel.ro?.disconnect();
-  dropReel.token++;
-  dropReel.viewer?.dispose();
+  dropReel.io?.disconnect();
   dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
   dropReel = null;
 }
 
-// The box beside the video: the front drop's own, live. One viewer at a
-// time (a browser only allows so many), swapped with a quick fade as the
-// ring turns.
-function swapReelBox(key) {
-  if (!dropReel || dropReel.viewerKey === key) return;
-  dropReel.viewerKey = key;
-  const token = ++dropReel.token;
-  const holder = dropReelEl.querySelector(".drop-reel-box");
-  const old = holder.querySelector("canvas");
-  const oldViewer = dropReel.viewer;
-  dropReel.viewer = null;
-  old?.classList.add("is-out");
-  setTimeout(() => {
-    oldViewer?.dispose();
-    old?.remove();
-    if (!dropReel || token !== dropReel.token) return;
-    const canvas = document.createElement("canvas");
-    canvas.className = "is-out";
-    holder.appendChild(canvas);
-    createBoxViewer(canvas, key, crateBoxKind(CATEGORIES[key])).then((viewer) => {
-      if (!dropReel || token !== dropReel.token || !canvas.isConnected) return viewer.dispose();
-      dropReel.viewer = viewer;
-      requestAnimationFrame(() => canvas.classList.remove("is-out"));
-    });
-  }, old ? 220 : 0);
-}
-
-dropReelEl.addEventListener("click", (e) => {
+dropReelEl?.addEventListener("click", (e) => {
   if (!dropReel) return;
+  const go = e.target.closest("[data-reel-see]");
+  if (go) {
+    playClick();
+    openCratePage(go.dataset.reelSee);
+    window.scrollTo({ top: 0 });
+    return;
+  }
   const slide = e.target.closest(".drop-reel-slide");
-  const act = e.target.closest("[data-reel-act]");
-  const key = dropReel.keys[reelFrontIndex()];
-  if (slide) {
-    playClick();
-    const i = Number(slide.dataset.reelI);
-    if (i === reelFrontIndex()) return openDropVideo(key, slide);
-    // Round the short way to the one clicked.
-    let d = (i - reelFrontIndex() + dropReel.n) % dropReel.n;
-    if (d > dropReel.n / 2) d -= dropReel.n;
-    goToReel(reelIndex + d);
-  } else if (act?.dataset.reelAct === "watch") {
-    playClick();
-    openDropVideo(key, dropReelEl.querySelector(".drop-reel-slide.is-front"));
-  } else if (act?.dataset.reelAct === "see") {
-    playClick();
-    const wrap = categoryList.querySelector(`.category-wrap[data-tier="${key}"]`);
-    if (wrap) openTierDetail(wrap);
+  if (!slide) return;
+  playClick();
+  const i = Number(slide.dataset.reelI);
+  if (i === reelFrontIndex()) return openDropVideo(dropReel.keys[i], slide);
+  // Round the short way to the one clicked.
+  let d = (i - reelFrontIndex() + dropReel.n) % dropReel.n;
+  if (d > dropReel.n / 2) d -= dropReel.n;
+  goToReel(reelIndex + d);
+});
+dropReelEl?.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("drop-reel-slide")) {
+    e.preventDefault();
+    e.target.click();
   }
 });
 
 document.addEventListener("visibilitychange", () => {
   if (!dropReel) return;
-  if (document.hidden) {
-    clearTimeout(dropReel.timer);
-    dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
-  } else if (!dropReel.paused) playReelFront();
+  if (document.hidden) haltReelFront();
+  else playReelFront();
 });
 
 // ---- The pop-up: a drop's video, large, with sound and controls. It
@@ -5400,12 +5384,8 @@ function showHomeSlide(i, { instant = false } = {}) {
 let homeBoxViewers = [];
 
 
-// The Mystery demo's live box (see runMysteryDemo); released with the rest.
-let hmDemoViewer = null;
-
 function releaseHomeViewers() {
-  hmDemoViewer?.dispose();
-  hmDemoViewer = null;
+  stopReel();
   // A billboard crate still loading when Home is left would otherwise land
   // after this and run on, unseen, holding a context; bumping the token
   // makes it dispose itself on arrival (see playHeroShow).
@@ -5546,338 +5526,6 @@ function grailTileHTML(g) {
     </button>`;
 }
 
-// ---- Home: Mystery --------------------------------------------------------
-// Two halves, packed: on the left, a demo that loops on its own (Open is
-// tapped, boxes fill the bar, a mystery piece goes into the crate and,
-// on a hit, comes out); on the right, the three that are actually
-// happening, one card per line, stacked to the demo's height. Each card is
-// tinted like that line's drop card: the line's top mystery piece in a
-// thin rounded-square ring that fills with its cheapest drop's charge, the
-// piece's name and value, and a lock pill (the % while it charges,
-// Unlocked once it has).
-const homeMysteryEl = document.getElementById("homeMystery");
-const HOME_MYSTERY_LINES = ["sneakers", "streetwear", "collectibles"];
-// The ring: a rounded square (14..186 each way, corners of 32 — the site's
-// soft-cornered shape), the charge running clockwise from the top middle.
-const HM_DIAL_ARC =
-  "M 100 14 L 154 14 A 32 32 0 0 1 186 46 L 186 154 A 32 32 0 0 1 154 186 L 46 186 A 32 32 0 0 1 14 154 L 14 46 A 32 32 0 0 1 46 14 Z";
-
-// The line's cheapest crate with a mystery bar.
-function mysteryLead(line) {
-  return Object.keys(CATEGORIES)
-    .filter((k) => lineOf(k) === line && supply.hasMystery(k))
-    .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
-}
-
-function hmBadgeHTML(ready, pct) {
-  return ready ? `${ICONS.unlock}<span>Unlocked</span><span class="hm-arrow" aria-hidden="true">&rarr;</span>` : `${ICONS.lock}<span>${pct}%</span>`;
-}
-
-function homeMysteryCardHTML(line) {
-  const key = mysteryLead(line);
-  const ready = supply.readyItem(key);
-  const top = [...MYSTERY_BY_LINE[line]].sort((a, b) => b.price - a.price)[0];
-  const item = ready ?? top;
-  const pct = Math.floor(supply.charge(key) * 100);
-  return `
-    <button class="hm-card${ready ? " is-ready" : ""}${pct === 0 && !ready ? " is-empty" : ""}" data-line="${line}" data-key="${key}" style="--p:${pct}" aria-label="${CATEGORIES[key].badge} mystery: ${item.name.replace(/"/g, "&quot;")}, ${ready ? "unlocked" : `${pct}% charged`}">
-      <span class="hm-dial">
-        <svg class="hm-dial-svg" viewBox="0 0 200 200" aria-hidden="true">
-          <defs><linearGradient id="hmStroke-${line}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2b84b"/><stop offset="0.5" stop-color="#e08ad0"/><stop offset="1" stop-color="#9b5ce0"/></linearGradient></defs>
-          <path class="hm-ring-track" d="${HM_DIAL_ARC}"/>
-          <path class="hm-ring-fill" d="${HM_DIAL_ARC}" pathLength="100" stroke="url(#hmStroke-${line})"/>
-        </svg>
-        <span class="hm-disc"><img class="hm-item" src="${item.image}" data-cutout="${item.image}" alt=""></span>
-      </span>
-      <span class="hm-info">
-        <span class="hm-line">${CATEGORIES[key].badge} · ${CATEGORIES[key].label} drop</span>
-        <span class="hm-name">${item.name}</span>
-        <b class="hm-value">$${item.price.toLocaleString()}</b>
-      </span>
-      <span class="hm-badge">${hmBadgeHTML(!!ready, pct)}</span>
-    </button>`;
-}
-
-function homeMysteryDemoHTML() {
-  return `
-    <div class="hm-demo" aria-hidden="true" data-phase="idle">
-      <div class="hm-demo-top">
-        <span class="hm-demo-open">Open<i class="hm-demo-plus">+1</i></span>
-        <span class="hm-demo-cursor"></span>
-        <div class="hm-demo-bar"><span class="hm-demo-bar-label">${ICONS.mystery}Mystery</span><span class="hm-demo-bar-track"><i></i></span><b class="hm-demo-bar-pct">0%</b></div>
-      </div>
-      <span class="hm-demo-row"></span>
-      <div class="hm-demo-box">
-        <span class="hm-demo-glow"></span>
-        <span class="hm-demo-drop"><i>?</i></span>
-        <img class="hm-demo-prize" alt="">
-        <img class="hm-demo-crate" alt="">
-        <canvas class="hm-demo-canvas"></canvas>
-      </div>
-      <p class="hm-demo-caption"></p>
-    </div>`;
-}
-
-// The pieces stand on their discs cut out of their white photo backgrounds.
-function cutOutHomeMystery(root = homeMysteryEl) {
-  root?.querySelectorAll("img[data-cutout]").forEach((img) => {
-    cutoutImage(img.dataset.cutout).then((url) => {
-      if (url && img.isConnected) img.src = url;
-    });
-  });
-}
-
-// The demo, start to finish (it loops):
-//   1. Open is tapped; each box fills the bar.          "Every box opened fills the bar"
-//   2. Full: the bar turns to Unlocked.                    "Full bar, mystery unlocked"
-//   3. The ? sinks into the shut box and fades away.
-//   4. The taps carry on — every box now has a shot.     "Now every box has a shot at it"
-//   5. One hits: the box opens and the piece rises out; the bar reads
-//      Claimed, then drains back to empty.               "Hit. It's theirs, and the bar resets"
-// The box is the live 3D one (its flaps really open); its still picture
-// stands in until that's ready, or if it can't be made.
-let hmDemoRun = 0;
-function runMysteryDemo() {
-  const run = ++hmDemoRun;
-  const el = homeMysteryEl.querySelector(".hm-demo");
-  if (!el) return;
-  const row = el.querySelector(".hm-demo-row");
-  const bar = el.querySelector(".hm-demo-bar");
-  const fill = el.querySelector(".hm-demo-bar-track i");
-  const pctEl = el.querySelector(".hm-demo-bar-pct");
-  const prize = el.querySelector(".hm-demo-prize");
-  const canvas = el.querySelector(".hm-demo-canvas");
-  const caption = el.querySelector(".hm-demo-caption");
-  let crateUrl = "";
-  getBoxSnapshot("sneakers", "od").then((url) => {
-    crateUrl = url;
-    el.querySelector(".hm-demo-crate").src = url;
-  });
-  cutoutImage(MYSTERY_BY_LINE.sneakers[0].image).then((url) => (prize.src = url));
-  hmDemoViewer?.dispose();
-  hmDemoViewer = null;
-  createBoxViewer(canvas, "sneakers", "od", { fitOpen: true, syncSpin: false })
-    .then((viewer) => {
-      if (run !== hmDemoRun || !canvas.isConnected) return viewer.dispose();
-      viewer.setPaused(true); // face forward and hold, for the drop
-      hmDemoViewer = viewer;
-      el.classList.add("has-3d");
-    })
-    .catch(() => {});
-
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const alive = () => run === hmDemoRun && el.isConnected;
-  const onScreen = () => !document.hidden && document.getElementById("screen-home").classList.contains("active");
-  // The caption carries a highlighted phrase (<em>), so it's swapped as
-  // markup: a quick fade out, the new line, a fade back in — on timers,
-  // not animation events, so it can't stick in a backgrounded tab.
-  const say = (html) => {
-    if (!caption.innerHTML) {
-      caption.innerHTML = html;
-      return;
-    }
-    caption.classList.add("is-swapping");
-    setTimeout(() => {
-      caption.innerHTML = html;
-      caption.classList.remove("is-swapping");
-    }, 180);
-  };
-  const setBar = (p, label = `${Math.round(p)}%`) => {
-    fill.style.width = `${p}%`;
-    pctEl.textContent = label;
-  };
-  const barState = (state) => {
-    bar.classList.toggle("is-unlocked", state === "unlocked");
-    bar.classList.toggle("is-claimed", state === "claimed");
-  };
-  const tap = () => {
-    el.classList.remove("is-tap");
-    void el.offsetWidth;
-    el.classList.add("is-tap");
-    const mini = document.createElement("img");
-    mini.className = "hm-demo-mini";
-    mini.src = crateUrl;
-    mini.alt = "";
-    row.appendChild(mini);
-    // Keep the row to what fits: the oldest slide off the front.
-    while (row.children.length > 7) row.firstElementChild.remove();
-  };
-  const open = async () => {
-    const v = hmDemoViewer;
-    if (!v) return wait(350);
-    v.open();
-    await wait(v.mouthClearMs * 0.85);
-  };
-  // Never waits on the box longer than the fold should take: its close
-  // resolves on animation frames, which a backgrounded tab doesn't draw.
-  const close = (ms) => Promise.race([hmDemoViewer?.close(ms) ?? Promise.resolve(), wait(ms + 250)]);
-
-  (async () => {
-    while (alive()) {
-      // Off screen, or the crate picture not ready yet (the mini crates
-      // would show as broken images): wait.
-      if (!onScreen() || !crateUrl) {
-        await wait(crateUrl ? 800 : 250);
-        continue;
-      }
-      // 1. Boxes fill the bar.
-      el.dataset.phase = "buy";
-      row.innerHTML = "";
-      barState("");
-      setBar(0);
-      say("Every box opened <em>fills the bar</em>");
-      await wait(500);
-      for (let i = 1; i <= 5 && alive(); i++) {
-        tap();
-        setBar(i * 20);
-        await wait(600);
-      }
-      if (!alive()) break;
-      // 2. Unlocked.
-      el.dataset.phase = "full";
-      barState("unlocked");
-      setBar(100, "Unlocked");
-      say("Full bar. <em>Mystery unlocked</em>");
-      await wait(700);
-      // 3. Into the box: the ? sinks into the shut lid and fades away.
-      el.dataset.phase = "drop";
-      await wait(1000);
-      // 4. Every box has a shot now.
-      el.dataset.phase = "chance";
-      say("Now every box has <em>a shot at it</em>");
-      for (let j = 0; j < 3 && alive(); j++) {
-        await wait(650);
-        tap();
-      }
-      await wait(350);
-      // 5. A hit: it opens and the piece comes out; the bar is claimed.
-      el.dataset.phase = "hit";
-      await open();
-      el.dataset.phase = "reveal";
-      barState("claimed");
-      setBar(100, "Claimed");
-      say("A hit. <em>Claimed</em>, and the bar resets");
-      await wait(1900);
-      barState("");
-      el.classList.add("is-draining");
-      setBar(0);
-      await wait(1000);
-      el.classList.remove("is-draining");
-      el.dataset.phase = "out";
-      await close(800);
-      await wait(400);
-    }
-  })();
-}
-
-function renderHomeMystery() {
-  if (!homeMysteryEl) return;
-  homeMysteryEl.innerHTML = `${homeMysteryDemoHTML()}<div class="hm-rings">${HOME_MYSTERY_LINES.map(homeMysteryCardHTML).join("")}</div>`;
-  cutOutHomeMystery();
-  runMysteryDemo();
-}
-
-// Live: each ring follows its drop's charge, and is drawn again when the
-// drop unlocks (or its unlocked piece is pulled).
-function refreshHomeMystery() {
-  if (!homeMysteryEl?.isConnected || !document.getElementById("screen-home").classList.contains("active")) return;
-  homeMysteryEl.querySelectorAll(".hm-card").forEach((card) => {
-    const key = card.dataset.key;
-    const ready = !!supply.readyItem(key);
-    if (ready !== card.classList.contains("is-ready")) {
-      const line = card.dataset.line;
-      card.outerHTML = homeMysteryCardHTML(line);
-      cutOutHomeMystery(homeMysteryEl.querySelector(`.hm-card[data-line="${line}"]`));
-      return;
-    }
-    if (ready) return;
-    const pct = Math.floor(supply.charge(key) * 100);
-    card.style.setProperty("--p", pct);
-    card.classList.toggle("is-empty", pct === 0);
-    card.querySelector(".hm-badge").innerHTML = hmBadgeHTML(false, pct);
-  });
-}
-
-homeMysteryEl?.addEventListener("click", (e) => {
-  const card = e.target.closest(".hm-card");
-  if (!card) return;
-  playClick();
-  prizeTabByKey[card.dataset.key] = "mystery";
-  homeSeeCrate(card.dataset.key);
-});
-
-function renderHomeGrails() {
-  const el = document.getElementById("homeGrails");
-  grailPool = homeGrailList(GRAIL_POOL);
-  const first = grailPool.slice(0, GRAIL_SHOWN);
-  el.innerHTML = first.map(grailTileHTML).join("");
-  [...el.children].forEach((tile, i) => {
-    setGrailMeta(tile, first[i]);
-    tile.addEventListener("click", () => {
-      playClick();
-      homeSeeCrate(tile.dataset.tier);
-    });
-  });
-
-  clearInterval(grailTimer);
-  if (heroReducedMotion.matches) return;
-  // Warm the pool's images so a reel never stops on a blank frame.
-  grailPool.forEach(({ p }) => (new Image().src = p.image));
-  grailTimer = setInterval(() => spinGrails(el), GRAIL_SPIN_EVERY_MS);
-}
-
-function spinGrails(el) {
-  // Only while Home is on screen and the tab is visible.
-  if (document.hidden || !document.getElementById("screen-home").classList.contains("active")) return;
-  const tiles = [...el.querySelectorAll(".home-grail")];
-  // Never the same piece twice on screen: draw from what isn't showing.
-  const shown = new Set(tiles.map((t) => t.dataset.grail));
-  const fresh = grailPool.filter((g) => !shown.has(g.p.name));
-  tiles.forEach((tile, i) => {
-    // A tile under the pointer stays put — changing what someone is about
-    // to click is a bait-and-switch.
-    if (tile.matches(":hover") || tile.classList.contains("is-spinning") || !fresh.length) return;
-    const next = fresh.splice(Math.floor(Math.random() * fresh.length), 1)[0];
-    setTimeout(() => spinGrail(tile, next), i * GRAIL_STAGGER_MS);
-  });
-}
-
-function spinGrail(tile, target) {
-  const strip = tile.querySelector(".grail-strip");
-  const windowEl = tile.querySelector(".grail-window");
-  const h = windowEl.clientHeight;
-  if (!h) return;
-  const current = grailPool.find((g) => g.p.name === tile.dataset.grail) ?? target;
-  const blur = Array.from({ length: GRAIL_BLUR_ITEMS }, () => grailPool[Math.floor(Math.random() * grailPool.length)]);
-  // The strip: what's showing now, a run of others, and the new piece last.
-  strip.innerHTML = [current, ...blur, target].map(grailItemHTML).join("");
-  strip.style.transition = "none";
-  strip.style.transform = "translateY(0)";
-  void strip.offsetHeight; // commit the reset before the spin starts
-
-  tile.classList.add("is-spinning", "is-changing"); // name, price and tag ease out
-  strip.classList.add("is-blurred");
-  strip.style.transition = `transform ${GRAIL_SPIN_MS}ms cubic-bezier(.16,.84,.3,1)`;
-  strip.style.transform = `translateY(${-(GRAIL_BLUR_ITEMS + 1) * h}px)`;
-  setTimeout(() => strip.classList.remove("is-blurred"), GRAIL_SPIN_MS * 0.62);
-  setTimeout(() => {
-    // The strip already rests on the new piece: swapping it for that one
-    // piece alone is invisible.
-    strip.style.transition = "none";
-    strip.innerHTML = grailItemHTML(target);
-    strip.style.transform = "translateY(0)";
-    setGrailMeta(tile, target);
-    tile.classList.remove("is-spinning");
-    setTimeout(() => tile.classList.remove("is-changing"), 30); // ease back in
-    if (target.p.rarity === "legendary") {
-      // One light sweep across a grail as it lands.
-      tile.classList.remove("is-shining");
-      void tile.offsetWidth;
-      tile.classList.add("is-shining");
-    }
-  }, GRAIL_SPIN_MS + 30);
-}
-
 // ---- How it works: three pictures made by the app itself ----
 // 1: the crate, stacked three deep. 2: three grails, cut out and fanned,
 // the middle one in front. 3 is words only (the three ways out), in the markup.
@@ -5995,7 +5643,7 @@ function renderHome() {
   // Back on Home after its viewers were released: put the crate back.
   else if (!heroViewer) playHeroShow(homeHeroIndex);
   renderHomeCrates();
-  renderHomeMystery();
+  renderDropReel();
   renderHomeGrails();
   renderHomeSteps();
   renderHomePulls();
@@ -6774,7 +6422,6 @@ function refreshSupplyViews() {
   });
   if (marketCrateKey !== null && screenMarketEl.classList.contains("active")) renderMarketCrate();
   if (crateModalCtx) renderCrateModal();
-  refreshHomeMystery();
 }
 
 // ---- Footer: quick links navigate for real; social/support are labeled
