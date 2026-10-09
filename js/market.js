@@ -40,13 +40,13 @@ export function sizeForItem(name) {
 
 /**
  * The size a listing is filed under, or null for the kinds that don't have
- * one (stocks, and collectibles — a skateboard deck filed under "10.5" was
+ * one (collectibles — a skateboard deck filed under "10.5" was
  * the giveaway that this used to assume every prize was a sneaker). This is
  * the value the Size filter matches on, so it stays bare.
  */
 export function sizeFor(item) {
   const { name, category } = item;
-  if (category === "stocks" || category === "collectibles") return null;
+  if (category === "collectibles") return null;
   if (category === "streetwear") return APPAREL_SIZES[hashOf(name) % APPAREL_SIZES.length];
   return sizeForItem(name); // sneakers, and anything saved before crates had categories
 }
@@ -70,9 +70,8 @@ function defaultState() {
   };
 }
 
-// One-time cleanup for sessions seeded before stocks were excluded from
-// the marketplace — drops any stock listings (and offers on them) already
-// sitting in localStorage.
+// Stocks are no longer sold: any stock listing (and offers on it) left in
+// a saved session from when they were goes.
 function stripStockListings(loaded) {
   const stockIds = new Set(loaded.listings.filter((l) => l.category === "stocks").map((l) => l.id));
   if (stockIds.size === 0) return loaded;
@@ -101,28 +100,6 @@ function save() {
   }
 }
 
-// Stored items carry a copy of their name and image from when they were
-// saved, so a renamed or redrawn catalog item (e.g. the Stocks
-// certificates) would never reach them. `current` maps a saved name (old
-// or current) to the catalog's current { name, image }; every saved item
-// with a matching name is brought up to date, wherever it lives in state.
-export function refreshItems(current) {
-  let changed = false;
-  const walk = (v) => {
-    if (Array.isArray(v)) return v.forEach(walk);
-    if (!v || typeof v !== "object") return;
-    const fresh = typeof v.name === "string" && typeof v.image === "string" && current.get(v.name);
-    if (fresh && (v.name !== fresh.name || v.image !== fresh.image)) {
-      v.name = fresh.name;
-      v.image = fresh.image;
-      changed = true;
-    }
-    Object.values(v).forEach(walk);
-  };
-  walk(state);
-  if (changed) save();
-}
-
 // ---- Seeding (simulated other-seller listings) ---------------------------
 // Runs once ever. Picks a spread of real catalog items and lists them at a
 // price near (but not exactly) their catalog value, under a fake username,
@@ -130,9 +107,7 @@ export function refreshItems(current) {
 
 export function ensureSeeded(catalog) {
   if (state.seeded) return;
-  // Stocks never touch the marketplace — they redeem straight to the
-  // platform at exact on-chain value, not peer-to-peer like collectibles.
-  const shuffled = catalog.filter((item) => item.category !== "stocks").sort(() => Math.random() - 0.5);
+  const shuffled = [...catalog].sort(() => Math.random() - 0.5);
 
   // Listed: priced, Buy Now available.
   shuffled.slice(0, 20).forEach((item) => {

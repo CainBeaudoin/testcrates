@@ -113,28 +113,6 @@ function save() {
   }
 }
 
-// Stored items carry a copy of their name and image from when they were
-// saved, so a renamed or redrawn catalog item (e.g. the Stocks
-// certificates) would never reach them. `current` maps a saved name (old
-// or current) to the catalog's current { name, image }; every saved item
-// with a matching name is brought up to date, wherever it lives in state.
-export function refreshItems(current) {
-  let changed = false;
-  const walk = (v) => {
-    if (Array.isArray(v)) return v.forEach(walk);
-    if (!v || typeof v !== "object") return;
-    const fresh = typeof v.name === "string" && typeof v.image === "string" && current.get(v.name);
-    if (fresh && (v.name !== fresh.name || v.image !== fresh.image)) {
-      v.name = fresh.name;
-      v.image = fresh.image;
-      changed = true;
-    }
-    Object.values(v).forEach(walk);
-  };
-  walk(state);
-  if (changed) save();
-}
-
 function weightedPickFrom(pool) {
   const total = pool.reduce((sum, p) => sum + p.weight, 0);
   let roll = Math.random() * total;
@@ -647,80 +625,33 @@ export function priceHistory(item, days = 30) {
   return points;
 }
 
-// Stocks redeem at exact live value — there's no buy/sell spread on a
-// simulated on-chain share the way there is on a physical collectible, so
-// only the collectibles haircut applies here.
-export function cashOutMultiplier(category) {
-  return category === "stocks" ? 1 : CASHOUT_HAIRCUT;
+export function cashOutMultiplier() {
+  return CASHOUT_HAIRCUT;
 }
 
 export function cashOutValue(item) {
-  return Math.round(currentMarketValue(item) * cashOutMultiplier(item.category));
+  return Math.round(currentMarketValue(item) * cashOutMultiplier());
 }
 
-// ---- Portfolio: consolidated stock holdings ------------------------------
-// Each stocks-category inventory item is one "lot" (one crate win) — same
-// shape as any other kept item, just tagged category:"stocks". The vault
-// groups lots by ticker into one consolidated position (like a brokerage
-// holding built from several fills) while still exposing the individual
-// lots, and lets you redeem a dollar amount instead of a whole lot.
+// ---- Stocks, retired ---------------------------------------------------------
+// The platform no longer sells stocks. An account from before keeps nothing
+// of them: held shares, opens, cash-outs and transfers of them all go, so
+// no screen shows a share it can no longer do anything with. Stock entries
+// are the ones tagged as such, or named the way a share was ("NVDA · …").
 
-function tickerOf(item) {
-  return item.name.split(" ")[0];
-}
+const isStockEntry = (e) =>
+  !!e && (e.category === "stocks" || e.tierKey === "stocks" || /^[A-Z.]{1,6} [·—] /.test(e.name ?? ""));
 
-export function getPortfolio() {
-  const byTicker = new Map();
-  state.inventory
-    .filter((i) => i.category === "stocks")
-    .forEach((lot) => {
-      const ticker = tickerOf(lot);
-      if (!byTicker.has(ticker)) byTicker.set(ticker, { ticker, name: lot.name, image: lot.image, lots: [] });
-      byTicker.get(ticker).lots.push(lot);
-    });
-  return [...byTicker.values()]
-    .map((holding) => ({ ...holding, totalValue: holding.lots.reduce((sum, lot) => sum + currentMarketValue(lot), 0) }))
-    .sort((a, b) => b.totalValue - a.totalValue);
-}
-
-// A consolidated position's chart is the sum of its lots' simulated daily
-// values — reuses the same per-lot valueOnDate the individual chart does,
-// so the position's last point always matches its displayed total.
-export function portfolioPriceHistory(ticker, days = 30) {
-  const lots = state.inventory.filter((i) => i.category === "stocks" && tickerOf(i) === ticker);
-  const now = new Date();
-  const points = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    points.push({ date: date.toISOString().slice(0, 10), value: lots.reduce((sum, lot) => sum + valueOnDate(lot, date), 0) });
-  }
-  return points;
-}
-
-// Redeems up to `amount` of a ticker's consolidated position at exact
-// current value, oldest lot first — partially reducing a lot's own base
-// price rather than requiring a whole lot to be sold at once. Returns the
-// amount actually redeemed (capped at what's held).
-export function sellStock(ticker, amount) {
-  const lots = state.inventory
-    .filter((i) => i.category === "stocks" && tickerOf(i) === ticker)
-    .sort((a, b) => a.acquiredAt - b.acquiredAt);
-  let remaining = amount;
-  let sold = 0;
-  for (const lot of lots) {
-    if (remaining <= 0) break;
-    const value = currentMarketValue(lot);
-    const take = Math.min(remaining, value);
-    if (take >= value) {
-      removeFromInventory(lot.id);
-    } else {
-      lot.price = Math.max(1, Math.round(lot.price * (1 - take / value)));
-    }
-    sold += take;
-    remaining -= take;
-  }
-  save();
-  return sold;
+export function dropStocks() {
+  const before = JSON.stringify(state);
+  state.inventory = state.inventory.filter((i) => !isStockEntry(i));
+  state.history = state.history.filter((e) => !isStockEntry(e));
+  state.bigPulls = state.bigPulls.filter((e) => !isStockEntry(e));
+  state.cashedOut = state.cashedOut.filter((e) => !isStockEntry(e));
+  state.transfers = state.transfers.filter((e) => !isStockEntry(e));
+  state.creditEvents = state.creditEvents.filter((e) => e.tierKey !== "stocks");
+  if (state.lastPulledByTier) delete state.lastPulledByTier.stocks;
+  if (JSON.stringify(state) !== before) save();
 }
 
 // ---- Shipping (claim physical item) --------------------------------------

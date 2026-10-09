@@ -4,7 +4,6 @@ import { RARITY_META } from "./rarity.js";
 import { PRIZE_POOL as SNEAKER_POOL } from "./prizeDataSneakers.js";
 import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
 import { PRIZE_POOL as COLLECTIBLES_POOL } from "./prizeDataCollectibles.js";
-import { PRIZE_POOL as STOCKS_POOL } from "./prizeDataStocks.js";
 import { PRIZE_POOL as SNEAKER_250_POOL } from "./prizeDataSneakers250.js";
 import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
 import { playRevealFX } from "./reveal.js";
@@ -74,16 +73,6 @@ const MYSTERY_CHANCE_LABEL = `${Math.round(MYSTERY_CHANCE * 100)}%`;
 // below what a box costs. The crate keys keep their original numbers
 // (sneakers1000 is the $1,200 crate): they're identifiers, not prices.
 const CATEGORIES = {
-  stocks: {
-    label: "$25",
-    badge: "Stocks",
-    price: 25,
-    pool: STOCKS_POOL,
-    poweredBy: "Robinhood Chain",
-    boxKind: "printer", // generic printer model, not the shoe box
-    cashOnly: true, // real USDC settlement, not a Credits reward balance
-    openOnBuy: true, // a Stocks box opens when it's bought: no sealed holding or resale
-  },
   sneakers: {
     label: "$150",
     badge: "Sneakers",
@@ -160,7 +149,6 @@ const CATEGORIES = {
 
 // One line under each section's title on Drops.
 const LINE_TAGLINES = {
-  stocks: "Real shares, printed on the spot. Settles in USDC.",
   sneakers: "Grails from ODTO's shelves, from Dunks to Off-White Chicagos.",
   streetwear: "Supreme, BAPE, Denim Tears and the rest of the rack.",
   collectibles: "Bearbricks, KAWS and the things people keep in cases.",
@@ -184,12 +172,11 @@ const LEGACY_TIER_KEYS = {
   thousand: "collectibles",
 };
 
-// Which 3D prop a crate is. Every ODTO crate is the CHOSEN × ODTO cardboard
-// box (shared with the team's other Chosen build) — on Home, on Drops, in
-// the reel and in the round itself. Stocks keeps its printer: it isn't an
-// ODTO crate and has nothing to ship.
-function crateBoxKind(cat) {
-  return cat.boxKind === "printer" ? "printer" : "od";
+// Which 3D prop a crate is. Every crate is the CHOSEN × ODTO cardboard box
+// (shared with the team's other Chosen build) — on Home, on Drops, in the
+// reel and in the round itself.
+function crateBoxKind() {
+  return "od";
 }
 
 // Whether a crate's boxes can be kept sealed (and so held and traded).
@@ -210,7 +197,6 @@ function tierOf(key) {
 // into one texture per crate the first time it draws one; registering here
 // keeps the pools owned by this file and out of the renderer.
 Object.entries(CATEGORIES).forEach(([key, cat]) => {
-  if (cat.boxKind) return; // the Stocks printer has no product art to wear
   registerTierArt(key, cat.pool.map((p) => p.image));
   // The cardboard box wears some of its most valuable pieces as stickers,
   // cut out of their photos (cutoutImage, further down; called on first
@@ -222,8 +208,8 @@ Object.entries(CATEGORIES).forEach(([key, cat]) => {
 // Every crate sells in series of supply.SERIES_SIZE boxes, each opening at
 // the crate's published odds (see supply.js). A first visit finds them
 // part-way through: two already sold out, so the market has sealed boxes
-// trading from the start; the rest somewhere in their run. Every ODTO
-// crate has the mystery charge; Stocks doesn't.
+// trading from the start; the rest somewhere in their run. Every crate
+// has the mystery charge.
 const SEED_SUPPLY = {
   sneakers1000: { sold: 1, opened: 0.62 },
   collectibles500: { sold: 1, opened: 0.74 },
@@ -268,8 +254,8 @@ const DISPLAY_RARITY_ORDER = ["legendary", "epic", "rare", "uncommon", "common"]
 // Deduped by name: a shoe can sit in more than one Sneakers crate.
 const uniqueByName = (items) => [...new Map(items.map((p) => [p.name, p])).values()];
 const ALL_CATALOG = uniqueByName(Object.values(CATEGORIES).flatMap((c) => c.pool));
-// ODTO crates only (no stocks) — used to demo-seed the Vault.
-const SNEAKER_CATALOG = uniqueByName(Object.values(CATEGORIES).filter((c) => !c.boxKind).flatMap((c) => c.pool));
+// Used to demo-seed the Vault.
+const SNEAKER_CATALOG = ALL_CATALOG;
 
 // Simulated leaderboard cast — static seed XP, the player's own row is
 // inserted alongside these at render time. Not live multiplayer data.
@@ -478,7 +464,6 @@ const sideCredits = document.getElementById("sideCredits");
 const sideCash = document.getElementById("sideCash");
 const sideXp = document.getElementById("sideXp");
 const sideVaultValue = document.getElementById("sideVaultValue");
-const sidePortfolioValue = document.getElementById("sidePortfolioValue");
 // [data-group] excludes #accountMoreBtn — it opens the footer-info modal
 // rather than switching which section(s) are showing, so it can't run
 // through the generic group-switching handler below.
@@ -576,19 +561,6 @@ const itemDetailPeerOffers = document.getElementById("itemDetailPeerOffers");
 const itemDetailCloseBtn = document.getElementById("itemDetailCloseBtn");
 const itemDetailShareBtn = document.getElementById("itemDetailShareBtn");
 const itemDetailDownloadBtn = document.getElementById("itemDetailDownloadBtn");
-const portfolioCount = document.getElementById("portfolioCount");
-const portfolioGrid = document.getElementById("portfolioGrid");
-const portfolioModal = document.getElementById("portfolioModal");
-const portfolioDetailImage = document.getElementById("portfolioDetailImage");
-const portfolioDetailName = document.getElementById("portfolioDetailName");
-const portfolioDetailValue = document.getElementById("portfolioDetailValue");
-const portfolioDetailChart = document.getElementById("portfolioDetailChart");
-const portfolioDetailChartCaption = document.getElementById("portfolioDetailChartCaption");
-const portfolioDetailLots = document.getElementById("portfolioDetailLots");
-const portfolioDetailSellBtn = document.getElementById("portfolioDetailSellBtn");
-const portfolioDetailSendBtn = document.getElementById("portfolioDetailSendBtn");
-portfolioDetailSendBtn.innerHTML = ICONS.send;
-const portfolioDetailCloseBtn = document.getElementById("portfolioDetailCloseBtn");
 const amountModal = document.getElementById("amountModal");
 const amountModalTitle = document.getElementById("amountModalTitle");
 const amountModalHint = document.getElementById("amountModalHint");
@@ -650,19 +622,18 @@ function fmt(n) {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-// What pops out of an opened crate: the product's own photo, as shot (a
-// stock's is its paper certificate). Kept a promise so callers don't care.
+// What pops out of an opened crate: the product's own photo, as shot. Kept
+// a promise so callers don't care.
 function revealImageFor(prize) {
   return Promise.resolve(prize.image);
 }
 
 // Size + condition line shown on the reveal, Vault item detail, and
 // Marketplace listing detail — so a size mismatch is obvious immediately,
-// before spending an exit on something that won't fit. Stocks have
-// neither. Condition is always "New" (no used/worn inventory in this
-// catalog) but still stated explicitly rather than assumed.
+// before spending an exit on something that won't fit. Condition is
+// always "New" (no used/worn inventory in this catalog) but still stated
+// explicitly rather than assumed.
 function itemMetaText(name, category) {
-  if (category === "stocks") return "";
   const size = market.sizeLabelFor(name, category);
   return size ? `Size ${size} · Condition: New` : "Condition: New";
 }
@@ -681,8 +652,6 @@ function vibrate(rarity) {
 // entry (see setListingPrice), it never creates a second one.
 function addOwnedItem(prize) {
   const item = player.addToInventory(prize);
-  // Stocks settle on-chain directly (see Portfolio) — no marketplace entry.
-  if (prize.category === "stocks") return item;
   const listing = market.createListing({ item, price: null, seller: player.getUsername() });
   player.markListed(item.id, listing.id);
   return item;
@@ -694,8 +663,8 @@ function releaseOwnedItem(item) {
 }
 
 // Demo convenience: the first time this browser ever loads the app, drop a
-// fixed set of ODTO items in the Vault, a fixed set of stocks in the
-// Portfolio, and top up Cash/Credits, so there's something to click
+// fixed set of ODTO items in the Vault and top up Cash/Credits, so
+// there's something to click
 // through without opening crates first. This dataset is hardcoded (not
 // randomized) on purpose: it's what a shared deployment link shows too,
 // with no backend to carry a specific developer's own local state to
@@ -722,19 +691,6 @@ const DEMO_VAULT_ITEM_NAMES = [
   "KAWS Companion Plush Brown", // Collectibles, Legendary
   "POP Mart Labubu The Monster Let's Checkmate", // Collectibles, Uncommon
 ];
-const DEMO_PORTFOLIO_ITEM_NAMES = [
-  // Three NVDA lots on purpose: demos Portfolio consolidating several wins
-  // into one position.
-  "NVDA · Nvidia Corp",
-  "NVDA · Nvidia Corp",
-  "NVDA · Nvidia Corp",
-  "AAPL · Apple Inc",
-  "MSFT · Microsoft Corp",
-  "TSLA · Tesla Inc",
-  "AMZN · Amazon.com Inc",
-  "COIN · Coinbase Global",
-  "SPY · SPDR S&P 500 ETF",
-];
 const DEMO_STARTING_CASH = 2000; // added on top of the base $500 starting balance
 const DEMO_STARTING_CREDITS = 25;
 
@@ -757,7 +713,6 @@ function seedDemoInventory() {
     });
   };
   seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
-  seed(STOCKS_POOL, DEMO_PORTFOLIO_ITEM_NAMES);
 
   if (version === 0) {
     player.addCash(DEMO_STARTING_CASH);
@@ -777,11 +732,9 @@ const DEMO_ACTIVITY = {
     ["collectibles", "KAWS Companion Plush Brown", 5],
     ["streetwear", "Supreme Box Logo Hoodie Sage (fw16)", 9],
     ["sneakers", "Air Jordan 4 Red Cement", 20],
-    ["stocks", "NVDA · Nvidia Corp", 28],
     ["collectibles", "POP Mart Labubu The Monster Let's Checkmate", 33],
     ["streetwear", "BAPE 1st Camo Crazy By Bathing Ape Tee Black", 47],
     ["sneakers", "Yeezy Slide Glow Green", 60],
-    ["stocks", "TSLA · Tesla Inc", 75],
     ["collectibles", "Bearbrick BAPE Mickey Monotone 1000%", 96],
   ],
   cashedOut: [
@@ -822,7 +775,7 @@ function seedDemoActivity() {
   DEMO_ACTIVITY.cashedOut.forEach(([tier, name, hoursAgo]) => {
     const p = find(tier, name);
     if (!p) return;
-    const amount = Math.round(p.price * player.cashOutMultiplier(p.category));
+    const amount = Math.round(p.price * player.cashOutMultiplier());
     cashedOut.push({ ...base(p), amount, currency: "cash", ts: now - hoursAgo * HOUR });
   });
   const transfers = [];
@@ -1955,7 +1908,7 @@ dropDetailBackBtn.addEventListener("click", () => {
 let dropLine = "all";
 const dropLinesEl = document.getElementById("dropLines");
 
-// All Drops is one run, cheapest to dearest (Stocks' $25 leads); a line's
+// All Drops is one run, cheapest to dearest; a line's
 // tab keeps its own crates in price order.
 function orderedCrates() {
   return Object.entries(CATEGORIES).sort(
@@ -2025,9 +1978,7 @@ function renderCategories() {
     wrap.className = "category-wrap";
     wrap.dataset.tier = key;
 
-    const paymentBadgesHTML = cat.cashOnly
-      ? `<span class="category-icon-badge" title="Cash only. Settles in real USDC">${ICONS.cash}</span>`
-      : `<span class="category-icon-badge" title="Buy with Cash. Cashback pays back in Cash">${ICONS.cash}</span>
+    const paymentBadgesHTML = `<span class="category-icon-badge" title="Buy with Cash. Cashback pays back in Cash">${ICONS.cash}</span>
          <span class="category-icon-badge" title="Buy with Credits. Cashback pays back in Credits">${ICONS.card}</span>`;
 
     const card = document.createElement("div");
@@ -2153,7 +2104,7 @@ const DROP_VIDEOS = {
 };
 // How long a drop with no video yet stays at the front of the reel.
 const REEL_PLACEHOLDER_MS = 6000;
-const LINE_TINT = { stocks: "#2f9e5b", sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f" };
+const LINE_TINT = { sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f" };
 const PLAY_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>`;
 
 const dropVideoOf = (key) => (DROP_VIDEOS[key]?.src ? DROP_VIDEOS[key] : null);
@@ -2486,15 +2437,7 @@ function openPaymentPicker(key, quantity = 1) {
   payModeEl.hidden = !keepsSealed(key);
   paySupplyEl.textContent = `${s.unsold.toLocaleString()} of ${s.total} left in Series ${s.series}`;
 
-  // Stocks settle in Cash only (real USDC, not a Credits reward balance), so
-  // the picker shows the one option it has. It used to be skipped, which
-  // made every Stocks "Open" — on Home as well as Drops — a one-tap charge
-  // with nothing between the tap and the money leaving. One option is still
-  // a confirmation.
-  payWithCredits.classList.toggle("hidden", !!cat.cashOnly);
-  paymentModalHint.textContent = cat.cashOnly
-    ? "Stocks settle in Cash, and a Cash Out pays back into Cash."
-    : "Whichever you choose, a Cash Out pays back into that same balance.";
+  paymentModalHint.textContent = "Whichever you choose, a Cash Out pays back into that same balance.";
 
   const wallet = player.getWallet();
   const totalCost = cat.price * quantity;
@@ -2627,11 +2570,9 @@ function spinReel() {
 
 // ---- Game screen -------------------------------------------------
 
-// Matches the label to what's actually being opened — "Box" for the ODTO
-// sneaker tiers, "Stock" for the Stocks tier — instead of the generic
-// "Crate" for every category.
-function boxNounFor(key) {
-  return key === "stocks" ? "Stock" : "Box";
+// What's being opened, as the slots name it: always a box.
+function boxNounFor() {
+  return "Box";
 }
 
 function resetSlotsUI() {
@@ -2915,7 +2856,6 @@ function openSlot(index, { isYours, revealCard = true }) {
   revealImageFor(prize).then((url) => {
     imgEl.src = url;
   });
-  slot.querySelector(".price-card").classList.toggle("is-paper", prize.category === "stocks");
 
   slot.querySelector(".box-caption").textContent = isYours ? `Your ${boxNounFor(currentCategoryKey)}` : "Unpicked";
   slot.classList.toggle("you", isYours);
@@ -2926,8 +2866,6 @@ function openSlot(index, { isYours, revealCard = true }) {
     if (lead) setTimeout(() => slot.classList.add("open"), lead);
     else slot.classList.add("open");
   }
-  // The printer's sheet comes out printed with this slot's certificate.
-  if (viewers[index]?.setPaper) viewers[index].setPaper(prize.image);
   if (viewers[index]) viewers[index].open();
 }
 
@@ -2959,7 +2897,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   revealBannerEl.textContent = meta.label;
 
-  // The piece's own photo (a stock: its certificate), fetched when the
+  // The piece's own photo, fetched when the
   // round started, so normally already cached.
   prizeRevealImg.removeAttribute("src");
   prizeRevealImg.alt = prize.name;
@@ -2985,7 +2923,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
     multiplierBadge.classList.add("hidden");
   }
 
-  const cashOutNow = Math.round(prize.price * player.cashOutMultiplier(prize.category));
+  const cashOutNow = Math.round(prize.price * player.cashOutMultiplier());
   cashOutSub.textContent = roundCurrency === "cash" ? `${fmt(cashOutNow)} now` : `${cashOutNow.toLocaleString()} credits now`;
 
   if (streak >= 2) {
@@ -3023,7 +2961,7 @@ cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
-  const amount = Math.round(prize.price * player.cashOutMultiplier(prize.category));
+  const amount = Math.round(prize.price * player.cashOutMultiplier());
   player.cashBack(amount, roundCurrency);
   player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
   // The one exit that pays a balance instead of an item, so the one that
@@ -3127,7 +3065,7 @@ applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "li
 // ---- Pinned page headers -----------------------------------------------------
 // On desktop, Market's title and Account's tab bar stay put while the
 // items scroll, and what sits under them (Market's filters, Account's
-// sidebar and My Items/Portfolio switch) pins just below. Their heights
+// sidebar) pins just below. Their heights
 // feed the CSS offsets, measured rather than guessed so a font or wrap
 // change can't open a gap or overlap.
 const pinnedHeights = [
@@ -3210,7 +3148,7 @@ navTabs.forEach((tab) => {
 
 // ---- Account sidebar sub-nav (Profile / Holdings / Selling / Activity / Rewards) ---
 // Each tab groups several of the underlying .account-section blocks —
-// 11 flat categories (Vault, Portfolio, Streaks, Clips, Listings, Offers,
+// 11 flat categories (Vault, Streaks, Clips, Listings, Offers,
 // History, Shipped, Leaderboard, Referral) was too many to scan at a
 // glance, so they're paired up by what they're actually about. Every
 // section keeps its own render function and its own <h3> sub-header
@@ -3221,7 +3159,7 @@ navTabs.forEach((tab) => {
 // across two tabs meant the same item's story was in two places.
 const ACCOUNT_NAV_GROUPS = {
   profile: ["profile"],
-  holdings: ["vault", "portfolio"],
+  holdings: ["vault"],
   activity: ["activity"],
   rewards: ["rewards"],
   clips: ["clips"],
@@ -3237,7 +3175,7 @@ function showAccountGroup(group) {
   accountNavItems.forEach((i) => i.classList.toggle("active", i.dataset.group === group));
   const sections = ACCOUNT_NAV_GROUPS[group] ?? [];
   accountSections.forEach((s) => s.classList.toggle("active", sections.includes(s.dataset.section)));
-  // The second-level toggle (My Items vs Portfolio, etc.) only makes sense
+  // The second-level toggle (where a group has one) only makes sense
   // for whichever group is now showing.
   accountToggles.forEach((t) => t.classList.toggle("toggle-group-active", t.dataset.toggleGroup === group));
 }
@@ -3280,7 +3218,7 @@ document.addEventListener(
 );
 
 // ---- Account: mobile-only second-level toggle within a nav group ---------
-// e.g. Holdings' "My Items" vs "Portfolio" — a generic handler so it
+// e.g. a group's two halves on a phone — a generic handler so it
 // doesn't need per-group wiring. A target with data-toggle-key can carry
 // more than one space-separated key (the shared Offers/History wrapper,
 // which should stay visible for either of its own sub-options) — hidden
@@ -3506,7 +3444,7 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
-    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", stocks: "Stocks" };
+    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles" };
     const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
     marketCategoryFilter.innerHTML = cats
       .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
@@ -4185,10 +4123,7 @@ function openItemDetail(itemId) {
   itemDetailMeta.classList.toggle("hidden", !itemMeta);
   const value = player.currentMarketValue(item);
   itemDetailValue.textContent = `$${value.toLocaleString()}`;
-  renderChart(itemDetailChart, itemDetailChartCaption, player.priceHistory(item), {
-    // Stocks are simulated shares with no StockX comp; sneakers resolve.
-    name: item.category === "stocks" ? null : item.name,
-  });
+  renderChart(itemDetailChart, itemDetailChartCaption, player.priceHistory(item), { name: item.name });
 
   const buyout = player.cashOutValue(item);
   itemDetailBuyout.textContent = `$${buyout.toLocaleString()}`;
@@ -4275,126 +4210,9 @@ itemDetailDownloadBtn.addEventListener("click", () => {
   });
 });
 
-// ---- Portfolio: consolidated stock holdings --------------------------
-// Every stocks-tier win is its own lot in player.inventory, same as any
-// other kept item — this just groups them by ticker for display. Selling
-// happens here (redeem a dollar amount, no marketplace listing, no
-// haircut), never through the collectibles vault flow above.
-
-function portfolioCardHTML(holding) {
-  return `
-    <div class="market-item" data-ticker="${holding.ticker}">
-      <div class="market-item-media">
-        <img src="${holding.image}" alt="">
-      </div>
-      <div class="market-item-body">
-        <span class="market-item-name">${holding.name}</span>
-        <span class="item-cashout-today">${holding.lots.length} share${holding.lots.length === 1 ? "" : "s"} held</span>
-        <div class="market-item-divider"></div>
-        <div class="market-item-foot">
-          <span class="market-item-price">$${holding.totalValue.toLocaleString()}</span>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderPortfolio() {
-  const portfolio = player.getPortfolio();
-  portfolioCount.textContent = portfolio.length;
-  portfolioGrid.innerHTML = portfolio.length
-    ? portfolio.map(portfolioCardHTML).join("")
-    : `<div class="market-empty">Win a stock from the Stocks tier to start your portfolio.</div>`;
-  portfolioGrid.querySelectorAll(".market-item").forEach((el) => {
-    el.addEventListener("click", () => openPortfolioDetail(el.dataset.ticker));
-  });
-}
-
-function openPortfolioDetail(ticker) {
-  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
-  if (!holding) return;
-
-  portfolioDetailImage.src = holding.image;
-  portfolioDetailImage.alt = holding.name;
-  portfolioDetailName.textContent = holding.name;
-  portfolioDetailValue.textContent = `$${holding.totalValue.toLocaleString()}`;
-  renderChart(portfolioDetailChart, portfolioDetailChartCaption, player.portfolioPriceHistory(ticker));
-
-  portfolioDetailLots.innerHTML = [...holding.lots]
-    .sort((a, b) => b.acquiredAt - a.acquiredAt)
-    .map(
-      (lot) => `
-      <div class="offer-row">
-        <div class="offer-row-info"><b>1 share</b><br>Won ${new Date(lot.acquiredAt).toLocaleDateString()}</div>
-        <span class="offer-row-amount">$${player.currentMarketValue(lot).toLocaleString()}</span>
-      </div>`
-    )
-    .join("");
-
-  portfolioDetailSellBtn.dataset.ticker = ticker;
-  portfolioDetailSendBtn.dataset.ticker = ticker;
-  portfolioModal.classList.remove("hidden");
-  requestAnimationFrame(() => portfolioModal.classList.add("visible"));
-}
-
-function closePortfolioDetail() {
-  portfolioModal.classList.remove("visible");
-  setTimeout(() => portfolioModal.classList.add("hidden"), 250);
-}
-portfolioDetailCloseBtn.addEventListener("click", () => {
-  playClick();
-  closePortfolioDetail();
-});
-portfolioDetailSellBtn.addEventListener("click", () => {
-  const ticker = portfolioDetailSellBtn.dataset.ticker;
-  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
-  if (!holding) return;
-  promptAmount("Sell Share Value", `${holding.name}. You hold $${holding.totalValue.toLocaleString()}.`, holding.totalValue, { max: holding.totalValue }).then((amount) => {
-    if (!amount) return;
-    playClick();
-    const sold = player.sellStock(ticker, amount);
-    player.addCash(sold);
-    player.logCashOut({ name: holding.name, rarity: holding.lots[0].rarity, price: sold, image: holding.image, amount: sold, currency: "cash" });
-    renderWallet({ pulse: "cash" });
-    showWalletToast(sold, "cash");
-    closePortfolioDetail();
-    renderAccount();
-  });
-});
-
-// A position is several lots of the same ticker, so a transfer moves the
-// whole holding rather than asking which lot — the Portfolio never exposes
-// individual lots as separate things you can act on.
-portfolioDetailSendBtn.addEventListener("click", async () => {
-  const ticker = portfolioDetailSendBtn.dataset.ticker;
-  const holding = player.getPortfolio().find((h) => h.ticker === ticker);
-  if (!holding) return;
-  const to = await promptText(`Transfer ${ticker}`, "The whole position moves. Enter a username or a wallet address.", "", {
-    placeholder: "Username or 0x…",
-    confirmLabel: "Transfer",
-  });
-  if (!to) return;
-  playClick();
-  const recipient = to.trim();
-  // Copy first: transferItem removes from inventory as it goes, so
-  // iterating the live array would skip every other lot.
-  [...holding.lots].forEach((lot) => player.transferItem(lot, recipient));
-  showToast(`${ticker} sent to ${recipient}`, ICONS.send);
-  closePortfolioDetail();
-  renderAccount();
-});
-
-// Current simulated value of everything sitting in the Vault right now —
-// collectibles only, stocks live in the Portfolio total instead.
+// Current simulated value of everything sitting in the Vault right now.
 function getVaultValue() {
-  return player
-    .getInventory()
-    .filter((item) => item.category !== "stocks")
-    .reduce((sum, item) => sum + player.currentMarketValue(item), 0);
-}
-
-// Current simulated value of every consolidated stock position.
-function getPortfolioValue() {
-  return player.getPortfolio().reduce((sum, holding) => sum + holding.totalValue, 0);
+  return player.getInventory().reduce((sum, item) => sum + player.currentMarketValue(item), 0);
 }
 
 function renderAccount() {
@@ -4403,13 +4221,12 @@ function renderAccount() {
   sideCash.textContent = `$${player.getWallet().cash.toLocaleString()}`;
   sideXp.textContent = player.getXp().toLocaleString();
   sideVaultValue.textContent = `$${getVaultValue().toLocaleString()}`;
-  sidePortfolioValue.textContent = `$${getPortfolioValue().toLocaleString()}`;
 
   market.maybeSpawnIncomingOffer();
   renderHeaderStats();
 
   // Sealed crates lead My Items: they're the things you can still open.
-  const collectibles = player.getInventory().filter((i) => i.category !== "stocks");
+  const collectibles = player.getInventory();
   const crates = player.getCrates();
   vaultCount.textContent = crates.length + collectibles.length;
   inventoryGrid.innerHTML =
@@ -4423,8 +4240,6 @@ function renderAccount() {
       openItemDetail(el.dataset.item);
     });
   });
-
-  renderPortfolio();
 
   renderActivity();
   renderLeaderboard();
@@ -5200,8 +5015,7 @@ const HOME_HERO_SLIDES = [
   { tier: "streetwear", pick: "Supreme The North Face Statue Of Liberty Mountain Jacket Red", tint: "#f8e4df", accent: "#c8321f", accent2: "#e27a2a" },
   { tier: "collectibles", pick: "Medicom Bearbrick 3125C Objective Edc 1000%", tint: "#f7eadb", accent: "#b0680f", accent2: "#d9a02b" },
 ];
-// The photographic crates. Stocks is a real crate, but its "photos" are
-// generated ticker cards — right in a crate card, wrong as a grail.
+// The crates the grail wall draws from.
 const HOME_PHOTO_TIERS = ["sneakers1000", "sneakers250", "sneakers", "streetwear", "collectibles"];
 
 const byPriceDesc = (a, b) => b.price - a.price;
@@ -5426,7 +5240,7 @@ async function playHeroShow(i) {
 
   // The prizes, cut out, fetched while the box is busy.
   const prizes = heroBurstPrizes(slide);
-  const urlsReady = Promise.all(prizes.map((p) => (p.category === "stocks" ? p.image : cutoutImage(p.image))));
+  const urlsReady = Promise.all(prizes.map((p) => cutoutImage(p.image)));
 
   if (!heroViewer) {
     // First time on stage (or back on Home after leaving it): the box
@@ -5534,7 +5348,7 @@ function buildHomeHero() {
 
   // Cut the other slides' prizes out ahead of time, so they're ready when
   // their turn comes.
-  HOME_HERO_SLIDES.forEach((slide) => heroBurstPrizes(slide).forEach((p) => p.category !== "stocks" && cutoutImage(p.image)));
+  HOME_HERO_SLIDES.forEach((slide) => heroBurstPrizes(slide).forEach((p) => cutoutImage(p.image)));
 
   homeHeroBuilt = true;
   showHomeSlide(0, { instant: true });
@@ -5672,7 +5486,7 @@ function renderHomeCrates() {
 
 // Round-robin across the photographic crates, most valuable first, so the
 // wall shows the range of what's in there rather than ten of whichever
-// crate happens to carry the priciest stock.
+// crate happens to carry the priciest pieces.
 function homeGrailList(count) {
   const ranked = HOME_PHOTO_TIERS.map((k) => [...CATEGORIES[k].pool].sort(byPriceDesc).map((p) => ({ p, k })));
   const out = [];
@@ -6872,7 +6686,7 @@ function crowdStep() {
       // Every box the crowd holds is listed: someone buys the cheapest and
       // opens it. Without this a sold-out crate's last boxes sat listed
       // forever, its series never finished, and it stopped producing
-      // pulls (the feed ended up all Stocks, which can't be held).
+      // pulls.
       const cheapest = market
         .getCrateListings()
         .filter((l) => l.crateKey === key && !l.isPlayer)
@@ -7025,17 +6839,8 @@ if (profileParam) {
   catchUpCrowd();
   seedCrateListings();
   seedSimulatedPulls();
-  // Saved stock items keep the name and card image from when they were
-  // saved; bring them up to the current ones. Names used to read
-  // "NVDA — Nvidia Corp", so the old spelling maps too.
-  const stockItems = new Map();
-  STOCKS_POOL.forEach((p) => {
-    const cur = { name: p.name, image: p.image };
-    stockItems.set(p.name, cur);
-    stockItems.set(p.name.replace(" · ", " — "), cur);
-  });
-  player.refreshItems(stockItems);
-  market.refreshItems(stockItems);
+  // Stocks are gone: clear any held, opened or cashed out from saved state.
+  player.dropStocks();
   // After the refresh, so the top-up counts renamed items as held.
   seedDemoInventory();
   player.seedDemoStreak(DEMO_STREAK_DAYS);

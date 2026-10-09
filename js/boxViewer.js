@@ -16,12 +16,6 @@ const IDLE_SPEED = 0.55; // rad/s
 const SPIN_DIR = -1;
 const FACE_SPEED = 7; // rad/s easing back to forward-facing (0) on hover/open
 
-// The Stocks tier's "pack" — a generic printer, no lid to open. Same rig,
-// same idle-spin, same everything except the reveal: instead of a hinge,
-// a procedural sheet of "paper" feeds out of it (see buildPaperSheet).
-const PRINTER_MODEL_URL = "assets/models/printer/scene.gltf";
-const PRINT_DURATION_MS = 1000;
-
 let modelPromise = null;
 function loadModel() {
   if (!modelPromise) {
@@ -32,15 +26,6 @@ function loadModel() {
 // Kick off the (small, ~1.4MB) download as soon as this module is imported so
 // it's already cached by the time a round actually needs it.
 loadModel().catch(() => {});
-
-let printerModelPromise = null;
-function loadPrinterModel() {
-  if (!printerModelPromise) {
-    printerModelPromise = new GLTFLoader().loadAsync(PRINTER_MODEL_URL).then((gltf) => gltf.scene);
-  }
-  return printerModelPromise;
-}
-loadPrinterModel().catch(() => {});
 
 // The CHOSEN × ODTO shipping box: kraft cardboard, four flaps, and its own
 // baked clips — Idle, Charge, Open. Shared with the other Chosen build on the
@@ -62,7 +47,6 @@ function loadOdModel() {
 }
 
 function loadModelFor(kind) {
-  if (kind === "printer") return loadPrinterModel();
   if (kind === "od") return loadOdModel();
   return loadModel();
 }
@@ -70,15 +54,13 @@ function loadModelFor(kind) {
 // Per-crate finishes, keyed by crate. Replaces the model's own branded
 // texture rather than multiplying a colour over it, which reads muddy.
 const TIER_SKINS = {
-  // Fallback finish, used until a crate registers product art (and by the
-  // Stocks crate, which has no product shots of its own). High metalness +
+  // Fallback finish, used until a crate registers product art. High metalness +
   // low roughness for a genuine mirror-like look — needs a real environment
   // map to reflect (see applyStudioEnvironment), or a metal this shiny just
   // reads as flat black with no light source to bounce.
   sneakers: { color: 0xd4794e, metalness: 1, roughness: 0.22 },
   streetwear: { color: 0x5b8dd9, metalness: 1, roughness: 0.18 },
   collectibles: { color: 0xc9942f, metalness: 1, roughness: 0.14 },
-  stocks: { color: 0x4ade80, metalness: 1, roughness: 0.18 },
 };
 
 // ---- Product collage skins ----------------------------------------------
@@ -306,14 +288,8 @@ function idleHoldClip(clip) {
 // Shared scene/camera/lighting setup so the reel snapshot and the live,
 // interactive viewers are pixel-for-pixel the same shot — that's what makes
 // the reel-to-slot handoff read as the same box rather than a swap. Works
-// for any single loaded model (box or printer) since it only reasons about
-// the model's own bounding box.
-// Both props are fitted to the same footprint, but the printer is a solid
-// block where the box is a shallower carton, so at the same fit it covered
-// about 1.75x the box's area on screen and read as much the bigger thing.
-// Scaled so the two carry the same visual weight side by side (measured off
-// their snapshots: equal silhouette area).
-const KIND_SCALE = { printer: 0.76 };
+// for any single loaded model since it only reasons about the model's own
+// bounding box.
 
 function buildRig(root, kind = "") {
   const lid = root.getObjectByName(LID_NODE_NAME);
@@ -334,14 +310,13 @@ function buildRig(root, kind = "") {
   // rectangular object rotated to its diagonal projects wider than either
   // side alone, which is what was clipping the corners mid-spin.
   const horizontalDiagonal = Math.hypot(size.x, size.z);
-  const scale = (1.7 / Math.max(horizontalDiagonal, size.y)) * (KIND_SCALE[kind] ?? 1);
+  const scale = 1.7 / Math.max(horizontalDiagonal, size.y);
 
   root.scale.setScalar(scale);
   root.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
 
-  // Normalized (post-scale, post-center) bounds — lets a caller (the paper
-  // sheet, for the printer) position itself relative to the model's real
-  // size instead of a guessed constant.
+  // Normalized (post-scale, post-center) bounds — lets a caller (fitForOpen)
+  // work off the model's real size instead of a guessed constant.
   const bounds = {
     minY: box.min.y * scale - center.y * scale,
     maxY: box.max.y * scale - center.y * scale,
@@ -369,62 +344,6 @@ function buildRig(root, kind = "") {
   scene.add(ambient, key, fill, rim);
 
   return { scene, camera, group, lid, bounds };
-}
-
-// A procedural sheet of "paper" for the printer — sized and positioned off
-// the printer's own (normalized) bounds so it roughly lines up with the
-// top of the model regardless of that model's exact proportions. Parked
-// mostly inside the printer's silhouette (so the body occludes it) and
-// slid up-and-forward on print(), rather than needing a real output-slot
-// node baked into the source model.
-// The sheet the Stocks printer feeds out. Shaped like the share
-// certificate (see prizeDataStocks.js), plain paper until setPaper() prints
-// the actual certificate for that slot onto it.
-const CERT_CROP = { x: 30, y: 18, w: 240, h: 258 }; // the card within the 300x300 certificate art
-
-function buildPaperSheet(bounds) {
-  const width = Math.max(0.5, bounds.width * 0.46);
-  const height = width * (CERT_CROP.h / CERT_CROP.w);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 480;
-  canvas.height = Math.round(480 * (height / width));
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f6f3ec";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-
-  const sheet = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, height),
-    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0, side: THREE.DoubleSide })
-  );
-
-  const parkedY = bounds.minY + (bounds.maxY - bounds.minY) * 0.72;
-  const printedY = parkedY + height * 0.62;
-  sheet.position.set(0, parkedY, bounds.maxZ * 0.35);
-  sheet.rotation.x = -0.3;
-
-  // Resolves once the certificate is on the sheet (or failed to load, in
-  // which case the plain paper stays).
-  function print(imageUrl) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const k = img.naturalWidth / 300;
-        ctx.fillStyle = "#f6f3ec";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, CERT_CROP.x * k, CERT_CROP.y * k, CERT_CROP.w * k, CERT_CROP.h * k, 0, 0, canvas.width, canvas.height);
-        texture.needsUpdate = true;
-        resolve();
-      };
-      img.onerror = () => resolve();
-      img.src = imageUrl;
-    });
-  }
-
-  return { sheet, parkedY, printedY, print };
 }
 
 // The box's own kraft texture is already lit for display; under the
@@ -630,7 +549,7 @@ function configureRenderer(renderer) {
 
 const snapshotPromises = new Map(); // "kind:tierKey" -> Promise<dataURL>
 /**
- * Renders one closed, front-facing box (or printer) offscreen and returns a
+ * Renders one closed, front-facing box offscreen and returns a
  * PNG data URL. Used to paint the scrolling reel with the *exact* same
  * model/angle/lighting (and, for boxes, tier skin) that the live 3D viewers
  * use, so landing on the 3 slots feels like the same prop coming to a stop
@@ -653,9 +572,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
         const root = baseModel.clone(true);
         if (kind === "box") applyTierSkin(root, tierKey, await collageFor(tierKey));
         if (kind === "od") settleOdMaterials(root, await stickerTextureFor(tierKey, baseModel));
-        // Snapshot always represents the closed/idle state (same as the
-        // box's lid never being open in it) — the paper sheet doesn't need
-        // to exist in this scene at all.
+        // Snapshot always represents the closed/idle state.
         const { scene, camera } = buildRig(root, kind);
         applyStudioEnvironment(scene, renderer);
         camera.aspect = 1;
@@ -677,10 +594,7 @@ export function getBoxSnapshot(tierKey = "", kind = "box") {
 
 /**
  * Mounts one interactive, self-rotating prop on `canvas` — a box (optionally
- * skinned to a crate: "sneakers"/"streetwear"/"collectibles") or, for kind:"printer", the
- * Stocks tier's printer. Same idle-spin/hover/facing dynamics either way;
- * only what happens on open() differs — a box's lid hinges open, the
- * printer instead feeds a sheet of "paper" out (no lid to open). A prop
+ * skinned to a crate: "sneakers"/"streetwear"/"collectibles"). A prop
  * whose .open() is never called just idles and spins forever — that's how
  * the decorative, always-closed tier props on the category cards are
  * built, not a separate component.
@@ -724,13 +638,6 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
     if (clips.idle) mixer.clipAction(clips.idle).play();
   }
 
-  let paper = null;
-  if (kind === "printer") {
-    paper = buildPaperSheet(bounds);
-    paper.sheet.visible = false;
-    group.add(paper.sheet);
-  }
-
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   configureRenderer(renderer);
   if (kind === "od") renderer.toneMappingExposure = OD_EXPOSURE;
@@ -765,7 +672,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
   let running = true;
   let lastT = performance.now();
   const openDuration =
-    kind === "printer" ? PRINT_DURATION_MS : kind === "od" && clips?.open ? clips.open.duration * 1000 : OPEN_DURATION_MS;
+    kind === "od" && clips?.open ? clips.open.duration * 1000 : OPEN_DURATION_MS;
 
   // Turns on round to face you — forward, never back the short way.
   function easeTowardZero(dt, speedMul) {
@@ -805,11 +712,7 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
       easeTowardZero(dt, 1.6);
       const elapsed = t - openStartTime;
       const p = Math.min(elapsed / openDuration, 1);
-      if (kind === "printer") {
-        const eased = 1 - Math.pow(1 - p, 3);
-        openProgress = eased;
-        paper.sheet.position.y = paper.parkedY + (paper.printedY - paper.parkedY) * eased;
-      } else if (kind === "od") {
+      if (kind === "od") {
         openProgress = p; // the clip itself carries the easing
       } else {
         openProgress = easeOutBack(p);
@@ -916,17 +819,12 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
         if (node.isMesh && node.material) node.material.map = map;
       });
     },
-    // Printer only: print this certificate on the sheet before it feeds out.
-    setPaper(imageUrl) {
-      if (paper && imageUrl) paper.print(imageUrl);
-    },
     // Only ever called from an explicit click handler.
     open() {
       if (opening || closing || openProgress === 1) return;
       opening = true;
       facing = false;
       openStartTime = performance.now();
-      if (paper) paper.sheet.visible = true;
       if (mixer && clips?.open) {
         if (clips.idle) mixer.clipAction(clips.idle).stop();
         openAction = mixer.clipAction(clips.open);
@@ -960,10 +858,6 @@ export async function createBoxViewer(canvas, tierKey = "", kind = "box", { head
         openAction = null;
         if (clips?.idle) mixer.clipAction(clips.idle).reset().play();
         mixer.update(0);
-      }
-      if (paper) {
-        paper.sheet.visible = false;
-        paper.sheet.position.y = paper.parkedY;
       }
     },
     dispose() {
