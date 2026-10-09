@@ -2047,10 +2047,10 @@ function renderHomeStore() {
 // the ones above and below it tilt away, smaller and darker; the column is
 // exactly the store's height. The one in front plays (muted); when it ends
 // the wheel rolls up and the next comes up from below. A banner along each
-// video's foot says which drop it is; arrows and dots sit at the side.
-// Click the front one to watch it properly, one above or below to bring it
-// round; or roll it yourself: drag or swipe it up and down, use the mouse
-// wheel once the pointer's on it, or the arrow keys.
+// video's foot says which drop it is. No buttons: scroll it with the mouse
+// (once the pointer's on it), drag or swipe it up and down, or use the
+// arrow keys. Click the front one to watch it properly, one above or below
+// to bring it round.
 const dropReelEl = document.getElementById("homeReel");
 let dropReel = null;
 let reelIndex = 0; // the video in front, kept across visits
@@ -2084,11 +2084,6 @@ function renderDropReel() {
           )
           .join("")}
       </div>
-    </div>
-    <div class="drum-nav">
-      <button class="drum-arrow" data-deck="prev" aria-label="Previous drop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"/></svg></button>
-      <span class="drum-dots">${keys.map((k, i) => `<button class="deck-dot" data-deck-go="${i}" style="--tint:${LINE_TINT[lineOf(k)] ?? "#888"}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}"></button>`).join("")}</span>
-      <button class="drum-arrow" data-deck="next" aria-label="Next drop"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
     </div>`;
   dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, io: null, ro: null, pos: reelIndex, drag: null, wheelTimer: 0, hoverAt: 0, suppressClick: false };
   sizeDrum();
@@ -2152,7 +2147,6 @@ function goToReel(k, { instant = false } = {}) {
     const v = f.querySelector("video");
     if (v && !on) v.pause();
   });
-  dropReelEl.querySelectorAll(".deck-dot").forEach((dot, j) => dot.classList.toggle("active", j === front));
   playReelFront();
 }
 
@@ -2216,7 +2210,7 @@ function stopReel() {
 // before it settles on the nearest.
 dropReelEl?.addEventListener("pointerdown", (e) => {
   if (!dropReel || (e.pointerType === "mouse" && e.button !== 0)) return;
-  if (e.target.closest("[data-reel-see], [data-deck], [data-deck-go]")) return;
+  if (e.target.closest("[data-reel-see]")) return;
   dropReel.drag = { id: e.pointerId, y0: e.clientY, pos0: dropReel.pos, y: e.clientY, t: performance.now(), v: 0, moved: false };
 });
 dropReelEl?.addEventListener("pointermove", (e) => {
@@ -2281,18 +2275,6 @@ dropReelEl?.addEventListener("click", (e) => {
     openCratePage(go.dataset.reelSee);
     window.scrollTo({ top: 0 });
     return;
-  }
-  const nav = e.target.closest("[data-deck]");
-  if (nav) {
-    playClick();
-    return goToReel(reelIndex + (nav.dataset.deck === "next" ? 1 : -1));
-  }
-  const dot = e.target.closest("[data-deck-go]");
-  if (dot) {
-    playClick();
-    let d = (Number(dot.dataset.deckGo) - reelFrontIndex() + dropReel.n) % dropReel.n;
-    if (d > dropReel.n / 2) d -= dropReel.n;
-    return goToReel(reelIndex + d);
   }
   const face = e.target.closest(".drum-face");
   if (!face) return;
