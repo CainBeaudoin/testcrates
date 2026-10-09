@@ -7270,7 +7270,6 @@ body.drop-detail-open .category-list.is-all { grid-template-columns: minmax(0, 1
 .how-card-r { right: 6%; top: 0; transform: rotate(8deg); }
 .how-card-c { z-index: 1; left: 10%; top: 30%; width: 80%; height: 66%; transform: rotate(-5deg) scale(1.3); }
 /* 3 — the three ways out. */
-.how-art-exits { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
 .how-exit {
   display: flex;
   align-items: center;
@@ -8863,75 +8862,106 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .lulu-get-menu { width: min(280px, calc(100vw - 32px)); }
 }
 
-/* ===== Drop videos: the reel on Home, and the pop-up player ============ */
+/* ===== Videos: the store and the drops' deck on Home, the packing video,
+   and the pop-up player ================================================== */
 
-/* The ring: videos stood round a circle, seen from a little above
-   (the perspective origin sits at the top), so the ones going round the
-   back rise behind the front one, smaller. Each slot is turned back by the
-   ring's own turn, so every video faces you wherever it is on the ring.
-   --turn is a registered angle so it animates, and every slot follows it
-   round the arc rather than cutting across. */
-@property --turn {
-  syntax: "<angle>";
-  inherits: true;
-  initial-value: 0deg;
+/* Side by side: the store on the left, the drops' deck on the right, the
+   same height. One above the other on a phone. */
+.home-videos {
+  --deck-x: 24px; /* how far each card behind sits to the right */
+  --deck-y: 20px; /* and up */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
-.drop-reel {
-  --sw: clamp(220px, 25vw, 350px);          /* a video's width (16:9) */
-  --sh: calc(var(--sw) * 9 / 16);
-  --step: calc(360deg / var(--n, 9));
-  --oval: 1.7;                              /* the ring's width over its depth */
-}
-.drop-reel-stage {
+.home-store-card,
+.deck-card {
   position: relative;
-  height: calc(var(--sh) + 190px);
-  perspective: 1400px;
-  perspective-origin: 50% -70%;
-  overflow: hidden;
-  cursor: grab;
-  touch-action: pan-y; /* sideways drags turn the ring; up and down still scrolls */
-  user-select: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.drop-reel-ring {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  width: var(--sw);
-  height: var(--sh);
-  margin-left: calc(var(--sw) / -2);
-  transform-style: preserve-3d;
-  /* Stretched sideways into an oval, so the ones at the sides stand clear
-     of the front one; each video is un-stretched again in its slot. */
-  transform: translateZ(calc(var(--r, 400px) * -1)) scaleX(var(--oval)) rotateY(calc(var(--turn) * -1));
-  transition: --turn 1.1s cubic-bezier(0.65, 0, 0.25, 1);
-}
-.drop-reel-ring.no-anim { transition: none; }
-.drop-reel.is-dragging .drop-reel-stage { cursor: grabbing; }
-.drop-reel-slide img, .drop-reel-slide video { -webkit-user-drag: none; }
-.drop-reel-slot {
-  --a: calc(var(--i) * var(--step) - var(--turn)); /* where it is round the ring; 0 = front */
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  transform: rotateY(calc(var(--i) * var(--step))) translateZ(var(--r, 400px)) rotateY(calc(var(--turn) - var(--i) * var(--step)))
-    scaleX(calc(1 / var(--oval)));
-}
-.drop-reel-slide {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-lg);
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-xl);
   overflow: hidden;
   background: #0d0d10;
+  color: #fff;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  /* Darker the further round the back it is. */
-  filter: brightness(calc(0.35 + 0.65 * (cos(var(--a)) + 1) / 2));
-  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.5);
 }
-.drop-reel-slide.is-front { box-shadow: 0 26px 60px -22px rgba(0, 0, 0, 0.6); }
-.drop-reel-slide:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-.drop-reel-slide .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* The store is the same size as the deck's front card, and level with it. */
+.home-store { padding: calc(var(--deck-y) * 2) calc(var(--deck-x) * 2) 0 0; }
+.home-store-card { box-shadow: 0 22px 50px -24px rgba(0, 0, 0, 0.5); }
+.home-store-card .drop-video,
+.deck-card .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-store-mark { display: inline-flex; padding: 3px 7px; border-radius: 6px; background: #fff; color: #111; width: max-content; }
+.home-store-mark .brand-mark { height: 11px; width: auto; }
+.home-store-card .drop-video-ph,
+.deck-card .drop-video-ph { padding-bottom: 46px; }
+
+/* The deck: the front card, and two straight behind it, each nudged up and
+   right and a little darker, like the stacks elsewhere. The rest wait
+   unseen behind those. */
+.drop-deck { min-width: 0; }
+.deck-stage {
+  position: relative;
+  padding: calc(var(--deck-y) * 2) calc(var(--deck-x) * 2) 0 0;
+  touch-action: pan-y; /* sideways drags deal; up and down still scrolls */
+  user-select: none;
+}
+.deck-card {
+  --d: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(100% - var(--deck-x) * 2);
+  z-index: calc(20 - var(--d));
+  transform: translate(calc(var(--d) * var(--deck-x)), calc(var(--d) * var(--deck-y) * -1)) scale(calc(1 - var(--d) * 0.02));
+  transform-origin: 0 100%;
+  filter: brightness(calc(1 - var(--d) * 0.22));
+  box-shadow: 0 22px 50px -24px rgba(0, 0, 0, 0.5);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.5s ease, opacity 0.4s ease;
+}
+/* The front card holds the stage's height; the rest stack over it. (In
+   flow it's sized off the stage's content box, the others off its padding
+   box, so 100% here is the same width as theirs.) */
+.deck-card.is-front { position: relative; width: 100%; cursor: grab; }
+.deck-card.is-deep { opacity: 0; pointer-events: none; transform: translate(calc(var(--deck-x) * 3), calc(var(--deck-y) * -3)) scale(0.94); }
+.deck-card.no-anim { transition: none; }
+.deck-card img, .deck-card video { -webkit-user-drag: none; }
+.deck-card:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+/* Held: it follows the pointer, tilting as it goes. */
+.deck-card.is-dragged { transition: none; cursor: grabbing; transform: translateX(var(--dx, 0px)) rotate(calc(var(--dx, 0px) / 40px * 1deg)); }
+/* Dealt: off to the left, turning as it goes (it then waits at the back). */
+.deck-card.is-leaving { z-index: 30; opacity: 0; transform: translateX(-75%) rotate(-10deg) scale(0.95); transition: transform 0.42s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.42s ease; }
+
+.deck-nav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+.deck-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--control-fill);
+  color: var(--text);
+  cursor: pointer;
+}
+.deck-arrow:hover { background: var(--control-fill-hover); }
+.deck-dots { display: flex; gap: 6px; }
+.deck-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--track);
+  cursor: pointer;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.deck-dot.active { width: 22px; background: var(--tint); }
 
 /* The banner along each video's foot: which drop it is, and the way in. */
 .reel-banner {
@@ -8985,7 +9015,9 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
 }
-.drop-reel-slide.is-front .reel-banner-go { opacity: 1; transform: none; pointer-events: auto; }
+.deck-card.is-front .reel-banner-go,
+.reel-banner-go.is-shown { opacity: 1; transform: none; pointer-events: auto; }
+.reel-banner-go svg { width: 9px; height: 9px; margin-right: 4px; vertical-align: -1px; }
 .reel-banner-go:hover { background: var(--open-green); }
 
 /* How long the front one has left: a thin bar along its very foot. */
@@ -9002,7 +9034,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-.drop-reel-slide.is-front .drop-reel-progress { opacity: 1; }
+.deck-card.is-front .drop-reel-progress { opacity: 1; }
 .drop-reel-progress i {
   display: block;
   height: 100%;
@@ -9011,7 +9043,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transform-origin: left;
   transform: scaleX(var(--p, 0));
 }
-.drop-reel-slide.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
+.deck-card.is-running .drop-reel-progress i { animation: reel-hold var(--hold, 6s) linear forwards; }
 @keyframes reel-hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* No video yet: a blank frame in the drop's colour, waiting for one. */
@@ -9121,9 +9153,11 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   cursor: pointer;
 }
 
+@media (max-width: 760px) {
+  .home-videos { grid-template-columns: 1fr; --deck-x: 16px; --deck-y: 14px; }
+  .home-store { padding: 0; }
+}
 @media (max-width: 640px) {
-  .drop-reel { --sw: 58vw; --oval: 1.35; }
-  .drop-reel-stage { perspective: 900px; height: calc(var(--sh) + 70px); }
   .reel-banner { padding: 26px 10px 13px; }
   .reel-banner-line { font-size: 0.56rem; }
   .reel-banner-text b { font-size: 0.86rem; }
@@ -9131,8 +9165,56 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .drop-video-modal { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drop-reel-ring { transition: none; }
+  .deck-card, .deck-card.is-leaving { transition: none; }
 }
-/* In a reel slide the banner takes the foot, so the blank's play button
-   sits a little higher. */
-.drop-reel-slide .drop-video-ph { padding-bottom: 40px; }
+
+/* How it works, 2: Cash back and Keep, under the fanned pieces. */
+.how-art-choices {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.how-art-choices .how-exit { padding: 8px 12px; font-size: 0.74rem; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); }
+/* How it works, 3: the packing video fills the picture's place. */
+.how-art-video { display: flex; align-items: center; }
+.how-video {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: #0d0d10;
+  cursor: pointer;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.5);
+}
+.how-video .drop-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.how-video .drop-video-ph-play { width: 44px; height: 44px; font-size: 16px; }
+.how-video-tag {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.how-video-tag svg { width: 15px; height: 15px; }
+/* The pop-up's picture when it isn't a drop's box: an icon, or the
+   store's mark. */
+.dvm-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-sm); background: var(--control-fill); color: var(--text); flex: 0 0 auto; }
+.dvm-brand { display: inline-flex; }
+.dvm-brand .brand-mark { height: 16px; width: auto; }

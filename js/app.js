@@ -1970,48 +1970,89 @@ function renderCategories() {
   renderWallet();
 }
 
-// ---- Drop videos -------------------------------------------------------------
-// Each drop can have a video of what's really in it: the real items, on
-// camera. To add one, put the file in assets/videos/ and its path here,
-// keyed by crate (the keys in CATEGORIES); a poster frame is optional. A
-// drop without one shows a blank "coming soon" frame in its place, so the
-// reel and the pop-up are whole either way.
+// ---- Videos -------------------------------------------------------------------
+// The real thing, on camera: the store, each drop's pieces, and an order
+// going out. To add one, put the file in assets/videos/ and its path here
+// ({ src, poster }; the poster frame is optional). Until then each shows a
+// blank "coming soon" frame in its place, so every spot is whole either way.
+// Landscape (16:9) throughout.
+const STORE_VIDEO = null; // ODTO, the store behind the drops (Home, left)
+const PACKING_VIDEO = null; // an order packed and shipped (Home, How it works)
+// Each drop's own, keyed by crate (the keys in CATEGORIES).
 const DROP_VIDEOS = {
   // sneakers: { src: "assets/videos/sneakers.mp4", poster: "assets/videos/sneakers.jpg" },
 };
-// How long a drop with no video yet stays at the front of the reel.
+// How long a drop with no video yet stays at the front of the deck.
 const REEL_PLACEHOLDER_MS = 6000;
 const LINE_TINT = { sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f" };
 const PLAY_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>`;
+const TRUCK_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h13v10H1z"/><path d="M14 9h4l4 4v3h-8z"/><circle cx="5.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>`;
 
 const dropVideoOf = (key) => (DROP_VIDEOS[key]?.src ? DROP_VIDEOS[key] : null);
 
-// The frame itself: the video, or the blank where it will go.
-function dropVideoFrameHTML(key, { player = false } = {}) {
-  const v = dropVideoOf(key);
-  if (v) {
+// A video, or the blank where it will go. In the pop-up it plays with
+// sound and controls; anywhere else it's muted, and `loop` keeps a
+// background one going.
+function videoFrameHTML(v, { player = false, loop = false, tint = "#888" } = {}) {
+  if (v?.src) {
     return `<video class="drop-video" src="${v.src}"${v.poster ? ` poster="${v.poster}"` : ""} playsinline preload="metadata"${
-      player ? " controls autoplay" : " muted"
+      player ? " controls autoplay" : ` muted${loop ? " loop" : ""}`
     }></video>`;
   }
-  return `<span class="drop-video-ph" style="--tint:${LINE_TINT[lineOf(key)] ?? "#888"}">
+  return `<span class="drop-video-ph" style="--tint:${tint}">
       <span class="drop-video-ph-play">${PLAY_SVG}</span>
       <span class="drop-video-ph-sub">Video coming soon</span>
     </span>`;
 }
 
-// ---- The reel, on Home: every drop's video on a slowly turning ring. The
-// ring is seen from just above, so the ones going round the back are still
-// there behind the front one, smaller and darker; each video always faces
-// you. The one in front plays (muted), and when it ends the ring turns on
-// to the next. A banner across the foot of each video says which drop it
-// is. Click the front video to watch it properly, one further round to
-// bring it to the front. Or turn it yourself: drag it (or swipe, on a
-// phone), scroll sideways on a trackpad, or use the mouse wheel once the
-// pointer's on it.
+function dropVideoFrameHTML(key, opts = {}) {
+  return videoFrameHTML(dropVideoOf(key), { ...opts, tint: LINE_TINT[lineOf(key)] ?? "#888" });
+}
+
+// A muted background video that plays only while it's on screen.
+function playWhileVisible(el) {
+  const v = el.querySelector("video");
+  if (!v) return null;
+  const io = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting && !document.hidden) v.play().catch(() => {});
+    else v.pause();
+  });
+  io.observe(el);
+  return io;
+}
+
+// ---- Home, left: the store. Always there, beside the drops.
+let homeStoreIO = null;
+function renderHomeStore() {
+  const el = document.getElementById("homeStore");
+  if (!el) return;
+  homeStoreIO?.disconnect();
+  el.innerHTML = `
+    <button class="home-store-card" data-video="store" aria-label="Watch: ODTO, the store">
+      ${videoFrameHTML(STORE_VIDEO, { loop: true, tint: "#8a8f98" })}
+      <span class="reel-banner home-store-banner">
+        <span class="reel-banner-text">
+          <span class="home-store-mark">${brandMarkHTML("ODTO")}</span>
+          <b>The store behind the drops</b>
+        </span>
+        <span class="reel-banner-go is-shown">${PLAY_SVG} Watch</span>
+      </span>
+    </button>`;
+  homeStoreIO = playWhileVisible(el);
+}
+
+// ---- Home, right: the drops' videos as a deck. The one in front plays
+// (muted); when it ends it's dealt off to the left and goes to the back,
+// and the next comes forward. The two behind it show past its top right
+// edge, like the stacks elsewhere on the site. A banner along each video's
+// foot says which drop it is. Click the front one to watch it properly;
+// or deal through them yourself: drag or swipe the front one aside (left
+// for the next, right for the one before), scroll sideways on a trackpad,
+// use the mouse wheel once the pointer's on it, or the arrow keys.
 const dropReelEl = document.getElementById("homeReel");
 let dropReel = null;
-let reelIndex = 0; // kept across visits, so Home comes back where it was
+let reelIndex = 0; // the front card, kept across visits
+const DECK_SHOWN = 3; // cards visible: the front and two behind
 
 function reelBannerHTML(key) {
   const cat = CATEGORIES[key];
@@ -2028,28 +2069,24 @@ function renderDropReel() {
   stopReel();
   if (!dropReelEl) return;
   const keys = orderedCrates().map(([k]) => k);
-  dropReelEl.style.setProperty("--n", keys.length);
   dropReelEl.innerHTML = `
-    <div class="drop-reel-stage">
-      <div class="drop-reel-ring">
-        ${keys
-          .map(
-            (k, i) => `<div class="drop-reel-slot" style="--i:${i}">
-              <div class="drop-reel-slide" role="button" tabindex="-1" data-reel-i="${i}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: watch the video">
-                ${dropVideoFrameHTML(k)}
-                ${reelBannerHTML(k)}
-                <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
-              </div>
-            </div>`
-          )
-          .join("")}
-      </div>
+    <div class="deck-stage">
+      ${keys
+        .map(
+          (k, i) => `<div class="deck-card" data-reel-i="${i}" role="button" tabindex="-1" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}: watch the video">
+            ${dropVideoFrameHTML(k)}
+            ${reelBannerHTML(k)}
+            <span class="drop-reel-progress" aria-hidden="true"><i></i></span>
+          </div>`
+        )
+        .join("")}
+    </div>
+    <div class="deck-nav">
+      <button class="deck-arrow" data-deck="prev" aria-label="Previous drop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"/></svg></button>
+      <span class="deck-dots">${keys.map((k, i) => `<button class="deck-dot" data-deck-go="${i}" style="--tint:${LINE_TINT[lineOf(k)] ?? "#888"}" aria-label="${CATEGORIES[k].badge} ${CATEGORIES[k].label}"></button>`).join("")}</span>
+      <button class="deck-arrow" data-deck="next" aria-label="Next drop"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
     </div>`;
-  dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, ro: null, io: null, pos: reelIndex, drag: null, wheelTimer: 0, hoverAt: 0, suppressClick: false };
-  sizeReel();
-  dropReel.ro = new ResizeObserver(sizeReel);
-  dropReel.ro.observe(dropReelEl);
-  // Only turns while it can be seen.
+  dropReel = { keys, n: keys.length, timer: 0, paused: false, offscreen: false, io: null, drag: null, wheelAcc: 0, wheelLock: 0, hoverAt: 0, suppressClick: false };
   dropReel.io = new IntersectionObserver(([entry]) => {
     if (!dropReel) return;
     dropReel.offscreen = !entry.isIntersecting;
@@ -2057,72 +2094,75 @@ function renderDropReel() {
     else playReelFront();
   });
   dropReel.io.observe(dropReelEl);
-  goToReel(reelIndex, { instant: true });
-}
-
-// The ring's size from the room it has: wide enough that the ones at the
-// sides clear the front one, never so tight that they pile up.
-function sizeReel() {
-  if (!dropReel) return;
-  const stage = dropReelEl.querySelector(".drop-reel-stage");
-  const slide = dropReelEl.querySelector(".drop-reel-slide");
-  if (!stage || !slide) return;
-  const w = stage.clientWidth;
-  const sw = slide.offsetWidth;
-  const oval = parseFloat(getComputedStyle(dropReelEl).getPropertyValue("--oval")) || 1;
-  // The ones at the sides land just inside the edges (the oval stretches
-  // the radius sideways, so the depth is the width's share of it).
-  dropReelEl.style.setProperty("--r", `${Math.round(Math.max(w * 0.44, ((w - sw) / 2) * 0.92) / oval)}px`);
+  layDeck({ instant: true });
+  playReelFront();
 }
 
 const reelFrontIndex = () => ((reelIndex % dropReel.n) + dropReel.n) % dropReel.n;
+const deckCards = () => [...dropReelEl.querySelectorAll(".deck-card")];
 
-// The ring at `pos` (in videos, fractional mid-drag): straight there while
-// a hand's on it, eased round when it settles.
-function setReelPos(pos, { animate = true } = {}) {
-  dropReel.pos = pos;
-  const ring = dropReelEl.querySelector(".drop-reel-ring");
-  ring.classList.toggle("no-anim", !animate);
-  ring.style.setProperty("--turn", `${(pos * 360) / dropReel.n}deg`);
+// Every card to its place: --d is how far back it sits (0 = front).
+function layDeck({ instant = false } = {}) {
+  const front = reelFrontIndex();
+  deckCards().forEach((c, j) => {
+    const d = (j - front + dropReel.n) % dropReel.n;
+    c.classList.toggle("no-anim", instant);
+    c.style.setProperty("--d", d);
+    c.classList.toggle("is-front", d === 0);
+    c.classList.toggle("is-deep", d >= DECK_SHOWN);
+    c.classList.remove("is-running");
+    c.tabIndex = d === 0 ? 0 : -1;
+    c.querySelector(".reel-banner-go").tabIndex = d === 0 ? 0 : -1;
+    const v = c.querySelector("video");
+    if (v && d !== 0) v.pause();
+  });
+  dropReelEl.querySelectorAll(".deck-dot").forEach((dot, j) => dot.classList.toggle("active", j === front));
+  if (instant) requestAnimationFrame(() => deckCards().forEach((c) => c.classList.remove("no-anim")));
 }
 
-function goToReel(k, { instant = false } = {}) {
-  if (!dropReel) return;
+// Deal forward (the front card flies off left and goes to the back) or
+// back (the last card flies in from the left to the front). `to` jumps
+// straight to a card.
+function goToReel(k, { dir = Math.sign(k - reelIndex) } = {}) {
+  if (!dropReel || k === reelIndex) return;
+  const cards = deckCards();
+  const leaving = cards[reelFrontIndex()];
   reelIndex = k;
-  const i = reelFrontIndex();
-  setReelPos(k, { animate: !instant });
-  if (instant) requestAnimationFrame(() => dropReelEl.querySelector(".drop-reel-ring")?.classList.remove("no-anim"));
-  dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s, j) => {
-    const front = j === i;
-    s.classList.toggle("is-front", front);
-    s.classList.remove("is-running");
-    s.tabIndex = front ? 0 : -1;
-    s.querySelector(".reel-banner-go").tabIndex = front ? 0 : -1;
-    const v = s.querySelector("video");
-    if (v && !front) v.pause();
-  });
+  const arriving = cards[reelFrontIndex()];
+  if (dir > 0) {
+    leaving.classList.remove("is-dragged");
+    leaving.style.removeProperty("--dx");
+    leaving.classList.add("is-leaving");
+    setTimeout(() => leaving.classList.remove("is-leaving"), 420);
+  } else {
+    // Placed off to the left first, then brought in.
+    arriving.classList.add("no-anim", "is-leaving");
+    void arriving.offsetWidth;
+    arriving.classList.remove("no-anim", "is-leaving");
+  }
+  layDeck();
   playReelFront();
 }
 
 function haltReelFront() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
-  dropReelEl.querySelectorAll(".drop-reel-slide").forEach((s) => {
-    s.classList.remove("is-running");
-    s.querySelector("video")?.pause();
+  deckCards().forEach((c) => {
+    c.classList.remove("is-running");
+    c.querySelector("video")?.pause();
   });
 }
 
 function playReelFront() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
-  if (dropReel.paused || dropReel.offscreen || document.hidden) return;
-  const slide = dropReelEl.querySelectorAll(".drop-reel-slide")[reelFrontIndex()];
-  const bar = slide.querySelector(".drop-reel-progress i");
-  const v = slide.querySelector("video");
+  if (dropReel.paused || dropReel.offscreen || document.hidden || dropReel.drag?.moved) return;
+  const card = deckCards()[reelFrontIndex()];
+  const bar = card.querySelector(".drop-reel-progress i");
+  const v = card.querySelector("video");
   const next = () => goToReel(reelIndex + 1);
   if (v) {
-    // A real video sets the pace: the ring turns when it ends.
+    // A real video sets the pace: the deck deals on when it ends.
     v.muted = true;
     v.currentTime = 0;
     v.ontimeupdate = () => bar.style.setProperty("--p", v.duration ? v.currentTime / v.duration : 0);
@@ -2130,9 +2170,9 @@ function playReelFront() {
     v.play().catch(() => (dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS)));
   } else {
     // A blank one holds the front for a few seconds, its bar filling.
-    slide.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
-    void slide.offsetWidth;
-    slide.classList.add("is-running");
+    card.style.setProperty("--hold", `${REEL_PLACEHOLDER_MS}ms`);
+    void card.offsetWidth;
+    card.classList.add("is-running");
     dropReel.timer = setTimeout(next, REEL_PLACEHOLDER_MS);
   }
 }
@@ -2152,25 +2192,20 @@ function resumeReel() {
 function stopReel() {
   if (!dropReel) return;
   clearTimeout(dropReel.timer);
-  clearTimeout(dropReel.wheelTimer);
-  dropReel.ro?.disconnect();
   dropReel.io?.disconnect();
   dropReelEl.querySelectorAll("video").forEach((v) => v.pause());
   dropReel = null;
 }
 
-// Turning it by hand. A drag moves the ring with the pointer (sideways
-// only: on a phone an up-and-down swipe still scrolls the page), and on
-// letting go it carries on a little with the flick's speed before settling
-// on the nearest video. One video is about a video's width of drag.
-function reelSlidePx() {
-  return (dropReelEl.querySelector(".drop-reel-slide")?.offsetWidth || 300) * 0.9;
-}
-
+// Dragging the front card: it follows the pointer sideways, tilting as it
+// goes. Let go far enough (or flick it) and it's dealt: to the left for
+// the next, to the right for the one before. Otherwise it springs back.
+// Sideways only, so on a phone an up-and-down swipe still scrolls.
 dropReelEl?.addEventListener("pointerdown", (e) => {
   if (!dropReel || (e.pointerType === "mouse" && e.button !== 0)) return;
-  if (e.target.closest("[data-reel-see]")) return;
-  dropReel.drag = { id: e.pointerId, x0: e.clientX, pos0: dropReel.pos, x: e.clientX, t: performance.now(), v: 0, moved: false };
+  const card = e.target.closest(".deck-card.is-front");
+  if (!card || e.target.closest("[data-reel-see]")) return;
+  dropReel.drag = { id: e.pointerId, card, x0: e.clientX, x: e.clientX, t: performance.now(), v: 0, moved: false };
 });
 dropReelEl?.addEventListener("pointermove", (e) => {
   if (!dropReel) return;
@@ -2183,33 +2218,36 @@ dropReelEl?.addEventListener("pointermove", (e) => {
     d.moved = true;
     haltReelFront();
     dropReelEl.setPointerCapture?.(e.pointerId);
-    dropReelEl.classList.add("is-dragging");
+    d.card.classList.add("is-dragged");
   }
   const now = performance.now();
-  d.v = (e.clientX - d.x) / Math.max(1, now - d.t); // px per ms
+  d.v = (e.clientX - d.x) / Math.max(1, now - d.t);
   d.x = e.clientX;
   d.t = now;
-  setReelPos(d.pos0 - dx / reelSlidePx(), { animate: false });
+  d.card.style.setProperty("--dx", `${dx}px`);
 });
 function endReelDrag(e) {
   const d = dropReel?.drag;
   if (!d || d.id !== e.pointerId) return;
   dropReel.drag = null;
-  dropReelEl.classList.remove("is-dragging");
   if (!d.moved) return;
   dropReel.suppressClick = true;
   setTimeout(() => dropReel && (dropReel.suppressClick = false), 0);
-  // The flick carries it on: about a third of a second at its speed.
-  const fling = Math.max(-3, Math.min(3, (-d.v * 320) / reelSlidePx()));
-  goToReel(Math.round(dropReel.pos + fling));
+  const dx = e.clientX - d.x0;
+  const far = Math.abs(dx) > d.card.offsetWidth * 0.22 || Math.abs(d.v) > 0.6;
+  d.card.classList.remove("is-dragged");
+  d.card.style.removeProperty("--dx");
+  if (far && dx < 0) goToReel(reelIndex + 1);
+  else if (far && dx > 0) goToReel(reelIndex - 1);
+  else playReelFront();
 }
 dropReelEl?.addEventListener("pointerup", endReelDrag);
 dropReelEl?.addEventListener("pointercancel", endReelDrag);
 
-// Wheel and trackpad. A sideways scroll always turns it. An up-and-down
-// one only once the pointer has actually been moved onto it: otherwise,
-// scrolling down Home, the page would catch on the reel the moment it
-// slid under a resting cursor.
+// Wheel and trackpad: one card per push. A sideways scroll always deals;
+// an up-and-down one only once the pointer has actually been moved onto
+// the deck, so scrolling down Home never catches on it as it passes
+// under a resting cursor.
 dropReelEl?.addEventListener(
   "wheel",
   (e) => {
@@ -2217,12 +2255,13 @@ dropReelEl?.addEventListener(
     const sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
     if (!sideways && performance.now() - dropReel.hoverAt > 1500) return;
     e.preventDefault();
-    haltReelFront();
-    const delta = sideways ? e.deltaX : e.deltaY;
-    const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? 800 : 1;
-    setReelPos(dropReel.pos + (delta * unit) / (reelSlidePx() * 0.8), { animate: false });
-    clearTimeout(dropReel.wheelTimer);
-    dropReel.wheelTimer = setTimeout(() => dropReel && goToReel(Math.round(dropReel.pos)), 140);
+    const now = performance.now();
+    if (now < dropReel.wheelLock) return;
+    dropReel.wheelAcc += sideways ? e.deltaX : e.deltaY;
+    if (Math.abs(dropReel.wheelAcc) < 40) return;
+    goToReel(reelIndex + Math.sign(dropReel.wheelAcc));
+    dropReel.wheelAcc = 0;
+    dropReel.wheelLock = now + 380; // one card per push, not a blur
   },
   { passive: false }
 );
@@ -2236,25 +2275,35 @@ dropReelEl?.addEventListener("click", (e) => {
     window.scrollTo({ top: 0 });
     return;
   }
-  const slide = e.target.closest(".drop-reel-slide");
-  if (!slide) return;
+  const nav = e.target.closest("[data-deck]");
+  if (nav) {
+    playClick();
+    return goToReel(reelIndex + (nav.dataset.deck === "next" ? 1 : -1));
+  }
+  const dot = e.target.closest("[data-deck-go]");
+  if (dot) {
+    playClick();
+    let d = (Number(dot.dataset.deckGo) - reelFrontIndex() + dropReel.n) % dropReel.n;
+    if (d > dropReel.n / 2) d -= dropReel.n;
+    return goToReel(reelIndex + d);
+  }
+  const card = e.target.closest(".deck-card");
+  if (!card) return;
   playClick();
-  const i = Number(slide.dataset.reelI);
-  if (i === reelFrontIndex()) return openDropVideo(dropReel.keys[i], slide);
-  // Round the short way to the one clicked.
-  let d = (i - reelFrontIndex() + dropReel.n) % dropReel.n;
-  if (d > dropReel.n / 2) d -= dropReel.n;
+  if (card.classList.contains("is-front")) return openDropVideo(dropReel.keys[Number(card.dataset.reelI)], card);
+  // One of the cards behind: bring it forward.
+  const d = (Number(card.dataset.reelI) - reelFrontIndex() + dropReel.n) % dropReel.n;
   goToReel(reelIndex + d);
 });
 dropReelEl?.addEventListener("keydown", (e) => {
-  if (!dropReel || !e.target.classList.contains("drop-reel-slide")) return;
-  if (e.key === "Enter" || e.key === " ") {
+  if (!dropReel) return;
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("deck-card")) {
     e.preventDefault();
     e.target.click();
   } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
     e.preventDefault();
     goToReel(reelIndex + (e.key === "ArrowRight" ? 1 : -1));
-    dropReelEl.querySelector(".drop-reel-slide.is-front")?.focus();
+    dropReelEl.querySelector(".deck-card.is-front")?.focus();
   }
 });
 
@@ -2262,6 +2311,33 @@ document.addEventListener("visibilitychange", () => {
   if (!dropReel) return;
   if (document.hidden) haltReelFront();
   else playReelFront();
+});
+
+// ---- How it works, step 3: an order going out, as a video that plays
+// (muted, looping) while it's on screen; click it to watch with sound.
+let homeShipIO = null;
+function renderHomeShip() {
+  const el = document.getElementById("howShip");
+  if (!el) return;
+  homeShipIO?.disconnect();
+  el.innerHTML = `
+    <button class="how-video" data-video="packing" aria-label="Watch an order being packed and shipped">
+      ${videoFrameHTML(PACKING_VIDEO, { loop: true, tint: "#2f9e5b" })}
+      <span class="how-video-tag">${TRUCK_SVG}Packed &amp; shipped</span>
+    </button>`;
+  homeShipIO = playWhileVisible(el);
+}
+
+// The store and packing videos open in the same pop-up as a drop's.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-video]");
+  if (!btn) return;
+  playClick();
+  if (btn.dataset.video === "store") {
+    openVideo({ video: STORE_VIDEO, tint: "#8a8f98", title: `<span class="dvm-brand">${brandMarkHTML("ODTO")}</span>`, sub: "The store behind the drops", origin: btn });
+  } else if (btn.dataset.video === "packing") {
+    openVideo({ video: PACKING_VIDEO, tint: "#2f9e5b", title: "Packed &amp; shipped", sub: "An order on its way out", icon: TRUCK_SVG, origin: btn });
+  }
 });
 
 // ---- The pop-up: a drop's video, large, with sound and controls. It
@@ -2282,32 +2358,48 @@ function flipFrom(el, from, { reverse = false } = {}) {
   return el.animate(reverse ? frames.reverse() : frames, { duration: reverse ? 300 : 420, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "both" });
 }
 
-function openDropVideo(key, originEl) {
+// Any video in the pop-up: the video (or its blank), a title and line
+// under it, and beside them a picture (a drop's box, or an icon). A drop's
+// also offers See drop, unless that's where you already are.
+function openVideo({ video, tint, title, sub, boxKey = null, icon = "", seeKey = null, origin = null }) {
   pauseReel();
-  const cat = CATEGORIES[key];
-  const onItsPage = document.body.classList.contains("drop-detail-open");
-  dropVideoOrigin = originEl ?? null;
+  dropVideoOrigin = origin;
   dropVideoCard.innerHTML = `
-    <div class="dvm-stage">${dropVideoFrameHTML(key, { player: true })}</div>
+    <div class="dvm-stage">${videoFrameHTML(video, { player: true, tint })}</div>
     <div class="dvm-bar">
-      <img class="dvm-box" alt="">
+      ${boxKey ? `<img class="dvm-box" alt="">` : icon ? `<span class="dvm-icon">${icon}</span>` : ""}
       <span class="dvm-title">
-        <span><span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span> <b>${cat.label}</b></span>
-        <small>What&rsquo;s inside, on camera</small>
+        <span>${title}</span>
+        <small>${sub}</small>
       </span>
-      ${onItsPage ? "" : `<button class="drop-reel-btn is-solid" data-dvm="see" data-key="${key}">See drop</button>`}
+      ${seeKey ? `<button class="drop-reel-btn is-solid" data-dvm="see" data-key="${seeKey}">See drop</button>` : ""}
       <button class="dvm-close" data-dvm="close" aria-label="Close video">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
       </button>
     </div>`;
-  getBoxSnapshot(key, crateBoxKind(cat)).then((url) => {
-    const img = dropVideoCard.querySelector(".dvm-box");
-    if (img) img.src = url;
-  });
+  if (boxKey) {
+    getBoxSnapshot(boxKey, crateBoxKind(CATEGORIES[boxKey])).then((url) => {
+      const img = dropVideoCard.querySelector(".dvm-box");
+      if (img) img.src = url;
+    });
+  }
   dropVideoModal.classList.remove("hidden");
   requestAnimationFrame(() => dropVideoModal.classList.add("visible"));
   flipFrom(dropVideoCard, dropVideoOrigin?.getBoundingClientRect());
   dropVideoCard.querySelector("video")?.play().catch(() => {});
+}
+
+function openDropVideo(key, originEl) {
+  const cat = CATEGORIES[key];
+  openVideo({
+    video: dropVideoOf(key),
+    tint: LINE_TINT[lineOf(key)] ?? "#888",
+    title: `<span class="category-tier-name tier-name-${lineOf(key)}">${cat.badge}</span> <b>${cat.label}</b>`,
+    sub: "What&rsquo;s inside, on camera",
+    boxKey: key,
+    seeKey: document.body.classList.contains("drop-detail-open") ? null : key,
+    origin: originEl ?? null,
+  });
 }
 
 function closeDropVideo() {
@@ -5337,6 +5429,11 @@ let homeBoxViewers = [];
 
 function releaseHomeViewers() {
   stopReel();
+  homeStoreIO?.disconnect();
+  homeStoreIO = null;
+  homeShipIO?.disconnect();
+  homeShipIO = null;
+  document.querySelectorAll("#homeStore video, #howShip video").forEach((v) => v.pause());
   // A billboard crate still loading when Home is left would otherwise land
   // after this and run on, unseen, holding a context; bumping the token
   // makes it dispose itself on arrival (see playHeroShow).
@@ -5477,6 +5574,79 @@ function grailTileHTML(g) {
     </button>`;
 }
 
+// ---- The grails ----
+function renderHomeGrails() {
+  const el = document.getElementById("homeGrails");
+  grailPool = homeGrailList(GRAIL_POOL);
+  const first = grailPool.slice(0, GRAIL_SHOWN);
+  el.innerHTML = first.map(grailTileHTML).join("");
+  [...el.children].forEach((tile, i) => {
+    setGrailMeta(tile, first[i]);
+    tile.addEventListener("click", () => {
+      playClick();
+      homeSeeCrate(tile.dataset.tier);
+    });
+  });
+
+  clearInterval(grailTimer);
+  if (heroReducedMotion.matches) return;
+  // Warm the pool's images so a reel never stops on a blank frame.
+  grailPool.forEach(({ p }) => (new Image().src = p.image));
+  grailTimer = setInterval(() => spinGrails(el), GRAIL_SPIN_EVERY_MS);
+}
+
+function spinGrails(el) {
+  // Only while Home is on screen and the tab is visible.
+  if (document.hidden || !document.getElementById("screen-home").classList.contains("active")) return;
+  const tiles = [...el.querySelectorAll(".home-grail")];
+  // Never the same piece twice on screen: draw from what isn't showing.
+  const shown = new Set(tiles.map((t) => t.dataset.grail));
+  const fresh = grailPool.filter((g) => !shown.has(g.p.name));
+  tiles.forEach((tile, i) => {
+    // A tile under the pointer stays put — changing what someone is about
+    // to click is a bait-and-switch.
+    if (tile.matches(":hover") || tile.classList.contains("is-spinning") || !fresh.length) return;
+    const next = fresh.splice(Math.floor(Math.random() * fresh.length), 1)[0];
+    setTimeout(() => spinGrail(tile, next), i * GRAIL_STAGGER_MS);
+  });
+}
+
+function spinGrail(tile, target) {
+  const strip = tile.querySelector(".grail-strip");
+  const windowEl = tile.querySelector(".grail-window");
+  const h = windowEl.clientHeight;
+  if (!h) return;
+  const current = grailPool.find((g) => g.p.name === tile.dataset.grail) ?? target;
+  const blur = Array.from({ length: GRAIL_BLUR_ITEMS }, () => grailPool[Math.floor(Math.random() * grailPool.length)]);
+  // The strip: what's showing now, a run of others, and the new piece last.
+  strip.innerHTML = [current, ...blur, target].map(grailItemHTML).join("");
+  strip.style.transition = "none";
+  strip.style.transform = "translateY(0)";
+  void strip.offsetHeight; // commit the reset before the spin starts
+
+  tile.classList.add("is-spinning", "is-changing"); // name, price and tag ease out
+  strip.classList.add("is-blurred");
+  strip.style.transition = `transform ${GRAIL_SPIN_MS}ms cubic-bezier(.16,.84,.3,1)`;
+  strip.style.transform = `translateY(${-(GRAIL_BLUR_ITEMS + 1) * h}px)`;
+  setTimeout(() => strip.classList.remove("is-blurred"), GRAIL_SPIN_MS * 0.62);
+  setTimeout(() => {
+    // The strip already rests on the new piece: swapping it for that one
+    // piece alone is invisible.
+    strip.style.transition = "none";
+    strip.innerHTML = grailItemHTML(target);
+    strip.style.transform = "translateY(0)";
+    setGrailMeta(tile, target);
+    tile.classList.remove("is-spinning");
+    setTimeout(() => tile.classList.remove("is-changing"), 30); // ease back in
+    if (target.p.rarity === "legendary") {
+      // One light sweep across a grail as it lands.
+      tile.classList.remove("is-shining");
+      void tile.offsetWidth;
+      tile.classList.add("is-shining");
+    }
+  }, GRAIL_SPIN_MS + 30);
+}
+
 // ---- How it works: three pictures made by the app itself ----
 // 1: the crate, stacked three deep. 2: three grails, cut out and fanned,
 // the middle one in front. 3 is words only (the three ways out), in the markup.
@@ -5594,9 +5764,11 @@ function renderHome() {
   // Back on Home after its viewers were released: put the crate back.
   else if (!heroViewer) playHeroShow(homeHeroIndex);
   renderHomeCrates();
+  renderHomeStore();
   renderDropReel();
   renderHomeGrails();
   renderHomeSteps();
+  renderHomeShip();
   renderHomePulls();
   renderHomeBoard();
   renderHomeMarket();

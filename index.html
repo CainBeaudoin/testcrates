@@ -148,17 +148,21 @@ try {
         <div class="home-crates" id="homeCrates" data-reveal="stagger"></div>
       </div>
 
-      <!-- Inside the drops: every drop's video, upright on a turning ring,
-           each with a banner naming its drop. Filled by renderDropReel. -->
+      <!-- Inside the drops: the store's own video on the left, always there;
+           on the right, every drop's video in a deck that shuffles through
+           them. Filled by renderHomeStore and renderDropReel in app.js. -->
       <div class="home-block">
         <div class="home-block-head" data-reveal>
           <div>
             <h2 class="home-block-title">Inside the drops</h2>
-            <p class="home-block-sub">The real items, on camera. Tap a video to watch it with sound.</p>
+            <p class="home-block-sub">The store behind the drops, and the real items in every one, on camera.</p>
           </div>
           <button class="home-more" data-home-go="drops">All drops</button>
         </div>
-        <section id="homeReel" class="drop-reel" aria-label="Drop videos"></section>
+        <div class="home-videos">
+          <div class="home-store" id="homeStore"></div>
+          <section id="homeReel" class="drop-deck" aria-label="Drop videos"></section>
+        </div>
       </div>
 
       <div class="home-block">
@@ -210,20 +214,21 @@ try {
               <img class="how-card how-card-l" id="howCardL" alt="">
               <img class="how-card how-card-r" id="howCardR" alt="">
               <img class="how-card how-card-c" id="howCardC" alt="">
+              <span class="how-art-choices">
+                <span class="how-exit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Cash back</span>
+                <span class="how-exit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="8.5" x2="12" y2="6"/></svg>Keep it</span>
+              </span>
             </div>
             <span class="how-num">2</span>
-            <h3>Open it</h3>
-            <p>Three boxes come out of the crate. You pick one, and what&rsquo;s inside is yours.</p>
+            <h3>Open it, then cash back or keep</h3>
+            <p>Three boxes come out of the crate. Pick one, then take cash back on the spot or keep it in your vault.</p>
           </li>
           <li class="how-step">
-            <div class="how-art how-art-exits" aria-hidden="true">
-              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Cash back, instantly</span>
-              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="8.5" x2="12" y2="6"/></svg>Keep it in your vault</span>
-              <span class="how-exit"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h13v10H1z"/><path d="M14 9h4l4 4v3h-8z"/><circle cx="5.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>Ship it home</span>
-            </div>
+            <!-- An order being packed and sent: a video (see PACKING_VIDEO). -->
+            <div class="how-art how-art-video" id="howShip"></div>
             <span class="how-num">3</span>
-            <h3>Cash back, keep or ship</h3>
-            <p>Take cash back on the spot, hold it in your vault, or have the real thing shipped to your door.</p>
+            <h3>Ship it</h3>
+            <p>Want the real thing? It&rsquo;s packed and shipped to your door. Here&rsquo;s one going out.</p>
           </li>
         </ol>
       </div>
