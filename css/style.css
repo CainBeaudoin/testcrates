@@ -8865,8 +8865,8 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 /* ===== Videos: the store and the drops' deck on Home, the packing video,
    and the pop-up player ================================================== */
 
-/* Side by side: the drops' wheel on the left, the store's video (the main
-   one, bigger) on the right. The store sets the row's height and the wheel
+/* Side by side: the store's video (the main one, bigger) on the left, the
+   drops' wheel on the right. The store sets the row's height and the wheel
    fills exactly that, so the two sides match. One above the other on a
    phone, the store first. */
 @property --turn {
@@ -8876,7 +8876,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 .home-videos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: 20px;
   align-items: stretch;
 }
@@ -8908,7 +8908,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
    tilt away (darker the further round). The frame fades out top and
    bottom. --turn is a registered angle so the faces' shading follows the
    roll. */
-.drop-drum { position: relative; order: -1; min-width: 0; }
+.drop-drum { position: relative; min-width: 0; }
 .drum-frame {
   position: absolute;
   inset: 0 34px 0 0;
@@ -9178,7 +9178,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 
 @media (max-width: 760px) {
   .home-videos { grid-template-columns: 1fr; }
-  .drop-drum { order: 0; aspect-ratio: 4 / 3; }
+  .drop-drum { aspect-ratio: 4 / 3; }
 }
 @media (max-width: 640px) {
   .reel-banner { padding: 26px 10px 13px; }

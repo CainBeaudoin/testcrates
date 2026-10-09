@@ -2041,8 +2041,8 @@ function renderHomeStore() {
   homeStoreIO = playWhileVisible(el);
 }
 
-// ---- Home, left: the drops' videos on a wheel that turns upward, beside
-// the store's (the main one, on the right, which stays put). The videos
+// ---- Home, right: the drops' videos on a wheel that turns upward, beside
+// the store's (the main one, on the left, which stays put). The videos
 // sit round the wheel's rim, so the one in front is flat and full size and
 // the ones above and below it tilt away, smaller and darker; the column is
 // exactly the store's height. The one in front plays (muted); when it ends
