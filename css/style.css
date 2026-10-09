@@ -7852,14 +7852,10 @@ button.whats-left:hover { background: var(--control-fill-hover); }
 /* 100cqi is the row's own inner width (it's the container), so each
    stack's share and the tile size follow the card, whatever its width. */
 .whats-left-thumbs {
-  /* --k tier stacks (each about 1.4 tiles wide) and --m mystery tiles (one
-     tile wide) share the row. The tile size comes first; then each stack
-     takes an even share of what the mystery tile leaves. */
-  /* Tiles are sized as if the mystery tile were always there, so a crate
-     without one would still have tiles the same size as its neighbours
-     and line up with them; its stacks would just spread wider. */
-  --wl-size: min(var(--wl-max), calc((100cqi - var(--k, 3) * var(--wl-gap)) / (var(--k, 3) * 1.4 + 1)));
-  --wl-share: calc((100cqi - (var(--k, 3) + var(--m, 0) - 1) * var(--wl-gap) - var(--m, 0) * var(--wl-size)) / var(--k, 3));
+  /* --k tier stacks, each about 1.4 tiles wide, share the row evenly.
+     The tile size comes first; then each stack takes its share. */
+  --wl-size: min(var(--wl-max), calc((100cqi - (var(--k, 3) - 1) * var(--wl-gap)) / (var(--k, 3) * 1.4)));
+  --wl-share: calc((100cqi - (var(--k, 3) - 1) * var(--wl-gap)) / var(--k, 3));
   display: flex;
   align-items: center;
   gap: var(--wl-gap);
@@ -8206,202 +8202,9 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
 .mcv-selall:hover { color: var(--text); }
 .mcv-buy:disabled { opacity: 0.45; cursor: default; transform: none; }
 
-/* --- Mystery: the pieces with no odds, and the bar that releases them -----
-   A crate's mystery charge fills with every box opened; the opening that
-   fills it releases a mystery item. Shown only as a share of full, in a
-   gold-to-violet that's its own, not a tier's. Close to full it glows. */
-.mystery-bar {
-  --mystery-a: #f2b84b;
-  --mystery-b: #b678f2;
-  width: 100%;
-  margin-top: 10px;
-  padding: 9px 11px 10px;
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--mystery-b) 8%, var(--panel));
-  text-align: left;
-}
-.mystery-bar.is-compact { margin-top: 8px; padding: 7px 10px 8px; }
-.mystery-bar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.mystery-bar-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  background: linear-gradient(90deg, var(--mystery-a), var(--mystery-b));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.mystery-bar-label svg { color: var(--mystery-a); width: 12px; height: 12px; }
-.mystery-bar-pct { font-size: 0.72rem; font-weight: 800; color: var(--text); }
-.mystery-bar-track { position: relative; height: 6px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 10%, transparent); overflow: hidden; }
-.mystery-bar-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--mystery-a), var(--mystery-b));
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.mystery-bar-fill::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent) no-repeat;
-  background-size: 40% 100%;
-  animation: mysteryRun 2.4s linear infinite;
-}
-@keyframes mysteryRun { from { background-position: -60% 0; } to { background-position: 160% 0; } }
-.mystery-bar.is-hot { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--mystery-b) 55%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--mystery-b) 60%, transparent); }
-@media (prefers-reduced-motion: reduce) { .mystery-bar-fill::after { animation: none; display: none; } }
-.home-crate .mystery-bar { margin-top: 8px; }
-
-/* Mystery tab and tiles on a crate's page: no odds, a gold-violet edge. */
-.prize-tab.is-mystery { display: inline-flex; align-items: center; gap: 5px; }
-.prize-tab.is-mystery svg { width: 12px; height: 12px; color: #f2b84b; }
-.prize-tab.is-mystery.active { border-color: #b678f2; background: color-mix(in srgb, #b678f2 14%, var(--panel)); color: color-mix(in srgb, #b678f2 70%, var(--text)); }
-.prize-tile.is-mystery .prize-tile-img { border: 2px solid transparent; background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #f2b84b, #b678f2) border-box; }
-.mystery-note { grid-column: 1 / -1; margin: 0 0 4px; font-size: 0.74rem; line-height: 1.45; color: var(--text-dim); }
-.crate-tier-head.is-mystery span:first-child { background: linear-gradient(90deg, #f2b84b, #b678f2); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
 /* Keep every card's quantity and Open on the same line as its
    neighbours', whatever sits above them. */
 .category-list .category-card .category-qty { margin-top: auto; padding-top: 12px; }
-
-/* The mystery tile at the end of What's inside: a sparkle on a dark tile,
-   ringed by the crate's mystery charge (a conic sweep, gold to violet, as
-   far round as it's charged). Hover names it. */
-.wl-mystery { position: relative; flex: 0 0 var(--wl-size); width: var(--wl-size); height: var(--wl-size); }
-.wl-mystery-tile {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 1px;
-  width: 100%;
-  height: 100%;
-  border: 2px solid transparent;
-  border-radius: var(--r-xs);
-  background:
-    linear-gradient(145deg, #2a2140, #17131f) padding-box,
-    conic-gradient(#f2b84b, #b678f2 calc(var(--charge) * 1%), color-mix(in srgb, var(--text) 14%, transparent) 0) border-box;
-  color: #f2b84b;
-}
-.wl-mystery-tile svg { width: 42%; height: 42%; }
-.wl-mystery-tile b { font-size: 0.56rem; font-weight: 800; color: #fff; line-height: 1; }
-.wl-mystery.is-hot .wl-mystery-tile { box-shadow: 0 0 12px -2px color-mix(in srgb, #b678f2 80%, transparent); }
-.wl-mystery::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  z-index: 5;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
-  background: var(--text);
-  color: var(--text-inverse);
-  font-size: 0.68rem;
-  font-weight: 700;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.wl-mystery:hover::after { opacity: 1; transform: none; }
-/* Small tiles: the sparkle alone. */
-@container wl (max-width: 170px) {
-  .wl-mystery-tile b { display: none; }
-  .wl-mystery-tile svg { width: 55%; height: 55%; }
-}
-/* On the Drops grid the tile is the mystery bar; the full bar is for the
-   crate's own page. */
-.category-wrap:not(.drop-detail-active) .category-card .mystery-bar { display: none; }
-
-/* Mystery tile, charging: the crate's own top mystery piece on white,
-   tinted over in the mystery colours so it reads as a shape rather than
-   an item, a question mark on top, the % along the bottom. */
-.wl-mystery-tile { position: relative; overflow: hidden; }
-.wl-mystery-hint {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 10%;
-  object-fit: contain;
-  background: #fff;
-  filter: grayscale(0.4);
-}
-.wl-mystery:not(.is-ready) .wl-mystery-tile::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(160deg, rgba(64, 44, 96, 0.56), rgba(28, 20, 40, 0.7));
-}
-.wl-mystery-q {
-  position: relative;
-  z-index: 2;
-  font-style: normal;
-  font-weight: 900;
-  font-size: calc(var(--wl-size) * 0.46);
-  line-height: 1;
-  background: linear-gradient(180deg, #f6d27a, #c99cf7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin-top: -6%;
-}
-.wl-mystery-tile b { position: absolute; z-index: 2; bottom: 7%; left: 0; right: 0; text-align: center; }
-/* Unlocked: the item itself, on white, the ring full and gently pulsing. */
-.wl-mystery.is-ready .wl-mystery-tile {
-  background:
-    linear-gradient(#fff, #fff) padding-box,
-    conic-gradient(#f2b84b, #b678f2, #f2b84b) border-box;
-  padding: 2px;
-  animation: mysteryPulse 2.2s ease-in-out infinite;
-}
-.wl-mystery.is-ready img { width: 100%; height: 100%; object-fit: contain; }
-@keyframes mysteryPulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #b678f2 0%, transparent); }
-  50% { box-shadow: 0 0 14px 1px color-mix(in srgb, #b678f2 65%, transparent); }
-}
-@media (prefers-reduced-motion: reduce) { .wl-mystery.is-ready .wl-mystery-tile { animation: none; } }
-@container wl (max-width: 170px) {
-  .wl-mystery-tile b { display: none; }
-}
-
-/* The full bar, unlocked: the item under the bar. */
-.mystery-bar.is-ready { box-shadow: 0 0 0 1.5px color-mix(in srgb, #b678f2 55%, transparent), 0 8px 22px -8px color-mix(in srgb, #b678f2 70%, transparent); }
-.mystery-bar-reveal { display: flex; align-items: center; gap: 10px; margin-top: 10px; text-align: left; }
-.mystery-bar-reveal-img {
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
-  padding: 3px;
-  border: 2px solid transparent;
-  border-radius: var(--r-xs);
-  background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #f2b84b, #b678f2) border-box;
-}
-.mystery-bar-reveal-img img { width: 100%; height: 100%; object-fit: contain; }
-.mystery-bar-reveal b { display: block; font-size: 0.74rem; line-height: 1.25; color: var(--text); }
-.mystery-bar-reveal small { display: block; margin-top: 2px; font-size: 0.66rem; color: var(--text-dim); }
-
-/* The unlocked one on the Mystery tab. */
-.prize-tile.is-mystery { position: relative; }
-.prize-tile-flag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 1;
-  padding: 3px 8px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(90deg, #f2b84b, #b678f2);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-}
-.prize-tile.is-revealed .prize-tile-img { box-shadow: 0 0 18px -4px color-mix(in srgb, #b678f2 80%, transparent); }
 
 /* --- Home: scroll-linked motion ------------------------------------------------
    Where the browser can tie an animation to scroll position (view
@@ -9062,7 +8865,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 
 /* ===== Drop videos: the reel on Home, and the pop-up player ============ */
 
-/* The ring: upright videos stood round a circle, seen from a little above
+/* The ring: videos stood round a circle, seen from a little above
    (the perspective origin sits at the top), so the ones going round the
    back rise behind the front one, smaller. Each slot is turned back by the
    ring's own turn, so every video faces you wherever it is on the ring.
@@ -9074,17 +8877,20 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   initial-value: 0deg;
 }
 .drop-reel {
-  --sw: clamp(150px, 16vw, 230px);          /* a video's width (9:16) */
-  --sh: calc(var(--sw) * 16 / 9);
+  --sw: clamp(220px, 25vw, 350px);          /* a video's width (16:9) */
+  --sh: calc(var(--sw) * 9 / 16);
   --step: calc(360deg / var(--n, 9));
   --oval: 1.7;                              /* the ring's width over its depth */
 }
 .drop-reel-stage {
   position: relative;
-  height: calc(var(--sh) + 130px);
-  perspective: 1500px;
-  perspective-origin: 50% -30%;
+  height: calc(var(--sh) + 190px);
+  perspective: 1400px;
+  perspective-origin: 50% -70%;
   overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y; /* sideways drags turn the ring; up and down still scrolls */
+  user-select: none;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
@@ -9102,6 +8908,8 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transition: --turn 1.1s cubic-bezier(0.65, 0, 0.25, 1);
 }
 .drop-reel-ring.no-anim { transition: none; }
+.drop-reel.is-dragging .drop-reel-stage { cursor: grabbing; }
+.drop-reel-slide img, .drop-reel-slide video { -webkit-user-drag: none; }
 .drop-reel-slot {
   --a: calc(var(--i) * var(--step) - var(--turn)); /* where it is round the ring; 0 = front */
   position: absolute;
@@ -9136,7 +8944,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
-  padding: 44px 12px 18px;
+  padding: 34px 14px 16px;
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.72) 55%);
   color: #fff;
   text-align: left;
@@ -9243,29 +9051,17 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Watch, on a drop's own page, in its What's inside header. */
-.prize-dropdown-header .drop-watch-btn {
+/* Watch, first in a drop's tab row: the same pill as the tier tabs, filled,
+   with a play mark, so it reads as the one that does something else. */
+.prize-tab.is-watch {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  margin-left: auto;
-  margin-right: 6px;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-radius: var(--r-pill);
+  gap: 6px;
   background: var(--text);
   color: var(--text-inverse);
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: none;
-  cursor: pointer;
-  transition: transform 0.15s ease;
 }
-.prize-dropdown-header .drop-watch-btn:hover { transform: translateY(-1px); }
-.prize-dropdown-header .drop-watch-btn svg { width: 10px; height: 10px; }
+.prize-tab.is-watch:hover { color: var(--text-inverse); opacity: 0.88; }
+.prize-tab.is-watch svg { width: 9px; height: 9px; }
 
 /* The pop-up player. */
 .drop-video-modal {
@@ -9283,16 +9079,15 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 .drop-video-modal.hidden { display: none; }
 .drop-video-modal.visible { opacity: 1; }
-/* Upright, like the videos: as tall as the window allows. */
 .dvm-card {
-  width: min(440px, 100%, calc((100vh - 150px) * 9 / 16));
+  width: min(960px, 100%, calc((100vh - 150px) * 16 / 9));
   border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--panel);
   box-shadow: 0 30px 80px var(--shadow-modal);
   transform-origin: center;
 }
-.dvm-stage { position: relative; aspect-ratio: 9 / 16; background: #0d0d10; }
+.dvm-stage { position: relative; aspect-ratio: 16 / 9; background: #0d0d10; }
 .dvm-stage .drop-video { width: 100%; height: 100%; display: block; background: #000; }
 .dvm-stage .drop-video-ph-play { width: 72px; height: 72px; font-size: 26px; }
 .dvm-bar { display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; }
@@ -9327,10 +9122,11 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 
 @media (max-width: 640px) {
-  .drop-reel { --sw: 40vw; --oval: 1.3; }
-  .drop-reel-stage { perspective: 900px; height: calc(var(--sh) + 80px); }
-  .reel-banner { flex-direction: column; align-items: flex-start; gap: 6px; padding: 36px 10px 16px; }
-  .reel-banner-text b { font-size: 0.9rem; }
+  .drop-reel { --sw: 58vw; --oval: 1.35; }
+  .drop-reel-stage { perspective: 900px; height: calc(var(--sh) + 70px); }
+  .reel-banner { padding: 26px 10px 13px; }
+  .reel-banner-line { font-size: 0.56rem; }
+  .reel-banner-text b { font-size: 0.86rem; }
   .reel-banner-go { padding: 5px 10px; font-size: 0.66rem; }
   .drop-video-modal { padding: 12px; }
 }
@@ -9339,4 +9135,4 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 /* In a reel slide the banner takes the foot, so the blank's play button
    sits a little higher. */
-.drop-reel-slide .drop-video-ph { padding-bottom: 64px; }
+.drop-reel-slide .drop-video-ph { padding-bottom: 40px; }
