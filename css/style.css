@@ -9206,3 +9206,427 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .dvm-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-sm); background: var(--control-fill); color: var(--text); flex: 0 0 auto; }
 .dvm-brand { display: inline-flex; }
 .dvm-brand .brand-mark { height: 16px; width: auto; }
+
+/* ===== Demo: one crate's page, as the team's other build lays it out ===== */
+
+.dm {
+  --dm-display: "Archivo Black", "Anton", system-ui, sans-serif; /* their Druk Wide falls back to this */
+  --dm-grail: linear-gradient(100deg, oklch(0.879 0.162 90.9) 0%, oklch(0.783 0.168 66.2) 50%, oklch(0.695 0.223 355.3) 100%);
+  --dm-epic: oklch(0.606 0.219 292.7);
+  --dm-rare: oklch(0.623 0.188 259.8);
+  --dm-uncommon: oklch(0.6989 0.1391 168.39);
+  --dm-common: oklch(0.661 0.009 106.6);
+  --dm-grail-solid: oklch(0.783 0.168 66.2);
+  --dm-card: var(--panel);
+  --dm-hair: color-mix(in srgb, var(--text) 12%, transparent);
+  --dm-rail-w: 240px;
+}
+.dm .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dm-t-grail { --tc: var(--dm-grail-solid); }
+.dm-t-epic { --tc: var(--dm-epic); }
+.dm-t-rare { --tc: var(--dm-rare); }
+.dm-t-uncommon { --tc: var(--dm-uncommon); }
+.dm-t-common { --tc: var(--dm-common); }
+
+/* The page and its rail: the rail holds to the right edge while the page
+   scrolls past it. */
+.dm-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--dm-rail-w); gap: 32px; align-items: start; }
+.dm-layout.rail-closed { grid-template-columns: minmax(0, 1fr); }
+.dm-main { min-width: 0; }
+.dm-rail {
+  position: sticky;
+  top: calc(var(--topbar-h) + 12px);
+  max-height: calc(100vh - var(--topbar-h) - 24px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-bottom: 12px;
+}
+.dm-rail::-webkit-scrollbar { display: none; }
+.dm-layout.rail-closed .dm-rail { display: none; }
+.dm-rail-reopen {
+  display: none;
+  position: fixed;
+  right: 20px;
+  top: calc(var(--topbar-h) + 16px);
+  z-index: 5;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dm-layout.rail-closed .dm-rail-reopen { display: inline-flex; }
+
+/* ---- Hero: the crate on the left; its name, price, open and odds on the right. */
+.dm-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 24px; align-items: center; min-height: 600px; }
+.dm-hero-media { position: relative; align-self: stretch; min-height: 420px; }
+.dm-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dm-back:hover { opacity: 0.7; }
+.dm-box { position: absolute; inset: 40px 0 0; width: 100%; height: calc(100% - 40px); display: block; }
+.dm-hero-copy { min-width: 0; }
+.dm-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.dm-title {
+  margin: 14px 0 10px;
+  font-family: var(--dm-display);
+  font-size: clamp(2rem, 3.6vw, 3.24rem);
+  line-height: 0.95;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.dm-blurb { margin: 0 0 18px; max-width: 480px; font-size: 0.98rem; line-height: 1.5; color: var(--text-dim); }
+.dm-buyline { display: flex; align-items: flex-end; gap: 22px; margin-bottom: 12px; }
+.dm-stat { display: flex; flex-direction: column; gap: 3px; }
+.dm-stat span { font-size: 0.72rem; color: var(--text-dim); }
+.dm-stat b { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.dm-stat b.is-grail { color: var(--dm-grail-solid); }
+.dm-price { margin-left: auto; display: flex; align-items: baseline; gap: 8px; }
+.dm-price b { font-family: var(--dm-display); font-size: 1.88rem; font-weight: 400; line-height: 1; color: var(--text); }
+.dm-price span { font-size: 0.74rem; color: var(--text-dim); }
+.dm-open-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+.dm-qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  padding: 0 7px 0 10px;
+  border: 1.5px solid var(--text);
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+}
+.dm-qty button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.dm-qty button:hover { background: var(--control-fill); }
+.dm-qty b { min-width: 26px; text-align: center; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.dm-qty .dm-max {
+  width: auto;
+  height: 32px;
+  margin-left: 6px;
+  padding: 0 12px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.dm-qty .dm-max.active { background: var(--text); color: var(--text-inverse); border-color: var(--text); }
+.dm-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 22px;
+  border: 1px solid #000;
+  border-radius: var(--r-pill);
+  background: oklch(0.8751 0.2471 147.45);
+  color: oklch(0.256 0.062 150.2);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.dm-open:hover { transform: translateY(-1px); filter: brightness(0.97); }
+.dm-open-price { display: inline-flex; align-items: center; gap: 10px; }
+.dm-paid { margin: 8px 0 18px; font-size: 0.74rem; color: var(--text-dim); }
+
+/* The five tiers: range, share of opens, and a bar of that share. */
+.dm-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 500px; }
+.dm-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--tc);
+  border-radius: 16px;
+  background: var(--dm-card);
+}
+.dm-tier.dm-t-grail { border: 1px solid transparent; background: linear-gradient(var(--dm-card), var(--dm-card)) padding-box, var(--dm-grail) border-box; }
+.dm-tier-name { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 700; color: var(--tc); }
+.dm-tier-range { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.dm-tier-pct { font-family: var(--dm-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; color: var(--tc); }
+.dm-t-grail .dm-tier-pct { background: var(--dm-grail); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dm-tier-bar { height: 4px; margin-top: 4px; border-radius: var(--r-pill); background: var(--dm-hair); overflow: hidden; }
+.dm-tier-bar i { display: block; height: 100%; border-radius: inherit; background: var(--tc); }
+.dm-t-grail .dm-tier-bar i { background: var(--dm-grail); }
+
+/* ---- Sections */
+.dm-sec { margin-top: 48px; }
+.dm-sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.dm-sec-head .dm-sub { margin-bottom: 0; }
+.dm-h2 { margin: 0 0 8px; font-family: var(--dm-display); font-size: 1.25rem; font-weight: 400; line-height: 1; text-transform: uppercase; color: var(--text); }
+.dm-sub { margin: 0 0 18px; font-size: 0.92rem; color: var(--text-dim); }
+
+/* A tier chip: outlined in the tier's colour; the top grail's is filled
+   with its gradient. */
+.dm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px 0 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+  color: var(--tc);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dm-chip.is-top,
+.dm-t-grail > .dm-card-top .dm-chip { border: none; background: var(--dm-grail); color: #fff; padding: 0 11px 0 10px; }
+.dm-card-top { position: absolute; left: 12px; right: 12px; top: 12px; z-index: 2; display: flex; align-items: center; gap: 6px; }
+.dm-ago { margin-left: auto; font-size: 0.76rem; color: var(--text-dim); }
+.dm-img { display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: 12px; }
+.dm-img img { width: 100%; height: 100%; object-fit: contain; padding: 8%; mix-blend-mode: multiply; }
+/* Dark: the product shots keep their white tiles rather than blending. */
+:root:not([data-theme="light"]) .dm-img { background: #fff; }
+:root:not([data-theme="light"]) .dm-img img { mix-blend-mode: normal; }
+.dm-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 500; color: var(--text); }
+.dm-money { font-family: var(--dm-display); font-size: 1.35rem; font-weight: 400; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Pulled from this crate: a strip of cards you can drag. */
+.dm-strip {
+  display: flex;
+  gap: 12px;
+  margin: 0 -4px;
+  padding: 4px 4px 10px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+}
+.dm-strip::-webkit-scrollbar { display: none; }
+.dm-strip.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+.dm-pull {
+  position: relative;
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 44px 12px 12px;
+  border: 1.5px solid var(--text);
+  border-radius: 20px;
+  background: var(--dm-card);
+  scroll-snap-align: start;
+}
+.dm-pull .dm-img { aspect-ratio: auto; height: 110px; }
+.dm-pull .dm-money { font-size: 1.25rem; }
+.dm-pull.is-new { animation: dm-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes dm-in { from { opacity: 0; transform: translateX(-24px) scale(0.96); } }
+
+/* What could be inside: filters, and the grid. */
+.dm-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.dm-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--tc, var(--dm-hair));
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+  color: var(--tc, var(--text));
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dm-filter.active { background: var(--tc, var(--text)); border-color: var(--tc, var(--text)); color: #fff; }
+.dm-filter:not(.dm-t-common):not(.dm-t-grail):not(.dm-t-epic):not(.dm-t-rare):not(.dm-t-uncommon).active { color: var(--text-inverse); }
+.dm-filter.dm-t-grail.active { background: var(--dm-grail); border-color: transparent; }
+.dm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.dm-piece {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--tc);
+  border-radius: 20px;
+  background: var(--dm-card);
+  animation: dm-up 0.4s ease both;
+}
+@keyframes dm-up { from { opacity: 0; transform: translateY(8px); } }
+.dm-piece-text { display: grid; gap: 4px; min-width: 0; }
+.dm-piece.dm-t-grail { border-color: transparent; background: linear-gradient(var(--dm-card), var(--dm-card)) padding-box, var(--dm-grail) border-box; }
+/* The top grail: across two columns, its picture beside its name and a
+   bigger price, a warm glow behind it and a sheen that passes over. */
+.dm-piece.is-top { grid-column: span 2; flex-direction: row; align-items: center; gap: 20px; padding: 20px; overflow: hidden; box-shadow: 0 18px 50px -18px color-mix(in srgb, oklch(0.783 0.168 66.2) 55%, transparent); }
+.dm-piece.is-top .dm-card-top { left: 20px; right: 20px; top: 20px; }
+.dm-piece.is-top .dm-img { flex: 0 0 52%; }
+.dm-piece.is-top .dm-piece-text { flex: 1; gap: 8px; }
+.dm-piece.is-top .dm-name { white-space: normal; font-size: 1.12rem; }
+.dm-piece.is-top .dm-money { font-size: 2.12rem; background: var(--dm-grail); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dm-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 48%, transparent 60%);
+  transform: translateX(-100%);
+  animation: dm-sheen 4.5s ease-in-out infinite 1s;
+}
+@keyframes dm-sheen { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.dm-ring { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--text); }
+.dm-ring svg { width: 22px; height: 22px; }
+.dm-ring circle { fill: none; stroke-width: 3; }
+.dm-ring-track { stroke: var(--dm-hair); }
+.dm-ring-bar { stroke: var(--text); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; }
+
+/* The rail: today's top pull, then live pulls. */
+.dm-rail-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 8px; }
+.dm-rail-head.is-live { margin-top: 18px; }
+.dm-rail-title { display: inline-flex; align-items: center; gap: 6px; font-size: 0.86rem; font-weight: 700; color: var(--text); }
+.dm-rail-title svg { color: var(--dm-grail-solid); }
+.dm-rail-title small { font-size: 0.74rem; font-weight: 500; color: var(--text-dim); }
+.dm-rail-btns { display: inline-flex; gap: 2px; }
+.dm-rail-btns button { display: grid; place-items: center; width: 26px; height: 26px; border: none; border-radius: 50%; background: none; color: var(--text-dim); cursor: pointer; }
+.dm-rail-btns button:hover { background: var(--control-fill); color: var(--text); }
+.dm-live-dot { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.72 0.19 147); box-shadow: 0 0 0 3px color-mix(in srgb, oklch(0.72 0.19 147) 25%, transparent); animation: dm-pulse 1.8s ease-in-out infinite; }
+@keyframes dm-pulse { 50% { box-shadow: 0 0 0 6px transparent; } }
+.dm-top {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border: 1.5px solid var(--text);
+  border-radius: 18px;
+  background: var(--dm-card);
+  text-align: center;
+}
+.dm-top-rank { position: absolute; top: 8px; left: 12px; font-family: var(--dm-display); font-size: 0.9rem; color: var(--text); }
+.dm-top .dm-img { width: 100%; aspect-ratio: auto; height: 120px; }
+.dm-top .dm-name { max-width: 100%; font-weight: 600; }
+.dm-top .dm-money { font-size: 1.5rem; }
+.dm-top small { font-size: 0.72rem; color: var(--text-dim); }
+.dm-live { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.dm-live-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 7px;
+  border: 1.5px solid var(--text);
+  border-radius: 14px;
+  background: var(--dm-card);
+}
+.dm-live-row .dm-img { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 9px; }
+.dm-live-row .dm-img img { padding: 4%; }
+.dm-live-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.72rem; color: var(--text-dim); }
+.dm-live-text .dm-name { font-size: 0.78rem; font-weight: 600; }
+.dm-live-text b { color: var(--text); }
+.dm-live-row.is-new { animation: dm-drop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes dm-drop { from { opacity: 0; transform: translateY(-14px); } }
+
+/* What came out of an open. */
+.dm-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.dm-reveal.hidden { display: none; }
+.dm-reveal.visible { opacity: 1; }
+.dm-reveal-card {
+  width: min(880px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 26px;
+  border-radius: var(--r-xl);
+  background: var(--bg);
+  text-align: center;
+  transform: scale(0.94);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dm-reveal.visible .dm-reveal-card { transform: none; }
+.dm-reveal-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
+.dm-reveal-list.is-one { grid-template-columns: minmax(0, 300px); justify-content: center; }
+.dm-reveal-list .dm-piece { padding-top: 44px; animation: dm-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i) * 70ms); }
+@keyframes dm-pop { from { opacity: 0; transform: scale(0.8) translateY(10px); } }
+.dm-reveal-total { margin: 16px 0 0; font-weight: 700; color: var(--text); }
+.dm-reveal-note { margin: 8px 0 0; font-size: 0.76rem; color: var(--text-dim); }
+.dm-reveal-actions { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+.dm-reveal-actions .dm-open { min-width: 260px; }
+.dm-ghost { height: 52px; padding: 0 24px; border: 1.5px solid var(--text); border-radius: var(--r-pill); background: none; color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+
+@media (max-width: 1180px) {
+  .dm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1000px) {
+  .dm-layout { grid-template-columns: minmax(0, 1fr); }
+  .dm-rail { position: static; max-height: none; overflow: visible; }
+  .dm-rail-btns, .dm-rail-reopen { display: none !important; }
+  .dm-layout.rail-closed .dm-rail { display: block; }
+  .dm-live { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .dm-live-row { flex: 0 0 230px; }
+  .dm-top { max-width: 260px; }
+}
+@media (max-width: 760px) {
+  .dm-hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .dm-hero-media { min-height: 300px; }
+  .dm-buyline { flex-wrap: wrap; }
+  .dm-open-row { grid-template-columns: minmax(0, 1fr); }
+  .dm-qty { justify-content: space-between; }
+  .dm-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+  .dm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dm-piece.is-top { flex-direction: column; align-items: stretch; padding: 12px; }
+  .dm-piece.is-top .dm-card-top { left: 12px; right: 12px; top: 12px; }
+  .dm-piece.is-top .dm-money { font-size: 1.6rem; }
+  .dm-sec { margin-top: 36px; }
+  .dm-pull { flex-basis: 170px; }
+  .dm-reveal-actions { flex-direction: column; }
+  .dm-reveal-actions .dm-open { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-sheen, .dm-live-dot { animation: none; }
+}

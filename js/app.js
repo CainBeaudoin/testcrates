@@ -17,6 +17,7 @@ import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
 import { initLulu, renderLulu } from "./lulu.js";
+import { initDemo, renderDemo, leaveDemo } from "./demo.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -565,6 +566,7 @@ function showScreen(el) {
   // Home is shown again; holding their WebGL contexts open elsewhere would
   // crowd out the Drops and opening screens.
   if (el.id !== "screen-home") releaseHomeViewers();
+  if (el.id !== "screen-demo") leaveDemo();
   if (el.id !== "screen-category") {
     categoryBoxViewers.forEach((v) => v.dispose());
     categoryBoxViewers = [];
@@ -3155,6 +3157,7 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-account") renderAccount();
     if (tab.dataset.nav === "screen-category") renderCategories();
     if (tab.dataset.nav === "screen-lulu") renderLulu();
+    if (tab.dataset.nav === "screen-demo") renderDemo();
     // Two rail tabs land on the Account screen — Rewards opens straight into
     // its group, plain Account falls back to the first one.
     if (tab.dataset.nav === "screen-account") {
@@ -6582,6 +6585,7 @@ if (profileParam) {
   renderHome();
   renderRecentPulls();
   initLulu(document.getElementById("luluRoot"), { renderWallet, showToast });
+  initDemo(document.getElementById("demoRoot"));
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.

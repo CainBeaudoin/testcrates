@@ -1,0 +1,106 @@
+// The Demo tab's crate: Genesis Drop Bronze, copied from the team's other
+// Chosen build (dev.od-rwa.xyz, its public crate API) on 2026-10-13: every
+// piece with its value and its chance in one open, and the latest and top
+// pulls. Images are saved in assets/demo. `ago` is how long before the
+// newest pull each one landed; the page counts back from now.
+
+// The odds of each tier, as the page publishes them; a tier's pieces are
+// its 1, 2, 23, 23 and 22 most valuable in turn.
+export const DEMO_TIER_ODDS = { grail: 0.1, epic: 0.2, rare: 17, uncommon: 35, common: 48 };
+
+export const DEMO_CRATE = {"eyebrow": "Genesis Drop", "title": "Genesis Drop Bronze", "price": 1.0, "blurb": "Every piece inside is real and authenticated. Whatever you pull is yours: keep it, sell it back, or list it."};
+
+export const DEMO_PIECES = [
+  {"name": "Rolex Submariner \"Panda Dial\"", "category": "accessories", "value": 23599.9, "weight": 0.14, "tier": "grail", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "KAWS Star Wars Darth Vader Companion", "category": "collectibles", "value": 20000.0, "weight": 0.14, "tier": "epic", "image": "assets/demo/7db2c6264d.jpg"},
+  {"name": "AIR JORDAN 4 KAWS COOL GREY", "category": "footwear", "value": 4500.0, "weight": 0.14, "tier": "epic", "image": "assets/demo/6ec8b67737.jpg"},
+  {"name": "AIR JORDAN 3 PE MICHIGAN", "category": "footwear", "value": 4500.0, "weight": 0.14, "tier": "rare", "image": "assets/demo/2b20c96b60.jpg"},
+  {"name": "New Era Card Holder \"Black\"", "category": "accessories", "value": 3878.44, "weight": 0.14, "tier": "rare", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "Magic: The Gathering Umbreon VMAX \"Alt Art\"", "category": "trading_cards", "value": 1412.32, "weight": 0.55, "tier": "rare", "image": "assets/demo/40b6c82bd4.jpg"},
+  {"name": "Louis Vuitton Speedmaster \"Gold\"", "category": "accessories", "value": 1098.14, "weight": 0.55, "tier": "rare", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Bearbrick Pop! Exclusive \"Flayed\"", "category": "collectibles", "value": 1031.02, "weight": 0.55, "tier": "rare", "image": "assets/demo/7db2c6264d.jpg"},
+  {"name": "Louis Vuitton Speedmaster \"Steel\"", "category": "accessories", "value": 946.57, "weight": 0.55, "tier": "rare", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Omega Submariner \"Steel\"", "category": "accessories", "value": 787.88, "weight": 0.55, "tier": "rare", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Panini Charizard \"Crown Zenith\"", "category": "trading_cards", "value": 773.59, "weight": 0.55, "tier": "rare", "image": "assets/demo/098c5da03f.jpg"},
+  {"name": "Adidas 550 \"Pine Green\"", "category": "footwear", "value": 668.79, "weight": 0.55, "tier": "rare", "image": "assets/demo/5b252b6a26.png"},
+  {"name": "Air Jordan 4 x Levi's White Denim", "category": "footwear", "value": 650.0, "weight": 0.55, "tier": "rare", "image": "assets/demo/55c2963a21.jpg"},
+  {"name": "Pokémon Wembanyama Prizm \"Base Set\"", "category": "trading_cards", "value": 619.25, "weight": 0.55, "tier": "rare", "image": "assets/demo/13d932d1c4.jpg"},
+  {"name": "POKEMON SCARLET & VIOLET DESTINED RIVALS BOOSTER BOX [36 PACKS]", "category": "trading_cards", "value": 600.0, "weight": 0.55, "tier": "rare", "image": "assets/demo/322325e118.jpg"},
+  {"name": "Asics Foam Runner \"Sail\"", "category": "footwear", "value": 500.24, "weight": 0.55, "tier": "rare", "image": "assets/demo/173b2e586f.jpg"},
+  {"name": "Panini Gengar \"Crown Zenith\"", "category": "trading_cards", "value": 428.74, "weight": 0.97, "tier": "rare", "image": "assets/demo/59d40daf03.jpg"},
+  {"name": "Essentials Varsity Jacket \"Black\"", "category": "streetwear", "value": 399.34, "weight": 0.97, "tier": "rare", "image": "assets/demo/ed6e0d5b67.png"},
+  {"name": "Medicom Companion \"Original\"", "category": "collectibles", "value": 348.51, "weight": 0.97, "tier": "rare", "image": "assets/demo/852664191b.jpg"},
+  {"name": "POKEMON MEGA EVOLUTIONS ENHANCED BOOSTER BOX [36 PACKS + 1 PROMO CARD]", "category": "trading_cards", "value": 330.0, "weight": 0.97, "tier": "rare", "image": "assets/demo/13d932d1c4.jpg"},
+  {"name": "One Piece Pikachu Illustrator \"Evolving Skies\"", "category": "trading_cards", "value": 279.39, "weight": 0.97, "tier": "rare", "image": "assets/demo/b23cb2eaf0.jpg"},
+  {"name": "Air Jordan 4 Cave Stone", "category": "footwear", "value": 270.0, "weight": 0.97, "tier": "rare", "image": "assets/demo/d740d80a79.jpg"},
+  {"name": "New Balance Travis Scott Low \"Sail\"", "category": "footwear", "value": 253.69, "weight": 0.96, "tier": "rare", "image": "assets/demo/d7798dbdbb.jpg"},
+  {"name": "LEGO Art Toy \"Original\"", "category": "collectibles", "value": 170.28, "weight": 0.97, "tier": "rare", "image": "assets/demo/852664191b.jpg"},
+  {"name": "Nike 550 \"Bred\"", "category": "footwear", "value": 165.89, "weight": 0.96, "tier": "rare", "image": "assets/demo/2f918616ac.jpg"},
+  {"name": "Funko Pop! Exclusive \"Gold\"", "category": "collectibles", "value": 149.51, "weight": 0.97, "tier": "rare", "image": "assets/demo/adad17a093.jpg"},
+  {"name": "Essentials Heavy Jersey Crewneck Tee Black", "category": "apparel", "value": 140.0, "weight": 0.97, "tier": "uncommon", "image": "assets/demo/1673a0b55d.png"},
+  {"name": "Fear of God Essentials Heavy Jersey Crewneck Tee Black", "category": "apparel", "value": 140.0, "weight": 0.97, "tier": "uncommon", "image": "assets/demo/5c6bbf0d90.jpg"},
+  {"name": "Carhartt WIP Hoodie \"Olive\"", "category": "apparel", "value": 127.3, "weight": 0.96, "tier": "uncommon", "image": "assets/demo/a0dc72d5ae.png"},
+  {"name": "New Balance Dunk Low \"Sea Glass\"", "category": "footwear", "value": 104.35, "weight": 0.96, "tier": "uncommon", "image": "assets/demo/2855bb5bf4.jpg"},
+  {"name": "Magic: The Gathering Rayquaza \"Crown Zenith\"", "category": "trading_cards", "value": 97.33, "weight": 0.97, "tier": "uncommon", "image": "assets/demo/d7b72ba5d0.jpg"},
+  {"name": "Funko 400% Figure \"Chrome\"", "category": "collectibles", "value": 89.13, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/70592cb666.jpg"},
+  {"name": "Aimé Leon Dore Beanie \"Forest\"", "category": "apparel", "value": 81.17, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/33dc71af46.jpg"},
+  {"name": "One Piece Gengar \"Silver Prizm\"", "category": "trading_cards", "value": 74.74, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/d5b3960a83.jpg"},
+  {"name": "One Piece Black Lotus \"Alpha\"", "category": "trading_cards", "value": 58.69, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/13d932d1c4.jpg"},
+  {"name": "Corteiz Varsity Jacket \"Taupe\"", "category": "streetwear", "value": 57.25, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/85d78fc37f.jpg"},
+  {"name": "Stüssy Hoodie \"Cream\"", "category": "apparel", "value": 55.61, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/85d78fc37f.jpg"},
+  {"name": "Magic: The Gathering Black Lotus \"Evolving Skies\"", "category": "trading_cards", "value": 55.47, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/322325e118.jpg"},
+  {"name": "Medicom Ultimate Collector Set \"Flayed\"", "category": "collectibles", "value": 47.03, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/7e5a717f7d.jpg"},
+  {"name": "Pokémon Mewtwo \"Alpha\"", "category": "trading_cards", "value": 45.63, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/02fda3f3b5.jpg"},
+  {"name": "Pokémon Luffy Leader \"Alpha\"", "category": "trading_cards", "value": 41.26, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/0446964b7b.jpg"},
+  {"name": "New Era G-Shock \"Two-Tone\"", "category": "accessories", "value": 32.56, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "Topps Black Lotus \"Alt Art\"", "category": "trading_cards", "value": 30.76, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/b6d8928df8.jpg"},
+  {"name": "Louis Vuitton 59FIFTY Cap \"Gold\"", "category": "accessories", "value": 30.67, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Funko Art Toy \"Glow\"", "category": "collectibles", "value": 26.94, "weight": 1.52, "tier": "uncommon", "image": "assets/demo/7db2c6264d.jpg"},
+  {"name": "Stüssy Coach Jacket \"Navy\"", "category": "apparel", "value": 24.63, "weight": 2.21, "tier": "uncommon", "image": "assets/demo/ed6e0d5b67.png"},
+  {"name": "Seiko G-Shock \"Two-Tone\"", "category": "accessories", "value": 24.52, "weight": 2.21, "tier": "uncommon", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "BAPE Shark Hoodie \"Black\"", "category": "streetwear", "value": 24.28, "weight": 2.21, "tier": "uncommon", "image": "assets/demo/85d78fc37f.jpg"},
+  {"name": "Topps Gengar \"Romance Dawn\"", "category": "trading_cards", "value": 24.1, "weight": 2.21, "tier": "uncommon", "image": "assets/demo/d7b72ba5d0.jpg"},
+  {"name": "Palace Camp Cap \"Camo\"", "category": "streetwear", "value": 23.26, "weight": 2.21, "tier": "common", "image": "assets/demo/85d78fc37f.jpg"},
+  {"name": "Stüssy Coach Jacket \"Black\"", "category": "apparel", "value": 22.23, "weight": 2.21, "tier": "common", "image": "assets/demo/a0dc72d5ae.png"},
+  {"name": "Omega Card Holder \"Monogram\"", "category": "accessories", "value": 20.21, "weight": 2.21, "tier": "common", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "Omega Presage \"Silver\"", "category": "accessories", "value": 19.1, "weight": 2.21, "tier": "common", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Chrome Hearts Keepall 45 \"Panda Dial\"", "category": "accessories", "value": 18.87, "weight": 2.21, "tier": "common", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Panini Luffy Leader \"Alpha\"", "category": "trading_cards", "value": 18.82, "weight": 2.21, "tier": "common", "image": "assets/demo/298fd4324b.jpg"},
+  {"name": "Stüssy Coach Jacket \"Brick\"", "category": "apparel", "value": 17.22, "weight": 2.21, "tier": "common", "image": "assets/demo/cab2afd247.jpg"},
+  {"name": "Stüssy Hoodie \"Black\"", "category": "apparel", "value": 16.29, "weight": 2.21, "tier": "common", "image": "assets/demo/4e835e12a2.jpg"},
+  {"name": "Stüssy Track Jacket \"Navy\"", "category": "apparel", "value": 15.99, "weight": 2.21, "tier": "common", "image": "assets/demo/80ae529c4b.jpg"},
+  {"name": "Nike Shorts \"Cream\"", "category": "apparel", "value": 15.58, "weight": 2.21, "tier": "common", "image": "assets/demo/a0dc72d5ae.png"},
+  {"name": "One Piece Ohtani Chrome \"Romance Dawn\"", "category": "trading_cards", "value": 14.42, "weight": 2.21, "tier": "common", "image": "assets/demo/aa132aabc5.jpg"},
+  {"name": "Bearbrick Mini Figure Blind Box \"Original\"", "category": "collectibles", "value": 13.18, "weight": 2.21, "tier": "common", "image": "assets/demo/7db2c6264d.jpg"},
+  {"name": "Supreme Varsity Jacket \"Taupe\"", "category": "streetwear", "value": 12.18, "weight": 2.21, "tier": "common", "image": "assets/demo/230c560ac7.png"},
+  {"name": "Seiko G-Shock \"Steel\"", "category": "accessories", "value": 11.8, "weight": 2.21, "tier": "common", "image": "assets/demo/360d27485f.jpg"},
+  {"name": "Carhartt WIP Crewneck \"Forest\"", "category": "apparel", "value": 9.05, "weight": 2.21, "tier": "common", "image": "assets/demo/b7e12ae5ed.jpg"},
+  {"name": "Funko Ultimate Collector Set \"Flayed\"", "category": "collectibles", "value": 8.82, "weight": 2.21, "tier": "common", "image": "assets/demo/9a09380abe.jpg"},
+  {"name": "Carhartt WIP Track Jacket \"Black\"", "category": "apparel", "value": 6.36, "weight": 2.21, "tier": "common", "image": "assets/demo/5094a0a0f9.jpg"},
+  {"name": "New Era Submariner \"Panda Dial\"", "category": "accessories", "value": 6.29, "weight": 2.21, "tier": "common", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "Palace Sweatpant \"Black\"", "category": "streetwear", "value": 5.93, "weight": 2.21, "tier": "common", "image": "assets/demo/85d78fc37f.jpg"},
+  {"name": "Omega Cross Pendant \"Black\"", "category": "accessories", "value": 5.51, "weight": 2.21, "tier": "common", "image": "assets/demo/342a328a73.jpg"},
+  {"name": "Pokémon Umbreon VMAX \"Rookie\"", "category": "trading_cards", "value": 5.13, "weight": 2.21, "tier": "common", "image": "assets/demo/1e5b807d78.jpg"},
+  {"name": "Jordan 11 Retro", "category": "footwear", "value": 0.0, "weight": 2.21, "tier": "common", "image": "assets/demo/fa7cdb5709.jpg"},
+];
+
+export const DEMO_RECENT = [
+  {"name": "Seiko G-Shock \"Steel\"", "rarity": "common", "value": 11.8, "image": "assets/demo/360d27485f.jpg", "ago": 0},
+  {"name": "Carhartt WIP Crewneck \"Forest\"", "rarity": "common", "value": 9.05, "image": "assets/demo/b7e12ae5ed.jpg", "ago": 69340446},
+  {"name": "Seiko G-Shock \"Steel\"", "rarity": "common", "value": 11.8, "image": "assets/demo/360d27485f.jpg", "ago": 69388082},
+  {"name": "Carhartt WIP Crewneck \"Forest\"", "rarity": "common", "value": 9.05, "image": "assets/demo/b7e12ae5ed.jpg", "ago": 69388086},
+  {"name": "Nike Logo Tee \"Black\"", "rarity": "rare", "value": 107.37, "image": "assets/demo/80ae529c4b.jpg", "ago": 69388086},
+  {"name": "Adidas 550 \"Pine Green\"", "rarity": "epic", "value": 668.79, "image": "assets/demo/5b252b6a26.png", "ago": 69388087},
+  {"name": "Stüssy Hoodie \"Black\"", "rarity": "common", "value": 16.29, "image": "assets/demo/4e835e12a2.jpg", "ago": 69388087},
+  {"name": "New Era Submariner \"Panda Dial\"", "rarity": "common", "value": 6.29, "image": "assets/demo/342a328a73.jpg", "ago": 69388088},
+  {"name": "One Piece Ohtani Chrome \"Romance Dawn\"", "rarity": "common", "value": 14.42, "image": "assets/demo/aa132aabc5.jpg", "ago": 69388088},
+  {"name": "Funko Ultimate Collector Set \"Flayed\"", "rarity": "common", "value": 8.82, "image": "assets/demo/9a09380abe.jpg", "ago": 69388089},
+  {"name": "Seiko G-Shock \"Steel\"", "rarity": "common", "value": 11.8, "image": "assets/demo/360d27485f.jpg", "ago": 69388089},
+  {"name": "Palace Sweatpant \"Black\"", "rarity": "common", "value": 5.93, "image": "assets/demo/85d78fc37f.jpg", "ago": 69388090},
+  {"name": "Seiko G-Shock \"Two-Tone\"", "rarity": "common", "value": 24.52, "image": "assets/demo/342a328a73.jpg", "ago": 69411635},
+  {"name": "Nike Logo Tee \"Black\"", "rarity": "rare", "value": 107.37, "image": "assets/demo/80ae529c4b.jpg", "ago": 72066374},
+];
+
+export const DEMO_TOP = [
+  {"name": "Seiko G-Shock \"Steel\"", "rarity": "common", "value": 11.8, "image": "assets/demo/360d27485f.jpg", "ago": 0},
+];
