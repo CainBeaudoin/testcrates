@@ -6,8 +6,8 @@
 //     and Open;
 //   the five tiers as cards, each with its range and its share of opens;
 //   Pulled from this crate: the latest opens, a strip you can drag;
-//   What could be inside: every piece, dearest first, with its chance in
-//     one open as a ring, filterable by tier, the top grail on a wide card;
+//   What could be inside: every piece, dearest first, filterable by
+//     tier, the top grail on a wide card;
 //   the rail: today's top pull, and live pulls as they land.
 //
 // Opens are a demo: Open draws at the crate's odds and shows what came
@@ -40,7 +40,6 @@ function money(v) {
   const cents = Math.round(v * 100) % 100 !== 0;
   return `$${v.toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 })}`;
 }
-const pct = (w) => `${(Math.round(w * 10) / 10).toFixed(1)}%`;
 const tierPct = (p) => `${p >= 1 ? Math.round(p) : p}%`;
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
@@ -117,7 +116,7 @@ export function renderDemo() {
           <div class="dm-sec-head">
             <div>
               <h2 class="dm-h2">What could be inside</h2>
-              <p class="dm-sub">${PIECES.length} pieces, dearest first. The ring is each one&rsquo;s chance in a single open.</p>
+              <p class="dm-sub">${PIECES.length} pieces, dearest first.</p>
             </div>
             <div class="dm-filters" role="tablist">${filtersHTML()}</div>
           </div>
@@ -140,7 +139,6 @@ export function leaveDemo() {
 }
 
 function heroHTML() {
-  const grail = PIECES[0];
   const counts = TIERS.map((t) => PIECES.filter((p) => p.tier === t));
   const tiers = TIERS.map((t, i) => {
     const items = counts[i];
@@ -165,8 +163,6 @@ function heroHTML() {
         <h1 class="dm-title">${esc(DEMO_CRATE.title)}</h1>
         <p class="dm-blurb">${esc(DEMO_CRATE.blurb)}</p>
         <div class="dm-buyline">
-          <div class="dm-stat"><span>Grail odds</span><b class="is-grail">1 in ${Math.round(100 / DEMO_TIER_ODDS.grail)}</b></div>
-          <div class="dm-stat"><span>Max pull</span><b>${money(grail.value)}</b></div>
           <div class="dm-price"><b>${money(PRICE)}</b><span>per crate, or 1 credit</span></div>
         </div>
         <div class="dm-open-row">
@@ -217,17 +213,13 @@ function filtersHTML() {
     .join("");
 }
 
-function ringHTML(w) {
-  return `<span class="dm-ring" title="Chance in one open"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="dm-ring-track" cx="12" cy="12" r="10"/><circle class="dm-ring-bar" cx="12" cy="12" r="10" pathLength="100" stroke-dasharray="${Math.max(0.6, w)} 100"/></svg><b>${pct(w)}</b></span>`;
-}
-
 function gridHTML() {
   const list = PIECES.filter((p) => filter === "all" || p.tier === filter);
   return list
     .map((p, i) => {
       const top = i === 0 && p === PIECES[0];
       return `<li class="dm-piece dm-t-${p.tier}${top ? " is-top" : ""}">
-        <span class="dm-card-top">${chipHTML(p.tier, top ? "Top Grail" : TIER_LABEL[p.tier])}<span class="sr-only">Chance in one open:</span>${ringHTML(p.weight)}</span>
+        <span class="dm-card-top">${chipHTML(p.tier, top ? "Top Grail" : TIER_LABEL[p.tier])}</span>
         <span class="dm-img"><img src="${p.image}" alt="" loading="lazy"></span>
         <span class="dm-piece-text">
           <span class="dm-name" title="${esc(p.name)}">${esc(p.name)}</span>

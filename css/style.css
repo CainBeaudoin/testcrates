@@ -9308,11 +9308,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 .dm-blurb { margin: 0 0 18px; max-width: 480px; font-size: 0.98rem; line-height: 1.5; color: var(--text-dim); }
 .dm-buyline { display: flex; align-items: flex-end; gap: 22px; margin-bottom: 12px; }
-.dm-stat { display: flex; flex-direction: column; gap: 3px; }
-.dm-stat span { font-size: 0.72rem; color: var(--text-dim); }
-.dm-stat b { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
-.dm-stat b.is-grail { color: var(--dm-grail-solid); }
-.dm-price { margin-left: auto; display: flex; align-items: baseline; gap: 8px; }
+.dm-price { display: flex; align-items: baseline; gap: 8px; }
 .dm-price b { font-family: var(--dm-display); font-size: 1.88rem; font-weight: 400; line-height: 1; color: var(--text); }
 .dm-price span { font-size: 0.74rem; color: var(--text-dim); }
 .dm-open-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
@@ -9510,11 +9506,6 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   animation: dm-sheen 4.5s ease-in-out infinite 1s;
 }
 @keyframes dm-sheen { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-.dm-ring { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--text); }
-.dm-ring svg { width: 22px; height: 22px; }
-.dm-ring circle { fill: none; stroke-width: 3; }
-.dm-ring-track { stroke: var(--dm-hair); }
-.dm-ring-bar { stroke: var(--text); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; }
 
 /* The rail: today's top pull, then live pulls. */
 .dm-rail-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 8px; }
