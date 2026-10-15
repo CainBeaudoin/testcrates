@@ -9625,7 +9625,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .dm-reveal-actions .dm-open { min-width: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dm-sheen, .dm-live-dot { animation: none; }
+  .dm-sheen, .dm-live-dot, .fl-tilt { animation: none; }
 }
 
 /* ===== Odds: boxes built from collectors' vaulted pieces ================= */
@@ -10085,40 +10085,86 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   border: 1px solid var(--dm-hair);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, oklch(0.83 0.15 85) 22%, transparent), transparent 62%),
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, oklch(0.85 0.03 250) 40%, transparent), transparent 62%),
     var(--dm-card);
   overflow: hidden;
 }
 .fl-hero .dm-hero-copy { align-self: center; }
 
-/* The coin: two faces and a stack of rims for its edge, turned end over
-   end on X. Gold either way up; the emblem and word say which side. */
-.fl-stage { position: relative; display: grid; place-items: center; width: 100%; height: 330px; perspective: 1000px; }
-.fl-toss { --coin: 220px; position: relative; width: var(--coin); height: var(--coin); transform-style: preserve-3d; }
+/* The coin: silver, thin, with a reeded edge. Two struck faces and a ring
+   of edge slices, turned end over end on X inside a gently rocking tilt.
+   js/flip.js lights it each frame: --dark shades a face turned from the
+   light, --gy/--go place the shine, --l lights each edge slice. */
+.fl-stage { position: relative; display: grid; place-items: center; width: 100%; height: 330px; perspective: 1100px; }
+.fl-toss { --coin: 220px; --thick: 5px; position: relative; width: var(--coin); height: var(--coin); transform-style: preserve-3d; }
+.fl-tilt { position: absolute; inset: 0; transform-style: preserve-3d; animation: fl-rock 7s ease-in-out infinite; }
+@keyframes fl-rock {
+  0%, 100% { transform: rotateX(9deg) rotateY(-11deg); }
+  50% { transform: rotateX(-7deg) rotateY(10deg); }
+}
 .fl-coin { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
-.fl-rim { position: absolute; inset: 0; border-radius: 50%; background: oklch(0.6 0.12 68); transform: translateZ(var(--z)); }
+.fl-edge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--coin) * 3.1416 / 48 + 1px);
+  height: var(--thick);
+  margin: calc(var(--thick) / -2) 0 0 calc((var(--coin) * 3.1416 / 48 + 1px) / -2);
+  background: repeating-linear-gradient(90deg, #7d848d 0 0.8px, #d7dbe0 0.8px 2.2px);
+  filter: brightness(var(--l, 1));
+  transform: rotateZ(var(--a)) translateY(calc(var(--coin) / -2 + 0.4px)) rotateX(90deg);
+}
 .fl-face {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  overflow: hidden;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.84 0.15 84) 42%, oklch(0.68 0.14 70) 100%);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 70% 82%, rgba(90, 98, 110, 0.28), rgba(90, 98, 110, 0) 50%),
+    conic-gradient(from 210deg, #c3c9d0, #f2f4f6, #a9b0b9, #e4e8ec, #9ba3ad, #dde1e6, #c3c9d0);
   box-shadow:
-    inset 0 0 0 9px oklch(0.76 0.14 76),
-    inset 0 0 0 11px oklch(0.92 0.1 92),
-    inset 0 -10px 30px oklch(0.55 0.12 62 / 0.45);
-  color: oklch(0.47 0.1 62);
+    inset 0 0 0 7px #d4d9de,
+    inset 0 0 0 8px #8f97a1,
+    inset 1px 2px 0 9px #f6f8fa,
+    inset 0 0 22px rgba(40, 46, 56, 0.22);
+  color: #7f8892;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-.fl-face b { font-family: var(--dm-display); font-size: 1rem; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; }
-.fl-face svg { filter: drop-shadow(0 1px 0 oklch(0.95 0.08 95)); }
-.fl-heads { transform: translateZ(4px); }
-.fl-tails { transform: rotateX(180deg) translateZ(4px); }
+.fl-heads { transform: translateZ(calc(var(--thick) / 2)); }
+.fl-tails { transform: rotateX(180deg) translateZ(calc(var(--thick) / 2)); }
+/* Struck in relief: lit on top, shadowed beneath. */
+.fl-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  font-family: var(--dm-display);
+  filter: drop-shadow(0 -0.6px 0 rgba(255, 255, 255, 0.95)) drop-shadow(0 1px 0.4px rgba(38, 44, 54, 0.55));
+}
+.fl-art .fl-laurel { opacity: 0.9; }
+/* Turned from the light, a face greys; at the angle that catches it, a
+   band of shine runs across. */
+.fl-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgb(22, 26, 32);
+  opacity: var(--dark, 0.02);
+  pointer-events: none;
+}
+.fl-glint {
+  position: absolute;
+  inset: -60% -10%;
+  background: linear-gradient(172deg, transparent 38%, rgba(255, 255, 255, 0.85) 50%, transparent 62%);
+  opacity: calc(0.15 + var(--go, 0) * 0.85);
+  transform: translateY(var(--gy, 80%));
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
 .fl-shadow {
   position: absolute;
   bottom: 6px;
@@ -10127,7 +10173,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   height: 26px;
   margin-left: -95px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.32), transparent);
+  background: radial-gradient(closest-side, rgba(20, 26, 36, 0.34), transparent);
 }
 
 .fl-result {
@@ -10151,9 +10197,9 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   height: 22px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.8 0.15 80));
-  box-shadow: inset 0 0 0 1.5px oklch(0.7 0.14 72);
-  color: oklch(0.47 0.1 62);
+  background: radial-gradient(circle at 32% 26%, #fbfcfd, #c4cad1 55%, #959da7);
+  box-shadow: inset 0 0 0 1.5px #a4abb4;
+  color: #5f6872;
 }
 .fl-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(380px, 100%); }
 .fl-side {
@@ -10272,7 +10318,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   background: var(--dm-card);
 }
 .fl-row.is-new { animation: dm-drop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.fl-row-coin { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.8 0.15 80)); color: oklch(0.47 0.1 62); }
+.fl-row-coin { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 32% 26%, #fbfcfd, #c4cad1 55%, #959da7); box-shadow: inset 0 0 0 1.5px #a4abb4; color: #5f6872; }
 .fl-row .dm-img { width: 48px; border-radius: 10px; background: var(--surface-2); }
 .fl-row-text { display: grid; gap: 2px; min-width: 0; }
 .fl-row-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; }
@@ -10329,9 +10375,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .fl-fairline { margin: 0; }
   .fl-media { min-height: 0; padding: 16px 12px 20px; border-radius: 22px; }
   .fl-stage { height: 250px; }
-  .fl-toss { --coin: 168px; }
-  .fl-face svg { width: 54px; height: 54px; }
-  .fl-face b { font-size: 0.82rem; letter-spacing: 2px; }
+  .fl-toss { --coin: 176px; --thick: 4px; }
   .fl-shadow { width: 150px; margin-left: -75px; }
   .fl-match { gap: 8px; }
   /* The two pieces as compact rows: picture beside name and value. */

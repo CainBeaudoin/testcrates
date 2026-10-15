@@ -43,15 +43,16 @@ const FLIP_MS = 2300;
 const STORAGE_KEY = "gotcha_flip_v1";
 const CROWD_EVERY_MS = [6000, 11000];
 
-// The two faces' emblems: a crown for Heads, a star for Tails.
+// The two sides' marks: the Chosen cube for Heads, the wordmark's badge
+// for Tails. Small, for the call buttons and the flip lists.
+const CUBE = `<polygon points="50,6 90,28 90,72 50,94 10,72 10,28" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><polygon points="50,50 90,28 90,72 50,94" fill="currentColor"/><polyline points="10,28 50,50 50,94" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/>`;
 const EMBLEM = {
-  heads: "M239.75,90.81c0,.11,0,.21-.07.32L217,195a16,16,0,0,1-15.72,13H54.71A16,16,0,0,1,39,195L16.32,91.13c0-.11-.05-.21-.07-.32A16,16,0,0,1,44,77.39l33.67,36.29,35.8-80.29a1,1,0,0,0,0-.1,16,16,0,0,1,29.06,0,1,1,0,0,0,0,.1l35.8,80.29L212,77.39a16,16,0,0,1,27.71,13.42Z",
-  tails: "M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z",
+  heads: CUBE,
+  tails: `<rect x="6" y="30" width="88" height="40" rx="11" fill="none" stroke="currentColor" stroke-width="8"/><rect x="22" y="44" width="56" height="12" rx="4" fill="currentColor"/>`,
 };
 const SIDE = { heads: "Heads", tails: "Tails" };
 const other = (side) => (side === "heads" ? "tails" : "heads");
-const emblem = (side, size) =>
-  `<svg viewBox="0 0 256 256" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${EMBLEM[side]}"/></svg>`;
+const emblem = (side, size) => `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">${EMBLEM[side]}</svg>`;
 const mini = (side) => `<span class="fl-mini">${emblem(side, 12)}</span>`;
 
 const money = (v) => `$${Math.round(v).toLocaleString("en-US")}`;
@@ -203,16 +204,120 @@ export function renderFlip() {
     </div>`;
   setCoin(coinRot);
   if (busy) setBusy(true);
+  startLight();
 }
+
+// ---- Light on the coin ---------------------------------------------------------
+// One light, up and to the left. Every frame the coin's faces darken as
+// they turn from it, a band of shine crosses a face as it passes the angle
+// that catches the light, and each slice of the reeded edge is lit by the
+// way it faces.
+
+const unit = (x, y, z) => {
+  const l = Math.hypot(x, y, z);
+  return { x: x / l, y: y / l, z: z / l };
+};
+const LIGHT = unit(-0.35, -0.55, 0.76);
+const HALF = unit(LIGHT.x, LIGHT.y, LIGHT.z + 1); // halfway to the viewer
+const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+let lightOn = false;
+
+function startLight() {
+  if (lightOn) return;
+  lightOn = true;
+  const edgeDirs = Array.from({ length: EDGES }, (_, k) => {
+    const a = (k * 2 * Math.PI) / EDGES;
+    return { x: Math.sin(a), y: -Math.cos(a) };
+  });
+  const frame = () => {
+    const coin = root?.querySelector("#flCoin");
+    if (!coin || !isOpen()) {
+      lightOn = false;
+      return;
+    }
+    if (!document.hidden) {
+      const tilt = root.querySelector("#flTilt");
+      const m = new DOMMatrix(getComputedStyle(tilt).transform).multiply(new DOMMatrix(getComputedStyle(coin).transform));
+      const n = { x: m.m31, y: m.m32, z: m.m33 };
+      coin.querySelectorAll(".fl-face").forEach((face, i) => {
+        const s = i ? -1 : 1;
+        const f = { x: n.x * s, y: n.y * s, z: n.z * s };
+        const diffuse = Math.max(0, dot(f, LIGHT));
+        const spec = Math.max(0, dot(f, HALF));
+        face.style.setProperty("--dark", Math.min(0.4, Math.max(0, (0.8 - diffuse) * 0.6)).toFixed(3));
+        face.style.setProperty("--gy", `${((f.y - HALF.y) * 220).toFixed(1)}%`);
+        face.style.setProperty("--go", (spec ** 6).toFixed(3));
+      });
+      coin.querySelectorAll(".fl-edge").forEach((edge, k) => {
+        const d = edgeDirs[k];
+        const e = { x: m.m11 * d.x + m.m21 * d.y, y: m.m12 * d.x + m.m22 * d.y, z: m.m13 * d.x + m.m23 * d.y };
+        edge.style.setProperty("--l", (0.45 + 0.85 * Math.max(0, dot(e, LIGHT))).toFixed(3));
+      });
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// The coin's two faces, drawn on a 200 x 200 field: lettering round the
+// rim inside a ring of beads, and the side's mark in the middle.
+function laurel() {
+  const parts = [];
+  const pt = (deg, r) => [100 + r * Math.cos((deg * Math.PI) / 180), 100 + r * Math.sin((deg * Math.PI) / 180)];
+  for (const side of [1, -1]) {
+    // A stem along the rim, from under the badge to near the bottom.
+    const [x0, y0] = pt(30, 58);
+    const [x1, y1] = pt(84, 58);
+    const mx = (x) => (side === 1 ? x : 200 - x);
+    parts.push(`<path d="M ${mx(x0).toFixed(1)},${y0.toFixed(1)} A 58,58 0 0 ${side === 1 ? 1 : 0} ${mx(x1).toFixed(1)},${y1.toFixed(1)}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`);
+    // Leaves in pairs, one either side of the stem, leaning along it.
+    for (let k = 0; k < 6; k++) {
+      const deg = 33 + k * 9;
+      for (const o of [-1, 1]) {
+        const [x, y] = pt(deg, 58 + o * 4.6);
+        const rot = deg + 90 + o * 38;
+        const X = mx(x);
+        const R = side === 1 ? rot : 180 - rot;
+        parts.push(`<ellipse cx="${X.toFixed(1)}" cy="${y.toFixed(1)}" rx="5.4" ry="2.1" transform="rotate(${R.toFixed(1)} ${X.toFixed(1)} ${y.toFixed(1)})"/>`);
+      }
+    }
+  }
+  return parts.join("");
+}
+function faceArt(side) {
+  const top = side === "heads" ? "CHOSEN" : "FIFTY · FIFTY";
+  const topStyle = side === "heads" ? `font-size="16" letter-spacing="5"` : `font-size="12.5" letter-spacing="3"`;
+  const mark =
+    side === "heads"
+      ? `<g transform="translate(57 52) scale(0.86)" class="fl-cube">${CUBE}<text transform="matrix(1 0.55 0 1 0 0)" x="30" y="50" text-anchor="middle" font-size="13" letter-spacing="0.5">WIN</text></g>`
+      : `<rect x="40" y="78" width="120" height="38" rx="11" fill="none" stroke="currentColor" stroke-width="4.5"/>
+         <text x="100" y="105.5" text-anchor="middle" font-size="23" letter-spacing="1">CHOSEN</text>
+         <g class="fl-laurel">${laurel()}</g>`;
+  return `
+    <svg class="fl-art" viewBox="0 0 200 200" aria-hidden="true">
+      <circle cx="100" cy="100" r="87" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.01 6.06"/>
+      <text ${topStyle}><textPath href="#flArcTop" startOffset="50%" text-anchor="middle">${top}</textPath></text>
+      ${mark}
+      <text font-size="14" letter-spacing="6"><textPath href="#flArcBot" startOffset="50%" text-anchor="middle">${SIDE[side].toUpperCase()}</textPath></text>
+    </svg>
+    <i class="fl-glint"></i>`;
+}
+const EDGES = 48;
 
 function stageHTML() {
   return `
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+      <path id="flArcTop" d="M 30,100 A 70,70 0 0 1 170,100"/>
+      <path id="flArcBot" d="M 23,100 A 77,77 0 0 0 177,100"/>
+    </defs></svg>
     <div class="fl-stage">
       <div class="fl-toss" id="flToss">
-        <div class="fl-coin" id="flCoin">
-          ${[-3, -1.5, 0, 1.5, 3].map((z) => `<i class="fl-rim" style="--z:${z}px"></i>`).join("")}
-          <span class="fl-face fl-heads">${emblem("heads", 72)}<b>Heads</b></span>
-          <span class="fl-face fl-tails">${emblem("tails", 72)}<b>Tails</b></span>
+        <div class="fl-tilt" id="flTilt">
+          <div class="fl-coin" id="flCoin">
+            ${Array.from({ length: EDGES }, (_, k) => `<i class="fl-edge" style="--a:${(k * 360) / EDGES}deg"></i>`).join("")}
+            <span class="fl-face fl-heads">${faceArt("heads")}</span>
+            <span class="fl-face fl-tails">${faceArt("tails")}</span>
+          </div>
         </div>
       </div>
       <i class="fl-shadow" id="flShadow"></i>
