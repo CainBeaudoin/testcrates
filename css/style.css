@@ -9806,3 +9806,41 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-chooser-opt strong { color: oklch(0.5 0.15 147); }
 .od-chooser-opt:hover:not(:disabled) { background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 18%, var(--dm-card)); }
 .od-chooser-opt:disabled { opacity: 0.45; border-color: var(--dm-hair); cursor: not-allowed; }
+
+/* Odds: what you could pull, by tier. */
+.od-tiers { margin: 16px 0 12px; max-width: 520px; }
+.od-tiers-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 0.86rem; color: var(--text-dim); }
+.od-tiers-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+.od-tiers-toggle:hover { color: var(--text); background: var(--control-fill); }
+.od-tier-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.od-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--tc);
+  border-radius: 16px;
+  background: var(--dm-card);
+  animation: dm-up 0.3s ease both;
+}
+.od-tier-top { display: flex; align-items: center; justify-content: space-between; }
+.od-tier-name { display: inline-flex; align-items: center; gap: 7px; font-size: 0.92rem; font-weight: 700; color: var(--tc); }
+.od-tier-pct { font-size: 0.84rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.od-tier-range { font-size: 1.05rem; font-variant-numeric: tabular-nums; color: var(--text); }
+.od-tier-range b { font-weight: 800; }
+.od-tier-range i { font-style: normal; font-size: 0.82rem; color: var(--text-dim); margin: 0 2px; }
+/* The lower tiers sit back a little. */
+.od-tier.dm-t-uncommon .od-tier-range b,
+.od-tier.dm-t-common .od-tier-range b { font-weight: 600; color: var(--text-dim); }

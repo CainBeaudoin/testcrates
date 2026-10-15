@@ -52,7 +52,8 @@ export const RUN_SIZE = 10;
 export const BOX_PRICES = [300]; // add 500, 800 as demand shows
 const RUN_WINDOW_MS = 7 * 24 * 3600 * 1000; // a week to fill
 const BAND = [0.25, 4]; // what a box takes, as multiples of its price
-const HIT = 2; // every run has an item worth at least this many times the price
+const HIT = 2; // every run has an item worth at least this many times the price (an Epic)
+const RARES = 2; // and at least this many Rares (worth the price to 1.5 times it)
 const CASH_OUT_RATE = 0.8; // the site's instant cash-out, for comparison
 const STORAGE_KEY = "gotcha_odds_v3";
 const CROWD_EVERY_MS = [5000, 9000];
@@ -71,10 +72,13 @@ const TIER_LABEL = { grail: "Grail", epic: "Epic", rare: "Rare", uncommon: "Unco
 // The site's own rarity names for the same five steps (My Items uses these).
 const SITE_RARITY = { grail: "legendary", epic: "epic", rare: "rare", uncommon: "uncommon", common: "common" };
 
-// An item's tier in a box: how it compares to what the box cost.
+// An item's tier in a box: how it compares to what the box cost. Odds
+// boxes top out at Epic: a run of ten collectors' items is too small to
+// promise a grail in every one.
+const ODDS_TIERS = ["epic", "rare", "uncommon", "common"];
+const FEATURED_TIERS = 2; // shown up front; the rest behind All tiers
 function tierFor(value, price) {
   const x = value / price;
-  if (x >= 3) return "grail";
   if (x >= 1.5) return "epic";
   if (x >= 1) return "rare";
   if (x >= 0.5) return "uncommon";
@@ -138,6 +142,7 @@ let crowdTimer = 0;
 let clockTimer = 0;
 let current = BOX_PRICES[0];
 let qty = 1;
+let tiersOpen = false;
 
 function load() {
   try {
@@ -160,8 +165,9 @@ function save() {
 
 // Ten items for a box's next run: yours first (up to four), then
 // collectors' items from the catalog, picked so the ten together are
-// worth BUYER_RETURN of what the run sells for, with at least one item
-// worth HIT times the price.
+// worth BUYER_RETURN of what the run sells for, with at least one Epic
+// worth HIT times the price and RARES Rares, so every run has something
+// worth more than the box in it.
 function assembleRun(price) {
   const box = state.boxes[price];
   const target = BUYER_RETURN * RUN_SIZE * price;
@@ -171,12 +177,21 @@ function assembleRun(price) {
   const pool = deps.catalog.filter((p) => p.price >= lo && p.price <= hi && !names.has(p.name));
   const hits = pool.filter((p) => p.price >= price * HIT);
   const needHit = !carried.some((s) => s.value >= price * HIT) && hits.length;
+  const isRare = (v) => v >= price && v < price * 1.5;
+  const rares = pool.filter((p) => isRare(p.price));
+  const needRares = Math.max(0, RARES - carried.filter((s) => isRare(s.value)).length);
   const fixed = carried.reduce((s, x) => s + x.value, 0);
   const open = RUN_SIZE - carried.length;
   let best = null;
   for (let attempt = 0; attempt < 600; attempt++) {
     const picks = [];
     if (needHit) picks.push(hits[Math.floor(Math.random() * hits.length)]);
+    for (let r = 0; r < needRares && rares.length > r; r++) {
+      let p;
+      do p = rares[Math.floor(Math.random() * rares.length)];
+      while (picks.includes(p));
+      picks.push(p);
+    }
     const rest = target - fixed - picks.reduce((s, p) => s + p.price, 0);
     const want = Math.max(lo, rest / Math.max(1, open - picks.length));
     const near = pool.filter((p) => p.price >= want * 0.35 && p.price <= want * 1.9 && !picks.includes(p));
@@ -588,7 +603,41 @@ function heroCopyHTML() {
     <p class="dm-paid">Paid in credit or balance. Your box opens with the rest of the run, and can&rsquo;t be resold before it does.</p>
     <div class="od-meter" aria-label="${n} of ${RUN_SIZE} boxes chosen">${cells}</div>
     <p class="od-run-line"><b>${n} of ${RUN_SIZE} chosen</b>${mine ? ` &middot; ${plural(mine, "is", "are")} yours` : ""} &middot; opens when it&rsquo;s full &middot; closes in <span class="od-clock" data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></p>
+    ${pullTiersHTML()}
     <p class="od-fallback">Not full in time? It closes early: each box chosen gets an item, plus Credits to make up what it cost.</p>`;
+}
+
+// What you could pull, by tier: each tier's value range in this run, and
+// its share of the ten boxes (every box has the same shot at every item,
+// so that share is the chance). Epic and Rare up front; the rest behind
+// All tiers.
+function pullTiersHTML() {
+  const items = state.boxes[current].items;
+  const rows = ODDS_TIERS.map((t) => {
+    const vals = items.filter((i) => tierFor(i.value, current) === t).map((i) => i.value);
+    return vals.length ? { t, n: vals.length, lo: Math.min(...vals), hi: Math.max(...vals) } : null;
+  }).filter(Boolean);
+  const more = rows.length > FEATURED_TIERS;
+  const shown = tiersOpen || !more ? rows : rows.slice(0, FEATURED_TIERS);
+  return `
+    <div class="od-tiers">
+      <div class="od-tiers-head">
+        <span>What you could pull</span>
+        ${
+          more
+            ? `<button class="od-tiers-toggle" data-od="tiers" aria-expanded="${tiersOpen}">All tiers <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${tiersOpen ? "6 15 12 9 18 15" : "6 9 12 15 18 9"}"/></svg></button>`
+            : ""
+        }
+      </div>
+      <div class="od-tier-grid">${shown
+        .map(
+          (r) => `<div class="od-tier dm-t-${r.t}">
+          <span class="od-tier-top"><span class="od-tier-name">${icon(r.t, 16)}${TIER_LABEL[r.t]}</span><span class="od-tier-pct">${Math.round((r.n / RUN_SIZE) * 100)}%</span></span>
+          <span class="od-tier-range">${r.lo === r.hi ? `<b>${money(r.lo)}</b>` : `<b>${money(r.lo)}</b> <i>to</i> <b>${money(r.hi)}</b>`}</span>
+        </div>`
+        )
+        .join("")}</div>
+    </div>`;
 }
 
 function chooseLabel() {
@@ -869,6 +918,11 @@ function onClick(e) {
   if (act === "minus") setQty(qty - 1);
   else if (act === "plus") setQty(qty + 1);
   else if (act === "max") setQty(left(current));
+  else if (act === "tiers") {
+    tiersOpen = !tiersOpen;
+    const copy = root.querySelector(".od-hero-copy");
+    if (copy) copy.innerHTML = heroCopyHTML();
+  }
   else if (act === "choose") chooseBoxes();
 }
 
