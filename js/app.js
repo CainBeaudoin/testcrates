@@ -3256,10 +3256,37 @@ document.addEventListener(
   true
 );
 
-const navTabs = Array.from(document.querySelectorAll(".nav-tab"));
+// More: Rewards, Lulu, Wanted and Flip, behind three dots. The button
+// opens and closes its menu; a pick from it (or a click anywhere else, or
+// Escape) closes it. While one of its pages is up, More reads as active.
+const navMore = document.getElementById("navMore");
+const navMoreBtn = document.getElementById("navMoreBtn");
+const navMoreMenu = document.getElementById("navMoreMenu");
+function setMoreOpen(open) {
+  navMoreMenu.hidden = !open;
+  navMoreBtn.setAttribute("aria-expanded", open);
+  navMore.classList.toggle("open", open);
+}
+navMoreBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  playClick();
+  setMoreOpen(navMoreMenu.hidden);
+});
+document.addEventListener("click", (e) => {
+  if (!navMoreMenu.hidden && !e.target.closest("#navMore")) setMoreOpen(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !navMoreMenu.hidden) {
+    setMoreOpen(false);
+    navMoreBtn.focus();
+  }
+});
+
+const navTabs = Array.from(document.querySelectorAll(".nav-tab[data-nav]"));
 navTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     playClick();
+    setMoreOpen(false);
     navTabs.forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
     const target = document.getElementById(tab.dataset.nav);
@@ -6891,6 +6918,25 @@ if (profileParam) {
       if (item) releaseOwnedItem(item);
     },
     giveItem: (prize) => addOwnedItem(prize),
+    // The drop a wanted piece comes from (its cheapest crate), to go and
+    // try for it.
+    dropFor: (name) => {
+      const key = Object.keys(CATEGORIES)
+        .filter((k) => CATEGORIES[k].pool.some((p) => p.name === name))
+        .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
+      return key ? { key, label: `${CATEGORIES[key].badge} ${CATEGORIES[key].label}` } : null;
+    },
+    openDrop: (name) => {
+      const key = Object.keys(CATEGORIES)
+        .filter((k) => CATEGORIES[k].pool.some((p) => p.name === name))
+        .sort((a, b) => CATEGORIES[a].price - CATEGORIES[b].price)[0];
+      if (!key) return;
+      openCratePage(key);
+      window.scrollTo({ top: 0 });
+    },
+    // Bounty news that isn't from something you just did on Wanted goes to
+    // the bell only: nothing pops up over a drop or anywhere else.
+    notify: (text) => logNotification(text, ICONS.bell),
     spendCash: (amount) => player.spend("cash", amount),
     addCash: (amount) => player.addCash(amount),
     wallet: () => player.getWallet(),

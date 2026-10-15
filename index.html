@@ -73,23 +73,34 @@ try {
         <button class="nav-tab" data-nav="screen-odds">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>
           Odds<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
-        <button class="nav-tab" data-nav="screen-flip">
-          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/></svg>
-          Flip<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
-        <button class="nav-tab" data-nav="screen-wanted">
-          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="1.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22.5" y2="12"/></svg>
-          Wanted<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
-        <button class="nav-tab" data-nav="screen-lulu">
+        <!-- More: the rest of the site behind three dots, so the bar holds
+             the three core destinations. Its menu is a dropdown under it on
+             desktop and a sheet above the bottom bar on a phone. -->
+        <div class="nav-more" id="navMore">
+          <button class="nav-tab nav-more-btn" id="navMoreBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="navMoreMenu">
+            <svg class="icon nav-more-dots" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+            More
+          </button>
+          <div class="nav-more-menu" id="navMoreMenu" role="menu" aria-label="More" hidden>
+            <button class="nav-tab" role="menuitem" data-nav="screen-account" data-account-group="rewards">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="1.5"/><path d="M3 11V8.5A1.5 1.5 0 0 1 4.5 7h15A1.5 1.5 0 0 1 21 8.5V11"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M12 7S10.5 3 8.5 3a2 2 0 0 0 0 4z"/><path d="M12 7s1.5-4 3.5-4a2 2 0 0 1 0 4z"/></svg>
+          Rewards<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
+            <button class="nav-tab" role="menuitem" data-nav="screen-lulu">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.5 0 7-3 7-7 0-3.5-2-5.5-3.5-8C14.5 9 13 10 13 10s1-4-2-8c0 4-4 6-4 11a5 5 0 0 0 5 5z"/></svg>
           Lulu
         </button>
+            <button class="nav-tab" role="menuitem" data-nav="screen-wanted">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="1.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22.5" y2="12"/></svg>
+          Wanted<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
+            <button class="nav-tab" role="menuitem" data-nav="screen-flip">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/></svg>
+          Flip<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
+          </div>
+        </div>
         <button class="nav-tab nav-tab-account" data-nav="screen-account">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"/></svg>
           Account
         </button>
-        <button class="nav-tab" data-nav="screen-account" data-account-group="rewards">
-          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="1.5"/><path d="M3 11V8.5A1.5 1.5 0 0 1 4.5 7h15A1.5 1.5 0 0 1 21 8.5V11"/><line x1="12" y1="7" x2="12" y2="21"/><path d="M12 7S10.5 3 8.5 3a2 2 0 0 0 0 4z"/><path d="M12 7s1.5-4 3.5-4a2 2 0 0 1 0 4z"/></svg>
-          Rewards<span class="nav-v2" title="V2: an upcoming feature, not live yet">V2</span></button>
       </div>
     </nav>
     <div id="walletBar" class="topbar-stats">

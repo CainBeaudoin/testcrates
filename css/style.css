@@ -239,6 +239,42 @@ body {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .nav-tab .icon { width: 18px; height: 18px; }
+/* More: three dots and a word in the bar; the menu drops under it (on a
+   phone it rises above the bottom bar). Items are rows: icon, name, V2. */
+.nav-more { position: relative; display: flex; }
+.nav-more .nav-more-btn .nav-more-dots { display: inline-block; width: 16px; height: 16px; margin-right: 5px; }
+.nav-more.open .nav-more-btn, .nav-more:has(.nav-tab.active) .nav-more-btn { color: var(--text); }
+.nav-more-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 210px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 18px 50px var(--shadow-toast), 0 0 0 1px var(--hairline);
+}
+.nav-more-menu[hidden] { display: none; }
+.nav-more-menu .nav-tab {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.6px;
+}
+.nav-more-menu .nav-tab .icon { display: inline-block; width: 18px; height: 18px; }
+.nav-more-menu .nav-tab:hover { background: var(--control-fill); }
+.nav-more-menu .nav-tab.active { background: var(--control-fill); color: var(--text); }
+.nav-more-menu .nav-v2 { position: static; margin-left: auto; height: 16px; padding: 0 5px; font-size: 0.56rem; }
+
 /* V2: a green tag on tabs for features still to come (Odds, Flip, Rewards), so
    they read as previews rather than part of the site as it stands. */
 .nav-tab { position: relative; }
@@ -258,6 +294,11 @@ body {
   vertical-align: 1px;
 }
 @media (max-width: 640px) {
+  .nav-more { flex: 1; }
+  .nav-more-btn { width: 100%; }
+  .nav-more .nav-more-btn .nav-more-dots { width: 18px; height: 18px; margin: 0; }
+  .nav-more-menu { position: fixed; top: auto; left: auto; right: 10px; bottom: calc(var(--bottom-nav-h) + 10px); min-width: 230px; }
+  .nav-more-menu .nav-tab { flex: none; padding: 12px; font-size: 0.78rem; }
   /* Bottom bar: on the icon's top-right corner, clear of the label. */
   .nav-v2 { position: absolute; top: 0; left: calc(50% + 5px); height: 12px; margin: 0; padding: 0 3px; font-size: 0.45rem; }
 }
@@ -425,11 +466,6 @@ body {
   .nav-tab { padding: 8px 6px; letter-spacing: 0.3px; }
   .nav-v2 { margin-left: 3px; }
   #streakStat { display: none; }
-}
-/* Eight tabs, three with a V2 tag: on a laptop-width bar they sit closer
-   together so the balances and avatar still fit. */
-@media (min-width: 1011px) and (max-width: 1280px) {
-  .nav-tab { padding: 8px 8px; letter-spacing: 0.5px; }
 }
 /* Just above the phone breakpoint, where the four words themselves are
    most of the bar. */
@@ -4443,8 +4479,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     flex: 1;
     min-width: 0;
     padding: 4px 0;
-    font-size: 0.54rem;
-    letter-spacing: 0.1px;
+    letter-spacing: 0.2px;
   }
   /* Mute lives in the footer's Social Media row on mobile (see the JS
      that reparents #muteBtn there) — the bottom bar is Drops/Market/
@@ -8268,6 +8303,9 @@ button.mcv-listing.is-sel { background: color-mix(in srgb, var(--accent, #2f9e5b
       animation-timeline: view();
       animation-range: entry 0% cover 35%;
     }
+    /* Its block clips the slide, so the strip waiting 120px to the right
+       never widens the page (on a phone that pushed the bottom bar off). */
+    .scroll-anim #screen-home .home-block:has(> .home-pulls) { overflow-x: clip; }
     .scroll-anim #screen-home .home-pulls {
       animation: saSlide linear both;
       animation-timeline: view();
@@ -10381,74 +10419,27 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 
 /* ===== Wanted: bounties with escrowed offers ============================= */
 
-.wn-hero { min-height: 560px; }
-.wn-media { display: grid; place-items: center; align-self: stretch; padding: 12px 0; }
-
-/* The poster: the bounty that matters most to you, pinned up. */
-.wn-poster {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: min(380px, 100%);
-  padding: 22px 22px 20px;
-  border: 1.5px solid var(--text);
-  border-radius: 6px;
-  background: var(--dm-card);
-  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.45);
-  text-align: center;
-  transform: rotate(-1.2deg);
-}
-.wn-poster.is-match { box-shadow: 0 0 0 3px oklch(0.72 0.19 147), 0 24px 60px -24px oklch(0.72 0.19 147 / 0.6); }
-.wn-poster-head {
-  font-family: var(--dm-display);
-  font-size: 2.6rem;
-  line-height: 0.9;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-.wn-poster-flag {
-  position: absolute;
-  top: -12px;
-  right: -10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 11px;
-  border-radius: var(--r-pill);
-  background: oklch(0.8751 0.2471 147.45);
-  color: oklch(0.256 0.062 150.2);
-  font-size: 0.74rem;
-  font-weight: 800;
-  transform: rotate(3deg);
-}
-.wn-poster .dm-img { width: 100%; max-width: 240px; border-radius: 4px; }
-.wn-poster-name { font-weight: 700; font-size: 1.02rem; line-height: 1.25; color: var(--text); }
-.wn-poster-worth { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); }
-.wn-poster-offer { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 10px; margin-top: 2px; width: 100%; border-top: 1.5px dashed var(--dm-hair); }
-.wn-poster-offer > span:first-child { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
-.wn-big { font-size: 2.2rem; }
-.wn-poster .wn-note { margin: 2px 0 0; }
-.wn-poster-fill { width: 100%; margin-top: 6px; }
-
-.wn-stats { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); justify-content: start; gap: 28px; margin: 4px 0 20px; }
-.wn-stats div { display: flex; flex-direction: column; gap: 2px; }
-.wn-stats b { font-family: var(--dm-display); font-size: 1.6rem; font-weight: 400; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
-.wn-stats span { font-size: 0.74rem; color: var(--text-dim); }
-.wn-post { width: 100%; max-width: 420px; }
-.wn-post-small { height: 40px; padding: 0 18px; font-size: 0.84rem; }
+.wn-media { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.wn-feature { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(460px, 100%); }
+.wn-feature-top { display: flex; align-items: center; gap: 8px; width: 100%; }
+.wn-feature-img { width: 100%; border: 1px solid var(--dm-hair); border-radius: 28px; }
+.wn-feature-img img { padding: 10%; }
+.wn-feature .wn-note { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 10px; max-width: 380px; text-align: center; }
+.wn-feature .wn-note .od-creator { font-style: normal; }
+.wn-pill-match { border-color: oklch(0.72 0.19 147); background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); }
 .wn .dm-pill svg { vertical-align: -1px; margin-right: 3px; }
 .wn .dm-sub a { color: var(--text); }
+.wn-feat { margin: 0 0 10px; font-size: 0.86rem; color: var(--text-dim); }
+.wn-feat b { color: var(--text); }
+.wn-open-row.is-single { grid-template-columns: minmax(0, 1fr); }
+.wn-open-row .dm-ghost { height: 52px; }
 
 /* A bounty card: Odds' piece card, plus the offer and who's asking. */
 .wn-card { gap: 8px; }
 .wn-card.is-match { box-shadow: 0 0 0 2px oklch(0.72 0.19 147); }
 .wn-match, .wn-yours { margin-left: auto; padding: 3px 9px; border-radius: var(--r-pill); font-size: 0.7rem; font-weight: 800; }
 .wn-match { background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); }
-.wn-match { display: inline-flex; align-items: center; white-space: nowrap; }
-.wn-short { display: none; }
+.wn-match { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .wn-yours { background: var(--text); color: var(--text-inverse); }
 .wn-worth { font-size: 0.76rem; color: var(--text-dim); }
 .wn-worth em { font-style: normal; font-weight: 700; }
@@ -10463,7 +10454,12 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .wn-items-val { margin-left: 2px; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
 .wn-note { margin: 0; font-size: 0.8rem; font-style: italic; line-height: 1.4; color: var(--text-dim); }
 .wn-card .wn-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.wn-fill { height: 44px; margin-top: auto; padding: 0 16px; font-size: 0.88rem; }
+.wn-card .wn-fill { height: 44px; margin-top: auto; padding: 0 16px; font-size: 0.88rem; }
+.wn-card.is-link { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.wn-card.is-link:hover { transform: translateY(-2px); }
+.wn-card.is-link:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.wn-drop { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; font-size: 0.78rem; font-weight: 700; color: var(--text); }
+.wn-drop svg { width: 14px; height: 14px; }
 .wn-none { margin-top: auto; font-size: 0.74rem; color: var(--text-dim); }
 .wn-row-btn {
   height: 32px;
@@ -10562,19 +10558,13 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .wn-done-mark svg { width: 28px; height: 28px; }
 
 @media (max-width: 760px) {
-  .wn-hero { min-height: 0; gap: 28px; }
-  .wn-media { padding: 16px 0 0; }
-  .wn-poster { width: min(330px, 100%); }
-  .wn-poster-head { font-size: 2.1rem; }
-  .wn-stats { gap: 18px; }
-  .wn-stats b { font-size: 1.3rem; }
+  .wn-feature { width: min(300px, 100%); }
   .wn-swap { grid-template-columns: minmax(0, 1fr); }
   .wn-swap-icon { justify-self: center; transform: rotate(90deg); }
   .wn-results, .wn-vault { grid-template-columns: minmax(0, 1fr); }
-  /* Two cards a row: the short words. */
+  /* Two cards a row: the tick alone says it's yours to fill. */
   .wn-card .wn-long { display: none; }
-  .wn-card .wn-short { display: inline-flex; }
   .wn-match { padding: 3px 6px; }
-  .wn-fill { height: 40px; padding: 0 14px; }
+  .wn-card .wn-fill { height: 40px; padding: 0 14px; }
   .wn-items-val { display: none; }
 }

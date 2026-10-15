@@ -127,7 +127,7 @@ export function initWanted(el, appDeps) {
       fillByCrowd(b, now - Math.random() * 20 * 3600 * 1000);
       state.bounties.push(b);
     }
-    for (let i = 0; i < HOT_MAX; i++) postHot({ quiet: true, at: now - Math.random() * 6 * 3600 * 1000 });
+    for (let i = 0; i < HOT_MAX; i++) postHot({ at: now - Math.random() * 6 * 3600 * 1000 });
   }
   // Anything locked for a bounty this state doesn't know (an older one's)
   // is released, so nothing stays locked for good.
@@ -137,6 +137,12 @@ export function initWanted(el, appDeps) {
   prune();
   save();
   root.addEventListener("click", onClick);
+  root.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches?.("[data-wn-drop][role=link]")) {
+      e.preventDefault();
+      deps.openDrop(e.target.dataset.wnDrop);
+    }
+  });
   schedule();
 }
 
@@ -194,7 +200,7 @@ function fillByCrowd(b, at = Date.now()) {
 }
 
 // Someone wants a piece you hold: one you pulled lately if there is one.
-function postHot({ quiet = false, at = Date.now() } = {}) {
+function postHot({ at = Date.now() } = {}) {
   const wanted = new Set(open().map((b) => b.want.name));
   const vault = deps.vault().filter((v) => v.value >= 40 && !wanted.has(v.name));
   if (!vault.length) return null;
@@ -203,7 +209,6 @@ function postHot({ quiet = false, at = Date.now() } = {}) {
   const b = crowdBounty({ want: v, premium: 1.05 + Math.random() * 0.25, at });
   state.bounties.push(b);
   state.lastHot = at;
-  if (!quiet) deps.showToast(`${b.by} posted a ${money(b.cash ?? itemsValue(b.items))} bounty for your ${v.name}. Fill it on Wanted`, 4200);
   return b;
 }
 
@@ -249,7 +254,7 @@ function expireDue() {
     b.status = "expired";
     if (b.mine) {
       release(b);
-      deps.showToast(`Your bounty for the ${b.want.name} ran out. Your offer is back with you`, 3200);
+      deps.notify(`Your bounty for the ${b.want.name} ran out. Your offer is back with you`);
     }
   }
 }
@@ -287,7 +292,7 @@ function filledForYou(b) {
   b.took = took;
   deps.renderWallet();
   deps.itemsChanged();
-  deps.showToast(`${b.filledBy} filled your bounty: the ${b.want.name} is in My Items, swapped for ${took === "cash" ? money(b.cash) : "your items"}`, 4200);
+  deps.notify(`${b.filledBy} filled your bounty: the ${b.want.name} is in My Items, swapped for ${took === "cash" ? money(b.cash) : "your items"}`);
 }
 
 // You fill a bounty from your vault. Checked again at the moment of the
@@ -370,7 +375,7 @@ export function renderWanted() {
   root.innerHTML = `
     <div class="wn-page">
       <section class="dm-hero wn-hero">
-        <div class="wn-media" id="wnFeatured">${featuredHTML()}</div>
+        <div class="dm-hero-media wn-media" id="wnFeatured">${featuredHTML()}</div>
         <div class="dm-hero-copy" id="wnCopy">${copyHTML()}</div>
       </section>
       <section class="dm-sec" id="wnHot">${hotHTML()}</section>
@@ -378,9 +383,8 @@ export function renderWanted() {
         <div class="dm-sec-head">
           <div>
             <h2 class="dm-h2">Open bounties</h2>
-            <p class="dm-sub">What collectors are hunting right now. Every offer here is already in escrow.</p>
+            <p class="dm-sub">What collectors are hunting right now, every offer already in escrow. Tap one to find the drop it comes from.</p>
           </div>
-          <button class="dm-ghost wn-post-small" data-wn="post">Post a bounty</button>
         </div>
         <div class="dm-filters wn-filters" id="wnFilters">${filtersHTML()}</div>
         <ul class="dm-grid wn-grid" id="wnGrid">${gridHTML()}</ul>
@@ -415,45 +419,63 @@ function refresh() {
   set("#wnMine", mineHTML());
 }
 
-function copyHTML() {
-  const list = open();
-  const held = list.reduce((s, b) => s + Math.max(b.cash || 0, itemsValue(b.items)), 0);
-  const today = state.bounties.filter((b) => b.status === "filled" && Date.now() - b.filledAt < DAY).length;
-  return `
-    <div class="od-hero-tags"><span class="dm-pill">${LOCK} Escrowed offers</span></div>
-    <h1 class="dm-title">Bounty board</h1>
-    <p class="dm-blurb">Post what you&rsquo;re hunting with a real, funded offer. Anyone who has it fills it straight from their vault, and the swap happens in one step. No screenshots, no promises, nobody sends first.</p>
-    <div class="wn-stats">
-      <div><b>${list.length}</b><span>open bounties</span></div>
-      <div><b>${money(held)}</b><span>held in escrow</span></div>
-      <div><b>${today}</b><span>filled today</span></div>
-    </div>
-    <button class="dm-open wn-post" data-wn="post"><span>Post a bounty</span><span class="dm-open-price">${ARROW}</span></button>
-    <p class="dm-paid">Your offer is escrowed the moment you post. Cancel any time before it&rsquo;s filled and it all comes straight back.</p>`;
-}
-
-// The poster: the best bounty for a piece you hold, else the biggest one.
-function featuredHTML() {
+// The bounty the hero shows: the best one for a piece you hold, else the
+// biggest on the board.
+function featured() {
   const idx = vaultIndex();
   const list = open().filter((b) => !b.mine);
   const value = (b) => Math.max(b.cash || 0, itemsValue(b.items));
   const hot = list.filter((b) => matchFor(b, idx)).sort((a, b) => value(b) - value(a))[0];
-  const b = hot || [...list].sort((a, c) => value(c) - value(a))[0];
+  return { b: hot || [...list].sort((a, c) => value(c) - value(a))[0], hot: !!hot };
+}
+
+function copyHTML() {
+  const list = open();
+  const held = list.reduce((s, b) => s + Math.max(b.cash || 0, itemsValue(b.items)), 0);
+  const today = state.bounties.filter((b) => b.status === "filled" && Date.now() - b.filledAt < DAY).length;
+  const { b, hot } = featured();
+  const drop = b && !hot ? deps.dropFor(b.want.name) : null;
+  const action = !b
+    ? ""
+    : hot
+      ? fillBtn(b)
+      : drop
+        ? `<button class="dm-open" data-wn-drop="${esc(b.want.name)}"><span>Find it</span><span class="dm-open-price">${esc(drop.label)} drop${ARROW}</span></button>`
+        : "";
+  return `
+    <div class="od-hero-tags"><span class="dm-pill">${LOCK} Escrowed offers</span>${hot ? `<span class="dm-pill wn-pill-match">${CHECK} In your vault</span>` : ""}</div>
+    <h1 class="dm-title">Bounty board</h1>
+    <p class="dm-blurb">Post what you&rsquo;re hunting with a real, funded offer. Anyone who has it fills it straight from their vault, and the swap happens in one step. No screenshots, no promises, nobody sends first.</p>
+    ${
+      b
+        ? `<p class="wn-feat">${hot ? "Wanted from your vault" : "Most wanted right now"}: <b>${esc(b.want.name)}</b>, worth ${money(b.want.value)}</p>
+    <div class="dm-buyline">
+      <div class="dm-price"><b>${money(b.cash ?? itemsValue(b.items))}</b><span>${b.cash ? (b.items ? `or ${nItems(b.items.length)}, ` : "") : "in items, "}from ${esc(b.by)}</span></div>
+    </div>`
+        : ""
+    }
+    <div class="dm-open-row wn-open-row${action ? "" : " is-single"}">
+      ${action ? `<button class="dm-ghost" data-wn="post">Post a bounty</button>${action}` : `<button class="dm-open" data-wn="post"><span>Post a bounty</span><span class="dm-open-price">${ARROW}</span></button>`}
+    </div>
+    <p class="dm-paid">Offers are escrowed the moment they&rsquo;re posted. Cancel yours any time before it&rsquo;s filled and it all comes straight back.</p>
+    <p class="od-run-line"><b>${list.length} open bounties</b> &middot; ${money(held)} held in escrow &middot; ${today} filled today</p>`;
+}
+
+// The piece on its own, as the Odds box and the Flip coin stand.
+function featuredHTML() {
+  const { b } = featured();
   if (!b) return "";
   const t = tierOf(b.want);
   return `
-    <article class="wn-poster dm-t-${t}${hot ? " is-match" : ""}">
-      <span class="wn-poster-head">Wanted</span>
-      ${hot ? `<span class="wn-poster-flag">${CHECK} In your vault</span>` : ""}
-      <span class="dm-img"><img src="${b.want.image}" alt=""></span>
-      <span class="wn-poster-name">${esc(b.want.name)}</span>
-      <span class="wn-poster-worth">${chip(t)} Worth ${money(b.want.value)}</span>
-      <div class="wn-poster-offer"><span>Offering</span>${offerHTML(b, true)}</div>
-      ${b.note ? `<p class="wn-note">&ldquo;${esc(b.note)}&rdquo;</p>` : ""}
-      <span class="od-creator">${deps.avatarHTML(b.by, "od-avatar")}${esc(b.by)} &middot; ${left(b.expiresAt - Date.now())}</span>
-      ${hot ? `<button class="dm-open wn-poster-fill" data-wn-fill="${b.id}"><span>Fill from your vault</span><span class="dm-open-price">${ARROW}</span></button>` : ""}
-    </article>`;
+    <div class="wn-feature">
+      <span class="wn-feature-top">${chip(t)}<span class="dm-ago">${left(b.expiresAt - Date.now())}</span></span>
+      <span class="dm-img wn-feature-img"><img src="${b.want.image}" alt=""></span>
+      ${b.note ? `<p class="wn-note">&ldquo;${esc(b.note)}&rdquo; <span class="od-creator">${deps.avatarHTML(b.by, "od-avatar")}${esc(b.by)}</span></p>` : ""}
+    </div>`;
 }
+
+const fillBtn = (b) =>
+  `<button class="dm-open wn-fill" data-wn-fill="${b.id}"><span>Fill</span><span class="dm-open-price">${b.cash ? money(b.cash) : nItems(b.items.length)}${ARROW}</span></button>`;
 
 // What's offered: Cash, items, or one or the other.
 function offerHTML(b, big = false) {
@@ -471,8 +493,9 @@ function cardHTML(b, idx) {
   const match = matchFor(b, idx);
   const best = Math.max(b.cash || 0, itemsValue(b.items));
   const over = best / b.want.value - 1;
-  return `<li class="dm-piece wn-card dm-t-${t}${match ? " is-match" : ""}">
-    <span class="dm-card-top">${chip(t)}${match ? `<span class="wn-match"><span class="wn-long">In your vault</span><span class="wn-short">${CHECK}</span></span>` : b.mine ? `<span class="wn-yours">Yours</span>` : ""}</span>
+  const drop = !match && !b.mine ? deps.dropFor(b.want.name) : null;
+  return `<li class="dm-piece wn-card dm-t-${t}${match ? " is-match" : ""}${drop ? " is-link" : ""}"${drop ? ` data-wn-drop="${esc(b.want.name)}" tabindex="0" role="link" aria-label="Find the ${esc(b.want.name)} in the ${esc(drop.label)} drop"` : ""}>
+    <span class="dm-card-top">${chip(t)}${match ? `<span class="wn-match">${CHECK}<span class="wn-long">In your vault</span></span>` : b.mine ? `<span class="wn-yours">Yours</span>` : ""}</span>
     <span class="dm-img"><img src="${b.want.image}" alt="" loading="lazy"></span>
     <span class="dm-piece-text">
       <span class="dm-name" title="${esc(b.want.name)}">${esc(b.want.name)}</span>
@@ -483,10 +506,12 @@ function cardHTML(b, idx) {
     <span class="od-creator">${deps.avatarHTML(b.by, "od-avatar")}${esc(b.by)} &middot; ${left(b.expiresAt - Date.now())}</span>
     ${
       match
-        ? `<button class="dm-open wn-fill" data-wn-fill="${b.id}"><span><span class="wn-long">Fill from your vault</span><span class="wn-short">Fill it</span></span><span class="dm-open-price">${ARROW}</span></button>`
+        ? fillBtn(b)
         : b.mine
           ? `<button class="wn-row-btn" data-wn-cancel="${b.id}">Cancel bounty</button>`
-          : `<span class="wn-none">Not in your vault</span>`
+          : drop
+            ? `<span class="wn-drop">In the ${esc(drop.label)} drop ${ARROW}</span>`
+            : `<span class="wn-none">Not in a drop right now</span>`
     }
   </li>`;
 }
@@ -816,6 +841,9 @@ function onClick(e) {
     return deps.goToItems();
   }
   if (e.target.closest('[data-wn="post"]')) return openPost();
+  const fillHit = e.target.closest("[data-wn-fill]");
+  const drop = !fillHit && !e.target.closest("[data-wn-cancel]") && e.target.closest("[data-wn-drop]");
+  if (drop) return deps.openDrop(drop.dataset.wnDrop);
   const fillBtn = e.target.closest("[data-wn-fill]");
   if (fillBtn) return openFill(fillBtn.dataset.wnFill);
   const c = e.target.closest("[data-wn-cancel]");
