@@ -10006,3 +10006,58 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-wait .dm-reveal-actions { display: flex; gap: 8px; }
 .od-wait .dm-reveal-actions > * { flex: 1; }
 .od-wait .dm-reveal-actions .dm-open { min-width: 0; justify-content: center; }
+
+/* Odds: dev-mode math, an info button beside the run number. */
+.od-hero-tags { display: flex; align-items: center; gap: 8px; position: relative; z-index: 5; }
+.od-math { position: relative; }
+.od-math-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border: 1px dashed var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.od-math-btn:hover, .od-math.open .od-math-btn { color: var(--text); border-style: solid; border-color: var(--text); }
+.od-math-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--topbar-h) - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 18px 50px var(--shadow-toast), 0 0 0 1px var(--hairline);
+  font-size: 0.76rem;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+}
+.od-math.open .od-math-pop { opacity: 1; visibility: visible; transform: none; }
+@media (hover: hover) {
+  .od-math:hover .od-math-pop { opacity: 1; visibility: visible; transform: none; }
+}
+.od-math-title { display: flex; flex-direction: column; font-weight: 700; font-size: 0.86rem; color: var(--text); }
+.od-math-title em { font-style: normal; font-weight: 400; font-size: 0.7rem; color: var(--text-dim); }
+.od-math-sec { margin: 8px 0 2px; padding-top: 8px; border-top: 1px solid var(--hairline); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
+.od-math-row { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; padding: 2px 0; color: var(--text-dim); }
+.od-math-row b { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
+.od-math-row i { font-style: normal; font-size: 0.68rem; opacity: 0.7; }
+.od-math-note { color: var(--text-dim); line-height: 1.45; }
+.od-math-formula { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.68rem; color: var(--text); }

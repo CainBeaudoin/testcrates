@@ -143,6 +143,7 @@ let clockTimer = 0;
 let current = BOX_PRICES[0];
 let qty = 1;
 let tiersOpen = false;
+let mathOpen = false;
 
 function load() {
   try {
@@ -659,7 +660,7 @@ function heroCopyHTML() {
   }).join("");
   const mine = yoursIn(current);
   return `
-    <span class="dm-pill">Run #${box.run}</span>
+    <div class="od-hero-tags"><span class="dm-pill">Run #${box.run}</span>${mathHTML()}</div>
     <h1 class="dm-title">The ${money(current)} box</h1>
     <p class="dm-blurb">Ten boxes, ten real items from collectors&rsquo; vaults. Nothing opens until all ten are chosen. Then they open together, so every box has the same shot at every item.</p>
     <div class="dm-buyline">
@@ -679,6 +680,48 @@ function heroCopyHTML() {
     <p class="od-run-line"><b>${n} of ${RUN_SIZE} chosen</b>${mine ? ` &middot; ${plural(mine, "is", "are")} yours` : ""} &middot; opens when it&rsquo;s full &middot; closes in <span class="od-clock" data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></p>
     ${pullTiersHTML()}
     <p class="od-fallback">Not full in time? It closes early: each box chosen gets an item, plus Credits to make up what it cost.</p>`;
+}
+
+// Dev mode: the run's economics with this run's real numbers, behind an
+// info button. Buyers' price funds the collectors' payout; what's left is
+// Chosen's. Not for buyers: it's how we check the math holds.
+function mathHTML() {
+  const box = state.boxes[current];
+  const vals = box.items.map((i) => i.value);
+  const pot = vals.reduce((a, b) => a + b, 0);
+  const take = RUN_SIZE * current;
+  const paid = pot * CREATOR_MULTIPLE;
+  const keep = take - paid;
+  const ev = pot / RUN_SIZE;
+  const up = vals.filter((v) => v >= current).length;
+  const pct = (x) => `${Math.round((x / take) * 1000) / 10}%`;
+  const row = (k, v, note = "") => `<span class="od-math-row"><span>${k}${note ? ` <i>${note}</i>` : ""}</span><b>${v}</b></span>`;
+  return `
+    <span class="od-math${mathOpen ? " open" : ""}">
+      <button class="od-math-btn" data-od="math" aria-expanded="${mathOpen}" aria-label="How the odds work (dev mode)">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
+        <span>Dev mode</span>
+      </button>
+      <span class="od-math-pop" role="tooltip">
+        <span class="od-math-title">How the odds work <em>Run #${box.run}, live numbers</em></span>
+        <span class="od-math-sec">The run: ${RUN_SIZE} boxes</span>
+        ${row("Buyers pay", money(take), `${RUN_SIZE} &times; ${money(current)}`)}
+        ${row("Items inside, at market", money(pot), pct(pot))}
+        ${row(`Collectors paid (${CREATOR_MULTIPLE.toFixed(1)}&times;)`, money(paid), pct(paid))}
+        ${row("Chosen keeps", money(keep), pct(keep))}
+        <span class="od-math-sec">Buyer, per box</span>
+        ${row("Expected value", money(ev), `${Math.round((ev / current) * 100)}% of ${money(current)}`)}
+        ${row(`If they cash it out (${Math.round(CASH_OUT_RATE * 100)}%)`, money(ev * CASH_OUT_RATE), `${Math.round(((ev * CASH_OUT_RATE) / current) * 100)}%`)}
+        ${row(`Pulls worth ${money(current)}+`, `${up} of ${RUN_SIZE}`, `${Math.round((up / RUN_SIZE) * 100)}% chance`)}
+        ${row("Best / worst pull", `${money(Math.max(...vals))} / ${money(Math.min(...vals))}`)}
+        <span class="od-math-sec">Collector, per item</span>
+        ${row("Paid when it&rsquo;s won", `${CREATOR_MULTIPLE.toFixed(1)}&times; value`, `vs ${CASH_OUT_RATE.toFixed(1)}&times; to cash out`)}
+        ${row("Average item here", money(ev), `paid ${money(ev * CREATOR_MULTIPLE)} vs ${money(ev * CASH_OUT_RATE)}`)}
+        <span class="od-math-sec">Not full in a week</span>
+        <span class="od-math-note">Closes early. Each chosen box gets an item worth up to ${money(current)}, plus Credits making up the rest of ${money(current)}. Collectors of the items used are paid 1&times; value; the rest are released. Chosen pays out exactly what came in, and the top-up is Credits, so it can&rsquo;t lose.</span>
+        <span class="od-math-formula">Margin = 1 &minus; ${BUYER_RETURN} buyer return &times; ${CREATOR_MULTIPLE.toFixed(1)} collector multiple = ${Math.round(PLATFORM_CUT * 100)}%</span>
+      </span>
+    </span>`;
 }
 
 // What you could pull, by tier: each tier's value range in this run, and
@@ -975,6 +1018,10 @@ function setQty(n) {
 }
 
 function onClick(e) {
+  if (mathOpen && !e.target.closest(".od-math")) {
+    mathOpen = false;
+    root.querySelector(".od-math")?.classList.remove("open");
+  }
   if (e.target.closest("[data-od-go-items]")) return deps.goToItems();
   const tab = e.target.closest("[data-od-box]");
   if (tab) {
@@ -993,7 +1040,12 @@ function onClick(e) {
   if (act === "minus") setQty(qty - 1);
   else if (act === "plus") setQty(qty + 1);
   else if (act === "max") setQty(left(current));
-  else if (act === "tiers") {
+  else if (act === "math") {
+    mathOpen = !mathOpen;
+    const m = root.querySelector(".od-math");
+    m?.classList.toggle("open", mathOpen);
+    m?.querySelector(".od-math-btn").setAttribute("aria-expanded", mathOpen);
+  } else if (act === "tiers") {
     tiersOpen = !tiersOpen;
     const copy = root.querySelector(".od-hero-copy");
     if (copy) copy.innerHTML = heroCopyHTML();
