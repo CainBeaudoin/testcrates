@@ -792,7 +792,7 @@ function chooseBoxes() {
   const n = Math.min(qty, left(current));
   if (!n) return;
   const cost = current * n;
-  if (!deps.pay(cost)) return deps.showToast(`Not enough credit or balance for ${money(cost)}`, 2400);
+  if (!deps.pay(cost)) return deps.showToast(`Not enough credit or balance for ${money(cost)}`, 2400, { log: false });
   const run = state.boxes[current].run;
   const result = choose(current, n, true);
   deps.renderWallet();

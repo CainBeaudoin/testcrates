@@ -783,7 +783,10 @@ function renderWallet({ pulse } = {}) {
   renderHeaderStats();
 }
 
-function showToast(text, iconSvg, ms = 1800, { silent = false } = {}) {
+// `log: false` is for feedback on the click you just made (copied, not
+// enough funds): it's only useful in the moment, so it stays out of the bell.
+function showToast(text, iconSvg, ms = 1800, { silent = false, log = true } = {}) {
+  if (log) logNotification(text, iconSvg);
   clearTimeout(toastTimer);
   creditToastIcon.innerHTML = iconSvg;
   creditToastText.textContent = text;
@@ -795,6 +798,112 @@ function showToast(text, iconSvg, ms = 1800, { silent = false } = {}) {
     setTimeout(() => creditToast.classList.add("hidden"), 300);
   }, ms);
 }
+
+// ---- Notification bell ---------------------------------------------------
+// The history behind the toasts: newest first, kept across visits, capped so
+// it can't grow forever. Icons are stored by name when they're one of ours.
+const NOTIF_KEY = "gotcha_notifs_v1";
+const NOTIF_MAX = 60;
+const bellBtn = document.getElementById("bellBtn");
+const bellCount = document.getElementById("bellCount");
+const bellPanel = document.getElementById("bellPanel");
+const bellList = document.getElementById("bellList");
+let notifications = loadNotifications();
+
+function loadNotifications() {
+  try {
+    const list = JSON.parse(localStorage.getItem(NOTIF_KEY));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveNotifications() {
+  try {
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(notifications));
+  } catch {}
+}
+
+function escapeHTML(text) {
+  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function logNotification(text, iconSvg) {
+  const icon = Object.keys(ICONS).find((k) => ICONS[k] === iconSvg);
+  const open = !bellPanel.hidden;
+  notifications.unshift({ text, icon: icon || null, svg: icon ? null : iconSvg || null, at: Date.now(), read: open });
+  notifications.length = Math.min(notifications.length, NOTIF_MAX);
+  saveNotifications();
+  renderBell();
+}
+
+function renderBell() {
+  const unread = notifications.filter((n) => !n.read).length;
+  bellCount.textContent = unread > 9 ? "9+" : String(unread);
+  bellCount.classList.toggle("hidden", !unread);
+  bellBtn.setAttribute("aria-label", unread ? `Notifications, ${unread} unread` : "Notifications");
+  if (bellPanel.hidden) return;
+  document.getElementById("bellClear").hidden = !notifications.length;
+  bellList.innerHTML = notifications.length
+    ? notifications
+        .map(
+          (n) => `<li class="bell-item${n.fresh ? " is-new" : ""}">
+            <span class="bell-item-icon">${n.icon ? ICONS[n.icon] : n.svg || ICONS.bell}</span>
+            <span class="bell-item-text">${escapeHTML(n.text)}</span>
+            <time class="bell-item-time">${relativeTime(n.at)}</time>
+          </li>`
+        )
+        .join("")
+    : `<li class="bell-empty">${ICONS.bell}<span>Nothing yet. Pulls, sales and Odds results will show up here.</span></li>`;
+}
+
+// Unread ones keep their highlight while the panel is open, then count as
+// read: opening the bell is reading it.
+function openBell() {
+  notifications.forEach((n) => (n.fresh = !n.read));
+  notifications.forEach((n) => (n.read = true));
+  saveNotifications();
+  bellPanel.hidden = false;
+  placeBell();
+  bellBtn.classList.add("active");
+  bellBtn.setAttribute("aria-expanded", "true");
+  renderBell();
+}
+
+function closeBell() {
+  if (bellPanel.hidden) return;
+  bellPanel.hidden = true;
+  notifications.forEach((n) => delete n.fresh);
+  bellBtn.classList.remove("active");
+  bellBtn.setAttribute("aria-expanded", "false");
+}
+
+// The header's wallet row scrolls sideways on phones, which would clip a
+// dropdown inside it, so the panel is fixed and placed under the bell.
+function placeBell() {
+  const r = bellBtn.getBoundingClientRect();
+  bellPanel.style.top = `${r.bottom + 10}px`;
+  bellPanel.style.right = `${Math.max(12, window.innerWidth - r.right)}px`;
+}
+
+bellBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  bellPanel.hidden ? openBell() : closeBell();
+});
+document.getElementById("bellClear").addEventListener("click", () => {
+  notifications = [];
+  saveNotifications();
+  renderBell();
+});
+document.addEventListener("click", (e) => {
+  if (!bellPanel.hidden && !bellPanel.contains(e.target)) closeBell();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeBell();
+});
+window.addEventListener("resize", () => !bellPanel.hidden && placeBell());
+renderBell();
 
 function showWalletToast(amount, currency) {
   const text = currency === "cash" ? `+$${amount.toLocaleString()} Cash Added` : `+${amount.toLocaleString()} Credits Added`;
@@ -883,7 +992,7 @@ depositAddressCopyBtn.addEventListener("click", async () => {
   playClick();
   try {
     await navigator.clipboard.writeText(depositAddress.textContent);
-    showToast("Address copied", ICONS.bell);
+    showToast("Address copied", ICONS.bell, undefined, { log: false });
   } catch {
     // clipboard unavailable — the address is still visible to copy by hand
   }
@@ -2499,7 +2608,7 @@ function tryPurchase(currency) {
   if (!supply.canBuy(key, qty)) {
     closePaymentPicker();
     const left = supply.status(key).unsold;
-    showToast(left ? `Only ${left} left in this drop` : "This drop just sold out", ICONS.bell);
+    showToast(left ? `Only ${left} left in this drop` : "This drop just sold out", ICONS.bell, undefined, { log: false });
     refreshSupplyViews();
     return false;
   }
@@ -2510,7 +2619,7 @@ function tryPurchase(currency) {
     // an error — Credits can't be topped up directly, but Cash can, and
     // topping up Cash is the only way forward either way.
     closePaymentPicker();
-    showToast(`Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label}. Add funds to continue`, ICONS.bell);
+    showToast(`Not enough ${currency === "cash" ? "Cash" : "Credits"} for ${label}. Add funds to continue`, ICONS.bell, undefined, { log: false });
     openAddFundsModal();
     return false;
   }
@@ -3137,7 +3246,7 @@ document.addEventListener(
     if (!roundAwaitingPick || !e.target.closest(LEAVES_THE_ROUND)) return;
     e.stopImmediatePropagation();
     e.preventDefault();
-    showToast("Pick a box first — this crate is already paid for", ICONS.bell);
+    showToast("Pick a box first — this crate is already paid for", ICONS.bell, undefined, { log: false });
     boxRow.classList.remove("nudge");
     void boxRow.offsetWidth;
     boxRow.classList.add("nudge");
@@ -3737,7 +3846,7 @@ listingBuyBtn.addEventListener("click", () => {
   if (!player.spendCash(listing.price)) {
     // Same route the crates take when you're short: say so, then open the
     // way to fix it, rather than a system alert that just stops you.
-    showToast("Not enough Cash for this — add funds to continue", ICONS.bell);
+    showToast("Not enough Cash for this — add funds to continue", ICONS.bell, undefined, { log: false });
     openAddFundsModal();
     return;
   }
@@ -3944,7 +4053,7 @@ async function copyReferralLink() {
     // confirms, and the link is on screen in Rewards to copy by hand.
   }
   playClick();
-  showToast("Referral link copied", ICONS.bell);
+  showToast("Referral link copied", ICONS.bell, undefined, { log: false });
   referralCopiedUntil = Date.now() + 1600;
   COPY_BUTTONS.forEach(([get, idle]) => applyCopiedState(get(), idle, true));
   clearTimeout(referralCopiedTimer);
@@ -4879,7 +4988,7 @@ document.addEventListener("click", async (e) => {
     }
     // In a box, it's Chosen's to hold until it's won or released.
     if (item.box) {
-      showToast(`${item.name} is in the $${item.box.price.toLocaleString()} box: locked until it's won or released`, ICONS.lock);
+      showToast(`${item.name} is in the $${item.box.price.toLocaleString()} box: locked until it's won or released`, ICONS.lock, undefined, { log: false });
       return;
     }
 
@@ -6069,7 +6178,7 @@ function buyCrateListing(listingId, amount = null, { quiet = false } = {}) {
   if (!listing || listing.isPlayer) return false;
   const price = amount ?? listing.price;
   if (!player.spendCash(price)) {
-    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
+    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell, undefined, { log: false });
     openAddFundsModal();
     return false;
   }
@@ -6089,7 +6198,7 @@ function buyCrateListing(listingId, amount = null, { quiet = false } = {}) {
 function soldOutAction(key) {
   const listed = market.getCrateListings().some((l) => l.crateKey === key && !l.isPlayer);
   if (!listed) {
-    showToast("Sold out, and no sealed boxes are listed right now", ICONS.bell);
+    showToast("Sold out, and no sealed boxes are listed right now", ICONS.bell, undefined, { log: false });
     openCrateModal({ key });
     return;
   }
@@ -6326,7 +6435,7 @@ function buySelectedCrates(key) {
   if (!pick.length) return;
   const total = pick.reduce((sum, l) => sum + l.price, 0);
   if (player.getWallet().cash < total) {
-    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell);
+    showToast("Not enough Cash for this. Add funds to continue", ICONS.bell, undefined, { log: false });
     openAddFundsModal();
     return;
   }
@@ -6353,7 +6462,7 @@ async function offerOnCrates(key, qty) {
   );
   if (!amount) return;
   if (player.getWallet().cash < amount * qty) {
-    showToast("Not enough Cash to back that offer. Add funds to continue", ICONS.bell);
+    showToast("Not enough Cash to back that offer. Add funds to continue", ICONS.bell, undefined, { log: false });
     openAddFundsModal();
     return;
   }
@@ -6587,7 +6696,7 @@ document.querySelectorAll("[data-footer-nav]").forEach((btn) => {
 document.querySelectorAll("[data-footer-link]").forEach((btn) => {
   btn.addEventListener("click", () => {
     playClick();
-    showToast(`${btn.dataset.footerLink}: coming soon`, ICONS.bell);
+    showToast(`${btn.dataset.footerLink}: coming soon`, ICONS.bell, undefined, { log: false });
   });
 });
 
@@ -6695,7 +6804,7 @@ if (profileParam) {
     addCash: (amount) => player.addCash(amount),
     addCredits: (amount) => player.addCredits(amount),
     renderWallet: () => renderWallet({ pulse: "cash" }),
-    showToast: (text, ms) => showToast(text, ICONS.cash, ms),
+    showToast: (text, ms, opts) => showToast(text, ICONS.cash, ms, opts),
   });
   markOddsReady();
   setInterval(tickSimulatedPulls, 4000);
