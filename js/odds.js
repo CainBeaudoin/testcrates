@@ -439,6 +439,8 @@ export function takeBack(invId) {
 export function openPutIn(itemId) {
   const v = deps.vault().find((x) => x.id === itemId);
   if (!v) return;
+  const fitting = BOX_PRICES.filter((p) => fits(v.value, p));
+  if (fitting.length === 1) return openWaitlist(itemId, fitting[0]);
   let wrap = document.getElementById("odChooser");
   if (!wrap) {
     wrap = document.createElement("div");
@@ -448,8 +450,8 @@ export function openPutIn(itemId) {
     wrap.addEventListener("click", (e) => {
       const opt = e.target.closest("[data-od-choose]");
       if (opt && !opt.disabled) {
-        putIn(wrap.dataset.item, Number(opt.dataset.odChoose));
-        return closeChooser();
+        closeChooser();
+        return setTimeout(() => openWaitlist(wrap.dataset.item, Number(opt.dataset.odChoose)), 230);
       }
       if (e.target.closest("[data-od-cancel]") || e.target.classList.contains("dm-reveal")) closeChooser();
     });
@@ -477,6 +479,78 @@ export function openPutIn(itemId) {
     </div>`;
   const reveal = wrap.querySelector(".dm-reveal");
   requestAnimationFrame(() => reveal.classList.add("visible"));
+}
+
+// ---- Waitlist --------------------------------------------------------------
+// Putting an item in is gated while Odds is new: a run only has ten spots,
+// and letting every vault in at once would mean more boxes than buyers. So a
+// "Put in" asks to join the waitlist instead; spots open a few at a time.
+
+function waitlisted(itemId) {
+  return !!state.waitlist?.[itemId];
+}
+
+function openWaitlist(itemId, price) {
+  const v = deps.vault().find((x) => x.id === itemId);
+  if (!v) return;
+  const on = waitlisted(itemId);
+  let wrap = document.getElementById("odWait");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "odWait";
+    wrap.className = "dm od";
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => {
+      const act = e.target.closest("[data-od-wait]")?.dataset.odWait;
+      const { item, price: p } = wrap.dataset;
+      const name = deps.vault().find((x) => x.id === item)?.name ?? "item";
+      if (act === "join") {
+        state.waitlist = { ...(state.waitlist ?? {}), [item]: { price: Number(p), at: Date.now() } };
+        save();
+        deps.showToast(`You're on the waitlist for the ${money(Number(p))} box with your ${name}. We'll let you know when a spot opens`, 4200);
+      } else if (act === "leave") {
+        delete state.waitlist[item];
+        save();
+        deps.showToast(`Your ${name} is off the waitlist`, 2400, { log: false });
+      }
+      if (act || e.target.classList.contains("dm-reveal")) {
+        closeWaitlist();
+        refresh();
+      }
+    });
+  }
+  Object.assign(wrap.dataset, { item: itemId, price });
+  wrap.innerHTML = `
+    <div class="dm-reveal">
+      <div class="dm-reveal-card od-chooser od-wait" role="dialog" aria-modal="true" aria-label="Join the waitlist">
+        <span class="od-wait-live"><i></i>Live now</span>
+        <h3 class="dm-h2">The ${money(price)} box is full of collectors</h3>
+        <p class="od-wait-lead">${
+          on
+            ? `You&rsquo;re on the list. When a spot opens we&rsquo;ll let you know, and your item can go into the next run.`
+            : `Every run holds just ten items, so spots to put one in are limited and open a few at a time. Join the waitlist and we&rsquo;ll let you know when it&rsquo;s your turn.`
+        }</p>
+        <div class="od-chooser-item">
+          <span class="dm-img"><img src="${v.image}" alt=""></span>
+          <span><span class="dm-name">${esc(v.name)}</span><span class="od-chooser-worth">Worth ${money(v.value)} &middot; paid <b>${money(v.value * CREATOR_MULTIPLE)}</b> if it&rsquo;s won</span></span>
+        </div>
+        <p class="dm-reveal-note">Joining doesn&rsquo;t lock anything: your item stays free to list, sell or ship until it actually goes into a box.</p>
+        <div class="dm-reveal-actions">${
+          on
+            ? `<button class="dm-ghost" data-od-wait="leave">Leave the waitlist</button><button class="dm-open" data-od-wait="close">Done</button>`
+            : `<button class="dm-ghost" data-od-wait="close">Not now</button><button class="dm-open" data-od-wait="join">Join the waitlist</button>`
+        }</div>
+      </div>
+    </div>`;
+  const reveal = wrap.querySelector(".dm-reveal");
+  requestAnimationFrame(() => reveal.classList.add("visible"));
+}
+
+function closeWaitlist() {
+  const reveal = document.querySelector("#odWait .dm-reveal");
+  if (!reveal) return;
+  reveal.classList.remove("visible");
+  setTimeout(() => (document.getElementById("odWait").innerHTML = ""), 220);
 }
 
 function closeChooser() {
@@ -752,10 +826,11 @@ function sellHTML() {
             <span class="dm-name" title="${esc(v.name)}">${esc(v.name)}</span>
             <span class="od-vault-row"><span>Worth</span><b>${money(v.value)}</b></span>
             <span class="od-vault-row is-pay"><span>Paid if it&rsquo;s won</span><b>${money(v.value * CREATOR_MULTIPLE)}</b></span>
-            <span class="od-vault-row is-cash"><span>Cash out today</span><span>${money(v.value * CASH_OUT_RATE)}</span></span>
             ${
               ok
-                ? `<button class="od-put" data-od-put="${v.id}">Put in the ${money(current)} box</button>`
+                ? waitlisted(v.id)
+                  ? `<button class="od-put is-waiting" data-od-put="${v.id}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>On the waitlist</button>`
+                  : `<button class="od-put" data-od-put="${v.id}">Put in the ${money(current)} box</button>`
                 : `<span class="od-off">${elsewhere ? `Fits the <button class="od-link" data-od-box="${elsewhere}">${money(elsewhere)} box</button>` : BOX_PRICES.length > 1 ? "Outside every box&rsquo;s range" : `Outside the box&rsquo;s range`}</span>`
             }
           </li>`;
@@ -766,7 +841,7 @@ function sellHTML() {
     <div class="dm-sec-head">
       <div>
         <h2 class="dm-h2">Put an item in</h2>
-        <p class="dm-sub">Sell an item from your vault through the boxes. When the run it&rsquo;s in opens you&rsquo;re paid <b>${Math.round(CREATOR_MULTIPLE * 100)}% of its value</b>, against ${Math.round(CASH_OUT_RATE * 100)}% to cash out. If the run closes early and your item is used, you&rsquo;re paid its full value; if not, it&rsquo;s released back to you. While it&rsquo;s in a box it&rsquo;s locked: no listing, selling, shipping or cashing out until it&rsquo;s won or released. The ${money(current)} box takes items worth ${money(lo)} to ${money(hi)}.</p>
+        <p class="dm-sub">Sell an item from your vault through the boxes. When the run it&rsquo;s in opens you&rsquo;re paid <b>${Math.round(CREATOR_MULTIPLE * 100)}% of its value</b>, against ${Math.round(CASH_OUT_RATE * 100)}% to cash out. If the run closes early and your item is used, you&rsquo;re paid its full value; if not, it&rsquo;s released back to you. While it&rsquo;s in a box it&rsquo;s locked: no listing, selling, shipping or cashing out until it&rsquo;s won or released. The ${money(current)} box takes items worth ${money(lo)} to ${money(hi)}. Spots are limited while Odds is new, so you join a waitlist first.</p>
       </div>
     </div>
     ${
@@ -910,7 +985,7 @@ function onClick(e) {
     return;
   }
   const put = e.target.closest("[data-od-put]");
-  if (put) return putIn(put.dataset.odPut, current);
+  if (put) return openWaitlist(put.dataset.odPut, current);
   const back = e.target.closest("[data-od-takeback]");
   if (back) return takeBack(back.dataset.odTakeback);
   const act = e.target.closest("[data-od]")?.dataset.od;

@@ -9980,3 +9980,29 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .bell-btn { width: 28px; height: 28px; }
   .bell-panel { right: 12px !important; }
 }
+
+/* Odds: the waitlist that gates putting an item in. */
+.od-put { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.od-put.is-waiting { background: var(--surface-2); border-color: var(--line-strong, var(--hairline)); color: var(--text); }
+.od-wait { text-align: left; }
+.od-wait .dm-h2 { margin-top: 10px; }
+.od-wait-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: oklch(0.72 0.19 147 / 0.14);
+  color: oklch(0.45 0.15 147);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.od-wait-live i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.65 0.2 147); animation: od-live 1.6s ease-in-out infinite; }
+@keyframes od-live { 50% { opacity: 0.35; } }
+.od-wait-lead { margin: 8px 0 14px; font-size: 0.86rem; line-height: 1.5; color: var(--text-dim); }
+.od-wait .od-chooser-worth b { color: oklch(0.5 0.15 147); }
+.od-wait .dm-reveal-actions { display: flex; gap: 8px; }
+.od-wait .dm-reveal-actions > * { flex: 1; }
+.od-wait .dm-reveal-actions .dm-open { min-width: 0; justify-content: center; }
