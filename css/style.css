@@ -9621,3 +9621,144 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 @media (prefers-reduced-motion: reduce) {
   .dm-sheen, .dm-live-dot { animation: none; }
 }
+
+/* ===== Odds: boxes built from collectors' vaulted pieces ================= */
+
+/* The three boxes, as tabs: price, and how much of its run is left. */
+.od-boxes { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.od-box-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 18px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-lg);
+  background: var(--dm-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.od-box-tab b { font-family: var(--dm-display); font-size: 1.2rem; font-weight: 400; line-height: 1; }
+.od-box-tab span { font-size: 0.72rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.od-box-tab:hover { border-color: var(--text); }
+.od-box-tab.active { border-color: var(--text); background: var(--text); color: var(--text-inverse); }
+.od-box-tab.active span { color: color-mix(in srgb, var(--text-inverse) 70%, transparent); }
+
+.od-hero { min-height: 560px; }
+.od-best { font-size: 0.82rem; color: var(--text-dim); }
+.od-best b { color: var(--text); }
+
+/* The run: ten cells, filled as boxes go (yours ringed). */
+.od-meter { display: flex; align-items: center; gap: 4px; margin: 4px 0 16px; }
+.od-meter i { width: 22px; height: 8px; border-radius: var(--r-pill); background: var(--text); }
+.od-meter i.is-pulled { background: var(--dm-hair); }
+.od-meter i.is-mine { box-shadow: 0 0 0 2px var(--dm-card), 0 0 0 3.5px oklch(0.72 0.19 147); }
+.od-meter span { margin-left: 8px; font-size: 0.78rem; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* Where the money goes: buyers, collectors, Chosen. */
+.od-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 520px; }
+.od-split-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 16px;
+  background: var(--dm-card);
+}
+.od-split-card span { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+.od-split-card b { font-family: var(--dm-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; color: var(--text); }
+.od-split-card small { font-size: 0.7rem; line-height: 1.3; color: var(--text-dim); }
+.od-split-card.is-creator { border-color: oklch(0.72 0.19 147); background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 14%, var(--dm-card)); }
+.od-split-card.is-creator b { color: oklch(0.5 0.15 147); }
+.od-math { margin: 12px 0 0; max-width: 520px; font-size: 0.78rem; line-height: 1.45; color: var(--text-dim); }
+
+/* A piece in the run: who put it in, its odds, and once pulled, who by. */
+.od-grid .dm-piece { gap: 8px; }
+.od-odds { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.od-creator { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-creator .avatar-circle { width: 18px; height: 18px; flex: 0 0 auto; }
+.od-you { padding: 1px 8px; border-radius: var(--r-pill); background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); font-weight: 800; }
+.dm-piece.is-mine { box-shadow: 0 0 0 2px oklch(0.72 0.19 147); }
+.dm-piece.is-pulled .dm-img, .dm-piece.is-pulled .dm-piece-text { opacity: 0.35; filter: grayscale(0.6); }
+.dm-piece.is-pulled .od-odds { color: var(--text-dim); }
+.od-pulled-by { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+.od-empty { padding: 28px 16px; color: var(--text-dim); font-size: 0.86rem; list-style: none; }
+
+/* Put an item in: your pieces in the boxes, then your vault. */
+.od-sell .dm-sub b { color: var(--text); }
+.od-mine { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
+.od-mine-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 8px 8px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: 16px;
+  background: var(--dm-card);
+}
+.od-mine-row .dm-img { flex: 0 0 52px; width: 52px; height: 52px; border-radius: 10px; }
+.od-mine-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.78rem; color: var(--text-dim); }
+.od-mine-text b { color: var(--text); }
+.od-mine-row .dm-money { font-size: 1.1rem; }
+.od-mine-row.is-paid { border-color: oklch(0.72 0.19 147); }
+.od-mine-row.is-paid .dm-money { color: oklch(0.5 0.15 147); }
+.od-vaults { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.od-vault {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 18px;
+  background: var(--dm-card);
+}
+.od-vault .dm-img { height: 120px; aspect-ratio: auto; }
+.od-vault-row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.76rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.od-vault-row b { color: var(--text); }
+.od-vault-row.is-pay b { color: oklch(0.5 0.15 147); }
+.od-vault-row.is-cash { opacity: 0.75; }
+.od-put {
+  margin-top: 4px;
+  height: 36px;
+  border: 1px solid #000;
+  border-radius: var(--r-pill);
+  background: oklch(0.8751 0.2471 147.45);
+  color: oklch(0.256 0.062 150.2);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.od-put:hover { filter: brightness(0.96); }
+.od-vault.is-off .dm-img, .od-vault.is-off .dm-name { opacity: 0.5; }
+.od-off { margin-top: 4px; padding: 8px 0; text-align: center; font-size: 0.74rem; color: var(--text-dim); }
+.od-link { padding: 0; border: none; background: none; color: var(--text); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* The rail: what's been paid to you. */
+.od-earned {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid oklch(0.72 0.19 147);
+  border-radius: 14px;
+  background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 14%, var(--dm-card));
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.od-earned b { font-family: var(--dm-display); font-size: 1.1rem; font-weight: 400; color: oklch(0.5 0.15 147); }
+.dm-live-row.is-mine { border-color: oklch(0.72 0.19 147); }
+
+@media (max-width: 760px) {
+  .od-hero { min-height: 0; }
+  .od-split { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .od-split-card { padding: 10px 8px; }
+  .od-split-card b { font-size: 1.2rem; }
+  .od-box-tab { flex: 1; padding: 8px 12px; }
+  .od-vaults { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

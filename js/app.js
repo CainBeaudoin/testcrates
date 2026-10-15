@@ -17,7 +17,7 @@ import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
 import { initLulu, renderLulu } from "./lulu.js";
-import { initDemo, renderDemo, leaveDemo } from "./demo.js";
+import { initOdds, renderOdds, leaveOdds } from "./odds.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -566,7 +566,7 @@ function showScreen(el) {
   // Home is shown again; holding their WebGL contexts open elsewhere would
   // crowd out the Drops and opening screens.
   if (el.id !== "screen-home") releaseHomeViewers();
-  if (el.id !== "screen-demo") leaveDemo();
+  if (el.id !== "screen-odds") leaveOdds();
   if (el.id !== "screen-category") {
     categoryBoxViewers.forEach((v) => v.dispose());
     categoryBoxViewers = [];
@@ -3157,7 +3157,7 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-account") renderAccount();
     if (tab.dataset.nav === "screen-category") renderCategories();
     if (tab.dataset.nav === "screen-lulu") renderLulu();
-    if (tab.dataset.nav === "screen-demo") renderDemo();
+    if (tab.dataset.nav === "screen-odds") renderOdds();
     // Two rail tabs land on the Account screen — Rewards opens straight into
     // its group, plain Account falls back to the first one.
     if (tab.dataset.nav === "screen-account") {
@@ -6585,7 +6585,31 @@ if (profileParam) {
   renderHome();
   renderRecentPulls();
   initLulu(document.getElementById("luluRoot"), { renderWallet, showToast });
-  initDemo(document.getElementById("demoRoot"));
+  initOdds(document.getElementById("oddsRoot"), {
+    catalog: ALL_CATALOG,
+    randomUsername: market.randomUsername,
+    username: () => player.getUsername(),
+    avatarHTML,
+    // Your vault, at today's market value (what a piece is appraised at).
+    vault: () =>
+      player.getInventory().map((i) => ({ id: i.id, name: i.name, image: i.image, category: i.category, value: player.currentMarketValue(i) })),
+    takeItem: (id) => {
+      const item = player.getInventory().find((i) => i.id === id);
+      if (!item) return null;
+      releaseOwnedItem(item);
+      return item;
+    },
+    giveItem: (prize) => addOwnedItem(prize),
+    // A box is paid from Credits if they cover it, otherwise Cash.
+    pay: (amount) => {
+      const w = player.getWallet();
+      const currency = w.credits >= amount ? "credits" : w.cash >= amount ? "cash" : null;
+      return !!currency && player.spend(currency, amount);
+    },
+    addCash: (amount) => player.addCash(amount),
+    renderWallet: () => renderWallet({ pulse: "cash" }),
+    showToast: (text, ms) => showToast(text, ICONS.cash, ms),
+  });
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.

@@ -70,7 +70,7 @@ try {
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 13a3 3 0 0 0 6 0"/></svg>
           Market
         </button>
-        <button class="nav-tab" data-nav="screen-demo">
+        <button class="nav-tab" data-nav="screen-odds">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>
           Odds
         </button>
@@ -418,10 +418,11 @@ try {
       <div id="marketCrateView" class="market-crate-view" hidden></div>
     </section>
 
-    <!-- Odds (was Demo): one crate's page as the team's other Chosen build lays it out
-         (Genesis Drop Bronze, its real pieces and odds). Built by js/demo.js. -->
-    <section id="screen-demo" class="screen">
-      <div id="demoRoot" class="dm"></div>
+    <!-- Odds: mystery boxes built from collectors' vaulted pieces, sold in
+         runs of ten; collectors are paid when their piece is pulled.
+         Built by js/odds.js. -->
+    <section id="screen-odds" class="screen">
+      <div id="oddsRoot" class="dm od"></div>
     </section>
 
     <!-- Lulu: burn the Lulus you hold for Credits. Built by js/lulu.js. -->
