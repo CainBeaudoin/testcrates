@@ -422,8 +422,14 @@ body {
 @media (min-width: 641px) and (max-width: 1010px) {
   .topbar { padding: 0 14px; gap: 8px; }
   .rail { margin-left: 0; }
-  .nav-tab { padding: 8px 8px; letter-spacing: 0.3px; }
+  .nav-tab { padding: 8px 6px; letter-spacing: 0.3px; }
+  .nav-v2 { margin-left: 3px; }
   #streakStat { display: none; }
+}
+/* Eight tabs, three with a V2 tag: on a laptop-width bar they sit closer
+   together so the balances and avatar still fit. */
+@media (min-width: 1011px) and (max-width: 1280px) {
+  .nav-tab { padding: 8px 8px; letter-spacing: 0.5px; }
 }
 /* Just above the phone breakpoint, where the four words themselves are
    most of the bar. */
@@ -4437,7 +4443,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     flex: 1;
     min-width: 0;
     padding: 4px 0;
-    letter-spacing: 0.2px;
+    font-size: 0.54rem;
+    letter-spacing: 0.1px;
   }
   /* Mute lives in the footer's Social Media row on mobile (see the JS
      that reparents #muteBtn there) — the bottom bar is Drops/Market/
@@ -10370,4 +10377,204 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .fl-mine-row .od-mine-text { min-width: calc(100% - 140px); }
   .fl-verify-btn { margin-left: 64px; }
   .fl-proof > span { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+
+/* ===== Wanted: bounties with escrowed offers ============================= */
+
+.wn-hero { min-height: 560px; }
+.wn-media { display: grid; place-items: center; align-self: stretch; padding: 12px 0; }
+
+/* The poster: the bounty that matters most to you, pinned up. */
+.wn-poster {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(380px, 100%);
+  padding: 22px 22px 20px;
+  border: 1.5px solid var(--text);
+  border-radius: 6px;
+  background: var(--dm-card);
+  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.45);
+  text-align: center;
+  transform: rotate(-1.2deg);
+}
+.wn-poster.is-match { box-shadow: 0 0 0 3px oklch(0.72 0.19 147), 0 24px 60px -24px oklch(0.72 0.19 147 / 0.6); }
+.wn-poster-head {
+  font-family: var(--dm-display);
+  font-size: 2.6rem;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.wn-poster-flag {
+  position: absolute;
+  top: -12px;
+  right: -10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  background: oklch(0.8751 0.2471 147.45);
+  color: oklch(0.256 0.062 150.2);
+  font-size: 0.74rem;
+  font-weight: 800;
+  transform: rotate(3deg);
+}
+.wn-poster .dm-img { width: 100%; max-width: 240px; border-radius: 4px; }
+.wn-poster-name { font-weight: 700; font-size: 1.02rem; line-height: 1.25; color: var(--text); }
+.wn-poster-worth { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); }
+.wn-poster-offer { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 10px; margin-top: 2px; width: 100%; border-top: 1.5px dashed var(--dm-hair); }
+.wn-poster-offer > span:first-child { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
+.wn-big { font-size: 2.2rem; }
+.wn-poster .wn-note { margin: 2px 0 0; }
+.wn-poster-fill { width: 100%; margin-top: 6px; }
+
+.wn-stats { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); justify-content: start; gap: 28px; margin: 4px 0 20px; }
+.wn-stats div { display: flex; flex-direction: column; gap: 2px; }
+.wn-stats b { font-family: var(--dm-display); font-size: 1.6rem; font-weight: 400; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.wn-stats span { font-size: 0.74rem; color: var(--text-dim); }
+.wn-post { width: 100%; max-width: 420px; }
+.wn-post-small { height: 40px; padding: 0 18px; font-size: 0.84rem; }
+.wn .dm-pill svg { vertical-align: -1px; margin-right: 3px; }
+.wn .dm-sub a { color: var(--text); }
+
+/* A bounty card: Odds' piece card, plus the offer and who's asking. */
+.wn-card { gap: 8px; }
+.wn-card.is-match { box-shadow: 0 0 0 2px oklch(0.72 0.19 147); }
+.wn-match, .wn-yours { margin-left: auto; padding: 3px 9px; border-radius: var(--r-pill); font-size: 0.7rem; font-weight: 800; }
+.wn-match { background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); }
+.wn-match { display: inline-flex; align-items: center; white-space: nowrap; }
+.wn-short { display: none; }
+.wn-yours { background: var(--text); color: var(--text-inverse); }
+.wn-worth { font-size: 0.76rem; color: var(--text-dim); }
+.wn-worth em { font-style: normal; font-weight: 700; }
+.wn-worth em.is-up { color: oklch(0.55 0.17 147); }
+.wn-offer-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 8px; border-top: 1px solid var(--dm-hair); }
+.wn-escrow { display: inline-flex; align-items: center; gap: 4px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: oklch(0.55 0.17 147); }
+.wn-offer { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.wn-or { font-size: 0.74rem; font-weight: 600; color: var(--text-dim); }
+.wn-items { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.wn-thumb { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; overflow: hidden; border: 1px solid var(--dm-hair); border-radius: 8px; background: #fff; }
+.wn-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 8%; }
+.wn-items-val { margin-left: 2px; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
+.wn-note { margin: 0; font-size: 0.8rem; font-style: italic; line-height: 1.4; color: var(--text-dim); }
+.wn-card .wn-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wn-fill { height: 44px; margin-top: auto; padding: 0 16px; font-size: 0.88rem; }
+.wn-none { margin-top: auto; font-size: 0.74rem; color: var(--text-dim); }
+.wn-row-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wn-row-btn:hover { border-color: var(--text); }
+.wn-card .wn-row-btn { margin-top: auto; align-self: flex-start; }
+.dm-open:disabled { opacity: 0.45; cursor: default; transform: none; filter: none; }
+
+/* Sheets: posting a bounty, filling one. */
+.wn-sheet { width: min(640px, 100%); text-align: left; }
+.wn-sheet .od-reveal-sub { margin: 0 0 6px; color: var(--text-dim); font-size: 0.9rem; }
+.wn-step { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; font-weight: 700; color: var(--text); }
+.wn-step span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--text); color: var(--text-inverse); font-size: 0.76rem; }
+.wn-search, .wn-note-in { width: 100%; }
+.wn-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.wn-result, .wn-vitem {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 7px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: 14px;
+  background: var(--dm-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wn-result:hover, .wn-vitem:hover { border-color: var(--text); }
+.wn-result .dm-img, .wn-vitem .dm-img { grid-row: 1 / 3; width: 44px; border-radius: 9px; }
+.wn-result .dm-name, .wn-vitem .dm-name { align-self: end; font-size: 0.8rem; }
+.wn-result b, .wn-vitem b { align-self: start; font-size: 0.8rem; }
+.wn-vitem.active { border-color: oklch(0.72 0.19 147); box-shadow: 0 0 0 1.5px oklch(0.72 0.19 147); }
+.wn-empty { padding: 8px 0; font-size: 0.84rem; color: var(--text-dim); }
+.wn-picked { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border: 1.5px solid var(--text); border-radius: 16px; background: var(--dm-card); }
+.wn-picked .dm-img { width: 56px; flex: 0 0 56px; border-radius: 10px; }
+.wn-picked-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.78rem; color: var(--text-dim); }
+.wn-cash { display: flex; align-items: center; gap: 6px; height: 56px; padding: 0 18px; border: 1.5px solid var(--text); border-radius: 16px; background: var(--dm-card); }
+.wn-cash span { font-family: var(--dm-display); font-size: 1.6rem; color: var(--text-dim); }
+.wn-cash input { flex: 1; min-width: 0; border: none; outline: none; background: none; color: var(--text); font-family: var(--dm-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.wn-quick { margin-top: 10px; }
+.wn-hint { margin: 14px 0 8px; font-size: 0.82rem; color: var(--text-dim); }
+.wn-vault { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; max-height: 214px; margin: 0; padding: 2px; overflow-y: auto; list-style: none; }
+.wn-days { margin-top: 10px; }
+.wn-summary { margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 0.82rem; line-height: 1.5; color: var(--text-dim); }
+.wn-summary:empty { display: none; }
+.wn-summary p { margin: 0; }
+.wn-summary b { color: var(--text); }
+.wn-warn { color: var(--text) !important; font-weight: 600; }
+
+.wn-swap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; margin: 18px 0 6px; }
+.wn-swap-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.wn-swap-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
+.wn-swap-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1.5px solid var(--dm-hair); border-radius: 18px; background: var(--dm-card); }
+.wn-swap-note { font-size: 0.72rem; color: var(--text-dim); }
+.wn-swap-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--text); color: var(--text-inverse); }
+.wn-opts { display: flex; flex-direction: column; gap: 8px; }
+.wn-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: 16px;
+  background: var(--dm-card);
+  color: inherit;
+  font: inherit;
+  font-size: 0.76rem;
+  text-align: left;
+  cursor: pointer;
+}
+.wn-opt span { color: var(--text-dim); line-height: 1.35; }
+.wn-opt.active { border-color: oklch(0.72 0.19 147); box-shadow: 0 0 0 1.5px oklch(0.72 0.19 147); }
+.wn-opt-items { display: flex; gap: 6px; }
+.wn-opt-items .wn-thumb { width: 44px; height: 44px; }
+.wn-checks { display: grid; gap: 6px; margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); list-style: none; font-size: 0.82rem; color: var(--text); }
+.wn-checks li { display: flex; align-items: center; gap: 8px; }
+.wn-checks svg { flex: 0 0 auto; color: oklch(0.55 0.17 147); }
+.wn-compare { margin: 12px 0 0; font-size: 0.82rem; color: var(--text-dim); }
+.wn-compare b { color: oklch(0.5 0.15 147); }
+.wn-done-mark { display: grid; place-items: center; width: 56px; height: 56px; margin: 4px 0 14px; border-radius: 50%; background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); }
+.wn-done-mark svg { width: 28px; height: 28px; }
+
+@media (max-width: 760px) {
+  .wn-hero { min-height: 0; gap: 28px; }
+  .wn-media { padding: 16px 0 0; }
+  .wn-poster { width: min(330px, 100%); }
+  .wn-poster-head { font-size: 2.1rem; }
+  .wn-stats { gap: 18px; }
+  .wn-stats b { font-size: 1.3rem; }
+  .wn-swap { grid-template-columns: minmax(0, 1fr); }
+  .wn-swap-icon { justify-self: center; transform: rotate(90deg); }
+  .wn-results, .wn-vault { grid-template-columns: minmax(0, 1fr); }
+  /* Two cards a row: the short words. */
+  .wn-card .wn-long { display: none; }
+  .wn-card .wn-short { display: inline-flex; }
+  .wn-match { padding: 3px 6px; }
+  .wn-fill { height: 40px; padding: 0 14px; }
+  .wn-items-val { display: none; }
 }

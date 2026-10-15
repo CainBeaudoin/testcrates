@@ -18,6 +18,7 @@ import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
 import { initLulu, renderLulu } from "./lulu.js";
 import { initFlip, renderFlip } from "./flip.js";
+import { initWanted, renderWanted } from "./wanted.js";
 import { initOdds, renderOdds, leaveOdds, openPutIn, takeBack, boxStatus, readyBoxesHTML, readyCount, openReady } from "./odds.js";
 
 // ---- Prize configuration -------------------------------------------------
@@ -3269,6 +3270,7 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-lulu") renderLulu();
     if (tab.dataset.nav === "screen-odds") renderOdds();
     if (tab.dataset.nav === "screen-flip") renderFlip();
+    if (tab.dataset.nav === "screen-wanted") renderWanted();
     // Two rail tabs land on the Account screen — Rewards opens straight into
     // its group, plain Account falls back to the first one.
     if (tab.dataset.nav === "screen-account") {
@@ -4153,6 +4155,25 @@ function inventoryItemHTML(item) {
     ? `<span class="market-item-offer-flag">${pendingOffers.length > 1 ? `${pendingOffers.length} Offers` : "Offer"}</span>`
     : "";
 
+  // Offered in a Wanted bounty: escrowed, so it's locked like a boxed item.
+  if (item.escrow) {
+    return `
+    <div class="market-item is-boxed" data-item="${item.id}">
+      <div class="market-item-media">
+        <img src="${item.image}" alt="">
+        <span class="item-box-flag">${ICONS.lock} In escrow</span>
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${item.name}</span>
+        <span class="item-cashout-today">Offered in your bounty for the ${item.escrow.want}</span>
+        <div class="market-item-divider"></div>
+        <div class="item-actions">
+          <span class="item-box-note">${ICONS.lock} Locked until the bounty is filled or cancelled</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // In an Odds box: Chosen holds it until it's won or released, so none of
   // the trading actions apply, just where it is (and, while it's still
   // waiting for a run, taking it back).
@@ -4987,6 +5008,11 @@ document.addEventListener("click", async (e) => {
     if (action === "unbox") {
       playClick();
       return takeBack(item.id);
+    }
+    // Offered in a Wanted bounty: escrowed until it's filled or cancelled.
+    if (item.escrow) {
+      showToast(`${item.name} is escrowed in your bounty for the ${item.escrow.want}: cancel it on Wanted to release it`, ICONS.lock, undefined, { log: false });
+      return;
     }
     // In a box, it's Chosen's to hold until it's won or released.
     if (item.box) {
@@ -6766,7 +6792,7 @@ if (profileParam) {
     vault: () =>
       player
         .getInventory()
-        .filter((i) => !i.box)
+        .filter((i) => !i.box && !i.escrow)
         .map((i) => ({ id: i.id, name: i.name, image: i.image, category: i.category, value: player.currentMarketValue(i) })),
     // In a box: locked, and off the market (no listing, no offers).
     lockItem: (id, box) => {
@@ -6830,6 +6856,53 @@ if (profileParam) {
     playWin: playDing,
     playLand: playPop,
     showToast: (text, ms, opts) => showToast(text, ICONS.cash, ms, opts),
+  });
+  initWanted(document.getElementById("wantedRoot"), {
+    catalog: ALL_CATALOG,
+    randomUsername: market.randomUsername,
+    username: () => player.getUsername(),
+    avatarHTML,
+    // Your vault at today's market value, less anything boxed or escrowed.
+    vault: () =>
+      player
+        .getInventory()
+        .filter((i) => !i.box && !i.escrow)
+        .map((i) => ({ id: i.id, name: i.name, image: i.image, category: i.category, rarity: i.rarity, acquiredAt: i.acquiredAt, value: player.currentMarketValue(i) })),
+    // Escrowed for a bounty: locked, and off the market.
+    lockItem: (id, escrow) => {
+      const item = player.getInventoryItem(id);
+      if (!item || item.box || item.escrow) return false;
+      if (item.listingId) market.removeListing(item.listingId);
+      player.markListed(id, null);
+      player.setItemEscrow(id, escrow);
+      return true;
+    },
+    unlockItem: (id) => {
+      const item = player.getInventoryItem(id);
+      if (!item) return;
+      player.setItemEscrow(id, null);
+      const listing = market.createListing({ item, price: null, seller: player.getUsername() });
+      player.markListed(id, listing.id);
+    },
+    escrowedIds: () => player.getInventory().filter((i) => i.escrow).map((i) => i.id),
+    // Swapped away: it leaves your vault (and the market).
+    removeItem: (id) => {
+      const item = player.getInventoryItem(id);
+      if (item) releaseOwnedItem(item);
+    },
+    giveItem: (prize) => addOwnedItem(prize),
+    spendCash: (amount) => player.spend("cash", amount),
+    addCash: (amount) => player.addCash(amount),
+    wallet: () => player.getWallet(),
+    itemsChanged: () => {
+      if (document.getElementById("screen-account").classList.contains("active")) renderAccount();
+    },
+    goToItems: () => {
+      document.querySelector('.nav-tab[data-nav="screen-account"]:not([data-account-group])')?.click();
+      window.scrollTo({ top: 0 });
+    },
+    renderWallet: () => renderWallet({ pulse: "cash" }),
+    showToast: (text, ms, opts) => showToast(text, ICONS.bell, ms, opts),
   });
   markOddsReady();
   setInterval(tickSimulatedPulls, 4000);

@@ -574,6 +574,16 @@ export function setItemBox(id, box) {
   save();
 }
 
+// An item offered in one of your Wanted bounties: { bounty, want } while
+// it's escrowed, null once it's released. Locked like a boxed item.
+export function setItemEscrow(id, escrow) {
+  const item = getInventoryItem(id);
+  if (!item) return;
+  if (escrow) item.escrow = escrow;
+  else delete item.escrow;
+  save();
+}
+
 export function markListed(id, listingId) {
   const item = getInventoryItem(id);
   if (item) {
