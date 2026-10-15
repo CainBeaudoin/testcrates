@@ -256,7 +256,7 @@ export function renderOdds() {
   if (!root) return;
   qty = Math.min(qty, left(current).length || 1);
   root.innerHTML = `
-    <div class="dm-layout">
+    <div class="dm-layout od-layout">
       <div class="dm-main">
         <div class="od-boxes" role="tablist" aria-label="Box">${BOX_PRICES.map(
           (p) =>
@@ -279,7 +279,6 @@ export function renderOdds() {
         </section>
         <section class="dm-sec od-sell" id="odSell">${sellHTML()}</section>
       </div>
-      <aside class="dm-rail" id="odRail">${railHTML()}</aside>
     </div>
     <div class="dm-reveal hidden" id="odReveal" role="dialog" aria-modal="true" aria-label="What came out"></div>`;
   mountBox();
@@ -298,7 +297,6 @@ function refresh(price) {
     const p = Number(t.dataset.odBox);
     t.querySelector("span").textContent = `${left(p).length} of ${RUN_SIZE} left`;
   });
-  root.querySelector("#odRail").innerHTML = railHTML();
   if (price !== current) return;
   qty = Math.min(qty, left(current).length || 1);
   const copy = root.querySelector(".od-hero-copy");
@@ -397,36 +395,6 @@ function stripHTML() {
       </li>`;
     })
     .join("");
-}
-
-function railHTML() {
-  const day = Date.now() - 24 * 3600 * 1000;
-  const today = state.feed.filter((f) => f.at >= day);
-  const best = [...today].sort((a, b) => b.value / b.price - a.value / a.price)[0];
-  const paidToYou = state.mine.filter((m) => m.status === "paid").reduce((s, m) => s + m.paid, 0);
-  return `
-    <div class="dm-rail-head"><span class="dm-rail-title"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.4 6.7 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>Top pull <small>today</small></span></div>
-    ${
-      best
-        ? `<div class="dm-top dm-t-${tierFor(best.value, best.price)}">
-        <span class="dm-img"><img src="${best.image}" alt=""></span>
-        <span class="dm-name">${esc(best.name)}</span>
-        <b class="dm-money">${money(best.value)}</b>
-        <small>from a ${money(best.price)} box &middot; ${(best.value / best.price).toFixed(1)}&times;</small>
-      </div>`
-        : ""
-    }
-    ${paidToYou ? `<div class="od-earned"><span>Paid to you</span><b>${money(paidToYou)}</b></div>` : ""}
-    <div class="dm-rail-head is-live"><span class="dm-rail-title"><i class="dm-live-dot"></i>Live pulls</span></div>
-    <ul class="dm-live">${state.feed
-      .slice(0, 14)
-      .map(
-        (p) => `<li class="dm-live-row${p.mine ? " is-mine" : ""}">
-          <span class="dm-img"><img src="${p.image}" alt="" loading="lazy"></span>
-          <span class="dm-live-text"><span class="dm-name">${esc(p.name)}</span><span><b>${money(p.value)}</b> from a ${money(p.price)} box${p.mine ? " &middot; yours" : ""}</span></span>
-        </li>`
-      )
-      .join("")}</ul>`;
 }
 
 // ---- Put an item in --------------------------------------------------------

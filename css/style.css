@@ -9738,21 +9738,8 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-off { margin-top: 4px; padding: 8px 0; text-align: center; font-size: 0.74rem; color: var(--text-dim); }
 .od-link { padding: 0; border: none; background: none; color: var(--text); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 
-/* The rail: what's been paid to you. */
-.od-earned {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border: 1px solid oklch(0.72 0.19 147);
-  border-radius: 14px;
-  background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 14%, var(--dm-card));
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.od-earned b { font-family: var(--dm-display); font-size: 1.1rem; font-weight: 400; color: oklch(0.5 0.15 147); }
-.dm-live-row.is-mine { border-color: oklch(0.72 0.19 147); }
+/* No rail on Odds: the page has the full width. */
+.od-layout { grid-template-columns: minmax(0, 1fr); }
 
 @media (max-width: 760px) {
   .od-hero { min-height: 0; }
