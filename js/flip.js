@@ -343,7 +343,7 @@ function copyHTML() {
   const call = state.side;
   return `
     <div class="od-hero-tags"><span class="dm-pill">50 / 50 coin</span>${mathHTML(win, floor, price)}</div>
-    <h1 class="dm-title">Flip</h1>
+    <h1 class="dm-title">Coin flip</h1>
     <p class="dm-blurb">Call it and flip. Land your side and the piece you picked is yours. Miss and you still take the other one home.</p>
     <div class="fl-match">
       <div class="fl-card is-win" data-fl-card="${call}">
