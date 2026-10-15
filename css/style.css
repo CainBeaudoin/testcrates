@@ -9449,7 +9449,11 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   background: var(--dm-card);
   scroll-snap-align: start;
 }
-.dm-pull .dm-img { aspect-ratio: auto; height: 110px; }
+/* Every card the same width (a long name truncates instead of widening its
+   card) and every photo on the same square tile. */
+.dm-pull { width: 200px; min-width: 0; }
+.dm-pull .dm-img { width: 100%; aspect-ratio: 1; height: auto; background: var(--surface-2); }
+.dm-pull .dm-img img { padding: 10%; }
 .dm-pull .dm-money { font-size: 1.25rem; }
 .dm-pull.is-new { animation: dm-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes dm-in { from { opacity: 0; transform: translateX(-24px) scale(0.96); } }
@@ -9614,7 +9618,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .dm-piece.is-top .dm-card-top { left: 12px; right: 12px; top: 12px; }
   .dm-piece.is-top .dm-money { font-size: 1.6rem; }
   .dm-sec { margin-top: 36px; }
-  .dm-pull { flex-basis: 170px; }
+  .dm-pull { flex-basis: 170px; width: 170px; }
   .dm-reveal-actions { flex-direction: column; }
   .dm-reveal-actions .dm-open { min-width: 0; }
 }
