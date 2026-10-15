@@ -6607,6 +6607,7 @@ if (profileParam) {
       return !!currency && player.spend(currency, amount);
     },
     addCash: (amount) => player.addCash(amount),
+    addCredits: (amount) => player.addCredits(amount),
     renderWallet: () => renderWallet({ pulse: "cash" }),
     showToast: (text, ms) => showToast(text, ICONS.cash, ms),
   });

@@ -9648,44 +9648,29 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-box-tab.active span { color: color-mix(in srgb, var(--text-inverse) 70%, transparent); }
 
 .od-hero { min-height: 560px; }
-.od-best { font-size: 0.82rem; color: var(--text-dim); }
-.od-best b { color: var(--text); }
 
-/* The run: ten cells, filled as boxes go (yours ringed). */
-.od-meter { display: flex; align-items: center; gap: 4px; margin: 4px 0 16px; }
-.od-meter i { width: 22px; height: 8px; border-radius: var(--r-pill); background: var(--text); }
-.od-meter i.is-pulled { background: var(--dm-hair); }
-.od-meter i.is-mine { box-shadow: 0 0 0 2px var(--dm-card), 0 0 0 3.5px oklch(0.72 0.19 147); }
-.od-meter span { margin-left: 8px; font-size: 0.78rem; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-
-/* Where the money goes: buyers, collectors, Chosen. */
-.od-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 520px; }
-.od-split-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px;
-  border: 1px solid var(--dm-hair);
-  border-radius: 16px;
-  background: var(--dm-card);
-}
-.od-split-card span { font-size: 0.78rem; font-weight: 700; color: var(--text); }
-.od-split-card b { font-family: var(--dm-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; color: var(--text); }
-.od-split-card small { font-size: 0.7rem; line-height: 1.3; color: var(--text-dim); }
-.od-split-card.is-creator { border-color: oklch(0.72 0.19 147); background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 14%, var(--dm-card)); }
-.od-split-card.is-creator b { color: oklch(0.5 0.15 147); }
-.od-math { margin: 12px 0 0; max-width: 520px; font-size: 0.78rem; line-height: 1.45; color: var(--text-dim); }
+/* The run: ten cells, filled as boxes are taken (yours in green). */
+.od-meter { display: flex; align-items: center; gap: 4px; margin: 4px 0 8px; }
+.od-meter i { flex: 1; max-width: 46px; height: 10px; border-radius: var(--r-pill); background: var(--dm-hair); transition: background 0.3s ease; }
+.od-meter i.is-taken { background: var(--text); }
+.od-meter i.is-mine { background: oklch(0.72 0.19 147); }
+.od-run-line { margin: 0 0 6px; font-size: 0.82rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.od-run-line b { color: var(--text); }
+.od-clock { font-weight: 700; color: var(--text); }
+.od-fallback { margin: 0; max-width: 500px; font-size: 0.74rem; line-height: 1.45; color: var(--text-dim); }
 
 /* A piece in the run: who put it in, its odds, and once pulled, who by. */
 .od-grid .dm-piece { gap: 8px; }
-.od-odds { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .od-creator { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .od-creator .avatar-circle { width: 18px; height: 18px; flex: 0 0 auto; }
 .od-you { padding: 1px 8px; border-radius: var(--r-pill); background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); font-weight: 800; }
 .dm-piece.is-mine { box-shadow: 0 0 0 2px oklch(0.72 0.19 147); }
-.dm-piece.is-pulled .dm-img, .dm-piece.is-pulled .dm-piece-text { opacity: 0.35; filter: grayscale(0.6); }
-.dm-piece.is-pulled .od-odds { color: var(--text-dim); }
-.od-pulled-by { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+.od-to { font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dm-pull.is-yours { box-shadow: 0 0 0 2px oklch(0.72 0.19 147); }
+.od-reveal-sub { margin: 0; font-size: 0.86rem; color: var(--text-dim); }
+.od-mine-badge { display: grid; place-items: center; flex: 0 0 52px; width: 52px; height: 52px; border-radius: 10px; background: var(--text); color: var(--text-inverse); font-family: var(--dm-display); font-size: 1.1rem; }
+.od-mine-row.is-up, .od-mine-row.is-sold { border-color: oklch(0.72 0.19 147); }
+.od-mine-row.is-sold .dm-money { color: oklch(0.5 0.15 147); }
 .od-empty { padding: 28px 16px; color: var(--text-dim); font-size: 0.86rem; list-style: none; }
 
 /* Put an item in: your pieces in the boxes, then your vault. */
@@ -9704,8 +9689,6 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-mine-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.78rem; color: var(--text-dim); }
 .od-mine-text b { color: var(--text); }
 .od-mine-row .dm-money { font-size: 1.1rem; }
-.od-mine-row.is-paid { border-color: oklch(0.72 0.19 147); }
-.od-mine-row.is-paid .dm-money { color: oklch(0.5 0.15 147); }
 .od-vaults { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
 .od-vault {
   display: flex;
@@ -9743,9 +9726,6 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 
 @media (max-width: 760px) {
   .od-hero { min-height: 0; }
-  .od-split { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .od-split-card { padding: 10px 8px; }
-  .od-split-card b { font-size: 1.2rem; }
   .od-box-tab { flex: 1; padding: 8px 12px; }
   .od-vaults { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
