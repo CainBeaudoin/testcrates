@@ -1,7 +1,9 @@
 // Odds: mystery boxes built from collectors' own vaulted items.
 //
-// There are three boxes, $300, $500 and $800, each sold in runs of ten: a
-// run holds ten items, one for each box. Nothing opens one at a time.
+// It starts with one box, $300, kept scarce so its runs sell out; more
+// prices ($500, $800) can be added to BOX_PRICES as demand shows. Boxes
+// sell in runs of ten: a run holds ten items, one for each box. Nothing
+// opens one at a time.
 // Buyers choose boxes in a run, and when the tenth is chosen the whole run
 // opens at once, the ten items dealt out at random. Every box has the same
 // shot at every item: no run ever ends with only the leftovers, or with
@@ -47,14 +49,14 @@ export const BUYER_RETURN = 0.75;
 export const PLATFORM_CUT = 0.1;
 export const CREATOR_MULTIPLE = (1 - PLATFORM_CUT) / BUYER_RETURN; // 1.2
 export const RUN_SIZE = 10;
-export const BOX_PRICES = [300, 500, 800];
+export const BOX_PRICES = [300]; // add 500, 800 as demand shows
 const RUN_WINDOW_MS = 7 * 24 * 3600 * 1000; // a week to fill
 const BAND = [0.25, 4]; // what a box takes, as multiples of its price
 const HIT = 2; // every run has an item worth at least this many times the price
 const CASH_OUT_RATE = 0.8; // the site's instant cash-out, for comparison
 const STORAGE_KEY = "gotcha_odds_v3";
 const CROWD_EVERY_MS = [5000, 9000];
-const CROWD_WEIGHT = { 300: 0.5, 500: 0.32, 800: 0.18 };
+const CROWD_WEIGHT = { 300: 0.5, 500: 0.32, 800: 0.18 }; // relative, among the boxes on offer
 
 // ---- Shared bits ---------------------------------------------------------
 
@@ -296,6 +298,25 @@ function closeDue() {
 
 // ---- Setup -----------------------------------------------------------------
 
+// Boxes no longer on offer (BOX_PRICES shrank): your items in them are
+// released, your chosen boxes refunded in Credits, and the box goes.
+// Boxes already ready to open stay in My Items.
+function retireBoxes() {
+  Object.keys(state.boxes)
+    .map(Number)
+    .filter((p) => !BOX_PRICES.includes(p))
+    .forEach((p) => {
+      const box = state.boxes[p];
+      state.mine.filter((m) => m.price === p && (m.status === "queued" || m.status === "in-run")).forEach((m) => release(m, "retired"));
+      const refund = box.spots.filter((s) => s.mine).length * p;
+      if (refund) {
+        deps.addCredits(refund);
+        deps.showToast(`The ${money(p)} box is closed for now: ${money(refund)} back in Credits for your boxes`, 4200);
+      }
+      delete state.boxes[p];
+    });
+}
+
 export function initOdds(el, appDeps) {
   root = el;
   deps = appDeps;
@@ -313,6 +334,7 @@ export function initOdds(el, appDeps) {
     state.results.forEach((r) => (r.at -= Math.floor(Math.random() * 40 * 60 * 1000)));
   }
   state.ready ??= [];
+  retireBoxes();
   // Anything locked in a box that this state no longer knows about (an
   // older build's) is released, so nothing stays locked for good.
   const known = new Set([
@@ -344,8 +366,9 @@ function scheduleCrowd() {
 }
 
 function crowdChoose() {
-  const r = Math.random();
-  const price = r < CROWD_WEIGHT[300] ? 300 : r < CROWD_WEIGHT[300] + CROWD_WEIGHT[500] ? 500 : 800;
+  const total = BOX_PRICES.reduce((s, p) => s + (CROWD_WEIGHT[p] ?? 0.2), 0);
+  let r = Math.random() * total;
+  const price = BOX_PRICES.find((p) => (r -= CROWD_WEIGHT[p] ?? 0.2) < 0) ?? BOX_PRICES[0];
   return choose(price, Math.random() < 0.2 ? 2 : 1, false);
 }
 
@@ -456,7 +479,7 @@ export function renderOdds() {
   root.innerHTML = `
     <div class="dm-layout od-layout">
       <div class="dm-main">
-        <div class="od-boxes" role="tablist" aria-label="Box">${tabsHTML()}</div>
+        ${BOX_PRICES.length > 1 ? `<div class="od-boxes" role="tablist" aria-label="Box">${tabsHTML()}</div>` : ""}
         <div id="odHero">${heroHTML()}</div>
         <section class="dm-sec">
           <div class="dm-sec-head">
@@ -499,7 +522,8 @@ function tabsHTML() {
 // the turning box).
 function refresh() {
   if (!isOpen()) return;
-  root.querySelector(".od-boxes").innerHTML = tabsHTML();
+  const tabs = root.querySelector(".od-boxes");
+  if (tabs) tabs.innerHTML = tabsHTML();
   qty = Math.max(1, Math.min(qty, left(current)));
   const copy = root.querySelector(".od-hero-copy");
   if (copy) copy.innerHTML = heroCopyHTML();
@@ -653,11 +677,15 @@ function yoursHTML() {
 // ---- Put an item in --------------------------------------------------------
 
 function statusLine(m) {
-  const box = state.boxes[m.price];
+  const box = state.boxes[m.price] ?? { run: null };
   if (m.status === "queued") return `Locked &middot; waiting for the next run of the ${money(m.price)} box`;
   if (m.status === "in-run") return `Locked &middot; in run #${m.run} of the ${money(m.price)} box${box.run === m.run ? `, ${chosen(m.price)} of ${RUN_SIZE} chosen` : ""}`;
   if (m.status === "sold") return `${esc(m.by)} won it &middot; <b>${money(m.paid)}</b> paid to you${m.full ? "" : " (run closed early: full value)"}`;
-  if (m.status === "released") return m.why === "early" ? "Released back to you, unlocked: its run closed early without it" : "Taken back, unlocked";
+  if (m.status === "released") {
+    if (m.why === "early") return "Released back to you, unlocked: its run closed early without it";
+    if (m.why === "retired") return `Released back to you, unlocked: the ${money(m.price)} box is closed for now`;
+    return "Taken back, unlocked";
+  }
   return `It came out in your own box, so it&rsquo;s back with you, unlocked`;
 }
 
@@ -679,7 +707,7 @@ function sellHTML() {
             ${
               ok
                 ? `<button class="od-put" data-od-put="${v.id}">Put in the ${money(current)} box</button>`
-                : `<span class="od-off">${elsewhere ? `Fits the <button class="od-link" data-od-box="${elsewhere}">${money(elsewhere)} box</button>` : "Outside every box&rsquo;s range"}</span>`
+                : `<span class="od-off">${elsewhere ? `Fits the <button class="od-link" data-od-box="${elsewhere}">${money(elsewhere)} box</button>` : BOX_PRICES.length > 1 ? "Outside every box&rsquo;s range" : `Outside the box&rsquo;s range`}</span>`
             }
           </li>`;
         })
