@@ -87,7 +87,7 @@ function tierFor(value, price) {
 
 const icon = (tier, size = 13) =>
   `<svg viewBox="0 0 256 256" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="${TIER_ICON[tier]}"/></svg>`;
-const chip = (tier) => `<span class="dm-chip dm-t-${tier}">${icon(tier)}${TIER_LABEL[tier]}</span>`;
+export const chip = (tier) => `<span class="dm-chip dm-t-${tier}">${icon(tier)}${TIER_LABEL[tier]}</span>`;
 const money = (v) => `$${Math.round(v).toLocaleString("en-US")}`;
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const uid = () => Math.random().toString(36).slice(2, 10);

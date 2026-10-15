@@ -23,6 +23,8 @@
 //
 // Everyone else's flips are simulated, as elsewhere on the site.
 
+import { chip } from "./odds.js";
+
 export const RETURN = 0.92; // what players get back, over many flips
 const EDGE = 1 - RETURN;
 const MIN_WIN = 150; // smallest piece you can flip for
@@ -66,6 +68,14 @@ function ago(ms) {
   if (s < 48 * 3600) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
 }
+
+// A piece's tier chip, as on Odds and Drops: its catalog rarity, with
+// legendary shown as Grail.
+const tierOf = (i) => {
+  const r = i.rarity || findItem(i.name)?.rarity || "common";
+  return r === "legendary" ? "grail" : r;
+};
+const ARROW = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
 
 // ---- Provably fair ----------------------------------------------------------
 
@@ -192,19 +202,20 @@ export function renderFlip() {
           <input class="fl-search" id="flSearch" type="search" placeholder="Search pieces" value="${esc(query)}" aria-label="Search pieces">
         </div>
         <div class="dm-filters fl-bands" id="flBands">${bandsHTML()}</div>
-        <ul class="fl-grid" id="flGrid">${gridHTML()}</ul>
+        <ul class="dm-grid fl-grid" id="flGrid">${gridHTML()}</ul>
       </section>
-      <section class="dm-sec" id="flMine">${mineHTML()}</section>
       <section class="dm-sec">
         <h2 class="dm-h2">Flipping now</h2>
-        <p class="dm-sub">Everyone&rsquo;s flips as they land.</p>
-        <ul class="fl-list" id="flCrowd">${crowdHTML()}</ul>
+        <p class="dm-sub">Everyone&rsquo;s flips as they land, and what each one took home. Drag to see more.</p>
+        <ul class="dm-strip" id="flCrowd">${crowdHTML()}</ul>
       </section>
+      <section class="dm-sec" id="flMine">${mineHTML()}</section>
       <section class="dm-sec" id="flFair">${fairHTML()}</section>
     </div>`;
   setCoin(coinRot);
   if (busy) setBusy(true);
   startLight();
+  initStripDrag();
 }
 
 // ---- Light on the coin ---------------------------------------------------------
@@ -336,7 +347,7 @@ function stageHTML() {
 
 // The flip button: beside the pieces on desktop, under the coin on a phone.
 const goHTML = (price, cls = "") =>
-  `<button class="dm-open fl-go ${cls}" data-fl="go"><span>${busy ? "Flipping…" : `Flip for ${SIDE[state.side]}`}</span><span class="dm-open-price">${money(price)}</span></button>`;
+  `<button class="dm-open fl-go ${cls}" data-fl="go"><span>${busy ? "Flipping…" : `Flip for ${SIDE[state.side]}`}</span><span class="dm-open-price">${money(price)}${ARROW}</span></button>`;
 
 function copyHTML() {
   const { win, floor, price } = current();
@@ -347,13 +358,13 @@ function copyHTML() {
     <p class="dm-blurb">Call it and flip. Land your side and the piece you picked is yours. Miss and you still take the other one home.</p>
     <div class="fl-match">
       <div class="fl-card is-win" data-fl-card="${call}">
-        <span class="fl-card-tag">${mini(call)}Lands ${SIDE[call]}</span>
+        <span class="fl-card-tag"><span class="dm-chip fl-side-chip">${mini(call)}Lands ${SIDE[call]}</span></span>
         <span class="dm-img"><img src="${win.image}" alt=""></span>
         <span class="dm-name">${esc(win.name)}</span>
         <b class="dm-money">${money(win.value)}</b>
       </div>
       <div class="fl-card" data-fl-card="${other(call)}">
-        <span class="fl-card-tag">${mini(other(call))}Lands ${SIDE[other(call)]}</span>
+        <span class="fl-card-tag"><span class="dm-chip fl-side-chip">${mini(other(call))}Lands ${SIDE[other(call)]}</span></span>
         <span class="dm-img"><img src="${floor.image}" alt=""></span>
         <span class="dm-name">${esc(floor.name)}</span>
         <b class="dm-money">${money(floor.value)}</b>
@@ -424,11 +435,16 @@ function gridHTML() {
     .slice(0, shown)
     .map((i) => {
       const floor = floorFor(i);
-      return `<li><button class="fl-pick${i.name === state.pick ? " is-picked" : ""}" data-fl-pick="${esc(i.name)}">
+      const t = tierOf(i);
+      const picked = i.name === state.pick;
+      return `<li class="fl-pick-li"><button class="dm-piece dm-t-${t} fl-pick${picked ? " is-picked" : ""}" data-fl-pick="${esc(i.name)}" aria-pressed="${picked}">
+        <span class="dm-card-top">${chip(t)}${picked ? `<span class="fl-picked">Picked</span>` : ""}</span>
         <span class="dm-img"><img src="${i.image}" alt="" loading="lazy"></span>
-        <span class="dm-name">${esc(i.name)}</span>
-        <b class="dm-money">${money(i.value)}</b>
-        <span class="fl-pick-sub">Flip ${money(priceFor(i, floor))} &middot; or ${money(floor.value)}</span>
+        <span class="dm-piece-text">
+          <span class="dm-name" title="${esc(i.name)}">${esc(i.name)}</span>
+          <b class="dm-money">${money(i.value)}</b>
+        </span>
+        <span class="od-to">Flip ${money(priceFor(i, floor))} &middot; or ${money(floor.value)}</span>
       </button></li>`;
     })
     .join("");
@@ -436,21 +452,32 @@ function gridHTML() {
   return cards + more;
 }
 
-function rowHTML(f, { mine = false } = {}) {
+// One of your flips, as Odds lists your boxes: picture, what it was, value.
+function rowHTML(f) {
   const got = f.won ? f.win : f.floor;
   const open = proofs.has(f.id);
   return `
-    <li class="fl-row${f.won ? " is-won" : ""}" data-flip="${f.id}">
-      <span class="fl-row-coin fl-${f.result}" title="Landed ${SIDE[f.result]}">${emblem(f.result, 13)}</span>
+    <li class="od-mine-row fl-mine-row${f.won ? " is-up" : ""}" data-flip="${f.id}">
       <span class="dm-img"><img src="${got.image}" alt="" loading="lazy"></span>
-      <span class="fl-row-text">
-        <b>${esc(got.name)}</b>
-        <span>${mine ? "You" : esc(f.by)} called ${SIDE[f.call]}, landed ${SIDE[f.result]} &middot; paid ${money(f.price)} &middot; ${ago(Date.now() - f.at)}</span>
-      </span>
-      <b class="fl-row-val">${money(got.value)}</b>
-      ${mine ? `<button class="fl-verify-btn" data-fl-verify="${f.id}" aria-expanded="${open}">${open ? "Hide" : "Verify"}</button>` : ""}
-      ${mine && open ? proofHTML(f) : ""}
+      <span class="od-mine-text"><span class="dm-name">${esc(got.name)}</span><span>Called ${SIDE[f.call]}, landed ${SIDE[f.result]} &middot; ${f.won ? "<b>won</b>" : "the other side"} &middot; paid ${money(f.price)} &middot; ${ago(Date.now() - f.at)}</span></span>
+      <b class="dm-money">${money(got.value)}</b>
+      <button class="fl-verify-btn" data-fl-verify="${f.id}" aria-expanded="${open}">${open ? "Hide" : "Verify"}</button>
+      ${open ? proofHTML(f) : ""}
     </li>`;
+}
+
+// Someone's flip, as Opened runs shows a pull: what they took home.
+function pullHTML(f, i) {
+  const got = f.won ? f.win : f.floor;
+  const t = tierOf(got);
+  const yours = f.by === deps.username();
+  return `<li class="dm-pull dm-t-${t}${yours ? " is-yours" : ""}${i === 0 && f.fresh ? " is-new" : ""}">
+    <span class="dm-card-top">${chip(t)}<span class="dm-ago">${ago(Date.now() - f.at)}</span></span>
+    <span class="dm-img"><img src="${got.image}" alt="" loading="lazy" draggable="false"></span>
+    <span class="dm-name" title="${esc(got.name)}">${esc(got.name)}</span>
+    <b class="dm-money">${money(got.value)}</b>
+    <span class="od-to">${yours ? "You" : esc(f.by)} &middot; ${f.won ? `won on ${SIDE[f.result]}` : `called ${SIDE[f.call]}, missed`}</span>
+  </li>`;
 }
 
 function proofHTML(f) {
@@ -477,26 +504,18 @@ async function runCheck(f) {
 
 function mineHTML() {
   const list = state.history;
+  if (!list.length) return "";
   const won = list.filter((f) => f.won).length;
   const spent = list.reduce((s, f) => s + f.price, 0);
   const got = list.reduce((s, f) => s + (f.won ? f.win.value : f.floor.value), 0);
   return `
-    <div class="dm-sec-head">
-      <div>
-        <h2 class="dm-h2">Your flips</h2>
-        <p class="dm-sub">${
-          list.length
-            ? `${won} of ${list.length} landed your way. ${money(spent)} in, ${money(got)} of pieces out. Open any one to check it.`
-            : "Nothing yet. Every flip you make shows here, with what it took to prove it fair."
-        }</p>
-      </div>
-      ${list.length ? `<button class="dm-ghost fl-items-btn" data-fl-go-items>See My Items</button>` : ""}
-    </div>
-    ${list.length ? `<ul class="fl-list">${list.map((f) => rowHTML(f, { mine: true })).join("")}</ul>` : ""}`;
+    <h2 class="dm-h2">Your flips</h2>
+    <p class="dm-sub">${won} of ${list.length} landed your way: ${money(spent)} in, ${money(got)} of pieces out, all in <a href="#" data-fl-go-items>My Items</a>. Verify any one to check it.</p>
+    <ul class="od-mine">${list.map((f) => rowHTML(f)).join("")}</ul>`;
 }
 
 function crowdHTML() {
-  return crowd.map((f) => rowHTML(f)).join("");
+  return crowd.map(pullHTML).join("");
 }
 
 function fairHTML() {
@@ -530,7 +549,7 @@ async function flip() {
   const got = won ? win : floor;
   // Settled now, before the coin lands, so leaving mid-flip loses nothing.
   deps.giveItem({ name: got.name, price: got.value, image: got.image, category: got.category, rarity: got.rarity });
-  const slim = (i) => ({ name: i.name, image: i.image, value: i.value });
+  const slim = (i) => ({ name: i.name, image: i.image, value: i.value, rarity: i.rarity });
   const entry = { id: uid(), at: Date.now(), call: state.side, result, won, price, win: slim(win), floor: slim(floor), server, hash, client, nonce };
   state.history = [entry, ...state.history].slice(0, 30);
   state.nonce = nonce + 1;
@@ -612,7 +631,7 @@ function land(f) {
       : `${SIDE[f.result]}. You got the ${got.name} (${money(got.value)}), in My Items`,
     3200
   );
-  crowd = [{ ...f, by: deps.username() }, ...crowd].slice(0, 8);
+  crowd = [{ ...f, by: deps.username(), fresh: true }, ...crowd.map((c) => ({ ...c, fresh: false }))].slice(0, 12);
   if (!isOpen()) return;
   setCoin(coinRot);
   setBusy(false);
@@ -646,12 +665,12 @@ function crowdFlip(at = Date.now()) {
   const floor = floorFor(win, mode);
   const call = Math.random() < 0.5 ? "heads" : "tails";
   const result = Math.random() < 0.5 ? "heads" : "tails";
-  const slim = (i) => ({ name: i.name, image: i.image, value: i.value });
+  const slim = (i) => ({ name: i.name, image: i.image, value: i.value, rarity: i.rarity });
   return { id: uid(), at, by: deps.randomUsername(), call, result, won: call === result, price: priceFor(win, floor), win: slim(win), floor: slim(floor) };
 }
 
 function seedCrowd() {
-  crowd = Array.from({ length: 8 }, (_, i) => crowdFlip(Date.now() - (i + 1) * (40 + Math.random() * 80) * 1000));
+  crowd = Array.from({ length: 12 }, (_, i) => crowdFlip(Date.now() - (i + 1) * (40 + Math.random() * 80) * 1000));
 }
 
 function scheduleCrowd() {
@@ -659,11 +678,12 @@ function scheduleCrowd() {
   const [a, b] = CROWD_EVERY_MS;
   crowdTimer = setTimeout(() => {
     if (!document.hidden) {
-      crowd = [crowdFlip(), ...crowd].slice(0, 8);
+      crowd = [{ ...crowdFlip(), fresh: true }, ...crowd.map((c) => ({ ...c, fresh: false }))].slice(0, 12);
       const list = isOpen() && root.querySelector("#flCrowd");
       if (list) {
+        const keep = list.scrollLeft;
         list.innerHTML = crowdHTML();
-        list.firstElementChild?.classList.add("is-new");
+        list.scrollLeft = keep;
       }
     }
     scheduleCrowd();
@@ -691,7 +711,10 @@ function onClick(e) {
     mathOpen = false;
     root.querySelector(".od-math")?.classList.remove("open");
   }
-  if (e.target.closest("[data-fl-go-items]")) return deps.goToItems();
+  if (e.target.closest("[data-fl-go-items]")) {
+    e.preventDefault();
+    return deps.goToItems();
+  }
   const side = e.target.closest("[data-fl-side]");
   if (side) {
     if (busy) return;
@@ -784,4 +807,27 @@ function onChange(e) {
   state.client = v;
   save();
   deps.showToast("Your seed is set. It goes into every flip from now on", 2000, { log: false });
+}
+
+// Flipping now: drag it sideways with the mouse (touch scrolls it).
+let dragBound = false;
+function initStripDrag() {
+  if (dragBound) return;
+  dragBound = true;
+  let drag = null;
+  root.addEventListener("pointerdown", (e) => {
+    const strip = e.target.closest("#flCrowd");
+    if (!strip || e.pointerType !== "mouse" || e.button !== 0) return;
+    drag = { strip, x: e.clientX, left: strip.scrollLeft };
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    if (Math.abs(dx) > 4) drag.strip.classList.add("is-dragging");
+    drag.strip.scrollLeft = drag.left - dx;
+  });
+  window.addEventListener("pointerup", () => {
+    drag?.strip.classList.remove("is-dragging");
+    drag = null;
+  });
 }

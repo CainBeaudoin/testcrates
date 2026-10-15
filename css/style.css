@@ -10081,13 +10081,6 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   justify-content: center;
   gap: 18px;
   min-height: 500px;
-  padding: 24px 16px 28px;
-  border: 1px solid var(--dm-hair);
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, oklch(0.85 0.03 250) 40%, transparent), transparent 62%),
-    var(--dm-card);
-  overflow: hidden;
 }
 .fl-hero .dm-hero-copy { align-self: center; }
 
@@ -10237,9 +10230,10 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .fl-card.is-win { border-color: oklch(0.72 0.19 147); }
-.fl-card .dm-img { background: var(--surface-2); }
-.fl-card-tag { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-dim); }
-.fl-card.is-win .fl-card-tag { color: oklch(0.58 0.17 147); }
+.fl-card-tag { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.fl-side-chip { padding-left: 3px; border-color: var(--dm-hair); color: var(--text); }
+.fl-side-chip .fl-mini { width: 18px; height: 18px; }
+.fl-card.is-win .fl-side-chip { border-color: oklch(0.72 0.19 147); color: oklch(0.5 0.15 147); }
 .fl-card.is-hit { box-shadow: 0 0 0 3px oklch(0.72 0.19 147), 0 18px 40px -18px oklch(0.72 0.19 147); transform: translateY(-3px); }
 .fl-card.is-miss { opacity: 0.4; }
 
@@ -10262,7 +10256,7 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .fl-go-m { display: none; }
 .fl-go:disabled { opacity: 0.6; cursor: default; transform: none; }
 .fl-fairline { max-width: 520px; margin: -8px 0 0; font-size: 0.74rem; line-height: 1.5; color: var(--text-dim); }
-.fl-fairline a { color: var(--text); }
+.fl-fairline a, .fl .dm-sub a { color: var(--text); }
 .fl code, .fl-steps code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; color: var(--text); word-break: break-all; }
 
 /* Picking a piece. */
@@ -10279,52 +10273,18 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 .fl-search:focus { outline: none; border-color: var(--text); }
 .fl-bands { margin-bottom: 16px; }
-.fl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
-.fl-pick {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid var(--dm-hair);
-  border-radius: 18px;
-  background: var(--dm-card);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-.fl-pick:hover:not(:disabled) { border-color: var(--text); transform: translateY(-2px); }
-.fl-pick.is-picked { border-color: var(--text); box-shadow: 0 0 0 1.5px var(--text); }
-.fl-pick .dm-img { background: var(--surface-2); }
-.fl-pick .dm-money { font-size: 1.15rem; }
-.fl-pick-sub { font-size: 0.72rem; color: var(--text-dim); }
+.fl-pick-li { display: flex; min-width: 0; }
+.fl-pick { width: 100%; min-width: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.fl-pick:hover:not(:disabled) { transform: translateY(-2px); }
+.fl-pick.is-picked { box-shadow: 0 0 0 2px var(--text); }
+.fl-picked { margin-left: auto; padding: 3px 9px; border-radius: var(--r-pill); background: var(--text); color: var(--text-inverse); font-size: 0.7rem; font-weight: 700; }
 .fl-empty { grid-column: 1 / -1; padding: 24px 0; color: var(--text-dim); }
 .fl-more-wrap { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 8px; }
 
-/* Flips: yours, with their proofs, and everyone's. */
-.fl-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.fl-row {
-  display: grid;
-  grid-template-columns: 26px 48px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border: 1px solid var(--dm-hair);
-  border-radius: 16px;
-  background: var(--dm-card);
-}
-.fl-row.is-new { animation: dm-drop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.fl-row-coin { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 32% 26%, #fbfcfd, #c4cad1 55%, #959da7); box-shadow: inset 0 0 0 1.5px #a4abb4; color: #5f6872; }
-.fl-row .dm-img { width: 48px; border-radius: 10px; background: var(--surface-2); }
-.fl-row-text { display: grid; gap: 2px; min-width: 0; }
-.fl-row-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; }
-.fl-row-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.74rem; color: var(--text-dim); }
-.fl-row-val { font-family: var(--dm-display); font-size: 1.05rem; font-weight: 400; font-variant-numeric: tabular-nums; }
-.fl-row.is-won .fl-row-val { color: oklch(0.62 0.19 147); }
+/* Your flips, on Odds' "Your boxes" rows; a proof opens beneath its row. */
+.fl-mine-row { flex-wrap: wrap; }
+.fl-mine-row .od-mine-text b { color: oklch(0.5 0.15 147); }
+.fl-mine-row.is-up .dm-money { color: oklch(0.5 0.15 147); }
 .fl-verify-btn {
   height: 30px;
   padding: 0 12px;
@@ -10338,13 +10298,12 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   cursor: pointer;
 }
 .fl-verify-btn:hover { border-color: var(--text); }
-.fl-proof { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 0.72rem; }
+.fl-proof { flex: 1 0 100%; display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 0.72rem; }
 .fl-proof > span { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; }
 .fl-proof em { font-style: normal; color: var(--text-dim); }
 .fl-proof-check { display: block !important; font-weight: 700; color: var(--text-dim); }
 .fl-proof-check.is-ok { color: oklch(0.62 0.19 147); }
 .fl-proof-check.is-bad { color: var(--danger, #e5484d); }
-.fl-items-btn { height: 40px; padding: 0 18px; font-size: 0.84rem; }
 
 .fl-steps { display: grid; gap: 12px; max-width: 720px; margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: var(--text-dim); }
 .fl-steps b { color: var(--text); }
@@ -10373,21 +10332,20 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .fl-match { margin-bottom: 12px; }
   .fl-modes { margin-bottom: 10px; }
   .fl-fairline { margin: 0; }
-  .fl-media { min-height: 0; padding: 16px 12px 20px; border-radius: 22px; }
+  .fl-media { min-height: 0; }
   .fl-stage { height: 250px; }
   .fl-toss { --coin: 176px; --thick: 4px; }
   .fl-shadow { width: 150px; margin-left: -75px; }
   .fl-match { gap: 8px; }
   /* The two pieces as compact rows: picture beside name and value. */
   .fl-card { display: grid; grid-template-columns: 52px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 10px; row-gap: 4px; padding: 10px; border-radius: 16px; }
-  .fl-card-tag { grid-column: 1 / -1; margin-bottom: 4px; font-size: 0.66rem; }
+  .fl-card-tag { grid-column: 1 / -1; margin-bottom: 4px; }
   .fl-card .dm-img { grid-row: 2 / 4; width: 52px; border-radius: 10px; }
   .fl-card .dm-name { align-self: end; font-size: 0.78rem; }
   .fl-card .dm-money { align-self: start; font-size: 1.1rem; }
-  .fl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .fl-search { width: 100%; }
-  .fl-row { grid-template-columns: 26px 44px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; }
-  .fl-row .dm-img { width: 44px; }
-  .fl-verify-btn { grid-column: 3 / -1; justify-self: start; }
+  /* Text gets the row; Verify drops to a line of its own under it. */
+  .fl-mine-row .od-mine-text { min-width: calc(100% - 140px); }
+  .fl-verify-btn { margin-left: 64px; }
   .fl-proof > span { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
