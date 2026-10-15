@@ -17,6 +17,7 @@ import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
 import { initLulu, renderLulu } from "./lulu.js";
+import { initFlip, renderFlip } from "./flip.js";
 import { initOdds, renderOdds, leaveOdds, openPutIn, takeBack, boxStatus, readyBoxesHTML, readyCount, openReady } from "./odds.js";
 
 // ---- Prize configuration -------------------------------------------------
@@ -3267,6 +3268,7 @@ navTabs.forEach((tab) => {
     if (tab.dataset.nav === "screen-category") renderCategories();
     if (tab.dataset.nav === "screen-lulu") renderLulu();
     if (tab.dataset.nav === "screen-odds") renderOdds();
+    if (tab.dataset.nav === "screen-flip") renderFlip();
     // Two rail tabs land on the Account screen — Rewards opens straight into
     // its group, plain Account falls back to the first one.
     if (tab.dataset.nav === "screen-account") {
@@ -6804,6 +6806,29 @@ if (profileParam) {
     addCash: (amount) => player.addCash(amount),
     addCredits: (amount) => player.addCredits(amount),
     renderWallet: () => renderWallet({ pulse: "cash" }),
+    showToast: (text, ms, opts) => showToast(text, ICONS.cash, ms, opts),
+  });
+  initFlip(document.getElementById("flipRoot"), {
+    catalog: ALL_CATALOG,
+    randomUsername: market.randomUsername,
+    username: () => player.getUsername(),
+    // Credits if they cover the flip, otherwise Cash (as Odds boxes are paid).
+    pay: (amount) => {
+      const w = player.getWallet();
+      const currency = w.credits >= amount ? "credits" : w.cash >= amount ? "cash" : null;
+      return !!currency && player.spend(currency, amount);
+    },
+    giveItem: (prize) => addOwnedItem(prize),
+    itemsChanged: () => {
+      if (document.getElementById("screen-account").classList.contains("active")) renderAccount();
+    },
+    goToItems: () => {
+      document.querySelector('.nav-tab[data-nav="screen-account"]:not([data-account-group])')?.click();
+      window.scrollTo({ top: 0 });
+    },
+    renderWallet: () => renderWallet({ pulse: "cash" }),
+    playWin: playDing,
+    playLand: playPop,
     showToast: (text, ms, opts) => showToast(text, ICONS.cash, ms, opts),
   });
   markOddsReady();

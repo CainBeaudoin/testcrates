@@ -74,6 +74,10 @@ try {
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/></svg>
           Odds
         </button>
+        <button class="nav-tab" data-nav="screen-flip">
+          <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/></svg>
+          Flip
+        </button>
         <button class="nav-tab" data-nav="screen-lulu">
           <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.5 0 7-3 7-7 0-3.5-2-5.5-3.5-8C14.5 9 13 10 13 10s1-4-2-8c0 4-4 6-4 11a5 5 0 0 0 5 5z"/></svg>
           Lulu
@@ -429,6 +433,12 @@ try {
          Built by js/odds.js. -->
     <section id="screen-odds" class="screen">
       <div id="oddsRoot" class="dm od"></div>
+    </section>
+
+    <!-- Flip: call heads or tails for a piece; a fair coin, the edge in the
+         price. Built by js/flip.js. -->
+    <section id="screen-flip" class="screen">
+      <div id="flipRoot" class="dm fl"></div>
     </section>
 
     <!-- Lulu: burn the Lulus you hold for Credits. Built by js/lulu.js. -->

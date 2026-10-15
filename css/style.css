@@ -4413,7 +4413,9 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
     flex-direction: column;
     width: auto;
     flex: 1;
-    padding: 4px 2px;
+    min-width: 0;
+    padding: 4px 0;
+    letter-spacing: 0.2px;
   }
   /* Mute lives in the footer's Social Media row on mobile (see the JS
      that reparents #muteBtn there) — the bottom bar is Drops/Market/
@@ -10061,3 +10063,287 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 .od-math-row i { font-style: normal; font-size: 0.68rem; opacity: 0.7; }
 .od-math-note { color: var(--text-dim); line-height: 1.45; }
 .od-math-formula { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.68rem; color: var(--text); }
+/* On a phone the panel hangs from the row's left edge, not the button's,
+   so it never runs (even hidden) past the screen. */
+@media (max-width: 760px) {
+  .od-math { position: static; }
+  .od-math-pop { width: 100%; }
+}
+
+/* ===== Flip: heads or tails for a piece ================================== */
+
+.fl-hero { min-height: 560px; align-items: stretch; }
+.fl-media {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 500px;
+  padding: 24px 16px 28px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, oklch(0.83 0.15 85) 22%, transparent), transparent 62%),
+    var(--dm-card);
+  overflow: hidden;
+}
+.fl-hero .dm-hero-copy { align-self: center; }
+
+/* The coin: two faces and a stack of rims for its edge, turned end over
+   end on X. Gold either way up; the emblem and word say which side. */
+.fl-stage { position: relative; display: grid; place-items: center; width: 100%; height: 330px; perspective: 1000px; }
+.fl-toss { --coin: 220px; position: relative; width: var(--coin); height: var(--coin); transform-style: preserve-3d; }
+.fl-coin { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
+.fl-rim { position: absolute; inset: 0; border-radius: 50%; background: oklch(0.6 0.12 68); transform: translateZ(var(--z)); }
+.fl-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.84 0.15 84) 42%, oklch(0.68 0.14 70) 100%);
+  box-shadow:
+    inset 0 0 0 9px oklch(0.76 0.14 76),
+    inset 0 0 0 11px oklch(0.92 0.1 92),
+    inset 0 -10px 30px oklch(0.55 0.12 62 / 0.45);
+  color: oklch(0.47 0.1 62);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.fl-face b { font-family: var(--dm-display); font-size: 1rem; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; }
+.fl-face svg { filter: drop-shadow(0 1px 0 oklch(0.95 0.08 95)); }
+.fl-heads { transform: translateZ(4px); }
+.fl-tails { transform: rotateX(180deg) translateZ(4px); }
+.fl-shadow {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 190px;
+  height: 26px;
+  margin-left: -95px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.32), transparent);
+}
+
+.fl-result {
+  margin: 0;
+  min-height: 1.4em;
+  font-family: var(--dm-display);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+.fl-result.is-won { color: oklch(0.62 0.19 147); animation: fl-pop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.fl-result.is-lost { color: var(--text); animation: fl-pop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes fl-pop { from { opacity: 0; transform: scale(0.85); } }
+
+.fl-mini {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.8 0.15 80));
+  box-shadow: inset 0 0 0 1.5px oklch(0.7 0.14 72);
+  color: oklch(0.47 0.1 62);
+}
+.fl-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(380px, 100%); }
+.fl-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 56px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.fl-side:hover { border-color: var(--text); }
+.fl-side.active { border-color: var(--text); background: var(--text); color: var(--text-inverse); }
+.fl-side:disabled, .fl-mode:disabled, .fl-pick:disabled { cursor: default; }
+.fl-side:disabled:not(.active) { opacity: 0.5; }
+
+/* The two pieces on the coin: what your call wins, and the other side. */
+.fl-match { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 520px; margin: 0 0 16px; }
+.fl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 20px;
+  background: var(--dm-card);
+  transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.fl-card.is-win { border-color: oklch(0.72 0.19 147); }
+.fl-card .dm-img { background: var(--surface-2); }
+.fl-card-tag { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-dim); }
+.fl-card.is-win .fl-card-tag { color: oklch(0.58 0.17 147); }
+.fl-card.is-hit { box-shadow: 0 0 0 3px oklch(0.72 0.19 147), 0 18px 40px -18px oklch(0.72 0.19 147); transform: translateY(-3px); }
+.fl-card.is-miss { opacity: 0.4; }
+
+.fl-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 18px; }
+.fl-modes > span { margin-right: 4px; font-size: 0.78rem; color: var(--text-dim); }
+.fl-mode {
+  height: 32px;
+  padding: 0 14px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fl-mode.active { border-color: var(--text); background: var(--text); color: var(--text-inverse); }
+.fl-go { width: 100%; max-width: 520px; }
+.fl-go-m { display: none; }
+.fl-go:disabled { opacity: 0.6; cursor: default; transform: none; }
+.fl-fairline { max-width: 520px; margin: -8px 0 0; font-size: 0.74rem; line-height: 1.5; color: var(--text-dim); }
+.fl-fairline a { color: var(--text); }
+.fl code, .fl-steps code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; color: var(--text); word-break: break-all; }
+
+/* Picking a piece. */
+.fl-search {
+  width: min(260px, 100%);
+  height: 38px;
+  padding: 0 14px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: var(--dm-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+.fl-search:focus { outline: none; border-color: var(--text); }
+.fl-bands { margin-bottom: 16px; }
+.fl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.fl-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 18px;
+  background: var(--dm-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.fl-pick:hover:not(:disabled) { border-color: var(--text); transform: translateY(-2px); }
+.fl-pick.is-picked { border-color: var(--text); box-shadow: 0 0 0 1.5px var(--text); }
+.fl-pick .dm-img { background: var(--surface-2); }
+.fl-pick .dm-money { font-size: 1.15rem; }
+.fl-pick-sub { font-size: 0.72rem; color: var(--text-dim); }
+.fl-empty { grid-column: 1 / -1; padding: 24px 0; color: var(--text-dim); }
+.fl-more-wrap { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 8px; }
+
+/* Flips: yours, with their proofs, and everyone's. */
+.fl-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fl-row {
+  display: grid;
+  grid-template-columns: 26px 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--dm-hair);
+  border-radius: 16px;
+  background: var(--dm-card);
+}
+.fl-row.is-new { animation: dm-drop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.fl-row-coin { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 34% 28%, oklch(0.96 0.09 95), oklch(0.8 0.15 80)); color: oklch(0.47 0.1 62); }
+.fl-row .dm-img { width: 48px; border-radius: 10px; background: var(--surface-2); }
+.fl-row-text { display: grid; gap: 2px; min-width: 0; }
+.fl-row-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; }
+.fl-row-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.74rem; color: var(--text-dim); }
+.fl-row-val { font-family: var(--dm-display); font-size: 1.05rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+.fl-row.is-won .fl-row-val { color: oklch(0.62 0.19 147); }
+.fl-verify-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fl-verify-btn:hover { border-color: var(--text); }
+.fl-proof { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--hairline); font-size: 0.72rem; }
+.fl-proof > span { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; }
+.fl-proof em { font-style: normal; color: var(--text-dim); }
+.fl-proof-check { display: block !important; font-weight: 700; color: var(--text-dim); }
+.fl-proof-check.is-ok { color: oklch(0.62 0.19 147); }
+.fl-proof-check.is-bad { color: var(--danger, #e5484d); }
+.fl-items-btn { height: 40px; padding: 0 18px; font-size: 0.84rem; }
+
+.fl-steps { display: grid; gap: 12px; max-width: 720px; margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: var(--text-dim); }
+.fl-steps b { color: var(--text); }
+.fl-client { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.fl-client span { font-size: 0.76rem; font-weight: 700; color: var(--text); }
+.fl-client input {
+  width: min(280px, 100%);
+  height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--dm-hair);
+  border-radius: 10px;
+  background: var(--dm-card);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+.fl-client input:focus { outline: none; border-color: var(--text); }
+
+@media (max-width: 760px) {
+  /* What you're flipping for first; then the coin, your call and the
+     button together, so the toss happens right above your thumb. */
+  .fl-hero { min-height: 0; gap: 20px; }
+  .fl-copy { order: -1; }
+  .fl-copy .fl-go, .fl-copy .dm-buyline, .fl-copy .dm-paid { display: none; }
+  .fl-go-m { display: flex; width: min(380px, 100%); }
+  .fl-match { margin-bottom: 12px; }
+  .fl-modes { margin-bottom: 10px; }
+  .fl-fairline { margin: 0; }
+  .fl-media { min-height: 0; padding: 16px 12px 20px; border-radius: 22px; }
+  .fl-stage { height: 250px; }
+  .fl-toss { --coin: 168px; }
+  .fl-face svg { width: 54px; height: 54px; }
+  .fl-face b { font-size: 0.82rem; letter-spacing: 2px; }
+  .fl-shadow { width: 150px; margin-left: -75px; }
+  .fl-match { gap: 8px; }
+  /* The two pieces as compact rows: picture beside name and value. */
+  .fl-card { display: grid; grid-template-columns: 52px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 10px; row-gap: 4px; padding: 10px; border-radius: 16px; }
+  .fl-card-tag { grid-column: 1 / -1; margin-bottom: 4px; font-size: 0.66rem; }
+  .fl-card .dm-img { grid-row: 2 / 4; width: 52px; border-radius: 10px; }
+  .fl-card .dm-name { align-self: end; font-size: 0.78rem; }
+  .fl-card .dm-money { align-self: start; font-size: 1.1rem; }
+  .fl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .fl-search { width: 100%; }
+  .fl-row { grid-template-columns: 26px 44px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; }
+  .fl-row .dm-img { width: 44px; }
+  .fl-verify-btn { grid-column: 3 / -1; justify-self: start; }
+  .fl-proof > span { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
