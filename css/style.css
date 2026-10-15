@@ -9729,3 +9729,80 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .od-box-tab { flex: 1; padding: 8px 12px; }
   .od-vaults { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ===== Odds in My Items, and the box chooser ============================== */
+
+/* A box from a completed run, waiting to be opened. */
+.odds-ready .market-item-media { display: grid; place-items: center; background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 18%, var(--panel)); }
+.odds-ready-box { width: 72%; height: 72%; object-fit: contain; }
+.item-ready-flag,
+.item-box-flag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.item-ready-flag { background: oklch(0.8751 0.2471 147.45); color: oklch(0.256 0.062 150.2); border: 1px solid #000; animation: ready-pulse 2s ease-in-out infinite; }
+@keyframes ready-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, oklch(0.8751 0.2471 147.45) 35%, transparent); } }
+.odds-open-btn { flex: 1; background: var(--open-green) !important; color: var(--open-ink) !important; border: 1px solid #000 !important; font-weight: 800; }
+/* An item held in a box: locked, its trading actions gone. */
+.item-box-flag { background: var(--text); color: var(--text-inverse); }
+.item-box-flag svg { width: 11px; height: 11px; }
+.market-item.is-boxed .market-item-media img { opacity: 0.55; filter: grayscale(0.3); }
+.item-box-note { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-dim); }
+.item-box-note svg { width: 12px; height: 12px; flex: 0 0 auto; }
+/* The avatar's dot while a box is ready. */
+.avatar-btn { position: relative; }
+.avatar-btn.has-ready::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: oklch(0.72 0.19 147);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* Odds: ready boxes and take-backs in Your boxes / Put an item in. */
+.od-ready { color: oklch(0.5 0.15 147); }
+.od-mine-row.is-ready { border-color: oklch(0.72 0.19 147); }
+.od-mine-badge svg { color: inherit; }
+.od-go-open { height: 38px; padding: 0 16px; font-size: 0.8rem; flex: 0 0 auto; }
+.od-takeback { height: 34px; padding: 0 14px; font-size: 0.76rem; flex: 0 0 auto; }
+
+/* Put it in a box: the chooser, from My Items. */
+.od-chooser { width: min(520px, 100%); text-align: left; }
+.od-chooser .dm-h2 { text-align: center; }
+.od-chooser-item { display: flex; align-items: center; gap: 12px; margin: 14px 0; padding: 10px; border: 1px solid var(--dm-hair); border-radius: 16px; background: var(--dm-card); }
+.od-chooser-item .dm-img { flex: 0 0 60px; width: 60px; height: 60px; border-radius: 10px; }
+.od-chooser-item > span:last-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.od-chooser-worth { font-size: 0.76rem; color: var(--text-dim); }
+.od-chooser-opts { display: grid; gap: 8px; }
+.od-chooser-opt {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--text);
+  border-radius: 16px;
+  background: var(--dm-card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.od-chooser-opt b { font-family: var(--dm-display); font-size: 1.1rem; font-weight: 400; }
+.od-chooser-opt span { font-size: 0.8rem; color: var(--text-dim); }
+.od-chooser-opt strong { color: oklch(0.5 0.15 147); }
+.od-chooser-opt:hover:not(:disabled) { background: color-mix(in srgb, oklch(0.8751 0.2471 147.45) 18%, var(--dm-card)); }
+.od-chooser-opt:disabled { opacity: 0.45; border-color: var(--dm-hair); cursor: not-allowed; }

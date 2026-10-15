@@ -1,35 +1,45 @@
-// Odds: mystery boxes built from collectors' own vaulted pieces.
+// Odds: mystery boxes built from collectors' own vaulted items.
 //
 // There are three boxes, $300, $500 and $800, each sold in runs of ten: a
-// run holds ten pieces, one for each box. Nothing opens one at a time.
-// Buyers take boxes in a run, and when the tenth is taken the whole run
-// opens at once, the ten pieces dealt out at random. Every box has the
-// same shot at every piece: no run ever ends with only the leftovers, or
-// with the grail saved for last.
+// run holds ten items, one for each box. Nothing opens one at a time.
+// Buyers choose boxes in a run, and when the tenth is chosen the whole run
+// opens at once, the ten items dealt out at random. Every box has the same
+// shot at every item: no run ever ends with only the leftovers, or with
+// the grail saved for last. A chosen box is a place in a run, not a thing
+// you hold: it can't be listed or sold on, since what's in it depends on
+// the run selling out.
 //
 // The money (shown to collectors, not to buyers):
-//   the pieces in a run are worth BUYER_RETURN of what its boxes sell for
-//     (75%: $2,250 of pieces in a $3,000 run of $300 boxes);
+//   the items in a run are worth BUYER_RETURN of what its boxes sell for
+//     (75%: $2,250 of items in a $3,000 run of $300 boxes);
 //   Chosen keeps PLATFORM_CUT of every box (10%);
 //   the other 90% goes to the collectors, 90 / 75 = 1.2 times their
-//     piece's value, paid when the run opens.
+//     item's value, paid when the run opens.
 // That's more than the 80% instant cash-out, or a marketplace sale after
-// fees: a reason to vault a piece and put it to work.
+// fees: a reason to vault an item and put it to work.
 //
-// A run that isn't full by its deadline closes early instead: each box
-// that was taken gets one of the most valuable pieces at or under the box
-// price, and the difference back as Credits, so its buyer breaks even;
-// those collectors are paid their piece's full value; Chosen takes
-// nothing; every other piece goes into the next run.
+// A run has a week to fill. One that doesn't closes early: each box chosen
+// gets one of the run's most valuable items at or under the box price,
+// plus Credits making up exactly what the box cost (a box with no such
+// item left gets its whole price back in Credits). Those collectors are
+// paid their item's full value. What goes out is exactly what came in, so
+// Chosen never loses on an early close (and takes nothing from it). Every
+// other item is released back to its collector, to put in again or not.
 //
-// Each box takes pieces worth a quarter of its price up to four times it,
-// and every run has at least one piece worth twice the price or more. A
-// collector whose own piece lands in their own box just gets it back,
-// unpaid (otherwise buying out a run of your own pieces would pay you).
+// An item in a box is held by Chosen until it's won or released: it stays
+// in its owner's vault, locked, and can't be listed, sold, shipped, sent
+// or cashed out meanwhile. Each box takes items worth a quarter of its
+// price up to four times it, and every run has at least one item worth
+// twice the price or more. A collector whose own item lands in their own
+// box just gets it back, unpaid (otherwise buying out a run of your own
+// items would pay you for them).
+//
+// When a run you chose boxes in fills, nothing pops up: you're told it's
+// complete, and each of your boxes waits in My Items marked Ready to open,
+// to open when you like. That's when its item (and any Credits) are yours.
 //
 // The other collectors and buyers are simulated, as elsewhere on the site;
-// your boxes, pieces and payouts are real within the demo. The window a
-// run has to fill is short here (minutes, not days) so it can be seen.
+// your boxes, items and payouts are real within the demo.
 
 import { createBoxViewer } from "./boxViewer.js";
 
@@ -38,11 +48,11 @@ export const PLATFORM_CUT = 0.1;
 export const CREATOR_MULTIPLE = (1 - PLATFORM_CUT) / BUYER_RETURN; // 1.2
 export const RUN_SIZE = 10;
 export const BOX_PRICES = [300, 500, 800];
-const RUN_WINDOW_MS = 8 * 60 * 1000; // how long a run has to fill (demo)
+const RUN_WINDOW_MS = 7 * 24 * 3600 * 1000; // a week to fill
 const BAND = [0.25, 4]; // what a box takes, as multiples of its price
-const HIT = 2; // every run has a piece worth at least this many times the price
+const HIT = 2; // every run has an item worth at least this many times the price
 const CASH_OUT_RATE = 0.8; // the site's instant cash-out, for comparison
-const STORAGE_KEY = "gotcha_odds_v2";
+const STORAGE_KEY = "gotcha_odds_v3";
 const CROWD_EVERY_MS = [5000, 9000];
 const CROWD_WEIGHT = { 300: 0.5, 500: 0.32, 800: 0.18 };
 
@@ -59,7 +69,7 @@ const TIER_LABEL = { grail: "Grail", epic: "Epic", rare: "Rare", uncommon: "Unco
 // The site's own rarity names for the same five steps (My Items uses these).
 const SITE_RARITY = { grail: "legendary", epic: "epic", rare: "rare", uncommon: "uncommon", common: "common" };
 
-// A piece's tier in a box: how it compares to what the box cost.
+// An item's tier in a box: how it compares to what the box cost.
 function tierFor(value, price) {
   const x = value / price;
   if (x >= 3) return "grail";
@@ -94,26 +104,29 @@ function ago(ms) {
   if (s < 48 * 3600) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
 }
+// 6d 23h, 4h 12m, 9:41 as it gets close.
 function countdown(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
-  const h = Math.floor(s / 3600);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
-  const sec = String(s % 60).padStart(2, "0");
-  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  return `${m}:${String(s % 60).padStart(2, "0")}`;
 }
 
 // ---- State ---------------------------------------------------------------
-// boxes[price] = { run, closesAt, pieces, spots, queue }
-//   piece: { id, name, image, value, category, creator, mineId? }
+// boxes[price] = { run, closesAt, items, spots, queue }
+//   item:  { id, name, image, value, category, creator, mineId? }
 //   spot:  { id, by, mine }
-//   queue: pieces waiting for that box's next run (yours, or ones a run
-//          that closed early didn't need)
-// mine:    your pieces, start to finish: { id, name, image, value, category,
-//          price, status: "queued" | "in-run" | "sold" | "returned",
-//          run?, paid?, full?, at }
+//   queue: your items waiting for that box's next run
+// mine:    your items, start to finish: { id, invId, name, image, value,
+//          category, price, status: "queued" | "in-run" | "sold" |
+//          "released" | "returned", run?, paid?, full?, by?, why?, at }
 // results: opened runs, newest first: { id, price, run, early, at,
-//          deals: [{ piece, to, yours, refund? }] }
-// seen:    ids of results with your boxes in them you've been shown
+//          deals: [{ item, to, yours, refund? }] }
+// ready:   your boxes from runs that have opened, waiting in My Items:
+//          { id, price, run, early, item | null, refund, ownInvId?, at }
 
 let deps = null;
 let state = null;
@@ -143,11 +156,10 @@ function save() {
 
 // ---- Runs ------------------------------------------------------------------
 
-// Ten pieces for a box's next run: queued pieces first (yours, and any a
-// run that closed early handed back; up to four), then collectors' pieces
-// from the catalog, picked so the ten together are worth BUYER_RETURN of
-// what the run sells for, with at least one piece worth HIT times the
-// price.
+// Ten items for a box's next run: yours first (up to four), then
+// collectors' items from the catalog, picked so the ten together are
+// worth BUYER_RETURN of what the run sells for, with at least one item
+// worth HIT times the price.
 function assembleRun(price) {
   const box = state.boxes[price];
   const target = BUYER_RETURN * RUN_SIZE * price;
@@ -158,16 +170,16 @@ function assembleRun(price) {
   const hits = pool.filter((p) => p.price >= price * HIT);
   const needHit = !carried.some((s) => s.value >= price * HIT) && hits.length;
   const fixed = carried.reduce((s, x) => s + x.value, 0);
-  const free = RUN_SIZE - carried.length;
+  const open = RUN_SIZE - carried.length;
   let best = null;
   for (let attempt = 0; attempt < 600; attempt++) {
     const picks = [];
     if (needHit) picks.push(hits[Math.floor(Math.random() * hits.length)]);
     const rest = target - fixed - picks.reduce((s, p) => s + p.price, 0);
-    const want = Math.max(lo, rest / Math.max(1, free - picks.length));
+    const want = Math.max(lo, rest / Math.max(1, open - picks.length));
     const near = pool.filter((p) => p.price >= want * 0.35 && p.price <= want * 1.9 && !picks.includes(p));
-    const from = near.length >= free ? near : pool;
-    while (picks.length < free) {
+    const from = near.length >= open ? near : pool;
+    while (picks.length < open) {
       const p = from[Math.floor(Math.random() * from.length)];
       if (!picks.includes(p)) picks.push(p);
     }
@@ -185,7 +197,7 @@ function assembleRun(price) {
     creator: deps.randomUsername(),
   }));
   box.run += 1;
-  box.pieces = [...carried, ...others].sort((a, b) => b.value - a.value);
+  box.items = [...carried, ...others].sort((a, b) => b.value - a.value);
   box.spots = [];
   box.closesAt = Date.now() + RUN_WINDOW_MS;
   carried.forEach((s) => {
@@ -194,12 +206,13 @@ function assembleRun(price) {
   });
 }
 
-const taken = (price) => state.boxes[price].spots.length;
-const free = (price) => RUN_SIZE - taken(price);
+const chosen = (price) => state.boxes[price].spots.length;
+const left = (price) => RUN_SIZE - chosen(price);
 const yoursIn = (price) => state.boxes[price].spots.filter((s) => s.mine).length;
+const mineFor = (item) => item.mineId && state.mine.find((x) => x.id === item.mineId);
 
-// Take boxes in a run. The one that fills it opens the run.
-function takeSpots(price, n, byYou) {
+// Choose boxes in a run. The one that fills it opens the run.
+function choose(price, n, byYou) {
   const box = state.boxes[price];
   const by = byYou ? deps.username() : deps.randomUsername();
   for (let i = 0; i < n && box.spots.length < RUN_SIZE; i++) box.spots.push({ id: uid(), by, mine: byYou });
@@ -208,53 +221,55 @@ function takeSpots(price, n, byYou) {
   return null;
 }
 
-// Open a run: full, every piece dealt to a box at random; early, only as
-// many pieces as boxes were taken: the most valuable ones at or under the
-// box price (and, only if there aren't enough, the cheapest above it), so
-// each box's piece plus its Credits back comes to exactly what it cost.
+// Release one of your items from a box: back to an ordinary vault item.
+function release(m, why) {
+  Object.assign(m, { status: "released", why, at: Date.now() });
+  deps.unlockItem(m.invId);
+}
+
+// Open a run. Full: every item dealt to a box at random. Early: only the
+// run's most valuable items at or under the box price, one per box chosen
+// while they last, each box topped up in Credits to exactly what it cost
+// (a box with none left gets its whole price back); the rest released.
 function settle(price, early) {
   const box = state.boxes[price];
   const spots = shuffle(box.spots);
   if (early && !spots.length) {
-    box.closesAt = Date.now() + RUN_WINDOW_MS; // nobody's in yet: give it longer
+    box.closesAt = Date.now() + RUN_WINDOW_MS; // nobody's in yet: give it another week
     save();
     return null;
   }
-  const under = box.pieces.filter((p) => p.value <= price).sort((a, b) => b.value - a.value);
-  const over = box.pieces.filter((p) => p.value > price).sort((a, b) => a.value - b.value);
-  const pieces = early ? [...under, ...over].slice(0, spots.length) : box.pieces;
-  const dealt = shuffle(pieces);
+  const used = early
+    ? box.items.filter((p) => p.value <= price).sort((a, b) => b.value - a.value).slice(0, spots.length)
+    : box.items;
+  const dealt = shuffle(used);
   const deals = spots.map((spot, i) => {
-    const piece = dealt[i];
-    const deal = { piece: { ...piece }, to: spot.by, yours: spot.mine };
-    const m = piece.mineId && state.mine.find((x) => x.id === piece.mineId);
+    const item = dealt[i] ?? null;
+    const deal = { item: item && { ...item }, to: spot.by, yours: spot.mine };
+    const m = item && mineFor(item);
     if (m && spot.mine) {
-      // Your own piece, in your own box: back to you, unpaid.
+      // Your own item, in your own box: back to you, unpaid (when you open it).
       Object.assign(m, { status: "returned", at: Date.now() });
     } else if (m) {
-      const paid = Math.round(piece.value * (early ? 1 : CREATOR_MULTIPLE));
+      const paid = Math.round(item.value * (early ? 1 : CREATOR_MULTIPLE));
       Object.assign(m, { status: "sold", paid, full: !early, by: spot.by, at: Date.now() });
+      deps.removeItem(m.invId);
       deps.addCash(paid);
-      deps.showToast(`${spot.by} got your ${piece.name}: +${money(paid)} paid to you`, 4200);
+      deps.showToast(`${spot.by} won your ${item.name}: +${money(paid)} paid to you`, 4200);
     }
     if (spot.mine) {
-      deps.giveItem({ name: piece.name, price: piece.value, image: piece.image, category: piece.category, rarity: SITE_RARITY[tierFor(piece.value, price)] });
-      // Closed early, a box short of what it cost gets the difference back.
-      if (early && piece.value < price) {
-        deal.refund = Math.round(price - piece.value);
-        deps.addCredits(deal.refund);
-      }
+      // Closed early, the box is made up to exactly what it cost.
+      const refund = early ? Math.max(0, Math.round(price - (item?.value ?? 0))) : 0;
+      if (refund) deal.refund = refund;
+      state.ready.push({ id: uid(), price, run: box.run, early, item: item && { ...item }, refund, ownInvId: m && spot.mine ? m.invId : null, at: Date.now() });
     }
     return deal;
   });
-  // Early: the pieces nobody needed go into the next run.
   if (early) {
-    const used = new Set(pieces.map((p) => p.id));
-    const back = box.pieces.filter((p) => !used.has(p.id));
-    box.queue.unshift(...back);
-    back.forEach((p) => {
-      const m = p.mineId && state.mine.find((x) => x.id === p.mineId);
-      if (m) Object.assign(m, { status: "queued", run: null });
+    const usedIds = new Set(used.map((p) => p.id));
+    box.items.filter((p) => !usedIds.has(p.id)).forEach((p) => {
+      const m = mineFor(p);
+      if (m) release(m, "early");
     });
   }
   const result = { id: uid(), price, run: box.run, early, at: Date.now(), deals };
@@ -262,6 +277,14 @@ function settle(price, early) {
   state.results = state.results.slice(0, 40);
   assembleRun(price);
   save();
+  const yours = deals.filter((d) => d.yours).length;
+  if (yours) {
+    deps.showToast(
+      `Odds complete: run #${result.run} of the ${money(price)} box ${early ? "closed early" : "is full"}. ${plural(yours, "box", "boxes")} ready to open in My Items`,
+      4600
+    );
+  }
+  deps.itemsChanged();
   return result;
 }
 
@@ -278,21 +301,29 @@ export function initOdds(el, appDeps) {
   deps = appDeps;
   state = load();
   if (!state || !state.boxes || !BOX_PRICES.every((p) => state.boxes[p])) {
-    state = { boxes: {}, mine: [], results: [], seen: [], lastTick: Date.now() };
+    state = { boxes: {}, mine: [], results: [], ready: [], lastTick: Date.now() };
     BOX_PRICES.forEach((p, i) => {
-      state.boxes[p] = { run: 11 + i * 3, pieces: [], spots: [], queue: [], closesAt: 0 };
+      state.boxes[p] = { run: 11 + i * 3, items: [], spots: [], queue: [], closesAt: 0 };
       assembleRun(p);
       // A couple of opened runs behind it, and the current one part-way.
-      for (let r = 0; r < 2; r++) takeSpots(p, RUN_SIZE, false);
-      takeSpots(p, 2 + Math.floor(Math.random() * 5), false);
+      for (let r = 0; r < 2; r++) choose(p, RUN_SIZE, false);
+      choose(p, 2 + Math.floor(Math.random() * 5), false);
       state.boxes[p].closesAt = Date.now() + RUN_WINDOW_MS * (0.4 + Math.random() * 0.5);
     });
     state.results.forEach((r) => (r.at -= Math.floor(Math.random() * 40 * 60 * 1000)));
   }
-  // Time away: the crowd kept taking boxes, and runs past their deadline
+  state.ready ??= [];
+  // Anything locked in a box that this state no longer knows about (an
+  // older build's) is released, so nothing stays locked for good.
+  const known = new Set([
+    ...state.mine.filter((m) => m.status === "queued" || m.status === "in-run").map((m) => m.invId),
+    ...state.ready.map((r) => r.ownInvId).filter(Boolean),
+  ]);
+  deps.lockedIds().filter((id) => !known.has(id)).forEach((id) => deps.unlockItem(id));
+  // Time away: the crowd kept choosing boxes, and runs past their deadline
   // closed (capped, so a long absence doesn't churn through everything).
   const steps = Math.min(30, Math.floor((Date.now() - (state.lastTick ?? Date.now())) / 7000));
-  for (let i = 0; i < steps; i++) crowdTake();
+  for (let i = 0; i < steps; i++) crowdChoose();
   closeDue();
   state.lastTick = Date.now();
   save();
@@ -300,9 +331,9 @@ export function initOdds(el, appDeps) {
   scheduleCrowd();
 }
 
-// The simulated crowd: someone takes a box every few seconds, the cheaper
-// box more often. Runs everywhere, so your runs fill (and your pieces
-// sell) wherever you are on the site.
+// The simulated crowd: someone chooses a box every few seconds, the
+// cheaper box more often. Runs everywhere, so your runs fill (and your
+// items sell) wherever you are on the site.
 function scheduleCrowd() {
   clearTimeout(crowdTimer);
   const [a, b] = CROWD_EVERY_MS;
@@ -312,41 +343,116 @@ function scheduleCrowd() {
   }, a + Math.random() * (b - a));
 }
 
-function crowdTake() {
+function crowdChoose() {
   const r = Math.random();
   const price = r < CROWD_WEIGHT[300] ? 300 : r < CROWD_WEIGHT[300] + CROWD_WEIGHT[500] ? 500 : 800;
-  return takeSpots(price, Math.random() < 0.2 ? 2 : 1, false);
+  return choose(price, Math.random() < 0.2 ? 2 : 1, false);
 }
 
 function tick() {
-  const opened = [crowdTake(), ...closeDue()].filter(Boolean);
+  const opened = [crowdChoose(), ...closeDue()].filter(Boolean);
   state.lastTick = Date.now();
   save();
-  opened.forEach(announce);
   if (opened.length) deps.renderWallet();
   if (isOpen()) refresh();
 }
 
-// A run you had boxes in has opened: show it here, or say so elsewhere.
-function announce(result) {
-  const mine = result.deals.filter((d) => d.yours);
-  if (!mine.length || state.seen.includes(result.id)) return;
-  if (isOpen() && result.price === current) {
-    state.seen.push(result.id);
-    save();
-    showReveal(result);
-  } else {
-    deps.showToast(`Your ${money(result.price)} ${mine.length > 1 ? "boxes" : "box"} opened${result.early ? " (closed early)" : ""}: see what you got in Odds`, 4200);
-  }
+const isOpen = () => !!root?.isConnected && root.closest(".screen")?.classList.contains("active");
+
+// ---- Your items in boxes (also for My Items) -------------------------------
+
+// Where one of your vault items stands, for its card in My Items.
+export function boxStatus(invId) {
+  const m = state?.mine.find((x) => x.invId === invId && (x.status === "queued" || x.status === "in-run"));
+  if (!m) return null;
+  if (m.status === "queued") return { text: `Waiting for the next run of the ${money(m.price)} box`, canTakeBack: true };
+  return { text: `In run #${m.run}: ${chosen(m.price)} of ${RUN_SIZE} chosen`, canTakeBack: false };
 }
 
-const isOpen = () => !!root?.isConnected && root.closest(".screen")?.classList.contains("active");
+// Put a vault item in a box: it joins the box's next run, locked.
+function putIn(itemId, price) {
+  const v = deps.vault().find((x) => x.id === itemId);
+  if (!v || !fits(v.value, price)) return false;
+  if (!deps.lockItem(itemId, { price })) return false;
+  const id = uid();
+  state.mine.unshift({ id, invId: itemId, name: v.name, image: v.image, value: v.value, category: v.category, price, status: "queued", at: Date.now() });
+  state.boxes[price].queue.push({ id: uid(), mineId: id, name: v.name, image: v.image, value: v.value, category: v.category, creator: deps.username() });
+  save();
+  deps.showToast(`${v.name} is in the ${money(price)} box's next run, locked until it's won or released. You'll be paid ${money(v.value * CREATOR_MULTIPLE)} if it's won`, 4200);
+  deps.itemsChanged();
+  refresh();
+  return true;
+}
+
+// Take an item back while it's still waiting for a run.
+export function takeBack(invId) {
+  const m = state.mine.find((x) => x.invId === invId && x.status === "queued");
+  if (!m) return;
+  const box = state.boxes[m.price];
+  box.queue = box.queue.filter((q) => q.mineId !== m.id);
+  release(m, "taken back");
+  save();
+  deps.showToast(`${m.name} is back in your vault, unlocked`, 2800);
+  deps.itemsChanged();
+  refresh();
+}
+
+// Putting an item in from My Items: which box, and what it'd pay.
+export function openPutIn(itemId) {
+  const v = deps.vault().find((x) => x.id === itemId);
+  if (!v) return;
+  let wrap = document.getElementById("odChooser");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "odChooser";
+    wrap.className = "dm od";
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => {
+      const opt = e.target.closest("[data-od-choose]");
+      if (opt && !opt.disabled) {
+        putIn(wrap.dataset.item, Number(opt.dataset.odChoose));
+        return closeChooser();
+      }
+      if (e.target.closest("[data-od-cancel]") || e.target.classList.contains("dm-reveal")) closeChooser();
+    });
+  }
+  wrap.dataset.item = itemId;
+  wrap.innerHTML = `
+    <div class="dm-reveal">
+      <div class="dm-reveal-card od-chooser" role="dialog" aria-modal="true" aria-label="Put it in a box">
+        <h3 class="dm-h2">Put it in a box</h3>
+        <div class="od-chooser-item">
+          <span class="dm-img"><img src="${v.image}" alt=""></span>
+          <span><span class="dm-name">${esc(v.name)}</span><span class="od-chooser-worth">Worth ${money(v.value)} &middot; ${money(v.value * CASH_OUT_RATE)} to cash out</span></span>
+        </div>
+        <div class="od-chooser-opts">${BOX_PRICES.map((p) => {
+          const ok = fits(v.value, p);
+          const [lo, hi] = band(p);
+          return `<button class="od-chooser-opt" data-od-choose="${p}"${ok ? "" : " disabled"}>
+              <b>${money(p)} box</b>
+              <span>${ok ? `Paid <strong>${money(v.value * CREATOR_MULTIPLE)}</strong> if it&rsquo;s won` : `Takes items worth ${money(lo)} to ${money(hi)}`}</span>
+            </button>`;
+        }).join("")}</div>
+        <p class="dm-reveal-note">It joins the box&rsquo;s next run. Until it&rsquo;s won or released, Chosen holds it: it stays in your vault, locked, and can&rsquo;t be listed, sold, shipped, sent or cashed out. You can take it back until its run starts.</p>
+        <div class="dm-reveal-actions"><button class="dm-ghost" data-od-cancel>Cancel</button></div>
+      </div>
+    </div>`;
+  const reveal = wrap.querySelector(".dm-reveal");
+  requestAnimationFrame(() => reveal.classList.add("visible"));
+}
+
+function closeChooser() {
+  const reveal = document.querySelector("#odChooser .dm-reveal");
+  if (!reveal) return;
+  reveal.classList.remove("visible");
+  setTimeout(() => (document.getElementById("odChooser").innerHTML = ""), 220);
+}
 
 // ---- Page ----------------------------------------------------------------
 
 export function renderOdds() {
   if (!root) return;
-  qty = Math.max(1, Math.min(qty, free(current)));
+  qty = Math.max(1, Math.min(qty, left(current)));
   root.innerHTML = `
     <div class="dm-layout od-layout">
       <div class="dm-main">
@@ -356,31 +462,24 @@ export function renderOdds() {
           <div class="dm-sec-head">
             <div>
               <h2 class="dm-h2">In this run</h2>
-              <p class="dm-sub">Ten pieces, one for every box, each put in by a collector. They&rsquo;re dealt out when the run opens.</p>
+              <p class="dm-sub">Ten items, one for every box, each put in by a collector. They&rsquo;re dealt out when the run opens.</p>
             </div>
           </div>
           <ul class="dm-grid od-grid" id="odGrid">${gridHTML()}</ul>
         </section>
         <section class="dm-sec">
           <h2 class="dm-h2">Opened runs</h2>
-          <p class="dm-sub">What came out of the ${money(current)} box&rsquo;s last runs, and who got it. Drag to see more.</p>
+          <p class="dm-sub">What came out of the ${money(current)} box&rsquo;s last runs, and who won it. Drag to see more.</p>
           <ul class="dm-strip" id="odStrip">${stripHTML()}</ul>
         </section>
         <section class="dm-sec" id="odYours">${yoursHTML()}</section>
         <section class="dm-sec od-sell" id="odSell">${sellHTML()}</section>
       </div>
     </div>
-    <div class="dm-reveal hidden" id="odReveal" role="dialog" aria-modal="true" aria-label="What came out"></div>`;
+`;
   mountBox();
   initStripDrag();
   startClock();
-  // A run of yours that opened while you were elsewhere.
-  const unseen = state.results.find((r) => r.price === current && r.deals.some((d) => d.yours) && !state.seen.includes(r.id));
-  if (unseen) {
-    state.seen.push(unseen.id);
-    save();
-    showReveal(unseen);
-  }
 }
 
 export function leaveOdds() {
@@ -392,16 +491,16 @@ export function leaveOdds() {
 function tabsHTML() {
   return BOX_PRICES.map(
     (p) =>
-      `<button class="od-box-tab${p === current ? " active" : ""}" data-od-box="${p}" role="tab" aria-selected="${p === current}"><b>${money(p)}</b> box<span>${taken(p)} of ${RUN_SIZE} taken${yoursIn(p) ? ` &middot; ${yoursIn(p)} yours` : ""}</span></button>`
+      `<button class="od-box-tab${p === current ? " active" : ""}" data-od-box="${p}" role="tab" aria-selected="${p === current}"><b>${money(p)}</b> box<span>${chosen(p)} of ${RUN_SIZE} chosen${yoursIn(p) ? ` &middot; ${yoursIn(p)} yours` : ""}</span></button>`
   ).join("");
 }
 
-// Redraw what a box taken or a run opened changes, keeping the rest (and
+// Redraw what a box chosen or a run opened changes, keeping the rest (and
 // the turning box).
 function refresh() {
   if (!isOpen()) return;
   root.querySelector(".od-boxes").innerHTML = tabsHTML();
-  qty = Math.max(1, Math.min(qty, free(current)));
+  qty = Math.max(1, Math.min(qty, left(current)));
   const copy = root.querySelector(".od-hero-copy");
   if (copy) copy.innerHTML = heroCopyHTML();
   root.querySelector("#odGrid").innerHTML = gridHTML();
@@ -413,7 +512,7 @@ function refresh() {
   root.querySelector("#odSell").innerHTML = sellHTML();
 }
 
-// The countdowns tick every second while the page is up.
+// The countdowns tick while the page is up.
 function startClock() {
   clearInterval(clockTimer);
   clockTimer = setInterval(() => {
@@ -422,9 +521,7 @@ function startClock() {
       el.textContent = countdown(Number(el.dataset.closes) - Date.now());
     });
     if (BOX_PRICES.some((p) => Date.now() >= state.boxes[p].closesAt)) {
-      const opened = closeDue();
-      opened.forEach(announce);
-      if (opened.length) deps.renderWallet();
+      if (closeDue().length) deps.renderWallet();
       refresh();
     }
   }, 1000);
@@ -442,7 +539,7 @@ function heroHTML() {
 
 function heroCopyHTML() {
   const box = state.boxes[current];
-  const n = taken(current);
+  const n = chosen(current);
   const cells = Array.from({ length: RUN_SIZE }, (_, i) => {
     const s = box.spots[i];
     return `<i class="${s ? "is-taken" : ""}${s?.mine ? " is-mine" : ""}"></i>`;
@@ -451,7 +548,7 @@ function heroCopyHTML() {
   return `
     <span class="dm-pill">Run #${box.run}</span>
     <h1 class="dm-title">The ${money(current)} box</h1>
-    <p class="dm-blurb">Ten boxes, ten real pieces from collectors&rsquo; vaults. Nothing opens until all ten are taken. Then they open together, so every box has the same shot at every piece.</p>
+    <p class="dm-blurb">Ten boxes, ten real items from collectors&rsquo; vaults. Nothing opens until all ten are chosen. Then they open together, so every box has the same shot at every item.</p>
     <div class="dm-buyline">
       <div class="dm-price"><b>${money(current)}</b><span>per box</span></div>
     </div>
@@ -460,18 +557,18 @@ function heroCopyHTML() {
         <button data-od="minus" aria-label="One fewer">&minus;</button>
         <b id="odQty">${qty}</b>
         <button data-od="plus" aria-label="One more">+</button>
-        <button class="dm-max${qty === free(current) ? " active" : ""}" data-od="max">Max</button>
+        <button class="dm-max${qty === left(current) ? " active" : ""}" data-od="max">Max</button>
       </div>
-      <button class="dm-open" data-od="take">${takeLabel()}</button>
+      <button class="dm-open" data-od="choose">${chooseLabel()}</button>
     </div>
-    <p class="dm-paid">Paid in credit or balance. Your box opens with the rest of the run.</p>
-    <div class="od-meter" aria-label="${n} of ${RUN_SIZE} boxes taken">${cells}</div>
-    <p class="od-run-line"><b>${n} of ${RUN_SIZE} taken</b>${mine ? ` &middot; ${plural(mine, "is", "are")} yours` : ""} &middot; opens when it&rsquo;s full &middot; closes in <span class="od-clock" data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></p>
-    <p class="od-fallback">Not full in time? It closes early: each box taken gets a piece, plus Credits to make up exactly what it cost, and the other pieces go into the next run.</p>`;
+    <p class="dm-paid">Paid in credit or balance. Your box opens with the rest of the run, and can&rsquo;t be resold before it does.</p>
+    <div class="od-meter" aria-label="${n} of ${RUN_SIZE} boxes chosen">${cells}</div>
+    <p class="od-run-line"><b>${n} of ${RUN_SIZE} chosen</b>${mine ? ` &middot; ${plural(mine, "is", "are")} yours` : ""} &middot; opens when it&rsquo;s full &middot; closes in <span class="od-clock" data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></p>
+    <p class="od-fallback">Not full in time? It closes early: each box chosen gets an item, plus Credits to make up what it cost.</p>`;
 }
 
-function takeLabel() {
-  return `<span>Take ${qty} box${qty > 1 ? "es" : ""}</span><span class="dm-open-price">${money(current * qty)}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>`;
+function chooseLabel() {
+  return `<span>Choose ${qty} box${qty > 1 ? "es" : ""}</span><span class="dm-open-price">${money(current * qty)}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>`;
 }
 
 function creatorHTML(p) {
@@ -479,7 +576,7 @@ function creatorHTML(p) {
 }
 
 function gridHTML() {
-  return state.boxes[current].pieces
+  return state.boxes[current].items
     .map((p) => {
       const t = tierFor(p.value, current);
       return `<li class="dm-piece dm-t-${t}${p.mineId ? " is-mine" : ""}">
@@ -498,17 +595,17 @@ function gridHTML() {
 function stripHTML() {
   const deals = state.results
     .filter((r) => r.price === current)
-    .flatMap((r) => r.deals.map((d) => ({ ...d, run: r.run, at: r.at, early: r.early })))
+    .flatMap((r) => r.deals.filter((d) => d.item).map((d) => ({ ...d, run: r.run, at: r.at, early: r.early })))
     .slice(0, 24);
   if (!deals.length) return `<li class="od-empty">No runs of this box have opened yet.</li>`;
   return deals
     .map((d) => {
-      const t = tierFor(d.piece.value, current);
+      const t = tierFor(d.item.value, current);
       return `<li class="dm-pull dm-t-${t}${d.yours ? " is-yours" : ""}">
         <span class="dm-card-top">${chip(t)}<span class="dm-ago">${ago(Date.now() - d.at)}</span></span>
-        <span class="dm-img"><img src="${d.piece.image}" alt="" loading="lazy" draggable="false"></span>
-        <span class="dm-name" title="${esc(d.piece.name)}">${esc(d.piece.name)}</span>
-        <b class="dm-money">${money(d.piece.value)}</b>
+        <span class="dm-img"><img src="${d.item.image}" alt="" loading="lazy" draggable="false"></span>
+        <span class="dm-name" title="${esc(d.item.name)}">${esc(d.item.name)}</span>
+        <b class="dm-money">${money(d.item.value)}</b>
         <span class="od-to">Run #${d.run}${d.early ? " (early)" : ""} &middot; ${d.yours ? "you" : esc(d.to)}</span>
       </li>`;
     })
@@ -522,35 +619,46 @@ function yoursHTML() {
     const box = state.boxes[p];
     return `<li class="od-mine-row is-waiting">
         <span class="od-mine-badge">${yoursIn(p)}&times;</span>
-        <span class="od-mine-text"><span class="dm-name">${money(p)} box, run #${box.run}</span><span>${taken(p)} of ${RUN_SIZE} taken &middot; closes in <span data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></span></span>
+        <span class="od-mine-text"><span class="dm-name">${money(p)} box, run #${box.run}</span><span>${chosen(p)} of ${RUN_SIZE} chosen &middot; closes in <span data-closes="${box.closesAt}">${countdown(box.closesAt - Date.now())}</span></span></span>
         <b class="dm-money">${money(p * yoursIn(p))}</b>
       </li>`;
   });
-  const got = state.results
-    .flatMap((r) => r.deals.filter((d) => d.yours).map((d) => ({ ...d, r })))
-    .slice(0, 8)
-    .map(
-      (d) => `<li class="od-mine-row${d.piece.value >= d.r.price ? " is-up" : ""}">
-        <span class="dm-img"><img src="${d.piece.image}" alt=""></span>
-        <span class="od-mine-text"><span class="dm-name">${esc(d.piece.name)}</span><span>${money(d.r.price)} box, run #${d.r.run}${d.r.early ? " &middot; closed early" : ""}${d.refund ? ` &middot; ${money(d.refund)} back in Credits` : ""} &middot; ${ago(Date.now() - d.r.at)}</span></span>
-        <b class="dm-money">${money(d.piece.value)}</b>
+  const got = (state.opened ?? []).slice(0, 8).map((r) =>
+    r.item
+      ? `<li class="od-mine-row${r.item.value >= r.price ? " is-up" : ""}">
+        <span class="dm-img"><img src="${r.item.image}" alt=""></span>
+        <span class="od-mine-text"><span class="dm-name">${esc(r.item.name)}</span><span>${money(r.price)} box, run #${r.run}${r.early ? " &middot; closed early" : ""}${r.refund ? ` &middot; ${money(r.refund)} back in Credits` : ""} &middot; opened ${ago(Date.now() - r.at)}</span></span>
+        <b class="dm-money">${money(r.item.value)}</b>
       </li>`
-    );
-  if (!open.length && !got.length) return "";
+      : `<li class="od-mine-row">
+        <span class="od-mine-badge">$</span>
+        <span class="od-mine-text"><span class="dm-name">${money(r.refund)} back in Credits</span><span>${money(r.price)} box, run #${r.run} &middot; closed early &middot; opened ${ago(Date.now() - r.at)}</span></span>
+        <b class="dm-money">${money(r.refund)}</b>
+      </li>`
+  );
+  const ready = state.ready.map(
+    (r) => `<li class="od-mine-row is-ready">
+        <span class="od-mine-badge">${ICON_BOX}</span>
+        <span class="od-mine-text"><span class="dm-name">${money(r.price)} box, run #${r.run}</span><span><b class="od-ready">Ready to open</b>${r.early ? " &middot; closed early" : ""} &middot; in My Items</span></span>
+        <button class="dm-open od-go-open" data-od-go-items>Open in My Items</button>
+      </li>`
+  );
+  if (!open.length && !ready.length && !got.length) return "";
   return `
     <h2 class="dm-h2">Your boxes</h2>
-    <p class="dm-sub">Boxes you&rsquo;re waiting on, and what came out of the ones that opened. Everything you got is in My Items.</p>
-    <ul class="od-mine">${open.join("")}${got.join("")}</ul>`;
+    <p class="dm-sub">Boxes you&rsquo;re waiting on, boxes ready to open, and what came out of the ones you&rsquo;ve opened.</p>
+    <ul class="od-mine">${ready.join("")}${open.join("")}${got.join("")}</ul>`;
 }
 
 // ---- Put an item in --------------------------------------------------------
 
 function statusLine(m) {
   const box = state.boxes[m.price];
-  if (m.status === "queued") return `Waiting for the next run of the ${money(m.price)} box`;
-  if (m.status === "in-run") return `In run #${m.run} of the ${money(m.price)} box${box.run === m.run ? `, ${taken(m.price)} of ${RUN_SIZE} taken` : ""}`;
-  if (m.status === "sold") return `${esc(m.by)} got it &middot; <b>${money(m.paid)}</b> paid to you${m.full ? "" : " (run closed early: full value)"}`;
-  return `It came out in your own box, so it&rsquo;s back in My Items`;
+  if (m.status === "queued") return `Locked &middot; waiting for the next run of the ${money(m.price)} box`;
+  if (m.status === "in-run") return `Locked &middot; in run #${m.run} of the ${money(m.price)} box${box.run === m.run ? `, ${chosen(m.price)} of ${RUN_SIZE} chosen` : ""}`;
+  if (m.status === "sold") return `${esc(m.by)} won it &middot; <b>${money(m.paid)}</b> paid to you${m.full ? "" : " (run closed early: full value)"}`;
+  if (m.status === "released") return m.why === "early" ? "Released back to you, unlocked: its run closed early without it" : "Taken back, unlocked";
+  return `It came out in your own box, so it&rsquo;s back with you, unlocked`;
 }
 
 function sellHTML() {
@@ -566,7 +674,7 @@ function sellHTML() {
             <span class="dm-img"><img src="${v.image}" alt="" loading="lazy"></span>
             <span class="dm-name" title="${esc(v.name)}">${esc(v.name)}</span>
             <span class="od-vault-row"><span>Worth</span><b>${money(v.value)}</b></span>
-            <span class="od-vault-row is-pay"><span>Paid when it sells</span><b>${money(v.value * CREATOR_MULTIPLE)}</b></span>
+            <span class="od-vault-row is-pay"><span>Paid if it&rsquo;s won</span><b>${money(v.value * CREATOR_MULTIPLE)}</b></span>
             <span class="od-vault-row is-cash"><span>Cash out today</span><span>${money(v.value * CASH_OUT_RATE)}</span></span>
             ${
               ok
@@ -576,12 +684,12 @@ function sellHTML() {
           </li>`;
         })
         .join("")
-    : `<li class="od-empty">Nothing in your vault yet. Keep a pull, and it can go in a box.</li>`;
+    : `<li class="od-empty">Nothing free in your vault. Keep a pull, and it can go in a box.</li>`;
   return `
     <div class="dm-sec-head">
       <div>
         <h2 class="dm-h2">Put an item in</h2>
-        <p class="dm-sub">Sell a piece from your vault through the boxes. When the run it&rsquo;s in opens you&rsquo;re paid <b>${Math.round(CREATOR_MULTIPLE * 100)}% of its value</b>, against ${Math.round(CASH_OUT_RATE * 100)}% to cash out. If the run closes early and your piece is used, you&rsquo;re paid its full value; if not, it goes into the next run. The ${money(current)} box takes pieces worth ${money(lo)} to ${money(hi)}.</p>
+        <p class="dm-sub">Sell an item from your vault through the boxes. When the run it&rsquo;s in opens you&rsquo;re paid <b>${Math.round(CREATOR_MULTIPLE * 100)}% of its value</b>, against ${Math.round(CASH_OUT_RATE * 100)}% to cash out. If the run closes early and your item is used, you&rsquo;re paid its full value; if not, it&rsquo;s released back to you. While it&rsquo;s in a box it&rsquo;s locked: no listing, selling, shipping or cashing out until it&rsquo;s won or released. The ${money(current)} box takes items worth ${money(lo)} to ${money(hi)}.</p>
       </div>
     </div>
     ${
@@ -591,6 +699,7 @@ function sellHTML() {
               (m) => `<li class="od-mine-row is-${m.status}">
               <span class="dm-img"><img src="${m.image}" alt=""></span>
               <span class="od-mine-text"><span class="dm-name">${esc(m.name)}</span><span>${statusLine(m)}</span></span>
+              ${m.status === "queued" ? `<button class="dm-ghost od-takeback" data-od-takeback="${m.invId}">Take it back</button>` : ""}
               <b class="dm-money">${money(m.status === "sold" ? m.paid : m.value * CREATOR_MULTIPLE)}</b>
             </li>`
             )
@@ -600,90 +709,121 @@ function sellHTML() {
     <ul class="od-vaults">${cards}</ul>`;
 }
 
-function putIn(itemId) {
-  const v = deps.vault().find((x) => x.id === itemId);
-  if (!v || !fits(v.value, current)) return;
-  if (!deps.takeItem(itemId)) return;
-  const id = uid();
-  state.mine.unshift({ id, name: v.name, image: v.image, value: v.value, category: v.category, price: current, status: "queued", at: Date.now() });
-  state.boxes[current].queue.push({ id: uid(), mineId: id, name: v.name, image: v.image, value: v.value, category: v.category, creator: deps.username() });
-  save();
-  deps.showToast(`${v.name} goes into the ${money(current)} box's next run. You'll be paid ${money(v.value * CREATOR_MULTIPLE)} when it sells`, 3800);
-  refresh();
-}
+// ---- Choosing boxes --------------------------------------------------------
 
-// ---- Taking boxes ----------------------------------------------------------
-
-function takeBoxes() {
-  const n = Math.min(qty, free(current));
+function chooseBoxes() {
+  const n = Math.min(qty, left(current));
   if (!n) return;
   const cost = current * n;
   if (!deps.pay(cost)) return deps.showToast(`Not enough credit or balance for ${money(cost)}`, 2400);
-  const result = takeSpots(current, n, true);
+  const run = state.boxes[current].run;
+  const result = choose(current, n, true);
   deps.renderWallet();
   qty = 1;
   viewer?.spin?.(900);
-  if (result) {
-    state.seen.push(result.id);
-    save();
-    showReveal(result);
-    deps.renderWallet();
-  } else {
-    deps.showToast(`${plural(n, "box", "boxes")} taken in run #${state.boxes[current].run}. ${free(current)} to go before it opens`, 3000);
-  }
+  if (!result) deps.showToast(`${plural(n, "box", "boxes")} chosen in run #${run}. ${left(current)} to go before it's complete`, 3000);
   refresh();
 }
 
-function showReveal(result) {
-  const mine = result.deals.filter((d) => d.yours);
-  const total = mine.reduce((s, d) => s + d.piece.value, 0);
-  const cost = mine.length * result.price;
-  const refunds = mine.reduce((s, d) => s + (d.refund || 0), 0);
-  const reveal = root.querySelector("#odReveal");
-  reveal.innerHTML = `
-    <div class="dm-reveal-card">
-      <h3 class="dm-h2">Run #${result.run} ${result.early ? "closed early" : "opened"}</h3>
-      <p class="od-reveal-sub">${
-        result.early
-          ? `It closed with ${plural(result.deals.length, "box", "boxes")} taken, so each got a piece and Credits that come to its ${money(result.price)}.`
-          : `All ten ${money(result.price)} boxes were taken, and opened together.`
-      }</p>
-      <ul class="dm-reveal-list${mine.length === 1 ? " is-one" : ""}">${mine
-        .map((d, i) => {
-          const t = tierFor(d.piece.value, result.price);
-          return `<li class="dm-piece dm-t-${t}" style="--i:${i}">
+// ---- Ready to open (My Items) ---------------------------------------------
+
+const ICON_BOX = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7"/><line x1="12" y1="11.5" x2="12" y2="21.5"/></svg>`;
+
+/** Your boxes from completed runs, as cards for the top of My Items. */
+export function readyBoxesHTML() {
+  return (state?.ready ?? [])
+    .map(
+      (r) => `
+    <div class="market-item odds-ready" data-odds-ready="${r.id}">
+      <div class="market-item-media">
+        <img class="odds-ready-box" alt="">
+        <span class="item-ready-flag">Ready to open</span>
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${money(r.price)} Odds box</span>
+        <span class="item-cashout-today">Run #${r.run} ${r.early ? "closed early" : "is complete"}</span>
+        <div class="market-item-divider"></div>
+        <div class="item-actions"><button class="item-action-btn odds-open-btn" data-odds-open="${r.id}">Open</button></div>
+      </div>
+    </div>`
+    )
+    .join("");
+}
+
+export const readyCount = () => state?.ready?.length ?? 0;
+
+/** Open one of your ready boxes: its item (and any Credits) become yours. */
+export function openReady(id) {
+  const r = state.ready.find((x) => x.id === id);
+  if (!r) return;
+  state.ready = state.ready.filter((x) => x.id !== id);
+  if (r.item) {
+    if (r.ownInvId) deps.unlockItem(r.ownInvId);
+    else deps.giveItem({ name: r.item.name, price: r.item.value, image: r.item.image, category: r.item.category, rarity: SITE_RARITY[tierFor(r.item.value, r.price)] });
+  }
+  if (r.refund) deps.addCredits(r.refund);
+  state.opened = [{ ...r, at: Date.now() }, ...(state.opened ?? [])].slice(0, 30);
+  save();
+  deps.renderWallet();
+  deps.itemsChanged();
+  showOpened(r);
+  refresh();
+}
+
+function showOpened(r) {
+  let wrap = document.getElementById("odOpen");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "odOpen";
+    wrap.className = "dm od";
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", (e) => {
+      if (e.target.closest("[data-od-close]") || e.target.classList.contains("dm-reveal")) closeOpened();
+    });
+  }
+  const t = r.item && tierFor(r.item.value, r.price);
+  wrap.innerHTML = `
+    <div class="dm-reveal">
+      <div class="dm-reveal-card" role="dialog" aria-modal="true" aria-label="What came out">
+        <h3 class="dm-h2">${money(r.price)} box, run #${r.run}</h3>
+        <p class="od-reveal-sub">${r.early ? `The run closed early, so your box got ${r.item ? "an item and Credits that come" : "Credits for the whole"} to its ${money(r.price)}.` : "The run was full, and the ten items were dealt out together."}</p>
+        ${
+          r.item
+            ? `<ul class="dm-reveal-list is-one"><li class="dm-piece dm-t-${t}" style="--i:0">
             <span class="dm-card-top">${chip(t)}</span>
-            <span class="dm-img"><img src="${d.piece.image}" alt=""></span>
-            <span class="dm-name">${esc(d.piece.name)}</span>
-            <b class="dm-money">${money(d.piece.value)}</b>
-            <span class="od-creator">${d.piece.mineId ? "Your own piece: back to you, unpaid" : `from ${esc(d.piece.creator)}`}</span>
-          </li>`;
-        })
-        .join("")}</ul>
-      <p class="dm-reveal-total">${mine.length > 1 ? `Worth ${money(total)} together, from ${money(cost)} of boxes.` : `${(total / result.price).toFixed(2)}&times; what the box cost.`}${refunds ? ` ${money(refunds)} back in Credits.` : ""}</p>
-      <p class="dm-reveal-note">In My Items now: keep it, ship it, list it, cash it out, or put it in a box yourself.</p>
-      <div class="dm-reveal-actions"><button class="dm-ghost" data-od="reveal-close">Done</button></div>
+            <span class="dm-img"><img src="${r.item.image}" alt=""></span>
+            <span class="dm-name">${esc(r.item.name)}</span>
+            <b class="dm-money">${money(r.item.value)}</b>
+            <span class="od-creator">${r.ownInvId ? "Your own item: back to you, unpaid" : `from ${esc(r.item.creator)}`}</span>
+          </li></ul>
+          <p class="dm-reveal-total">${(r.item.value / r.price).toFixed(2)}&times; what the box cost.${r.refund ? ` Plus ${money(r.refund)} in Credits.` : ""}</p>`
+            : `<p class="dm-reveal-total">${money(r.refund)} back in Credits.</p>`
+        }
+        <p class="dm-reveal-note">${r.item ? "In My Items now: keep it, ship it, list it, cash it out, or put it in a box yourself." : "Your Credits are in your balance."}</p>
+        <div class="dm-reveal-actions"><button class="dm-ghost" data-od-close>Done</button></div>
+      </div>
     </div>`;
-  reveal.classList.remove("hidden");
+  const reveal = wrap.querySelector(".dm-reveal");
   requestAnimationFrame(() => reveal.classList.add("visible"));
 }
 
-function closeReveal() {
-  const reveal = root.querySelector("#odReveal");
+function closeOpened() {
+  const reveal = document.querySelector("#odOpen .dm-reveal");
+  if (!reveal) return;
   reveal.classList.remove("visible");
-  setTimeout(() => reveal.classList.add("hidden"), 220);
+  setTimeout(() => (document.getElementById("odOpen").innerHTML = ""), 220);
 }
 
 // ---- Controls --------------------------------------------------------------
 
 function setQty(n) {
-  qty = Math.max(1, Math.min(free(current), n));
+  qty = Math.max(1, Math.min(left(current), n));
   const copy = root.querySelector(".od-hero-copy");
   if (copy) copy.innerHTML = heroCopyHTML();
 }
 
 function onClick(e) {
-  if (e.target.classList.contains("dm-reveal")) return closeReveal();
+  if (e.target.closest("[data-od-go-items]")) return deps.goToItems();
   const tab = e.target.closest("[data-od-box]");
   if (tab) {
     current = Number(tab.dataset.odBox);
@@ -693,18 +833,21 @@ function onClick(e) {
     return;
   }
   const put = e.target.closest("[data-od-put]");
-  if (put) return putIn(put.dataset.odPut);
+  if (put) return putIn(put.dataset.odPut, current);
+  const back = e.target.closest("[data-od-takeback]");
+  if (back) return takeBack(back.dataset.odTakeback);
   const act = e.target.closest("[data-od]")?.dataset.od;
   if (!act) return;
   if (act === "minus") setQty(qty - 1);
   else if (act === "plus") setQty(qty + 1);
-  else if (act === "max") setQty(free(current));
-  else if (act === "reveal-close") closeReveal();
-  else if (act === "take") takeBoxes();
+  else if (act === "max") setQty(left(current));
+  else if (act === "choose") chooseBoxes();
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && root?.querySelector("#odReveal.visible")) closeReveal();
+  if (e.key !== "Escape") return;
+  if (document.querySelector("#odOpen .dm-reveal.visible")) closeOpened();
+  if (document.querySelector("#odChooser .dm-reveal.visible")) closeChooser();
 });
 
 function mountBox() {

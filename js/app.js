@@ -17,7 +17,7 @@ import { liquidTabs, swapText, initReveal, themeWipe } from "./motion.js";
 import * as liveActivity from "./liveActivity.js";
 import * as supply from "./supply.js";
 import { initLulu, renderLulu } from "./lulu.js";
-import { initOdds, renderOdds, leaveOdds } from "./odds.js";
+import { initOdds, renderOdds, leaveOdds, openPutIn, takeBack, boxStatus, readyBoxesHTML, readyCount, openReady } from "./odds.js";
 
 // ---- Prize configuration -------------------------------------------------
 // Each tier runs identical mechanics (reel, pity, reveal, wallet) — only
@@ -4022,6 +4022,8 @@ function renderHeaderStats() {
 
 // Rarity is shown only on the Boxes tab, where it's meaningful (what you
 // could have won) — Account/Marketplace deliberately leave it off.
+const ODDS_BOX_ICON = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7"/><line x1="12" y1="11.5" x2="12" y2="21.5"/></svg>`;
+
 function inventoryItemHTML(item) {
   const cashOutToday = player.cashOutValue(item);
   const listing = item.listingId ? market.getListing(item.listingId) : null;
@@ -4040,6 +4042,32 @@ function inventoryItemHTML(item) {
     ? `<span class="market-item-offer-flag">${pendingOffers.length > 1 ? `${pendingOffers.length} Offers` : "Offer"}</span>`
     : "";
 
+  // In an Odds box: Chosen holds it until it's won or released, so none of
+  // the trading actions apply, just where it is (and, while it's still
+  // waiting for a run, taking it back).
+  if (item.box) {
+    const status = boxStatus(item.id);
+    return `
+    <div class="market-item is-boxed" data-item="${item.id}">
+      <div class="market-item-media">
+        <img src="${item.image}" alt="">
+        <span class="item-box-flag">${ICONS.lock} In the $${item.box.price.toLocaleString()} box</span>
+      </div>
+      <div class="market-item-body">
+        <span class="market-item-name">${item.name}</span>
+        <span class="item-cashout-today">${status?.text ?? "Locked until it's won or released"}</span>
+        <div class="market-item-divider"></div>
+        <div class="item-actions">
+          ${
+            status?.canTakeBack
+              ? `<button class="item-action-btn" data-item-action="unbox" data-item="${item.id}">Take it back</button>`
+              : `<span class="item-box-note">${ICONS.lock} Locked: held by Chosen until it&rsquo;s won or released</span>`
+          }
+        </div>
+      </div>
+    </div>`;
+  }
+
   return `
     <div class="market-item ${pendingOffers.length ? "has-offer" : ""}" data-item="${item.id}">
       <div class="market-item-media">
@@ -4056,6 +4084,7 @@ function inventoryItemHTML(item) {
           <button class="item-action-btn" data-item-action="ship" data-item="${item.id}">Ship</button>
           <button class="item-action-btn" data-item-action="list" data-item="${item.id}">${isListed ? "Reprice" : "List"}</button>
           <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
+          <button class="item-action-btn item-action-icon" data-item-action="box" data-item="${item.id}" title="Put it in an Odds box" aria-label="Put it in an Odds box">${ODDS_BOX_ICON}</button>
         </div>
       </div>
     </div>`;
@@ -4246,14 +4275,17 @@ function renderAccount() {
   renderHeaderStats();
 
   // Sealed crates lead My Items: they're the things you can still open.
+  // Odds boxes from completed runs come first of all, ready to open.
   const collectibles = player.getInventory();
   const crates = player.getCrates();
-  vaultCount.textContent = crates.length + collectibles.length;
+  const ready = readyBoxesHTML();
+  vaultCount.textContent = crates.length + collectibles.length + readyCount();
   inventoryGrid.innerHTML =
-    crates.length || collectibles.length
-      ? crates.map(sealedCrateCardHTML).join("") + collectibles.map(inventoryItemHTML).join("")
+    ready || crates.length || collectibles.length
+      ? ready + crates.map(sealedCrateCardHTML).join("") + collectibles.map(inventoryItemHTML).join("")
       : `<div class="market-empty">Keep a prize from a reveal, or keep a crate sealed when you buy it, to see it here.</div>`;
   inventoryGrid.querySelectorAll(".sealed-box").forEach((img) => crateBoxImage(img, img.dataset.box));
+  if (ready) getBoxSnapshot("odds", "od").then((url) => inventoryGrid.querySelectorAll(".odds-ready-box").forEach((img) => (img.src = url)));
   inventoryGrid.querySelectorAll(".market-item[data-item]").forEach((el) => {
     el.addEventListener("click", (e) => {
       if (e.target.closest(".item-actions")) return;
@@ -4763,6 +4795,19 @@ function renderStreaks() {
 }
 
 
+// An Odds box from a completed run, opened from My Items.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-odds-open]");
+  if (!btn) return;
+  playClick();
+  openReady(btn.dataset.oddsOpen);
+});
+
+// A dot on the avatar while an Odds box is waiting to be opened.
+function markOddsReady() {
+  avatarBtn.classList.toggle("has-ready", readyCount() > 0);
+}
+
 // Delegated: offer actions + inventory item actions (both lists re-render often)
 document.addEventListener("click", async (e) => {
   const offerBtn = e.target.closest("[data-offer-action]");
@@ -4822,6 +4867,21 @@ document.addEventListener("click", async (e) => {
     const action = itemBtn.dataset.itemAction;
     const item = player.getInventoryItem(itemBtn.dataset.item);
     if (!item) return;
+
+    // Odds: put it in a box, or take it back while it's still waiting.
+    if (action === "box") {
+      playClick();
+      return openPutIn(item.id);
+    }
+    if (action === "unbox") {
+      playClick();
+      return takeBack(item.id);
+    }
+    // In a box, it's Chosen's to hold until it's won or released.
+    if (item.box) {
+      showToast(`${item.name} is in the $${item.box.price.toLocaleString()} box: locked until it's won or released`, ICONS.lock);
+      return;
+    }
 
     if (action === "cashout") {
       playClick();
@@ -6590,16 +6650,42 @@ if (profileParam) {
     randomUsername: market.randomUsername,
     username: () => player.getUsername(),
     avatarHTML,
-    // Your vault, at today's market value (what a piece is appraised at).
+    // Your vault, at today's market value (what an item is appraised at),
+    // less anything already in a box.
     vault: () =>
-      player.getInventory().map((i) => ({ id: i.id, name: i.name, image: i.image, category: i.category, value: player.currentMarketValue(i) })),
-    takeItem: (id) => {
-      const item = player.getInventory().find((i) => i.id === id);
-      if (!item) return null;
-      releaseOwnedItem(item);
-      return item;
+      player
+        .getInventory()
+        .filter((i) => !i.box)
+        .map((i) => ({ id: i.id, name: i.name, image: i.image, category: i.category, value: player.currentMarketValue(i) })),
+    // In a box: locked, and off the market (no listing, no offers).
+    lockItem: (id, box) => {
+      const item = player.getInventoryItem(id);
+      if (!item) return false;
+      if (item.listingId) market.removeListing(item.listingId);
+      player.markListed(id, null);
+      player.setItemBox(id, box);
+      return true;
     },
+    // Released: back to an ordinary vault item, offer-only on the market.
+    unlockItem: (id) => {
+      const item = player.getInventoryItem(id);
+      if (!item) return;
+      player.setItemBox(id, null);
+      const listing = market.createListing({ item, price: null, seller: player.getUsername() });
+      player.markListed(id, listing.id);
+    },
+    // Won by someone else: it leaves your vault.
+    removeItem: (id) => player.removeFromInventory(id),
     giveItem: (prize) => addOwnedItem(prize),
+    itemsChanged: () => {
+      markOddsReady();
+      if (document.getElementById("screen-account").classList.contains("active")) renderAccount();
+    },
+    lockedIds: () => player.getInventory().filter((i) => i.box).map((i) => i.id),
+    goToItems: () => {
+      document.querySelector('.nav-tab[data-nav="screen-account"]:not([data-account-group])')?.click();
+      window.scrollTo({ top: 0 });
+    },
     // A box is paid from Credits if they cover it, otherwise Cash.
     pay: (amount) => {
       const w = player.getWallet();
@@ -6611,6 +6697,7 @@ if (profileParam) {
     renderWallet: () => renderWallet({ pulse: "cash" }),
     showToast: (text, ms) => showToast(text, ICONS.cash, ms),
   });
+  markOddsReady();
   setInterval(tickSimulatedPulls, 4000);
   // Cold launch from a tapped Live Activity — the inventory has to exist
   // before the item route can open anything, so this runs last.

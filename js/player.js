@@ -563,6 +563,17 @@ export function removeFromInventory(id) {
   save();
 }
 
+// An item put in an Odds box: { price } while it's there, null once it's
+// released. Chosen holds it in the meantime, so it can't be traded,
+// shipped, sent or cashed out (app.js checks this before any of those).
+export function setItemBox(id, box) {
+  const item = getInventoryItem(id);
+  if (!item) return;
+  if (box) item.box = box;
+  else delete item.box;
+  save();
+}
+
 export function markListed(id, listingId) {
   const item = getInventoryItem(id);
   if (item) {
