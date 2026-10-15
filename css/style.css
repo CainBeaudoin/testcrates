@@ -239,6 +239,28 @@ body {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .nav-tab .icon { width: 18px; height: 18px; }
+/* V2: a green tag on tabs for features still to come (Odds, Flip, Rewards), so
+   they read as previews rather than part of the site as it stands. */
+.nav-tab { position: relative; }
+.nav-v2 {
+  display: inline-grid;
+  place-items: center;
+  height: 14px;
+  margin-left: 5px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: oklch(0.8751 0.2471 147.45);
+  color: oklch(0.256 0.062 150.2);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  vertical-align: 1px;
+}
+@media (max-width: 640px) {
+  /* Bottom bar: on the icon's top-right corner, clear of the label. */
+  .nav-v2 { position: absolute; top: 0; left: calc(50% + 5px); height: 12px; margin: 0; padding: 0 3px; font-size: 0.45rem; }
+}
 /* No pill: the tab you're on is simply the dark word among grey ones.
    Weight stays put so the words don't shift sideways on click. */
 .nav-tab:hover { color: var(--text); background: transparent; }
