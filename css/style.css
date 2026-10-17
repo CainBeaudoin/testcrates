@@ -822,6 +822,7 @@ body {
 .category-tier-name.tier-name-sneakers { color: #d4794e; }
 .category-tier-name.tier-name-streetwear { color: #5b8dd9; }
 .category-tier-name.tier-name-collectibles { color: #c9942f; }
+.category-tier-name.tier-name-cards { color: #d64545; }
 
 .category-tier-price {
   font-size: 1.05rem;
@@ -3573,6 +3574,7 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 .tier-badge-sneakers { color: #d4794e; background: rgba(212, 121, 78, 0.14); }
 .tier-badge-streetwear { color: #5b8dd9; background: rgba(91, 141, 217, 0.14); }
 .tier-badge-collectibles { color: #c9942f; background: rgba(201, 148, 47, 0.16); }
+.tier-badge-pokémon { color: #d64545; background: rgba(214, 69, 69, 0.13); }
 
 /* --- Reveal exits: Cash Out / Keep --- */
 
@@ -5047,6 +5049,8 @@ body:has(.nav-tab[data-account-group="rewards"].active) .account-nav { display: 
 :root[data-theme="light"] .tier-badge-streetwear { color: #2c5fa8; }
 :root[data-theme="light"] .category-tier-name.tier-name-collectibles,
 :root[data-theme="light"] .tier-badge-collectibles { color: #8a6410; }
+:root[data-theme="light"] .category-tier-name.tier-name-cards,
+:root[data-theme="light"] .tier-badge-pokémon { color: #b02e2e; }
 
 /* The Credits claim button carries both .exit-btn-primary and .deposit-btn.
    Primary's white-ink sub-label won on source order and put near-white text
@@ -10567,4 +10571,174 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .wn-match { padding: 3px 6px; }
   .wn-card .wn-fill { height: 40px; padding: 0 14px; }
   .wn-items-val { display: none; }
+}
+
+/* ===== Drops: the drop card, after the reference build =====================
+   Partner logo in a white pill top left, the box, name and price on one
+   line, the best pieces drifting past as tiles (price in their tier's
+   colour, grails on the gold-to-pink edge), then quantity and Open with
+   what it costs. Three across on a desktop, two on a tablet, one on a phone. */
+.category-list.is-all { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1100px) {
+  .category-list, .category-list.is-all { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}
+@media (max-width: 640px) {
+  .category-list, .category-list.is-all { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+}
+
+.category-list .category-card.dc {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 22px;
+  border: 1.5px solid var(--text);
+  border-radius: 28px;
+  background: var(--panel);
+  text-align: left;
+}
+.category-list .category-card.dc:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.35); }
+.dc-top { display: flex; align-items: center; min-height: 34px; }
+.dc-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1.5px solid #deddd8;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: #0b0b0b;
+}
+.dc-brand .brand-mark { flex: none; color: #0b0b0b; }
+.dc-brand .brand-mark-odto { height: 13px; width: auto; }
+.dc-brand .brand-mark-cc { height: 18px; width: auto; }
+.dc-brand .brand-mark-robinhood { width: 14px; height: 14px; }
+.dc-brand .brand-word, .dc-brand span { font-size: 0.8rem; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+
+/* The box is framed with room to spin, so its canvas is mostly air: drawn
+   wide, and pulled in above and below. */
+.category-list .dc .category-box-canvas { width: min(100%, 380px); height: auto; aspect-ratio: 1; margin: -15% auto -19%; }
+
+.dc-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.dc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.dc-price { flex: none; font-family: "Archivo Black", "Anton", system-ui, sans-serif; font-size: 1.8rem; font-weight: 400; line-height: 1; letter-spacing: -0.01em; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* The strip: one button (it opens the odds and full list), its tiles
+   drifting left; it holds still under the pointer. */
+.dc-strip {
+  position: relative;
+  display: block;
+  width: calc(100% + 20px);
+  margin: 16px -10px 0;
+  padding: 4px 0;
+  overflow: hidden;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.dc-strip-track { display: flex; width: max-content; animation: dc-drift calc(var(--n, 8) * 3.4s) linear infinite; }
+.dc-strip:hover .dc-strip-track, .dc-strip:focus-visible .dc-strip-track { animation-play-state: paused; }
+@keyframes dc-drift { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .dc-strip-track { animation: none; } }
+.dc-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex: none;
+  width: 104px;
+  height: 108px;
+  margin-right: 10px;
+  padding: 10px 6px 9px;
+  border: 2px solid #e3e2dd;
+  border-radius: 22px;
+  background: var(--panel);
+}
+.dc-tile img { width: 100%; height: 58px; object-fit: contain; mix-blend-mode: multiply; }
+:root:not([data-theme="light"]) .dc-tile img { mix-blend-mode: normal; }
+.dc-tile b { font-size: 0.92rem; font-weight: 700; color: var(--rc); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dc-tile.dc-t-legendary {
+  border-color: transparent;
+  background: linear-gradient(var(--panel), var(--panel)) padding-box, linear-gradient(135deg, #f7c948, #f39a3a 50%, #ee5f8c) border-box;
+}
+.dc-tile.dc-t-legendary b { background: linear-gradient(90deg, #e9a43a, #ec6a87); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dc-tile.dc-t-epic, .dc-tile.dc-t-rare { border-color: color-mix(in srgb, var(--rc) 45%, #e3e2dd); }
+
+.dc-actions { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; margin-top: 18px; }
+.category-list .dc .dc-qty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  height: 56px;
+  margin: 0;
+  padding: 0 6px;
+  border: 1.5px solid var(--text);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+}
+.category-list .dc .dc-qty .qty-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 300;
+}
+.category-list .dc .dc-qty .qty-btn:hover { background: var(--control-fill); transform: none; }
+.category-list .dc .dc-qty .qty-value { min-width: 28px; text-align: center; font-family: "Archivo Black", "Anton", system-ui, sans-serif; font-size: 1.15rem; color: var(--text); }
+.category-list .dc .dc-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 56px;
+  margin: 0;
+  padding: 0 18px 0 22px;
+  border: 1.5px solid #000;
+  border-radius: var(--r-pill);
+  background: var(--open-green);
+  color: var(--open-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dc-open-label { overflow: hidden; text-overflow: ellipsis; }
+.dc-open-price { display: inline-flex; align-items: center; gap: 12px; }
+.dc-open-price b { font-family: "Archivo Black", "Anton", system-ui, sans-serif; font-size: 1.15rem; font-weight: 400; }
+
+/* A crate's own page keeps the card; its full list sits beside it. */
+.drop-detail-active .dc-strip { display: none; }
+
+@media (max-width: 640px) {
+  .category-list .category-card.dc { padding: 16px 16px 18px; border-radius: 24px; }
+  .category-list .dc .category-box-canvas { width: min(100%, 320px); margin: -14% auto -18%; }
+  .dc-name { font-size: 1.2rem; }
+  .dc-price { font-size: 1.5rem; }
+  .category-list .dc .dc-qty, .category-list .dc .dc-open { height: 52px; }
+  .category-list .dc .dc-open { padding: 0 14px 0 18px; font-size: 0.95rem; }
+}
+/* The card sizes its own controls to its width, not the screen's: three
+   across a laptop is narrower than one across a phone. */
+.category-list .category-card.dc { container-type: inline-size; }
+@container (max-width: 400px) {
+  .category-list .dc .dc-qty { padding: 0 3px; }
+  .category-list .dc .dc-qty .qty-btn { width: 34px; height: 34px; }
+  .category-list .dc .dc-qty .qty-value { min-width: 20px; }
+  .category-list .dc .dc-open { gap: 8px; padding: 0 14px 0 16px; font-size: 0.92rem; }
+  .dc-open-price { gap: 5px; }
+  .dc-open-price b { font-size: 1.02rem; }
+  .dc-open-price svg { width: 16px; height: 16px; }
+  .dc-name { font-size: 1.22rem; }
+  .dc-price { font-size: 1.55rem; }
+}
+@container (max-width: 330px) {
+  .category-list .dc .dc-open { font-size: 0.86rem; }
+  .dc-open-price svg { display: none; }
 }

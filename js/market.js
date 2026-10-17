@@ -46,7 +46,7 @@ export function sizeForItem(name) {
  */
 export function sizeFor(item) {
   const { name, category } = item;
-  if (category === "collectibles") return null;
+  if (category === "collectibles" || category === "cards") return null;
   if (category === "streetwear") return APPAREL_SIZES[hashOf(name) % APPAREL_SIZES.length];
   return sizeForItem(name); // sneakers, and anything saved before crates had categories
 }

@@ -6,6 +6,7 @@ import { PRIZE_POOL as STREETWEAR_POOL } from "./prizeDataStreetwear.js";
 import { PRIZE_POOL as COLLECTIBLES_POOL } from "./prizeDataCollectibles.js";
 import { PRIZE_POOL as SNEAKER_250_POOL } from "./prizeDataSneakers250.js";
 import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
+import { PRIZE_POOL as CARDS_POOL } from "./prizeDataCards.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
@@ -33,6 +34,17 @@ import { initOdds, renderOdds, leaveOdds, openPutIn, takeBack, boxStatus, readyB
 const RARITY_WEIGHTS = { common: 5.0, uncommon: 3.12, rare: 1.88, epic: 1.5, legendary: 1.0 };
 function upperBand(pool, minPrice) {
   const band = pool.filter((p) => p.price >= minPrice).sort((a, b) => a.price - b.price);
+  const bands = Object.keys(RARITY_WEIGHTS);
+  return band.map((p, i) => {
+    const rarity = bands[Math.min(4, Math.floor((i * 5) / band.length))];
+    return { ...p, rarity, weight: RARITY_WEIGHTS[rarity] };
+  });
+}
+
+// The cheaper end of a pool, re-banded the same way: for an entry crate
+// cut from the bottom of a line's cards.
+function lowerBand(pool, maxPrice) {
+  const band = pool.filter((p) => p.price <= maxPrice).sort((a, b) => a.price - b.price);
   const bands = Object.keys(RARITY_WEIGHTS);
   return band.map((p, i) => {
     const rarity = bands[Math.min(4, Math.floor((i * 5) / band.length))];
@@ -125,6 +137,23 @@ const CATEGORIES = {
     pool: upperBand(general(COLLECTIBLES_POOL), 367),
     poweredBy: "ODTO",
   },
+  // Graded Pokémon cards, with Collector Crypt: an entry crate from the
+  // cheaper slabs (up to $1,700) and one with every card, grails and all.
+  cards: {
+    label: "$350",
+    badge: "Pokémon",
+    price: 350,
+    pool: lowerBand(CARDS_POOL, 1700),
+    poweredBy: "Collector Crypt",
+  },
+  cards1500: {
+    label: "$1,500",
+    badge: "Pokémon",
+    line: "cards",
+    price: 1500,
+    pool: CARDS_POOL,
+    poweredBy: "Collector Crypt",
+  },
 };
 
 // One line under each section's title on Drops.
@@ -132,6 +161,7 @@ const LINE_TAGLINES = {
   sneakers: "Grails from ODTO's shelves, from Dunks to Off-White Chicagos.",
   streetwear: "Supreme, BAPE, Denim Tears and the rest of the rack.",
   collectibles: "Bearbricks, KAWS and the things people keep in cases.",
+  cards: "Graded Pokémon, PSA and BGS slabs, from Eevee promos to Darkrai LV.X.",
 };
 
 // The product line a crate belongs to (Sneakers, Streetwear, ...).
@@ -1815,6 +1845,25 @@ function buildOddsPanelHTML(pool) {
 // Rares — each piece edged in its tier's colour, which names the tier on
 // its own (the tooltip spells it out). Clicking it opens the crate's page,
 // with the odds and every prize (see the delegated handler below).
+// A drop card's prize strip: its best pieces as tiles, the price in its
+// tier's colour (grails on the gold-to-pink edge), drifting sideways. The
+// tiles run twice so the loop never shows a seam. It opens the crate's
+// odds and full list, as "What's inside" did.
+const DC_ARROW = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>`;
+function dropStripHTML(tierKey) {
+  const seen = new Set();
+  const top = [...supply.pool(tierKey)]
+    .sort((a, b) => b.price - a.price)
+    .filter((p) => !seen.has(p.name) && seen.add(p.name))
+    .slice(0, 10);
+  const tile = (p) =>
+    `<span class="dc-tile dc-t-${p.rarity}" style="--rc:${RARITY_META[p.rarity].color}" title="${p.name}"><img src="${p.image}" alt="" loading="lazy" draggable="false"><b>$${p.price.toLocaleString()}</b></span>`;
+  const tiles = top.map(tile).join("");
+  return `<button class="dc-strip" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate: odds and prizes">
+    <span class="dc-strip-track" style="--n:${top.length}">${tiles}${tiles}</span>
+  </button>`;
+}
+
 function buildSupplyHTML(tierKey) {
   return `<button class="whats-left" data-supply="${tierKey}" data-whats-left="${tierKey}" aria-label="See what's inside this crate: odds and prizes">${whatsLeftInner(tierKey)}</button>`;
 }
@@ -1971,27 +2020,24 @@ function renderCategories() {
     wrap.className = "category-wrap";
     wrap.dataset.tier = key;
 
-    const paymentBadgesHTML = `<span class="category-icon-badge" title="Buy with Cash. Cashback pays back in Cash">${ICONS.cash}</span>
-         <span class="category-icon-badge" title="Buy with Credits. Cashback pays back in Credits">${ICONS.card}</span>`;
-
     const card = document.createElement("div");
-    card.className = "category-card";
+    card.className = "category-card dc";
     card.innerHTML = `
-      <div class="category-payment-badges">${paymentBadgesHTML}</div>
+      <div class="dc-top">${cat.poweredBy ? `<span class="dc-brand" title="Powered by ${cat.poweredBy}">${brandMarkHTML(cat.poweredBy)}</span>` : ""}</div>
       <canvas class="category-box-canvas"></canvas>
-      <div class="category-tier-line">
-        <span class="category-tier-name tier-name-${cat.badge.toLowerCase()}">${cat.badge}</span>
-        <span class="category-tier-price">${cat.label}</span>
+      <div class="dc-title">
+        <span class="dc-name">${cat.badge}</span>
+        <b class="dc-price">${cat.label}</b>
       </div>
-      ${cat.poweredBy ? `<span class="category-powered-by">Powered by ${brandMarkHTML(cat.poweredBy)}</span>` : `<span class="category-powered-by-spacer"></span>`}
-      ${buildSupplyHTML(key)}
-      <div class="category-qty">
-        <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">−</button>
-        <span class="qty-value">${batchQuantities[key]}</span>
-        <button class="qty-btn" data-qty-action="plus" aria-label="More">+</button>
-        <button class="qty-max-btn" data-qty-action="max">Max</button>
+      ${dropStripHTML(key)}
+      <div class="dc-actions">
+        <div class="dc-qty category-qty">
+          <button class="qty-btn" data-qty-action="minus" aria-label="Fewer">&minus;</button>
+          <span class="qty-value">${batchQuantities[key]}</span>
+          <button class="qty-btn" data-qty-action="plus" aria-label="More">+</button>
+        </div>
+        <button class="category-open-btn dc-open"></button>
       </div>
-      <button class="category-open-btn">${supply.status(key).soldOut ? "Sold out · Market" : "Open"}</button>
     `;
     card.addEventListener("mouseenter", playHover);
 
@@ -2005,12 +2051,17 @@ function renderCategories() {
     });
 
     const qtyValueEl = card.querySelector(".qty-value");
-    const maxBtn = card.querySelector('[data-qty-action="max"]');
+    const openBtn = card.querySelector(".dc-open");
+    // The button says what it does: how many crates, for how much.
     function refreshQty() {
       swapText(qtyValueEl, batchQuantities[key]);
-      maxBtn.classList.toggle("active", batchQuantities[key] === MAX_BATCH_QTY);
+      const n = batchQuantities[key];
+      openBtn.innerHTML = supply.status(key).soldOut
+        ? `<span class="dc-open-label">Sold out &middot; Market</span><span class="dc-open-price">${DC_ARROW}</span>`
+        : `<span class="dc-open-label">Open ${n} crate${n === 1 ? "" : "s"}</span><span class="dc-open-price"><b>$${(cat.price * n).toLocaleString()}</b>${DC_ARROW}</span>`;
     }
     refreshQty();
+    openBtn._refresh = refreshQty;
 
     card.querySelector('[data-qty-action="minus"]').addEventListener("click", () => {
       playClick();
@@ -2024,12 +2075,7 @@ function renderCategories() {
       batchQuantities[key] = Math.min(maxQty(), batchQuantities[key] + 1);
       refreshQty();
     });
-    maxBtn.addEventListener("click", () => {
-      playClick();
-      batchQuantities[key] = maxQty();
-      refreshQty();
-    });
-    card.querySelector(".category-open-btn").addEventListener("click", () => {
+    openBtn.addEventListener("click", () => {
       playClick();
       openPaymentPicker(key, batchQuantities[key]);
     });
@@ -2097,7 +2143,7 @@ const DROP_VIDEOS = {
 };
 // How long a drop with no video yet stays at the front of the deck.
 const REEL_PLACEHOLDER_MS = 6000;
-const LINE_TINT = { sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f" };
+const LINE_TINT = { sneakers: "#d4794e", streetwear: "#5b8dd9", collectibles: "#c9942f", cards: "#d64545" };
 const PLAY_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>`;
 const TRUCK_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h13v10H1z"/><path d="M14 9h4l4 4v3h-8z"/><circle cx="5.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg>`;
 
@@ -3604,7 +3650,7 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
-    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles" };
+    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", cards: "Cards" };
     const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
     marketCategoryFilter.innerHTML = cats
       .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
@@ -6727,9 +6773,17 @@ function catchUpCrowd() {
 
 function refreshSupplyViews() {
   document.querySelectorAll("[data-supply]").forEach((el) => {
-    el.innerHTML = whatsLeftInner(el.dataset.supply);
+    // A drop card's strip is redrawn only when its line-up changes, so the
+    // drifting tiles don't jump back to the start on every sale.
+    if (el.classList.contains("dc-strip")) {
+      const next = dropStripHTML(el.dataset.supply);
+      const sig = next.length + next.slice(-400);
+      if (el.dataset.sig && el.dataset.sig !== sig) el.outerHTML = next;
+      else el.dataset.sig = sig;
+    } else el.innerHTML = whatsLeftInner(el.dataset.supply);
     const btn = el.closest(".category-card")?.querySelector(".category-open-btn");
-    if (btn) btn.textContent = supply.status(el.dataset.supply).soldOut ? "Sold out · Market" : "Open";
+    if (btn?._refresh) btn._refresh();
+    else if (btn) btn.textContent = supply.status(el.dataset.supply).soldOut ? "Sold out · Market" : "Open";
   });
   document.querySelectorAll("[data-supply-btn]").forEach((el) => {
     el.textContent = supply.status(el.dataset.supplyBtn).soldOut ? "Sold out · Market" : "Open";
