@@ -10610,7 +10610,8 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 }
 .dc-brand .brand-mark { flex: none; color: #0b0b0b; }
 .dc-brand .brand-mark-odto { height: 13px; width: auto; }
-.dc-brand .brand-mark-cc { height: 18px; width: auto; }
+.dc-brand .brand-mark-cc { height: 22px; width: auto; }
+.dc-brand:has(.brand-mark-cc) { padding: 0 13px; }
 .dc-brand .brand-mark-robinhood { width: 14px; height: 14px; }
 .dc-brand .brand-word, .dc-brand span { font-size: 0.8rem; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
 

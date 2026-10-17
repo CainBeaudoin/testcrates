@@ -220,10 +220,22 @@ Object.entries(CATEGORIES).forEach(([key, cat]) => {
 // part-way through: two already sold out, so the market has sealed boxes
 // trading from the start; the rest somewhere in their run.
 const SEED_SUPPLY = {
+  cards: { sold: 0.3, opened: 0.62 },
+  cards1500: { sold: 0.3, opened: 0.62 },
   sneakers1000: { sold: 1, opened: 0.62 },
   collectibles500: { sold: 1, opened: 0.74 },
 };
 supply.registerCrates(CATEGORIES, (key) => SEED_SUPPLY[key] ?? null);
+// The Pokémon crates lead All Drops, so they open with plenty left. A
+// browser that met them before this (seeded at random, sometimes all but
+// sold out) gets the same start, once.
+const CARDS_SEED = { sold: 0.3, opened: 0.62 };
+try {
+  if (!localStorage.getItem("gotcha_cards_seed_v1")) {
+    ["cards", "cards1500"].forEach((k) => supply.reseed(k, CARDS_SEED));
+    localStorage.setItem("gotcha_cards_seed_v1", "1");
+  }
+} catch {}
 // The player's sealed crates count against their series; anything else
 // held belongs to the crowd. A token left over from a series that has
 // since been replaced opens against the current one.
@@ -1952,6 +1964,7 @@ const dropLinesEl = document.getElementById("dropLines");
 
 // All Drops is one run, cheapest to dearest; a line's
 // tab keeps its own crates in price order.
+const ALL_DROPS_LEAD = "cards";
 function orderedCrates() {
   return Object.entries(CATEGORIES).sort(
     ([a, ca], [b, cb]) =>
@@ -2006,7 +2019,11 @@ function renderCategories() {
   categoryList.classList.toggle("is-all", dropLine === "all");
 
   let lastLine = null;
-  orderedCrates().forEach(([key, cat]) => {
+  // All Drops opens on a Pokémon crate, so the run isn't ODTO's alone; the
+  // rest follow by price.
+  const crates = orderedCrates();
+  if (dropLine === "all") crates.sort(([a], [b]) => (b === ALL_DROPS_LEAD) - (a === ALL_DROPS_LEAD));
+  crates.forEach(([key, cat]) => {
     // Only the chosen line's crates are built at all (each is a live 3D
     // box, and a browser only hands out so many of those).
     if (dropLine !== "all" && lineOf(key) !== dropLine) return;

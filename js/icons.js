@@ -57,6 +57,7 @@ const COLLECTOR_CRYPT_MARK = `
 export function brandMarkHTML(name) {
   if (name === "ODTO") return ODTO_MARK;
   if (name === "Robinhood Chain") return `${ROBINHOOD_MARK}<span>Robinhood Chain</span>`;
-  if (name === "Collector Crypt") return `${COLLECTOR_CRYPT_MARK}<span class="brand-word">Collector Crypt</span>`;
+  // The mark alone, like ODTO's: its name is in the label for screen readers.
+  if (name === "Collector Crypt") return COLLECTOR_CRYPT_MARK.replace('aria-hidden="true"', 'role="img" aria-label="Collector Crypt"');
   return `<span>${name}</span>`;
 }

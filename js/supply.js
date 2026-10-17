@@ -99,6 +99,20 @@ export function registerCrates(categories, seedShape = () => null) {
   save();
 }
 
+/**
+ * Starts a crate's current series again at a given shape (shares of it
+ * sold, and of those opened). For a crate added after the platform's
+ * state was first made, whose random seed left it sold out.
+ */
+export function reseed(key, shape) {
+  const c = crate(key);
+  if (!c) return;
+  c.sold = Math.round(c.total * Math.min(1, shape.sold));
+  c.opened = Math.round(c.sold * Math.min(1, shape.opened));
+  c.botHeld = c.sold - c.opened;
+  save();
+}
+
 // ---- Reading ---------------------------------------------------------------
 
 /**
