@@ -5534,6 +5534,11 @@ function refreshShipSelect() {
   document.getElementById("shipSelectCount").textContent = items.length
     ? `${items.length} selected${vaults > 1 ? " · from 2 vaults, ships as 2 parcels" : ""}`
     : "Tap items to ship them together";
+  const note = document.getElementById("shipVaultNote");
+  note.classList.toggle("hidden", !(shipSelecting && vaults > 1));
+  if (vaults > 1)
+    note.innerHTML = `<span class="ship-vault-marks"><span class="dc-brand">${brandMarkHTML("ODTO")}</span><span class="dc-brand">${brandMarkHTML("Collector Crypt")}</span></span>
+      <span><b>These are from two different vaults.</b> ODTO and Collector Crypt ship separately, so expect two different shipping quotes.</span>`;
   const go = document.getElementById("shipSelectGo");
   go.disabled = !items.length;
   go.textContent = items.length ? `Ship ${itemsLabel(items.length)}` : "Ship";

@@ -10875,3 +10875,36 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
    inside it rather than stretching the card. */
 .market-item-media { min-height: 0; overflow: hidden; }
 .market-item-media > img { min-height: 0; }
+
+/* Picked from both vaults: a note just above the bar. */
+.ship-vault-note {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border: 1.5px solid var(--text);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+  transform: translateX(-50%);
+  animation: ship-note-in 0.25s ease;
+}
+.ship-vault-note.hidden { display: none; }
+.ship-vault-marks { display: flex; flex: none; }
+.ship-vault-marks .dc-brand { height: 30px; padding: 0 10px; }
+.ship-vault-marks .dc-brand + .dc-brand { margin-left: -8px; }
+.ship-vault-marks .brand-mark-odto { height: 11px; width: auto; }
+.ship-vault-marks .brand-mark-cc { height: 18px; width: auto; }
+@keyframes ship-note-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+@media (max-width: 640px) {
+  .ship-vault-note { bottom: calc(var(--bottom-nav-h) + 76px); font-size: 0.78rem; }
+  .ship-vault-marks { display: none; }
+}
