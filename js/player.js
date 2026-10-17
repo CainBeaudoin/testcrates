@@ -681,7 +681,9 @@ export function dropStocks() {
 // city, region, postal, country }. Each shipment gets an order number;
 // its tracking stages are derived from shippedAt (see app.js
 // shipmentStage), so there's no status field to go stale.
-export function shipItem(item, address = null) {
+// `extra` carries a multi-item shipment's shared order: its order id, the
+// vault it ships from, and its share of the shipping.
+export function shipItem(item, address = null, extra = {}) {
   const shipment = {
     id: item.id,
     orderId: `CH-${Date.now().toString(36).toUpperCase().slice(-6)}`,
@@ -692,6 +694,7 @@ export function shipItem(item, address = null) {
     category: item.category,
     address,
     shippedAt: Date.now(),
+    ...extra,
   };
   state.shipped.unshift(shipment);
   removeFromInventory(item.id);

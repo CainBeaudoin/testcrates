@@ -688,7 +688,7 @@ function releaseOwnedItem(item) {
 // DEMO_SEED_VERSION tops up accounts seeded under an older set (adding
 // only what they're short of, by name and count) exactly once. Cash and
 // Credits are only ever granted on the very first seed.
-const DEMO_SEED_VERSION = 3;
+const DEMO_SEED_VERSION = 4;
 const DEMO_VAULT_ITEM_NAMES = [
   "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
   "Air Jordan 1 Low Travis Scott Velvet Brown", // Sneakers, Legendary
@@ -701,6 +701,15 @@ const DEMO_VAULT_ITEM_NAMES = [
   "Medicom Bearbrick 3125C Objective Edc 1000%", // Collectibles, Legendary
   "KAWS Companion Plush Brown", // Collectibles, Legendary
   "POP Mart Labubu The Monster Let's Checkmate", // Collectibles, Uncommon
+];
+// Graded cards, from the Pokémon crates (in Collector Crypt's vault).
+// Added in v4: an account seeded before then gets these and nothing else.
+const DEMO_VAULT_CARD_NAMES = [
+  "2010 Japanese Design Contest Chosen Prize Winner Illusions Zoroark #L-P PSA 10", // Legendary
+  "2015 Japanese XY Promo Full Art Gyarados Poncho Wearing Pikachu #151 BGS 10", // Epic
+  "2001 Neo Revelation Holo Raikou #13 PSA 10", // Rare
+  "1999 Base Set Holo Blastoise #2 PSA 10", // Uncommon
+  "2016 XY Generations Reverse Holo Pikachu #26 PSA 10", // Common
 ];
 const DEMO_STARTING_CASH = 2000; // added on top of the base $500 starting balance
 const DEMO_STARTING_CREDITS = 25;
@@ -723,7 +732,10 @@ function seedDemoInventory() {
       if (prize) addOwnedItem(prize);
     });
   };
-  seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
+  // Each set only once: topping up an older set again would hand back
+  // pieces since shipped, sold or cashed out.
+  if (version < 3) seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
+  if (version < 4) seed(CARDS_POOL, DEMO_VAULT_CARD_NAMES);
 
   if (version === 0) {
     player.addCash(DEMO_STARTING_CASH);
@@ -4510,10 +4522,24 @@ function renderAccount() {
   if (ready) getBoxSnapshot("odds", "od").then((url) => inventoryGrid.querySelectorAll(".odds-ready-box").forEach((img) => (img.src = url)));
   inventoryGrid.querySelectorAll(".market-item[data-item]").forEach((el) => {
     el.addEventListener("click", (e) => {
+      if (shipSelecting) {
+        e.stopPropagation();
+        const id = el.dataset.item;
+        if (!shippable(player.getInventoryItem(id))) {
+          showToast("That one's locked in a box or a bounty, so it can't ship yet", ICONS.lock, undefined, { log: false });
+          return;
+        }
+        playClick();
+        if (shipPicked.has(id)) shipPicked.delete(id);
+        else shipPicked.add(id);
+        refreshShipSelect();
+        return;
+      }
       if (e.target.closest(".item-actions")) return;
       openItemDetail(el.dataset.item);
     });
   });
+  if (shipSelecting) refreshShipSelect();
 
   renderActivity();
   renderLeaderboard();
@@ -5171,14 +5197,75 @@ const shipModal = document.getElementById("shipModal");
 const shipForm = document.getElementById("shipForm");
 const shipTracking = document.getElementById("shipTracking");
 const shipError = document.getElementById("shipError");
-let shipItemId = null;
+let shipIds = []; // the items in the shipment being set up
 let shipTrackingTimer = null;
 
+// ---- Vaults and quotes -----------------------------------------------------
+// Pieces sit in their partner's vault: cards with Collector Crypt,
+// everything else with ODTO. A shipment is one parcel per vault, each with
+// its own quote: carriage (first item, then each one more), a bit more
+// outside the US and Canada, and insurance on what's inside.
+const SHIP_VAULTS = {
+  odto: { label: "ODTO vault", brand: "ODTO", base: 18, extra: 6 },
+  cc: { label: "Collector Crypt vault", brand: "Collector Crypt", base: 9, extra: 2.5 },
+};
+const SHIP_DOMESTIC = ["United States", "Canada"];
+const vaultKeyOf = (item) => (item.category === "cards" ? "cc" : "odto");
+const usd = (n) => `$${Math.round(n).toLocaleString("en-US")}`;
+const itemsLabel = (n) => `${n} item${n === 1 ? "" : "s"}`;
+
+function shipQuote(items, key, country) {
+  const v = SHIP_VAULTS[key];
+  const value = items.reduce((sum, i) => sum + (i.price ?? 0), 0);
+  // Whole dollars, so balances stay whole.
+  const carriage = Math.round((v.base + v.extra * (items.length - 1)) * (SHIP_DOMESTIC.includes(country) ? 1 : 1.8));
+  const insurance = Math.max(1, Math.round(value * 0.005));
+  return { carriage, insurance, total: carriage + insurance };
+}
+function shipGroups(items, country) {
+  return Object.keys(SHIP_VAULTS)
+    .map((key) => {
+      const its = items.filter((i) => vaultKeyOf(i) === key);
+      return its.length ? { key, vault: SHIP_VAULTS[key], items: its, quote: shipQuote(its, key, country) } : null;
+    })
+    .filter(Boolean);
+}
+const shipItemsNow = () => shipIds.map((id) => player.getInventoryItem(id)).filter(Boolean);
+const shipCountry = () => shipForm.elements.country.value || "United States";
+
 function fillShipHeader(entry) {
+  document.getElementById("shipThumbs").classList.add("hidden");
+  document.getElementById("shipItemImage").classList.remove("hidden");
   document.getElementById("shipItemImage").src = entry.image;
   document.getElementById("shipItemName").textContent = entry.name;
   const meta = itemMetaText(entry.name, entry.category);
   document.getElementById("shipItemMeta").textContent = meta || `Value $${(entry.price ?? 0).toLocaleString()}`;
+}
+
+// Several pieces: their pictures fanned, how many, and where from.
+function fillShipHeaderItems(items) {
+  if (items.length === 1) return fillShipHeader(items[0]);
+  const thumbs = document.getElementById("shipThumbs");
+  thumbs.innerHTML =
+    items.slice(0, 4).map((i) => `<img src="${i.image}" alt="">`).join("") + (items.length > 4 ? `<span>+${items.length - 4}</span>` : "");
+  thumbs.classList.remove("hidden");
+  document.getElementById("shipItemImage").classList.add("hidden");
+  document.getElementById("shipItemName").textContent = itemsLabel(items.length);
+  const vaults = new Set(items.map(vaultKeyOf));
+  const value = items.reduce((sum, i) => sum + (i.price ?? 0), 0);
+  document.getElementById("shipItemMeta").textContent = `${vaults.size > 1 ? "From two vaults" : `From the ${SHIP_VAULTS[[...vaults][0]].label}`} · $${value.toLocaleString()} value`;
+}
+
+function shipGroupHTML(g) {
+  return `<div class="ship-group">
+      <div class="ship-group-head">
+        <span class="dc-brand ship-group-brand">${brandMarkHTML(g.vault.brand)}</span>
+        <span class="ship-group-label">${g.vault.label}<em>${itemsLabel(g.items.length)}, one parcel</em></span>
+        <b>${usd(g.quote.total)}</b>
+      </div>
+      <div class="ship-group-items">${g.items.map((i) => `<img src="${i.image}" alt="" title="${i.name}">`).join("")}</div>
+      <span class="ship-group-break">Carriage ${usd(g.quote.carriage)} · insurance ${usd(g.quote.insurance)}</span>
+    </div>`;
 }
 
 function showShipModal() {
@@ -5193,10 +5280,16 @@ function closeShipModal() {
 }
 
 const SHIP_FIELDS = ["name", "phone", "email", "line1", "line2", "city", "region", "postal", "country"];
+const shipSplit = document.getElementById("shipSplit");
+const shipQuoteEl = document.getElementById("shipQuote");
+const shipConfirmBtn = document.getElementById("shipConfirmBtn");
 
-function openShipForm(item) {
-  shipItemId = item.id;
-  fillShipHeader(item);
+// One piece or several. Pieces from more than one vault first get a step
+// saying they ship separately, with a quote for each parcel; then the
+// address, with the quote kept up to date as the country changes.
+function openShipFlow(items) {
+  shipIds = items.map((i) => i.id);
+  fillShipHeaderItems(items);
   shipForm.reset();
   const saved = player.getShippingAddress();
   if (saved) {
@@ -5206,11 +5299,49 @@ function openShipForm(item) {
   }
   shipForm.querySelectorAll(".invalid").forEach((el) => el.classList.remove("invalid"));
   shipError.classList.add("hidden");
-  shipForm.classList.remove("hidden");
   shipTracking.classList.add("hidden");
+  const groups = shipGroups(items, shipCountry());
+  if (groups.length > 1) {
+    document.getElementById("shipSplitGroups").innerHTML = groups.map(shipGroupHTML).join("");
+    document.getElementById("shipSplitTotal").textContent = usd(groups.reduce((sum, g) => sum + g.quote.total, 0));
+    document.getElementById("shipSplitTo").textContent = `Quoted to ${shipCountry()}. The quote follows your address on the next step.`;
+    shipSplit.classList.remove("hidden");
+    shipForm.classList.add("hidden");
+  } else {
+    shipSplit.classList.add("hidden");
+    showShipAddressStep();
+  }
   showShipModal();
+}
+const openShipForm = (item) => openShipFlow([item]);
+
+function showShipAddressStep() {
+  shipSplit.classList.add("hidden");
+  shipForm.classList.remove("hidden");
+  renderShipQuote();
   setTimeout(() => shipForm.elements.name.focus(), 260);
 }
+
+function renderShipQuote() {
+  const groups = shipGroups(shipItemsNow(), shipCountry());
+  const total = groups.reduce((sum, g) => sum + g.quote.total, 0);
+  shipQuoteEl.innerHTML = `
+    <span class="ship-quote-title">Shipping</span>
+    ${groups.map((g) => `<span class="ship-quote-row"><span>${g.vault.label} · ${itemsLabel(g.items.length)}</span><b>${usd(g.quote.total)}</b></span>`).join("")}
+    ${groups.length > 1 ? `<span class="ship-quote-note">Two parcels, shipped and tracked separately.</span>` : ""}
+    <span class="ship-quote-row ship-quote-total"><span>Total, paid from Cash</span><b>${usd(total)}</b></span>`;
+  shipConfirmBtn.textContent = `Confirm shipment · ${usd(total)}`;
+}
+
+document.getElementById("shipSplitNext").addEventListener("click", () => {
+  playClick();
+  showShipAddressStep();
+});
+document.getElementById("shipSplitCancel").addEventListener("click", () => {
+  playClick();
+  closeShipModal();
+});
+shipForm.elements.country.addEventListener("change", renderShipQuote);
 
 function readShipForm() {
   const address = {};
@@ -5224,8 +5355,8 @@ function readShipForm() {
 
 shipForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const item = player.getInventoryItem(shipItemId);
-  if (!item) return closeShipModal();
+  const items = shipItemsNow();
+  if (!items.length) return closeShipModal();
   const address = readShipForm();
   if (!address) {
     shipError.textContent = "Please fill in the highlighted fields.";
@@ -5233,13 +5364,29 @@ shipForm.addEventListener("submit", (e) => {
     shipForm.querySelector(".invalid")?.focus();
     return;
   }
+  const groups = shipGroups(items, address.country);
+  const total = groups.reduce((sum, g) => sum + g.quote.total, 0);
+  if (!player.spend("cash", total)) {
+    shipError.textContent = `Shipping is ${usd(total)} and your Cash is ${usd(player.getWallet().cash)}. Add funds to ship.`;
+    shipError.classList.remove("hidden");
+    return;
+  }
   playClick();
   if (shipForm.elements.save.checked) player.saveShippingAddress(address);
-  if (item.listingId) market.removeListing(item.listingId);
-  const shipment = player.shipItem(item, address);
+  // One order per vault, every piece in it under the same order number.
+  const orders = groups.map((g, gi) => {
+    const orderId = `CH-${(Date.now() + gi * 7919).toString(36).toUpperCase().slice(-6)}`;
+    const shipments = g.items.map((item) => {
+      if (item.listingId) market.removeListing(item.listingId);
+      return player.shipItem(item, address, { orderId, vault: g.key, shipCost: Math.round((g.quote.total / g.items.length) * 100) / 100 });
+    });
+    return { orderId, vault: g.vault, shipments, shippedAt: shipments[0].shippedAt, address };
+  });
+  setShipSelect(false);
+  renderWallet({ pulse: "cash" });
   renderAccount();
-  showToast("Order placed", ICONS.bell);
-  showShipTracking(shipment);
+  showToast(orders.length > 1 ? `${orders.length} orders placed, one from each vault` : "Order placed", ICONS.bell);
+  showShipOrders(orders);
 });
 
 // Clear a field's red outline as soon as it's edited.
@@ -5249,26 +5396,29 @@ function formatShipTime(ts) {
   return new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function renderShipTracking(shipment) {
-  const reached = shipmentStage(shipment);
-  document.getElementById("shipOrderId").textContent = shipment.orderId ?? "";
-  document.getElementById("shipStatusLine").textContent =
-    reached === SHIP_STAGES.length - 1
-      ? "Delivered. Enjoy it."
-      : `${SHIP_STAGES[reached].label}. Next: ${SHIP_STAGES[reached + 1].label.toLowerCase()}.`;
-  document.getElementById("shipSteps").innerHTML = SHIP_STAGES.map((st, i) => {
-    const last = SHIP_STAGES.length - 1;
+function shipStepsHTML(shippedAt) {
+  const reached = shipmentStage({ shippedAt });
+  const last = SHIP_STAGES.length - 1;
+  return SHIP_STAGES.map((st, i) => {
     const state = i < reached || (i === last && reached === last) ? "done" : i === reached ? "current" : "todo";
-    const when = shipment.shippedAt + st.at;
+    const when = shippedAt + st.at;
     return `<li class="ship-step ${state}">
         <span class="ship-step-dot"></span>
         <span class="ship-step-label">${st.label}</span>
         <span class="ship-step-time">${i <= reached ? formatShipTime(when) : `Expected ${formatShipTime(when)}`}</span>
       </li>`;
   }).join("");
+}
 
+function shipStatusText(shippedAt) {
+  const reached = shipmentStage({ shippedAt });
+  return reached === SHIP_STAGES.length - 1
+    ? "Delivered. Enjoy it."
+    : `${SHIP_STAGES[reached].label}. Next: ${SHIP_STAGES[reached + 1].label.toLowerCase()}.`;
+}
+
+function renderShipAddress(a) {
   // Typed by the user, so built as text nodes, never as HTML.
-  const a = shipment.address;
   const addrEl = document.getElementById("shipAddressText");
   addrEl.textContent = "";
   const lines = a
@@ -5278,13 +5428,30 @@ function renderShipTracking(shipment) {
     if (i) addrEl.appendChild(document.createElement("br"));
     addrEl.appendChild(document.createTextNode(line));
   });
-  return reached;
 }
 
+function renderShipTracking(shipment) {
+  document.getElementById("shipOrderId").textContent = shipment.orderId ?? "";
+  document.getElementById("shipStatusLine").textContent = shipStatusText(shipment.shippedAt);
+  document.getElementById("shipSteps").innerHTML = shipStepsHTML(shipment.shippedAt);
+  renderShipAddress(shipment.address);
+  return shipmentStage(shipment);
+}
+
+// One shipment on its own, or (if it went out with others under one order
+// number) the whole order.
 function showShipTracking(shipment) {
+  const together = shipment.orderId ? player.getShipped().filter((s) => s.orderId === shipment.orderId) : [shipment];
+  if (together.length > 1) {
+    const vault = SHIP_VAULTS[shipment.vault ?? vaultKeyOf(shipment)];
+    return showShipOrders([{ orderId: shipment.orderId, vault, shipments: together, shippedAt: shipment.shippedAt, address: shipment.address }]);
+  }
   fillShipHeader(shipment);
   shipForm.classList.add("hidden");
+  shipSplit.classList.add("hidden");
   shipTracking.classList.remove("hidden");
+  document.getElementById("shipSteps").classList.remove("hidden");
+  document.getElementById("shipOrders").classList.add("hidden");
   renderShipTracking(shipment);
   showShipModal();
   // Tick while it's open so the steps visibly advance.
@@ -5294,6 +5461,101 @@ function showShipTracking(shipment) {
     if (reached === SHIP_STAGES.length - 1) clearInterval(shipTrackingTimer);
   }, 1000);
 }
+
+// Orders of several pieces, one per vault: each with its own number,
+// pieces and steps.
+function showShipOrders(orders) {
+  if (orders.length === 1 && orders[0].shipments.length === 1) return showShipTracking(orders[0].shipments[0]);
+  fillShipHeaderItems(orders.flatMap((o) => o.shipments));
+  shipForm.classList.add("hidden");
+  shipSplit.classList.add("hidden");
+  shipTracking.classList.remove("hidden");
+  const ordersEl = document.getElementById("shipOrders");
+  document.getElementById("shipSteps").classList.add("hidden");
+  ordersEl.classList.remove("hidden");
+  document.getElementById("shipOrderId").textContent = orders.map((o) => o.orderId).join(" & ");
+  renderShipAddress(orders[0].address);
+  const draw = () => {
+    document.getElementById("shipStatusLine").textContent =
+      orders.length > 1 ? "Two parcels, one from each vault, tracked separately." : `${itemsLabel(orders[0].shipments.length)} in one parcel.`;
+    ordersEl.innerHTML = orders
+      .map(
+        (o) => `<div class="ship-order">
+          <div class="ship-group-head">
+            <span class="dc-brand ship-group-brand">${brandMarkHTML(o.vault.brand)}</span>
+            <span class="ship-group-label">Order ${o.orderId}<em>${o.vault.label} · ${itemsLabel(o.shipments.length)}</em></span>
+          </div>
+          <div class="ship-group-items">${o.shipments.map((sh) => `<img src="${sh.image}" alt="" title="${sh.name}">`).join("")}</div>
+          <p class="ship-order-status">${shipStatusText(o.shippedAt)}</p>
+          <ol class="ship-steps ship-steps-compact">${shipStepsHTML(o.shippedAt)}</ol>
+        </div>`
+      )
+      .join("");
+    return Math.min(...orders.map((o) => shipmentStage(o)));
+  };
+  draw();
+  showShipModal();
+  clearInterval(shipTrackingTimer);
+  shipTrackingTimer = setInterval(() => {
+    if (draw() === SHIP_STAGES.length - 1) clearInterval(shipTrackingTimer);
+  }, 1000);
+}
+
+// ---- Picking several to ship ----------------------------------------------
+// "Select to ship" turns My Items into a picker: tap pieces (any kind, from
+// either vault), then Ship takes them all through one checkout.
+const shipSelectBtn = document.getElementById("shipSelectBtn");
+const shipSelectBar = document.getElementById("shipSelectBar");
+const shipPicked = new Set();
+let shipSelecting = false;
+const shippable = (item) => !!item && !item.box && !item.escrow;
+
+function setShipSelect(on) {
+  shipSelecting = on;
+  if (!on) shipPicked.clear();
+  shipSelectBtn.textContent = on ? "Done" : "Select to ship";
+  shipSelectBtn.setAttribute("aria-pressed", on);
+  shipSelectBtn.classList.toggle("active", on);
+  inventoryGrid.classList.toggle("is-selecting", on);
+  shipSelectBar.classList.toggle("hidden", !on);
+  refreshShipSelect();
+}
+
+function refreshShipSelect() {
+  [...shipPicked].forEach((id) => {
+    if (!shippable(player.getInventoryItem(id))) shipPicked.delete(id);
+  });
+  inventoryGrid.querySelectorAll(".market-item[data-item]").forEach((el) => {
+    el.classList.toggle("is-picked", shipPicked.has(el.dataset.item));
+    el.classList.toggle("not-shippable", shipSelecting && !shippable(player.getInventoryItem(el.dataset.item)));
+  });
+  const items = [...shipPicked].map((id) => player.getInventoryItem(id));
+  const vaults = new Set(items.map(vaultKeyOf)).size;
+  document.getElementById("shipSelectCount").textContent = items.length
+    ? `${items.length} selected${vaults > 1 ? " · from 2 vaults, ships as 2 parcels" : ""}`
+    : "Tap items to ship them together";
+  const go = document.getElementById("shipSelectGo");
+  go.disabled = !items.length;
+  go.textContent = items.length ? `Ship ${itemsLabel(items.length)}` : "Ship";
+}
+
+shipSelectBtn.addEventListener("click", () => {
+  playClick();
+  setShipSelect(!shipSelecting);
+});
+document.getElementById("shipSelectCancel").addEventListener("click", () => {
+  playClick();
+  setShipSelect(false);
+});
+document.getElementById("shipSelectGo").addEventListener("click", () => {
+  const items = [...shipPicked].map((id) => player.getInventoryItem(id)).filter(shippable);
+  if (!items.length) return;
+  playClick();
+  openShipFlow(items);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && shipSelecting && shipModal.classList.contains("hidden")) setShipSelect(false);
+});
 
 document.getElementById("shipCloseBtn").addEventListener("click", () => {
   playClick();

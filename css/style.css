@@ -10743,3 +10743,135 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
   .category-list .dc .dc-open { font-size: 0.86rem; }
   .dc-open-price svg { display: none; }
 }
+
+/* ===== Shipping several at once =============================================
+   "Select to ship" turns My Items into a picker: a round tick on each piece,
+   a bar along the bottom with the count and Ship. Pieces locked in an Odds
+   box or a bounty fade out. */
+.ship-select-btn {
+  margin-left: auto;
+  align-self: center;
+  height: 34px;
+  padding: 0 16px;
+  border: 1.5px solid var(--text);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ship-select-btn.active { background: var(--text); color: var(--text-inverse); }
+.is-selecting .market-item[data-item] { position: relative; cursor: pointer; }
+.is-selecting .market-item[data-item]::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28) center / 15px no-repeat;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+.is-selecting .market-item.is-picked { box-shadow: 0 0 0 2.5px var(--text); }
+.is-selecting .market-item.is-picked::before {
+  border-color: var(--open-green);
+  background-color: var(--open-green);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23123d17' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17.5 19 7'/%3E%3C/svg%3E");
+}
+.is-selecting .market-item.not-shippable { opacity: 0.4; }
+.is-selecting .market-item.not-shippable::before { display: none; }
+.is-selecting .item-actions { pointer-events: none; opacity: 0.35; }
+
+.ship-select-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 8px 8px 8px 18px;
+  border-radius: var(--r-pill);
+  background: var(--text);
+  color: var(--text-inverse);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+.ship-select-bar.hidden { display: none; }
+.ship-select-count { flex: 1; min-width: 0; font-size: 0.84rem; font-weight: 600; line-height: 1.3; }
+.ship-select-cancel, .ship-select-go {
+  flex: none;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ship-select-cancel { border: 1.5px solid color-mix(in srgb, var(--text-inverse) 35%, transparent); background: none; color: var(--text-inverse); }
+.ship-select-go { border: 1.5px solid #000; background: var(--open-green); color: var(--open-ink); }
+.ship-select-go:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 640px) {
+  .ship-select-bar { bottom: calc(var(--bottom-nav-h) + 10px); padding-left: 14px; }
+  .ship-select-count { font-size: 0.76rem; }
+  .ship-select-cancel { padding: 0 12px; }
+}
+
+/* The ship modal, several pieces: their pictures fanned in the header. */
+.ship-thumbs { display: flex; flex: none; }
+.ship-thumbs.hidden { display: none; }
+.ship-thumbs img, .ship-thumbs span {
+  width: 52px;
+  height: 52px;
+  margin-left: -16px;
+  border: 2px solid var(--bg);
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+}
+.ship-thumbs img:first-child { margin-left: 0; }
+.ship-thumbs span { display: grid; place-items: center; background: var(--surface-2); color: var(--text); font-size: 0.8rem; font-weight: 700; }
+#shipItemImage.hidden { display: none; }
+
+/* Two vaults: a parcel each, each with its quote. */
+.ship-split.hidden { display: none; }
+.ship-split-lead { margin: 0 0 14px; font-size: 0.9rem; line-height: 1.5; color: var(--text-dim); }
+.ship-groups { display: grid; gap: 10px; }
+.ship-group, .ship-order { display: grid; gap: 10px; padding: 14px; border: 1.5px solid var(--line, rgba(0,0,0,0.12)); border-radius: 18px; background: var(--panel); }
+.ship-group-head { display: flex; align-items: center; gap: 10px; }
+.ship-group-brand { height: 30px; padding: 0 11px; flex: none; }
+.ship-group-label { flex: 1; display: flex; flex-direction: column; min-width: 0; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.ship-group-label em { font-style: normal; font-weight: 500; font-size: 0.76rem; color: var(--text-dim); }
+.ship-group-head > b { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.ship-group-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.ship-group-items img { width: 44px; height: 44px; padding: 3px; border-radius: 10px; background: #fff; object-fit: contain; border: 1px solid rgba(0, 0, 0, 0.08); }
+.ship-group-break { font-size: 0.74rem; color: var(--text-dim); }
+.ship-split-total { display: flex; justify-content: space-between; margin: 14px 2px 4px; font-weight: 700; color: var(--text); }
+
+/* The address step's quote, above Confirm. */
+.ship-quote { display: grid; gap: 6px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 0.84rem; }
+.ship-quote:empty { display: none; }
+.ship-quote-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-dim); }
+.ship-quote-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text); }
+.ship-quote-row b { font-variant-numeric: tabular-nums; }
+.ship-quote-note { font-size: 0.74rem; color: var(--text-dim); }
+.ship-quote-total { padding-top: 6px; border-top: 1px solid rgba(0, 0, 0, 0.1); font-weight: 700; }
+
+/* Tracking several: one card per order. */
+.ship-orders { display: grid; gap: 10px; margin-bottom: 18px; }
+.ship-orders.hidden, .ship-steps.hidden { display: none; }
+.ship-order-status { margin: 0; font-size: 0.84rem; color: var(--text); }
+.ship-steps-compact { margin: 0; }
+.ship-steps-compact .ship-step-time { font-size: 0.7rem; }
+/* A tile keeps its shape whatever the photo's: a tall graded slab sits
+   inside it rather than stretching the card. */
+.market-item-media { min-height: 0; overflow: hidden; }
+.market-item-media > img { min-height: 0; }

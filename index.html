@@ -538,8 +538,16 @@ try {
             <div class="account-section-header">
               <h3>My Items <span class="count-badge" id="vaultCount">0</span></h3>
               <span class="account-block-note">Sealed crates first · held in the vault, no time limit</span>
+              <button id="shipSelectBtn" class="ship-select-btn" type="button" aria-pressed="false">Select to ship</button>
             </div>
             <div id="inventoryGrid" class="market-grid" data-reveal="stagger"></div>
+            <!-- Picking several to ship at once: how many, from which vaults,
+                 and the way on. Shown while selecting. -->
+            <div id="shipSelectBar" class="ship-select-bar hidden" role="region" aria-label="Items selected to ship">
+              <span class="ship-select-count" id="shipSelectCount">Tap items to ship them together</span>
+              <button type="button" class="ship-select-cancel" id="shipSelectCancel">Cancel</button>
+              <button type="button" class="ship-select-go" id="shipSelectGo" disabled>Ship</button>
+            </div>
           </div>
 
           <!-- One Rewards page rather than a Streaks/Leaderboard/Referral
@@ -1009,10 +1017,25 @@ try {
     <button id="shipCloseBtn" class="back-btn listing-close-btn ship-close-btn">Close</button>
 
     <div class="ship-item">
+      <span class="ship-thumbs hidden" id="shipThumbs"></span>
       <img id="shipItemImage" alt="">
       <div>
         <span class="ship-item-name" id="shipItemName"></span>
         <span class="ship-item-meta" id="shipItemMeta"></span>
+      </div>
+    </div>
+
+    <!-- More than one vault: they ship as separate orders, each with its
+         own quote. Shown before the address when a pick spans vaults. -->
+    <div id="shipSplit" class="ship-split hidden">
+      <h3 class="ship-title">Ships from two vaults</h3>
+      <p class="ship-split-lead">These come from two different vaults and will ship separately, each with its own tracking number and its own shipping quote.</p>
+      <div id="shipSplitGroups" class="ship-groups"></div>
+      <p class="ship-split-total"><span>Shipping total</span><b id="shipSplitTotal"></b></p>
+      <p class="add-funds-note" id="shipSplitTo"></p>
+      <div class="prize-modal-actions">
+        <button type="button" id="shipSplitCancel" class="modal-btn modal-btn-outline">Cancel</button>
+        <button type="button" id="shipSplitNext" class="modal-btn modal-btn-solid">Next</button>
       </div>
     </div>
 
@@ -1056,11 +1079,12 @@ try {
         </label>
       </div>
       <label class="ship-save"><input type="checkbox" name="save" checked> Save this address for next time</label>
+      <div class="ship-quote" id="shipQuote"></div>
       <p class="ship-error hidden" id="shipError"></p>
       <p class="add-funds-note">Demo only. Nothing is actually shipped, and the address stays in this browser.</p>
       <div class="prize-modal-actions">
         <button type="button" id="shipCancelBtn" class="modal-btn modal-btn-outline">Cancel</button>
-        <button type="submit" class="modal-btn modal-btn-solid">Confirm shipment</button>
+        <button type="submit" class="modal-btn modal-btn-solid" id="shipConfirmBtn">Confirm shipment</button>
       </div>
     </form>
 
@@ -1068,6 +1092,7 @@ try {
       <h3 class="ship-title">Order <span id="shipOrderId"></span></h3>
       <p class="ship-status-line" id="shipStatusLine"></p>
       <ol class="ship-steps" id="shipSteps"></ol>
+      <div class="ship-orders hidden" id="shipOrders"></div>
       <div class="ship-address">
         <span class="ship-address-label">Shipping to</span>
         <p id="shipAddressText"></p>
