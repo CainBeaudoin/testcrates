@@ -205,7 +205,7 @@ function tierOf(key) {
   return CATEGORIES[tierKeyOf(key)];
 }
 
-// A regular crate's boxes hold a Chosen Card Box one time in three: a prize in
+// A regular crate's boxes hold a Chosen Card Box one time in five: a prize in
 // the pool like any other, so the published odds, the average value and the
 // crowd's pulls all count it. The Pokémon crates are cards already.
 Object.values(CATEGORIES).forEach((cat) => {
@@ -247,6 +247,15 @@ try {
     localStorage.setItem("gotcha_cards_seed_v1", "1");
   }
 } catch {}
+// The $150 drop never sells out: it's the way in to card boxes, so it restocks
+// before the crowd can finish it off.
+const ALWAYS_OPEN = "sneakers";
+function keepDropOpen() {
+  if (supply.status(ALWAYS_OPEN).unsold >= 30) return;
+  supply.reseed(ALWAYS_OPEN, CARDS_SEED);
+  supply.reconcile(ALWAYS_OPEN, player.getCrates().filter((t) => t.crateKey === ALWAYS_OPEN).length);
+}
+keepDropOpen();
 // The player's sealed crates count against their series; anything else
 // held belongs to the crowd. A token left over from a series that has
 // since been replaced opens against the current one.
@@ -1898,6 +1907,9 @@ function dropStripHTML(tierKey) {
     .sort((a, b) => b.price - a.price)
     .filter((p) => !seen.has(p.name) && seen.add(p.name))
     .slice(0, 10);
+  // A card box isn't among a crate's priciest pieces, but it's worth showing.
+  const cardBox = supply.pool(tierKey).find(isCardBox);
+  if (cardBox && !top.includes(cardBox)) top.splice(top.length - 1, 1, cardBox);
   const tile = (p) =>
     `<span class="dc-tile dc-t-${p.rarity}" style="--rc:${RARITY_META[p.rarity].color}" title="${p.name}"><img src="${p.image}" alt="" loading="lazy" draggable="false"><b>$${p.price.toLocaleString()}</b></span>`;
   const tiles = top.map(tile).join("");
@@ -3124,6 +3136,9 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   cashOutBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Open it" : "Cash Out";
   vaultKeepBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Keep sealed" : "Keep";
   cashOutSub.classList.toggle("hidden", cardBox);
+  // Selling is the green button on a card box; Open it matches Keep sealed.
+  cashOutBtn.classList.toggle("deposit-btn", !cardBox);
+  cashOutBtn.classList.toggle("exit-btn-primary", cardBox);
   const sellNow = Math.round(prize.price * player.cashOutMultiplier());
   document.getElementById("cardBoxSellBtn").classList.toggle("hidden", !cardBox);
   document.getElementById("cardBoxSellLabel").textContent = `Sell now for ${roundCurrency === "cash" ? fmt(sellNow) : `${sellNow.toLocaleString()} credits`}`;
@@ -3188,9 +3203,11 @@ function hidePrizeModal() {
 // they live on Account's vault cards instead — the reveal only offers a
 // same-currency Cash Out or Keep (which auto-populates the vault).
 
+// A second tap while the reveal fades out must not pay or add anything twice.
+const prizeChoiceOpen = () => prizeModal.classList.contains("visible");
 cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
-  if (!prize) return;
+  if (!prize || !prizeChoiceOpen()) return;
   playClick();
   if (isCardBox(prize)) {
     const box = addOwnedItem(prize);
@@ -3202,7 +3219,7 @@ cashOutBtn.addEventListener("click", () => {
 });
 document.getElementById("cardBoxSellBtn").addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
-  if (!prize) return;
+  if (!prize || !prizeChoiceOpen()) return;
   playClick();
   cashOutPrize(prize);
 });
@@ -3227,7 +3244,7 @@ function cashOutPrize(prize) {
 
 vaultKeepBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
-  if (!prize) return;
+  if (!prize || !prizeChoiceOpen()) return;
   playClick();
   const item = addOwnedItem(prize);
   // Same result, but now it has a vault id — re-sent so the island's tap
@@ -6586,7 +6603,7 @@ function renderCrateModal() {
     (cardBoxWeight
       ? `<div class="crate-odds-cell crate-odds-cardbox">
         <span class="crate-odds-label">Card Box</span>
-        <b>1 in 3</b>
+        <b>1 in ${Math.round(1 / CARD_BOX_SHARE)}</b>
       </div>`
       : "") +
     RARITY_TOP_DOWN.filter((r) => tierWeight(r) - (CARD_BOX.rarity === r ? cardBoxWeight : 0) > 0).map((r) => {
@@ -7148,6 +7165,7 @@ function crowdPull(prize, key) {
 }
 
 function crowdStep() {
+  keepDropOpen();
   const keys = Object.keys(CATEGORIES);
   for (let tries = 0; tries < 8; tries++) {
     const key = keys[Math.floor(Math.random() * keys.length)];

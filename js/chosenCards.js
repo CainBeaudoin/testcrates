@@ -1,13 +1,13 @@
 // The Chosen Card Box and the demo cards inside it. A box is a prize in its own
-// right: it comes out of a regular drop about 1 time in 3, stays sealed for as
+// right: it comes out of a regular drop about 1 time in 5, stays sealed for as
 // long as you like, and holds one card. Art in assets/prizes/chosen-cards
 // (promo/cards generates it).
 
 const ART = "assets/prizes/chosen-cards";
 
-// One in three of a regular crate's boxes holds a card box instead of the
-// crate's own pool. Its weight in a pool is half of everything else in it.
-export const CARD_BOX_SHARE = 1 / 3;
+// One in five of a regular crate's boxes holds a card box instead of the
+// crate's own pool.
+export const CARD_BOX_SHARE = 1 / 5;
 
 export const CARD_BOX = {
   name: "Chosen Card Box",
