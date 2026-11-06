@@ -205,7 +205,7 @@ function tierOf(key) {
   return CATEGORIES[tierKeyOf(key)];
 }
 
-// A regular crate's boxes hold a Chosen Card Box one time in five: a prize in
+// A regular crate's boxes hold a Chosen Card Box one time in three: a prize in
 // the pool like any other, so the published odds, the average value and the
 // crowd's pulls all count it. The Pokémon crates are cards already.
 Object.values(CATEGORIES).forEach((cat) => {
