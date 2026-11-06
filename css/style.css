@@ -11022,3 +11022,5 @@ button.lulu-get-btn.deposit-btn { border-radius: var(--r-pill); }
 
 .item-detail-open-box { width: 100%; margin: 6px 0 2px; }
 .crate-odds-cardbox { --rarity-color: #d8232f; }
+.exit-btn-wide { grid-column: 1 / -1; background: rgba(255, 255, 255, 0.1); }
+.exit-btn-wide:hover { background: rgba(255, 255, 255, 0.16); }

@@ -619,6 +619,9 @@ function hashString(s) {
 }
 
 function valueOnDate(item, date) {
+  // Card boxes and their cards hold their value: no market behind them, and
+  // "sell now" should always read as 80% of the number on the box.
+  if (item.category === "cardbox" || item.category === "chosencards") return item.price;
   const dayKey = date.toISOString().slice(0, 10);
   const h = hashString(`${item.id}:${dayKey}`);
   const wobble = ((h % 3000) / 3000) * 0.3 - 0.15; // -15%..+15%

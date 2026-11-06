@@ -3120,10 +3120,13 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
 
   const cardBox = isCardBox(prize);
   revealBannerEl.textContent = cardBox ? "Card Box" : meta.label;
-  // A card box's choice is open it or keep it sealed, not cash out or keep.
+  // A card box's choice is open it, keep it sealed or sell it.
   cashOutBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Open it" : "Cash Out";
   vaultKeepBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Keep sealed" : "Keep";
   cashOutSub.classList.toggle("hidden", cardBox);
+  const sellNow = Math.round(prize.price * player.cashOutMultiplier());
+  document.getElementById("cardBoxSellBtn").classList.toggle("hidden", !cardBox);
+  document.getElementById("cardBoxSellLabel").textContent = `Sell now for ${roundCurrency === "cash" ? fmt(sellNow) : `${sellNow.toLocaleString()} credits`}`;
 
   // The piece's own photo, fetched when the
   // round started, so normally already cached.
@@ -3195,6 +3198,16 @@ cashOutBtn.addEventListener("click", () => {
     openCardBox(box.id, { onDone: revealOthers });
     return;
   }
+  cashOutPrize(prize);
+});
+document.getElementById("cardBoxSellBtn").addEventListener("click", () => {
+  const prize = boxPrizes[selectedIndex];
+  if (!prize) return;
+  playClick();
+  cashOutPrize(prize);
+});
+
+function cashOutPrize(prize) {
   const amount = Math.round(prize.price * player.cashOutMultiplier());
   player.cashBack(amount, roundCurrency);
   player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
@@ -3210,7 +3223,7 @@ cashOutBtn.addEventListener("click", () => {
   showWalletToast(amount, roundCurrency);
   hidePrizeModal();
   revealOthers();
-});
+}
 
 vaultKeepBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
@@ -4452,16 +4465,17 @@ function inventoryItemHTML(item) {
       <div class="market-item-body">
         ${sizeHTML ? `<div class="market-item-tags">${sizeHTML}</div>` : ""}
         <span class="market-item-name">${item.name}</span>
-        <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
+        <span class="item-cashout-today">${isCardBox(item) ? "Sell now for" : "Cash out today for"} $${cashOutToday.toLocaleString()}</span>
         <div class="market-item-divider"></div>
         <div class="item-actions">
           ${isCardBox(item)
-            ? `<button class="item-action-btn item-action-open" data-item-action="openbox" data-item="${item.id}">Open</button>`
+            ? `<button class="item-action-btn item-action-open" data-item-action="openbox" data-item="${item.id}">Open</button>
+          <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Sell</button>`
             : `<button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>`}
           <button class="item-action-btn" data-item-action="ship" data-item="${item.id}">Ship</button>
           <button class="item-action-btn" data-item-action="list" data-item="${item.id}">${isListed ? "Reprice" : "List"}</button>
           <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
-          <button class="item-action-btn item-action-icon" data-item-action="box" data-item="${item.id}" title="Put it in an Odds box" aria-label="Put it in an Odds box">${ODDS_BOX_ICON}</button>
+          ${isCardBox(item) ? "" : `<button class="item-action-btn item-action-icon" data-item-action="box" data-item="${item.id}" title="Put it in an Odds box" aria-label="Put it in an Odds box">${ODDS_BOX_ICON}</button>`}
         </div>
       </div>
     </div>`;
