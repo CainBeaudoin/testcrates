@@ -1,0 +1,188 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Cards</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:ital,wght@0,500;0,700;1,500;1,700&display=swap">
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+<style>body{margin:0;background:#333}#out{display:flex;flex-wrap:wrap;gap:12px;padding:12px}#out canvas{height:420px}</style></head><body><div id="out"></div>
+<script type="module">
+import { renderCardBoxStill } from "/js/cardBox.js";
+await Promise.all(['900 40px "Archivo Black"','700 20px Archivo','500 20px Archivo','italic 500 20px Archivo','italic 700 20px Archivo'].map(f=>document.fonts.load(f)));
+const load=(u)=>new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=u;});
+const W=750,H=1050;
+const TYPES={
+  wind:{orb:"#39b98a",panelA:"#dff5e6",panelB:"#a9e2c0",ink:"#14281d",glyph:"wind"},
+  water:{orb:"#2f8fe0",panelA:"#dcefff",panelB:"#9fd0f7",ink:"#10233a",glyph:"drop"},
+  mind:{orb:"#8d5be0",panelA:"#ece1fb",panelB:"#c9aef2",ink:"#22123d",glyph:"eye"},
+  fight:{orb:"#d9792e",panelA:"#fbe6cf",panelB:"#f1bf8c",ink:"#35200d",glyph:"fist"},
+  dark:{orb:"#e0303c",panelA:"#3a2530",panelB:"#16121c",ink:"#f6efe6",glyph:"horns"},
+};
+const CARDS=[
+ {id:"oxygen-mode",no:1,name:"Oxygen Mode",hp:70,type:"wind",src:"35.jpg",crop:[0,400,960,690],stars:"●",
+  stat:"Recovery Type. Runs on pure air.",
+  moves:[{cost:1,name:"Deep Breath",dmg:"",text:"Heal 30 damage from this card."},{cost:2,name:"Second Wind",dmg:"50",text:"If this card was damaged last turn, this attack does 30 more."}],
+  weak:"fight",flavor:"Back in the game in fifteen minutes. Twenty, tops."},
+ {id:"kite-rider",no:2,name:"Kite Rider",hp:90,type:"water",src:"37.png",contain:true,stars:"◆",
+  stat:"Sender Type. Never checks the forecast.",
+  moves:[{cost:1,name:"Catch the Wind",dmg:"20",text:"Flip a coin. If heads, draw a card."},{cost:3,name:"Full Send",dmg:"80",text:"This card also does 20 damage to itself."}],
+  weak:"wind",flavor:"Grinning at sixty knots. Nobody has seen it stop."},
+ {id:"the-scholar",no:3,name:"The Scholar",hp:110,type:"mind",src:"34.jpg",crop:[110,0,914,658],stars:"★",holo:1,
+  stat:"Thinker Type. Reads the whole room.",
+  moves:[{cost:1,name:"Quiet Study",dmg:"",text:"Look at the top 3 cards of your deck and put them back in any order."},{cost:3,name:"Deep Focus",dmg:"100",text:"Your opponent can't play Trainer cards next turn."}],
+  weak:"dark",flavor:"Says little. Already knows how this ends."},
+ {id:"big-kid",no:4,name:"Big Kid",hp:130,type:"fight",src:"33.webp",crop:[0,6,512,368],stars:"★★",holo:1,
+  stat:"School Photo Type. Grew up early.",
+  moves:[{cost:2,name:"Teddy Guard",dmg:"40",text:"Prevent 20 damage to this card next turn."},{cost:3,name:"Beard Whip",dmg:"120",text:"Flip a coin. If tails, this attack does nothing."}],
+  weak:"mind",flavor:"Picture day has never recovered."},
+ {id:"evil-carlos",no:5,name:"Evil Carlos",hp:180,type:"dark",src:"36.png",contain:true,stars:"★★★",holo:2,
+  stat:"Grail Type. Nobody knows what he's fixing.",
+  moves:[{cost:2,name:"Neon Horns",dmg:"70",text:"Your opponent discards a card at random."},{cost:4,name:"Evil Plan",dmg:"180",text:"Discard 2 energy from this card. It was worth it."}],
+  weak:"wind",flavor:"Whatever it is, it's already soldered shut."},
+];
+const rr=(x,a,b,w,h,r)=>{x.beginPath();x.roundRect(a,b,w,h,r);};
+function glyph(x,kind,cx,cy,r,col="#fff"){
+  x.save();x.translate(cx,cy);x.strokeStyle=x.fillStyle=col;x.lineWidth=r*.17;x.lineCap=x.lineJoin="round";
+  const s=r;
+  if(kind==="wind"){[[-.28,.5,-.55],[0,.75,-.2],[.3,.45,-.4]].forEach(([y,l,st])=>{x.beginPath();x.moveTo(st*s,y*s);x.lineTo(l*s*.6,y*s);x.arc(l*s*.6,(y-.16)*s,.16*s,Math.PI/2,-Math.PI/1.4,true);x.stroke();});}
+  if(kind==="drop"){x.beginPath();x.moveTo(0,-.62*s);x.bezierCurveTo(.62*s,.02*s,.46*s,.6*s,0,.6*s);x.bezierCurveTo(-.46*s,.6*s,-.62*s,.02*s,0,-.62*s);x.fill();}
+  if(kind==="eye"){x.beginPath();x.moveTo(-.68*s,0);x.quadraticCurveTo(0,-.72*s,.68*s,0);x.quadraticCurveTo(0,.72*s,-.68*s,0);x.stroke();x.beginPath();x.arc(0,0,.22*s,0,7);x.fill();}
+  if(kind==="fist"){rr(x,-.46*s,-.38*s,.92*s,.5*s,.14*s);x.fill();rr(x,-.34*s,.16*s,.68*s,.38*s,.12*s);x.fill();}
+  if(kind==="horns"){x.lineWidth=r*.22;x.beginPath();x.moveTo(-.2*s,.45*s);x.quadraticCurveTo(-.62*s,.1*s,-.42*s,-.56*s);x.moveTo(.2*s,.45*s);x.quadraticCurveTo(.62*s,.1*s,.42*s,-.56*s);x.stroke();}
+  x.restore();
+}
+function orb(x,type,cx,cy,r){
+  const t=TYPES[type];const g=x.createRadialGradient(cx-r*.35,cy-r*.4,r*.1,cx,cy,r);g.addColorStop(0,"#fff");g.addColorStop(.28,t.orb);g.addColorStop(1,t.orb);
+  x.save();x.shadowColor="rgba(0,0,0,.35)";x.shadowBlur=r*.3;x.shadowOffsetY=r*.1;x.fillStyle=g;x.beginPath();x.arc(cx,cy,r,0,7);x.fill();x.restore();
+  glyph(x,t.glyph,cx,cy,r*.82);
+}
+function wrap(x,text,maxW){const words=text.split(" ");const out=[];let l="";for(const w of words){const n=l?l+" "+w:w;if(x.measureText(n).width>maxW){out.push(l);l=w;}else l=n;}if(l)out.push(l);return out;}
+function foil(x,a,b,w,h,alpha){
+  x.save();rr(x,a,b,w,h,6);x.clip();x.globalCompositeOperation="overlay";
+  const stops=["#ff5f8f","#ffd66b","#7dffb0","#6bd6ff","#b58bff","#ff5f8f"];
+  const g=x.createLinearGradient(a,b,a+w,b+h);stops.forEach((c,k)=>g.addColorStop(k/5,c));x.globalAlpha=alpha;x.fillStyle=g;x.fillRect(a,b,w,h);
+  x.restore();
+}
+async function drawCard(c){
+  const t=TYPES[c.type];const can=document.createElement("canvas");can.width=W;can.height=H;const x=can.getContext("2d");
+  // Border: yellow like the classic, foil-gold on the grail.
+  rr(x,0,0,W,H,38);x.save();x.clip();
+  const bg=x.createLinearGradient(0,0,W,H);
+  if(c.holo===2){["#fff0b8","#d9a437","#fff4c8","#b9831e","#ffe89a"].forEach((s,i)=>bg.addColorStop(i/4,s));}else{bg.addColorStop(0,"#f8dc4e");bg.addColorStop(.5,"#f4cf32");bg.addColorStop(1,"#e9bd22");}
+  x.fillStyle=bg;x.fillRect(0,0,W,H);
+  // Panel.
+  const PX=30,PY=30,PW=W-60,PH=H-60;rr(x,PX,PY,PW,PH,16);x.save();x.clip();
+  const p=x.createLinearGradient(0,PY,0,PY+PH);p.addColorStop(0,t.panelA);p.addColorStop(1,t.panelB);x.fillStyle=p;x.fillRect(PX,PY,PW,PH);
+  const seed=c.no*97;for(let i=0;i<70;i++){const px=PX+((seed*(i+3)*53)%PW),py=PY+((seed*(i+7)*29)%PH),r=8+((i*13)%34);x.fillStyle=c.type==="dark"?"rgba(255,255,255,.025)":"rgba(255,255,255,.14)";x.beginPath();x.arc(px,py,r,0,7);x.fill();}
+  x.restore();
+  // Header.
+  x.fillStyle=t.ink;x.textBaseline="alphabetic";
+  x.font='700 19px Archivo';x.globalAlpha=.75;x.fillText("BASIC · CHOSEN DEMO SET",52,66);x.globalAlpha=1;
+  x.font='900 44px "Archivo Black"';x.fillText(c.name,50,108);
+  orb(x,c.type,W-76,88,27);
+  x.textAlign="right";x.font='900 40px "Archivo Black"';x.fillText(String(c.hp),W-112,110);
+  const hpw=x.measureText(String(c.hp)).width;x.font='700 19px Archivo';x.fillText("HP",W-112-hpw-7,110);x.textAlign="left";
+  // Art.
+  const AX=52,AY=128,AW=W-104,AH=456;
+  const fr=x.createLinearGradient(AX,AY,AX+AW,AY+AH);["#f4f4f6","#a9adb7","#ffffff","#8f939d","#eceef2"].forEach((s,i)=>fr.addColorStop(i/4,s));
+  x.save();x.shadowColor="rgba(0,0,0,.35)";x.shadowBlur=12;x.shadowOffsetY=4;x.fillStyle=c.holo===2?bg:fr;rr(x,AX-8,AY-8,AW+16,AH+16,8);x.fill();x.restore();
+  const img=await load(`/__src/${c.src}`);
+  x.save();rr(x,AX,AY,AW,AH,4);x.clip();x.imageSmoothingQuality="high";
+  if(c.contain){
+    const pc=document.createElement("canvas");pc.width=pc.height=1;const pg=pc.getContext("2d");pg.drawImage(img,0,0,1,1,0,0,1,1);const d=pg.getImageData(0,0,1,1).data;
+    x.fillStyle=`rgb(${d[0]},${d[1]},${d[2]})`;x.fillRect(AX,AY,AW,AH);
+    const k=Math.min(AW/img.width,AH/img.height);const w=img.width*k,h=img.height*k;x.drawImage(img,AX+(AW-w)/2,AY+(AH-h)/2,w,h);
+  }else{
+    let [sx,sy,sw,sh]=c.crop;const ar=AW/AH;if(sw/sh>ar){const nw=sh*ar;sx+=(sw-nw)/2;sw=nw;}else{const nh=sw/ar;sy+=(sh-nh)/2;sh=nh;}
+    x.drawImage(img,sx,sy,sw,sh,AX,AY,AW,AH);
+  }
+  x.restore();
+  if(c.holo)foil(x,AX,AY,AW,AH,c.holo===2?.34:.24);
+  // Stat strip.
+  const SY=AY+AH+10;const st=x.createLinearGradient(AX,0,AX+AW,0);["#c9ccd4","#f6f6f8","#b6bac3"].forEach((s,i)=>st.addColorStop(i/2,s));
+  x.fillStyle=st;rr(x,AX+26,SY,AW-52,28,4);x.fill();x.fillStyle="#1c1c20";x.font='italic 700 17px Archivo';x.textAlign="center";x.fillText(c.stat,W/2,SY+20);x.textAlign="left";
+  // Moves.
+  let y=SY+50;
+  c.moves.forEach((m,i)=>{
+    const top=y;for(let k=0;k<m.cost;k++)orb(x,c.type,64+(k%2)*32,top+16+Math.floor(k/2)*32,14);
+    const tx=m.cost>2?126:m.cost===2?126:96;
+    x.fillStyle=t.ink;x.font='900 29px "Archivo Black"';x.fillText(m.name,tx,top+25);
+    if(m.dmg){x.textAlign="right";x.font='900 38px "Archivo Black"';x.fillText(m.dmg,W-56,top+30);x.textAlign="left";}
+    x.font='500 20px Archivo';wrap(x,m.text,W-tx-(m.dmg?130:60)).slice(0,2).forEach((l,k)=>x.fillText(l,tx,top+53+k*24));
+    y=top+108;
+    if(i===0){x.strokeStyle=c.type==="dark"?"rgba(255,255,255,.22)":"rgba(0,0,0,.2)";x.lineWidth=2;x.beginPath();x.moveTo(54,y-10);x.lineTo(W-54,y-10);x.stroke();}
+  });
+  // Weakness row and flavour.
+  const RY=H-164;
+  x.strokeStyle=c.type==="dark"?"rgba(255,255,255,.22)":"rgba(0,0,0,.2)";x.lineWidth=2;x.beginPath();x.moveTo(54,RY-16);x.lineTo(W-54,RY-16);x.stroke();
+  x.fillStyle=t.ink;x.font='700 17px Archivo';x.fillText("weakness",56,RY+8);orb(x,c.weak,160,RY+2,14);x.fillText("×2",180,RY+8);
+  x.fillText("retreat",W-210,RY+8);for(let k=0;k<Math.min(3,Math.ceil(c.hp/70));k++){x.fillStyle="#fff";x.beginPath();x.arc(W-136+k*30,RY+2,12,0,7);x.fill();x.strokeStyle="rgba(0,0,0,.35)";x.lineWidth=2;x.stroke();}
+  x.fillStyle=t.ink;
+  const fb=x.createLinearGradient(0,0,W,0);["rgba(255,255,255,.55)","rgba(255,255,255,.2)"].forEach((s,i)=>fb.addColorStop(i,s));
+  x.fillStyle=c.type==="dark"?"rgba(255,255,255,.08)":fb;rr(x,52,RY+26,W-104,46,6);x.fill();x.fillStyle=t.ink;x.font='italic 500 18px Archivo';x.textAlign="center";x.fillText(c.flavor,W/2,RY+56);x.textAlign="left";
+  // Footer.
+  x.font='700 15px Archivo';x.fillStyle=t.ink;x.globalAlpha=.8;x.fillText("Illus. Chosen · © 2026 CHOSEN · Demo card, no real-world value",52,H-52);x.globalAlpha=1;
+  x.textAlign="right";x.font='700 17px Archivo';x.fillText(`${String(c.no).padStart(3,"0")}/005  ${c.stars}`,W-52,H-52);x.textAlign="left";
+  x.restore();
+  return can;
+}
+const RARITIES={common:["#B9B9BE","COMMON"],uncommon:["#4ADE80","UNCOMMON"],rare:["#4FA3F7","RARE"],epic:["#B678F2","EPIC"],legendary:["#F2B84B","GRAIL"]};
+// The back of a Chosen card, framed in its rarity's colour.
+function drawBack(rarity){
+  const [col,label]=RARITIES[rarity];
+  const can=document.createElement("canvas");can.width=W;can.height=H;const x=can.getContext("2d");
+  rr(x,0,0,W,H,38);x.clip();x.fillStyle=col;x.fillRect(0,0,W,H);
+  const g=x.createRadialGradient(W/2,H/2,40,W/2,H/2,660);g.addColorStop(0,"#26262e");g.addColorStop(.6,"#121217");g.addColorStop(1,"#08080b");
+  rr(x,30,30,W-60,H-60,16);x.save();x.fillStyle=g;x.fill();x.clip();
+  x.translate(W/2,H/2);x.strokeStyle=col;x.globalAlpha=.17;x.lineWidth=18;for(let i=0;i<14;i++){x.rotate(Math.PI/7);x.beginPath();x.moveTo(70,0);x.quadraticCurveTo(270,130,660,40);x.stroke();}x.restore();
+  x.strokeStyle=col;x.lineWidth=5;rr(x,48,48,W-96,H-96,10);x.stroke();
+  x.beginPath();x.arc(W/2,H/2,178,0,7);x.fillStyle=col;x.fill();x.beginPath();x.arc(W/2,H/2,160,0,7);x.fillStyle="#0c0c10";x.fill();
+  x.fillStyle="#fff";x.textAlign="center";x.font='900 60px "Archivo Black"';x.fillText("CHOSEN",W/2,H/2+18);
+  x.fillStyle=col;x.font='900 30px "Archivo Black"';x.fillText(label,W/2,H-92);x.fillText(label,W/2,118);
+  return can;
+}
+async function post(name,canvas,type="image/webp",q=.9){const b=await new Promise(r=>canvas.toBlob(r,type,q));const res=await fetch(`/save?name=${name}`,{method:"POST",body:b});return `${name} ${res.status} ${(b.size/1024)|0}KB`;}
+window.makeCards=async()=>{const o=[];const out=document.getElementById("out");out.innerHTML="";for(const c of CARDS){const can=await drawCard(c);out.appendChild(can);o.push(await post(`${c.id}.webp`,can));}for(const r of Object.keys(RARITIES)){const b=drawBack(r);out.appendChild(b);o.push(await post(`back-${r}.webp`,b));}return o;};
+// ---- The cube's faces: black board, card backs, a lot of tape ----
+const F=1024;
+function board(x){
+  x.fillStyle="#0d0d11";x.fillRect(0,0,F,F);
+  for(let i=0;i<F;i+=14){x.fillStyle="rgba(255,255,255,.012)";x.fillRect(i,0,7,F);}
+  let n=11;const r=()=>(n=(n*16807)%2147483647)/2147483647;
+  for(let i=0;i<60;i++){const a=r()*F,b=r()*F,q=40+r()*150;const g=x.createRadialGradient(a,b,0,a,b,q);g.addColorStop(0,`rgba(255,255,255,${r()<.5?.02:.0})`);g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(a-q,b-q,q*2,q*2);}
+}
+function stick(x,card,cx,cy,w,deg){
+  const h=w*1.4;x.save();x.translate(cx,cy);x.rotate(deg*Math.PI/180);x.shadowColor="rgba(0,0,0,.6)";x.shadowBlur=14;x.shadowOffsetY=5;x.drawImage(card,-w/2,-h/2,w,h);x.restore();
+}
+// A strip of packing tape: glossy, printed, torn a little at the ends.
+function tape(x,cx,cy,len,wd,deg,col,ink,text="SEALED · CHOSEN · "){
+  x.save();x.translate(cx,cy);x.rotate(deg*Math.PI/180);
+  x.shadowColor="rgba(0,0,0,.5)";x.shadowBlur=8;x.shadowOffsetY=3;x.fillStyle=col;
+  x.beginPath();x.moveTo(-len/2,-wd/2);x.lineTo(len/2,-wd/2);const teeth=7;for(let i=0;i<teeth;i++){const t=(i+.5)/teeth,u=(i+1)/teeth;x.lineTo(len/2+7,-wd/2+wd*t);x.lineTo(len/2,-wd/2+wd*u);}x.lineTo(-len/2,wd/2);for(let i=teeth-1;i>=0;i--){const t=(i+.5)/teeth,u=i/teeth;x.lineTo(-len/2-7,-wd/2+wd*t);x.lineTo(-len/2,-wd/2+wd*u);}x.closePath();x.fill();
+  x.shadowColor="transparent";x.save();x.clip();
+  const g=x.createLinearGradient(0,-wd/2,0,wd/2);g.addColorStop(0,"rgba(255,255,255,.3)");g.addColorStop(.18,"rgba(255,255,255,.04)");g.addColorStop(.82,"rgba(0,0,0,.05)");g.addColorStop(1,"rgba(0,0,0,.28)");x.fillStyle=g;x.fillRect(-len,-wd,len*2,wd*2);
+  x.fillStyle=ink;x.font=`900 ${Math.round(wd*.42)}px "Archivo Black"`;x.textAlign="left";x.textBaseline="middle";const tw=x.measureText(text).width;for(let a=-len/2-tw*.3;a<len/2;a+=tw)x.fillText(text,a,1);
+  x.restore();x.restore();
+}
+const RED=["#d8232f","rgba(70,0,6,.8)"],GOLD=["#f2b84b","rgba(70,42,0,.82)"],WHITE=["#ece9e2","rgba(20,20,24,.8)"];
+function pill(x,cx,cy,w,h){x.save();x.shadowColor="rgba(0,0,0,.5)";x.shadowBlur=10;x.fillStyle="#f6f4ef";rr(x,cx-w/2,cy-h/2,w,h,h/2);x.fill();x.restore();x.fillStyle="#0d0d11";x.textAlign="center";x.textBaseline="middle";x.font=`900 ${Math.round(h*.52)}px "Archivo Black"`;x.fillText("CHOSEN",cx,cy+2);}
+function drawFaces(){
+  const b=Object.fromEntries(Object.keys(RARITIES).map(r=>[r,drawBack(r)]));
+  const face=(fn)=>{const c=document.createElement("canvas");c.width=c.height=F;const x=c.getContext("2d");board(x);fn(x);return c;};
+  const sideA=face((x)=>{
+    stick(x,b.legendary,205,235,260,-13);stick(x,b.rare,826,225,250,11);stick(x,b.uncommon,212,790,250,9);stick(x,b.epic,812,800,260,-10);stick(x,b.common,520,150,190,5);
+    tape(x,F/2,F/2,F+40,132,90,...RED);tape(x,F/2,850,F+40,92,0,...GOLD);tape(x,120,120,420,70,-45,...WHITE,"FRAGILE · CARDS · ");tape(x,905,120,420,70,45,...WHITE,"FRAGILE · CARDS · ");
+    pill(x,F/2,F/2-8,620,176);
+  });
+  const sideB=face((x)=>{
+    stick(x,b.epic,220,220,250,10);stick(x,b.common,822,235,260,-11);stick(x,b.rare,205,800,260,-8);stick(x,b.legendary,820,790,250,12);stick(x,b.uncommon,500,690,190,-6);
+    tape(x,F/2,F/2,F+40,132,90,...GOLD);tape(x,F/2,850,F+40,92,0,...RED);tape(x,110,905,420,70,45,...WHITE,"FRAGILE · CARDS · ");tape(x,915,905,420,70,-45,...WHITE,"FRAGILE · CARDS · ");
+    pill(x,F/2,F/2-8,620,176);
+  });
+  const top=face((x)=>{
+    stick(x,b.rare,228,232,270,-12);stick(x,b.legendary,800,222,280,10);stick(x,b.uncommon,226,800,270,8);stick(x,b.epic,800,806,280,-9);
+    tape(x,F/2,F/2,F+40,150,0,...GOLD);tape(x,F/2,F/2,F+40,132,90,...RED);tape(x,F/2,F/2,F*1.5,72,45,...WHITE,"FRAGILE · CARDS · ");tape(x,F/2,F/2,F*1.5,72,-45,...WHITE,"FRAGILE · CARDS · ");
+    x.save();x.shadowColor="rgba(0,0,0,.5)";x.shadowBlur=12;x.beginPath();x.arc(F/2,F/2,118,0,7);x.fillStyle="#d8232f";x.fill();x.restore();x.beginPath();x.arc(F/2,F/2,100,0,7);x.strokeStyle="#fff";x.lineWidth=5;x.stroke();x.fillStyle="#fff";x.textAlign="center";x.textBaseline="middle";x.font='900 40px "Archivo Black"';x.fillText("SEALED",F/2,F/2+2);
+  });
+  return{sideA,sideB,top};
+}
+window.makeFaces=async()=>{const f=drawFaces();const out=document.getElementById("out");out.innerHTML="";Object.values(f).forEach(c=>out.appendChild(c));return[await post("cube-side-a.webp",f.sideA,"image/webp",.88),await post("cube-side-b.webp",f.sideB,"image/webp",.88),await post("cube-top.webp",f.top,"image/webp",.88)];};
+window.makeBoxShot=async(size=720)=>{const c=await renderCardBoxStill(size,-0.6,1.22);document.getElementById("out").appendChild(c);return post("card-box.webp",c,"image/webp",.9);};
+window.ready=true;
+</script></body></html>

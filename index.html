@@ -738,6 +738,38 @@ try {
   </div>
 </div>
 
+<!-- Opening a Chosen Card Box: the cube rattles and opens, a card rises out of
+     it back-first and flips. The card is yours from the moment it opens. -->
+<div id="cardBoxModal" class="card-box-modal hidden" role="dialog" aria-modal="true" aria-label="Opening a Chosen Card Box">
+  <div id="cardBoxFx" class="reveal-fx"></div>
+  <div class="card-box-stage">
+    <canvas id="cardBoxCanvas" class="card-box-canvas"></canvas>
+    <div id="cardBoxCard" class="chosen-card">
+      <div class="chosen-card-inner">
+        <img id="cardBoxBack" class="chosen-card-back" alt="">
+        <div class="chosen-card-front">
+          <img id="cardBoxFront" alt="">
+          <span class="chosen-card-holo"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="cardBoxInfo" class="card-box-info">
+    <span id="cardBoxRarity" class="card-box-rarity"></span>
+    <h3 id="cardBoxName" class="reveal-name"></h3>
+    <p id="cardBoxPrice" class="slab-price"></p>
+    <div class="exits-grid">
+      <button id="cardBoxCashOut" class="exit-btn deposit-btn">
+        <span class="exit-btn-label">Cash Out</span>
+        <span class="exit-btn-sub" id="cardBoxCashOutSub"></span>
+      </button>
+      <button id="cardBoxKeep" class="exit-btn exit-btn-primary">
+        <span class="exit-btn-label">Keep</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Payment method picker (shown before a round starts) -->
 <div id="paymentModal" class="prize-modal hidden">
   <div class="prize-modal-card payment-modal-card">
@@ -864,6 +896,7 @@ try {
         <h3 class="prize-modal-name" id="itemDetailName"></h3>
         <p class="prize-modal-price" id="itemDetailValue"></p>
         <p id="itemDetailMeta" class="detail-meta"></p>
+        <button id="itemDetailOpenBoxBtn" class="modal-btn modal-btn-solid item-detail-open-box hidden" data-item-action="openbox">Open the box</button>
         <div class="detail-media-actions">
           <button id="itemDetailShareBtn" class="detail-media-btn">
             <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>

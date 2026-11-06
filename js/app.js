@@ -7,6 +7,8 @@ import { PRIZE_POOL as COLLECTIBLES_POOL } from "./prizeDataCollectibles.js";
 import { PRIZE_POOL as SNEAKER_250_POOL } from "./prizeDataSneakers250.js";
 import { PRIZE_POOL as SNEAKER_1000_POOL } from "./prizeDataSneakers1000.js";
 import { PRIZE_POOL as CARDS_POOL } from "./prizeDataCards.js";
+import { CARD_BOX, CARD_BOX_SHARE, isCardBox, isChosenCard, drawCard, cardBackFor } from "./chosenCards.js";
+import { createCardBoxViewer } from "./cardBox.js";
 import { playRevealFX } from "./reveal.js";
 import * as player from "./player.js";
 import * as market from "./market.js";
@@ -202,6 +204,15 @@ function tierKeyOf(key) {
 function tierOf(key) {
   return CATEGORIES[tierKeyOf(key)];
 }
+
+// A regular crate's boxes hold a Chosen Card Box one time in three: a prize in
+// the pool like any other, so the published odds, the average value and the
+// crowd's pulls all count it. The Pokémon crates are cards already.
+Object.values(CATEGORIES).forEach((cat) => {
+  if (cat.poweredBy !== "ODTO") return;
+  const rest = cat.pool.reduce((sum, p) => sum + p.weight, 0);
+  cat.pool = [...cat.pool, { ...CARD_BOX, weight: (rest * CARD_BOX_SHARE) / (1 - CARD_BOX_SHARE) }];
+});
 
 // Each crate is wrapped in what can come out of it. boxViewer bakes these
 // into one texture per crate the first time it draws one; registering here
@@ -645,6 +656,8 @@ function revealImageFor(prize) {
 // always "New" (no used/worn inventory in this catalog) but still stated
 // explicitly rather than assumed.
 function itemMetaText(name, category) {
+  if (category === "cardbox") return "Sealed · one card inside";
+  if (category === "chosencards") return "Chosen demo set";
   const size = market.sizeLabelFor(name, category);
   return size ? `Size ${size} · Condition: New` : "Condition: New";
 }
@@ -688,7 +701,7 @@ function releaseOwnedItem(item) {
 // DEMO_SEED_VERSION tops up accounts seeded under an older set (adding
 // only what they're short of, by name and count) exactly once. Cash and
 // Credits are only ever granted on the very first seed.
-const DEMO_SEED_VERSION = 4;
+const DEMO_SEED_VERSION = 5;
 const DEMO_VAULT_ITEM_NAMES = [
   "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
   "Air Jordan 1 Low Travis Scott Velvet Brown", // Sneakers, Legendary
@@ -736,6 +749,11 @@ function seedDemoInventory() {
   // pieces since shipped, sold or cashed out.
   if (version < 3) seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
   if (version < 4) seed(CARDS_POOL, DEMO_VAULT_CARD_NAMES);
+  // Two sealed card boxes, so there's one to open straight away.
+  if (version < 5) {
+    addOwnedItem(CARD_BOX);
+    addOwnedItem(CARD_BOX);
+  }
 
   if (version === 0) {
     player.addCash(DEMO_STARTING_CASH);
@@ -3100,7 +3118,12 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   prizeModal.style.setProperty("--rarity-color", meta.color);
   revealFxEl.style.setProperty("--rarity-color", meta.color);
 
-  revealBannerEl.textContent = meta.label;
+  const cardBox = isCardBox(prize);
+  revealBannerEl.textContent = cardBox ? "Card Box" : meta.label;
+  // A card box's choice is open it or keep it sealed, not cash out or keep.
+  cashOutBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Open it" : "Cash Out";
+  vaultKeepBtn.querySelector(".exit-btn-label").textContent = cardBox ? "Keep sealed" : "Keep";
+  cashOutSub.classList.toggle("hidden", cardBox);
 
   // The piece's own photo, fetched when the
   // round started, so normally already cached.
@@ -3116,7 +3139,7 @@ async function showPrizeModal(prize, { streak, multiplier } = {}) {
   prizeModalMeta.textContent = metaText;
   prizeModalMeta.classList.toggle("hidden", !metaText);
 
-  if (multiplier !== null && multiplier !== undefined) {
+  if (multiplier !== null && multiplier !== undefined && !cardBox) {
     const positive = multiplier > 1;
     const arrow = positive
       ? `<svg class="multiplier-badge-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
@@ -3166,6 +3189,12 @@ cashOutBtn.addEventListener("click", () => {
   const prize = boxPrizes[selectedIndex];
   if (!prize) return;
   playClick();
+  if (isCardBox(prize)) {
+    const box = addOwnedItem(prize);
+    hidePrizeModal();
+    openCardBox(box.id, { onDone: revealOthers });
+    return;
+  }
   const amount = Math.round(prize.price * player.cashOutMultiplier());
   player.cashBack(amount, roundCurrency);
   player.logCashOut({ name: prize.name, rarity: prize.rarity, price: prize.price, image: prize.image, amount, currency: roundCurrency });
@@ -3214,6 +3243,118 @@ backBtn.addEventListener("click", () => {
   liveActivity.end();
   showScreen(screenCategory);
   renderCategories();
+});
+
+// ---- Opening a Chosen Card Box -----------------------------------------------
+// The box is spent and the card is in the vault the moment this starts, so
+// leaving part-way loses nothing: Keep just closes, Cash Out sells it back.
+
+const cardBoxModal = document.getElementById("cardBoxModal");
+const cardBoxCard = document.getElementById("cardBoxCard");
+const cardBoxFx = document.getElementById("cardBoxFx");
+const cardBoxInfo = document.getElementById("cardBoxInfo");
+let cardBoxViewer = null;
+let cardBoxOpenItem = null;
+let cardBoxOnDone = null;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const preload = (url) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = img.onerror = resolve;
+    img.src = url;
+  });
+
+async function openCardBox(itemId, { onDone = null } = {}) {
+  const box = player.getInventoryItem(itemId);
+  if (!isCardBox(box) || box.box || box.escrow || cardBoxOpenItem) return;
+
+  const card = drawCard();
+  const meta = RARITY_META[card.rarity];
+  releaseOwnedItem(box);
+  cardBoxOpenItem = addOwnedItem(card);
+  cardBoxOnDone = onDone;
+  renderAccount();
+  logNotification(`Chosen Card Box opened: ${card.name}`, ICONS.bell);
+
+  cardBoxCard.className = "chosen-card";
+  cardBoxCard.classList.toggle("is-holo", rankOf(card.rarity) >= rankOf("rare"));
+  cardBoxInfo.classList.remove("is-shown");
+  cardBoxFx.innerHTML = "";
+  cardBoxModal.style.setProperty("--rarity-color", meta.color);
+  document.getElementById("cardBoxBack").src = cardBackFor(card.rarity);
+  const front = document.getElementById("cardBoxFront");
+  front.src = card.image;
+  front.alt = card.name;
+  const rarityEl = document.getElementById("cardBoxRarity");
+  rarityEl.textContent = meta.label;
+  document.getElementById("cardBoxName").textContent = card.name;
+  document.getElementById("cardBoxPrice").textContent = fmt(card.price);
+  document.getElementById("cardBoxCashOutSub").textContent = `${fmt(player.cashOutValue(cardBoxOpenItem))} now`;
+
+  cardBoxModal.classList.remove("hidden");
+  requestAnimationFrame(() => cardBoxModal.classList.add("visible"));
+
+  await Promise.all([preload(card.image), preload(cardBackFor(card.rarity))]);
+  cardBoxViewer = await createCardBoxViewer(document.getElementById("cardBoxCanvas"));
+  await wait(450);
+  playPop();
+  cardBoxViewer.open();
+  await wait(cardBoxViewer.mouthClearMs);
+  // Out of the box back-first, then over.
+  cardBoxCard.classList.add("is-rising");
+  await wait(750);
+  cardBoxCard.classList.add("is-flipped");
+  cardBoxModal.classList.add("is-revealed");
+  vibrate(card.rarity);
+  playRevealFX(cardBoxFx, card.rarity, meta.color);
+  await wait(450);
+  cardBoxInfo.classList.add("is-shown");
+}
+
+function closeCardBox() {
+  cardBoxModal.classList.remove("visible", "is-revealed");
+  cardBoxOpenItem = null;
+  setTimeout(() => {
+    cardBoxModal.classList.add("hidden");
+    cardBoxViewer?.dispose();
+    cardBoxViewer = null;
+    // A fresh canvas: the old one's WebGL context is gone for good.
+    const old = document.getElementById("cardBoxCanvas");
+    const next = old.cloneNode(false);
+    old.replaceWith(next);
+    cardBoxFx.innerHTML = "";
+  }, 300);
+  renderAccount();
+  const done = cardBoxOnDone;
+  cardBoxOnDone = null;
+  done?.();
+}
+
+document.getElementById("cardBoxKeep").addEventListener("click", () => {
+  playClick();
+  closeCardBox();
+});
+document.getElementById("cardBoxCashOut").addEventListener("click", () => {
+  const item = cardBoxOpenItem;
+  if (!item) return;
+  playClick();
+  const amount = player.cashOutValue(item);
+  player.addCash(amount);
+  player.logCashOut({ name: item.name, rarity: item.rarity, price: item.price, image: item.image, amount, currency: "cash" });
+  releaseOwnedItem(item);
+  renderWallet({ pulse: "cash" });
+  showWalletToast(amount, "cash");
+  closeCardBox();
+});
+
+// The card leans toward the pointer, its foil sliding the other way.
+cardBoxModal.addEventListener("pointermove", (e) => {
+  if (!cardBoxCard.classList.contains("is-flipped") || reducedMotionQuery.matches) return;
+  const nx = (e.clientX / innerWidth) * 2 - 1;
+  const ny = (e.clientY / innerHeight) * 2 - 1;
+  cardBoxCard.style.setProperty("--tilt-x", `${nx * 16}deg`);
+  cardBoxCard.style.setProperty("--tilt-y", `${-ny * 12}deg`);
+  cardBoxCard.style.setProperty("--foil", `${50 + nx * 40}%`);
 });
 
 // ---- Theme -------------------------------------------------------------
@@ -3679,7 +3820,7 @@ function renderMarketplace() {
       renderMarketGrid();
     });
 
-    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", cards: "Cards" };
+    const CATEGORY_LABELS = { sneakers: "Sneakers", streetwear: "Streetwear", collectibles: "Collectibles", cards: "Cards", cardbox: "Card Boxes", chosencards: "Chosen Cards" };
     const cats = ["all", ...new Set(market.getListings().map((l) => l.category).filter(Boolean))];
     marketCategoryFilter.innerHTML = cats
       .map((c) => `<option value="${c}">${c === "all" ? "All Categories" : CATEGORY_LABELS[c] ?? c}</option>`)
@@ -4314,7 +4455,9 @@ function inventoryItemHTML(item) {
         <span class="item-cashout-today">Cash out today for $${cashOutToday.toLocaleString()}</span>
         <div class="market-item-divider"></div>
         <div class="item-actions">
-          <button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>
+          ${isCardBox(item)
+            ? `<button class="item-action-btn item-action-open" data-item-action="openbox" data-item="${item.id}">Open</button>`
+            : `<button class="item-action-btn" data-item-action="cashout" data-item="${item.id}">Cash Out</button>`}
           <button class="item-action-btn" data-item-action="ship" data-item="${item.id}">Ship</button>
           <button class="item-action-btn" data-item-action="list" data-item="${item.id}">${isListed ? "Reprice" : "List"}</button>
           <button class="item-action-btn item-action-icon" data-item-action="send" data-item="${item.id}" title="Send to another user" aria-label="Send to another user">${ICONS.send}</button>
@@ -4413,6 +4556,9 @@ function openItemDetail(itemId) {
   itemDetailBuyoutBtn.dataset.item = item.id;
   itemDetailShareBtn.dataset.item = item.id;
   itemDetailDownloadBtn.dataset.item = item.id;
+  const openBoxBtn = document.getElementById("itemDetailOpenBoxBtn");
+  openBoxBtn.dataset.item = item.id;
+  openBoxBtn.classList.toggle("hidden", !isCardBox(item) || Boolean(item.box || item.escrow));
 
   // Actionable here, not just a read-out: an offer on something in your
   // vault is the one place you'd want to accept or counter it.
@@ -4456,6 +4602,9 @@ itemDetailCloseBtn.addEventListener("click", () => {
 // The Accept button reuses the global data-item-action delegated handler
 // (see the document click listener below) — close the modal once it fires.
 itemDetailBuyoutBtn.addEventListener("click", () => {
+  setTimeout(closeItemDetail, 50);
+});
+document.getElementById("itemDetailOpenBoxBtn").addEventListener("click", () => {
   setTimeout(closeItemDetail, 50);
 });
 
@@ -5136,7 +5285,10 @@ document.addEventListener("click", async (e) => {
       return;
     }
 
-    if (action === "cashout") {
+    if (action === "openbox") {
+      playClick();
+      openCardBox(item.id);
+    } else if (action === "cashout") {
       playClick();
       const amount = player.cashOutValue(item);
       player.addCash(amount);
@@ -6414,13 +6566,23 @@ function renderCrateModal() {
   const pool = supply.pool(key);
   const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
   const tierWeight = (r) => pool.reduce((sum, p) => sum + (p.rarity === r ? p.weight : 0), 0);
-  document.getElementById("crateModalOdds").innerHTML = RARITY_TOP_DOWN.filter((r) => tierWeight(r)).map((r) => {
-    const meta = RARITY_META[r];
-    return `<div class="crate-odds-cell" style="--rarity-color:${meta.color}">
+  // A card box counts within its rarity, and gets a line of its own here.
+  const cardBoxWeight = pool.find(isCardBox)?.weight ?? 0;
+  document.getElementById("crateModalOdds").innerHTML =
+    (cardBoxWeight
+      ? `<div class="crate-odds-cell crate-odds-cardbox">
+        <span class="crate-odds-label">Card Box</span>
+        <b>1 in 3</b>
+      </div>`
+      : "") +
+    RARITY_TOP_DOWN.filter((r) => tierWeight(r) - (CARD_BOX.rarity === r ? cardBoxWeight : 0) > 0).map((r) => {
+      const meta = RARITY_META[r];
+      const weight = tierWeight(r) - (CARD_BOX.rarity === r ? cardBoxWeight : 0);
+      return `<div class="crate-odds-cell" style="--rarity-color:${meta.color}">
         <span class="crate-odds-label">${meta.label}</span>
-        <b>${formatOdds((tierWeight(r) / totalWeight) * 100)}</b>
+        <b>${formatOdds((weight / totalWeight) * 100)}</b>
       </div>`;
-  }).join("");
+    }).join("");
 
   // Every prize, grouped Grail down, with its value; odds are per tier
   // only.
