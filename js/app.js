@@ -710,7 +710,7 @@ function releaseOwnedItem(item) {
 // DEMO_SEED_VERSION tops up accounts seeded under an older set (adding
 // only what they're short of, by name and count) exactly once. Cash and
 // Credits are only ever granted on the very first seed.
-const DEMO_SEED_VERSION = 5;
+const DEMO_SEED_VERSION = 6;
 const DEMO_VAULT_ITEM_NAMES = [
   "Nike SB Dunk Low Supreme Stars Hyper Royal", // Sneakers, Legendary
   "Air Jordan 1 Low Travis Scott Velvet Brown", // Sneakers, Legendary
@@ -758,11 +758,10 @@ function seedDemoInventory() {
   // pieces since shipped, sold or cashed out.
   if (version < 3) seed(SNEAKER_CATALOG, DEMO_VAULT_ITEM_NAMES);
   if (version < 4) seed(CARDS_POOL, DEMO_VAULT_CARD_NAMES);
-  // Two sealed card boxes, so there's one to open straight away.
-  if (version < 5) {
-    addOwnedItem(CARD_BOX);
-    addOwnedItem(CARD_BOX);
-  }
+  // Sealed card boxes, so testers can open a run of them straight away: ten
+  // on a new account, eight more on one seeded with the first two.
+  const cardBoxes = (version < 5 ? 2 : 0) + (version < 6 ? 8 : 0);
+  for (let i = 0; i < cardBoxes; i++) addOwnedItem(CARD_BOX);
 
   if (version === 0) {
     player.addCash(DEMO_STARTING_CASH);
